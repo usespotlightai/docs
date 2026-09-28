@@ -1,0 +1,239 @@
+---
+type: reference
+icon: BookText
+title: Expressions
+description: How expressions are written in integrations and hooks, what each position sees and returns, and how they are checked.
+---
+
+Expressions are [CEL](https://cel.dev). They are written in
+[integration definitions](/docs/reference/terraform/integration) and in
+[hooks](/docs/reference/terraform/hook). An expression is at most 2,000 characters.
+
+## Syntax
+
+| Where | Written as | Example |
+| --- | --- | --- |
+| An integration or hook written as JSON | `${{ <CEL> }}` | `"${{ body.event.type == \"app_mention\" }}"` |
+| An integration or hook written in HCL | `$${{ <CEL> }}` | `"$${{ body.data.id }}"` |
+| A hook's `when` | bare CEL, or `${{ <CEL> }}` | `event.inputs.query != ''` |
+
+A field that holds one expression must be the whole string, `${{ ... }}`, with
+nothing around it but spaces. Such fields are refused otherwise, with
+`must be an expression, written as ${{ ... }}`.
+
+A field that holds text (a request's `url`, `query`, `headers` and `body`
+strings, a tool input's `default`, `asymmetric.key`, and a hook step's `with`
+strings and `request` fields) may hold any number of expressions inside it:
+
+```text
+https://api.example.com/issues/${{ task.marks["linear.issue"] }}/comments
+```
+
+When the text is one expression and nothing else, it keeps the expression's
+type, so a body field written `${{ {"channel": target.channel} }}` sends a JSON
+object. Otherwise each expression is written into the text.
+
+## Evaluation
+
+| The expression is | When it fails to evaluate |
+| --- | --- |
+| a condition (`when`, `mine`, `respond.when`, `expect.success`, a hook's `when`) | it counts as false |
+| in a request's `url`, `query`, `headers` or `body`, or a hook request | the request is not sent and fails |
+| anywhere else | it reads as nothing: a mark is not worn, a capture is null, a title is empty |
+
+Reading a field that is not there fails. `has()` tests whether a field is
+there:
+
+```text
+has(body.data.assignee) ? body.data.assignee.email : ""
+```
+
+No expression may read a secret. An expression containing `secret.` or
+`secret[` is refused.
+
+## Integration positions
+
+A position is the path of a field, with `*` for any key or index. `Returns` is
+what the expression must return, when anything is required. These tables leave
+out the `integration.` prefix and write `[*]` as `.*`: the check and positions
+APIs write `webhook.events.*.when` as `integration.webhook.events[*].when`, and
+a check names a real index, as in `integration.webhook.events[0].when`.
+
+| Position | Returns | Sees |
+| --- | --- | --- |
+| `webhook.verify.hmac.signed`, `webhook.verify.hmac.freshness.at`, `webhook.verify.asymmetric.key`, `webhook.verify.asymmetric.signed`, `webhook.verify.asymmetric.freshness.at` | | `body`, `headers`, `raw` |
+| `webhook.respond.when` | bool | `body`, `headers`, `raw` |
+| `webhook.respond.body` | | `body`, `headers`, `raw` |
+| `webhook.mine` | bool | `body`, `headers`, `raw` |
+| `webhook.route.by`, `webhook.delivery` | | `body`, `headers`, `raw` |
+| `webhook.events.*.forEach` | list | `body`, `headers`, `raw` |
+| `webhook.events.*.when` | bool | `body`, `headers`, `raw`, `item` |
+| `webhook.events.*.lookup.request.url`, `.query.*`, `.headers.*`, `.body` | | `body`, `headers`, `raw`, `item` |
+| `webhook.events.*.lookup.request.expect.success` | bool | the above, `response`, `status` |
+| `webhook.events.*.lookup.request.capture.*`, `webhook.events.*.lookup.capture.*` | | the above, `response`, `status` |
+| `webhook.events.*.raise.say`, `.opens.title`, `.opens.description`, `.opens.assignBy.email`, `.branch`, `.marks.*.value` | | `body`, `headers`, `raw`, `item`, captures |
+| `webhook.events.*.raise.attaches.each` | list | `body`, `headers`, `raw`, `item`, captures |
+| `webhook.events.*.raise.attaches.name`, `.type`, `.size`, and `.fetch` request fields | | the above, `file` |
+| `poll.request.url`, `.query.*`, `.headers.*`, `.body` | | `cursor`, `connection` |
+| `poll.request.expect.success` | bool | `cursor`, `connection`, `response`, `status` |
+| `poll.request.capture.*` | | `cursor`, `connection`, `response`, `status` |
+| `poll.cursor` | | `body`, `cursor` |
+| `poll.events.*` | as for `webhook.events.*` | `body`, `cursor`, and as for `webhook.events.*` |
+| `actions.*.request.url`, `.query.*`, `.headers.*`, `.body` | | `task`, `ask`, `target`, `connection`, `inputs` |
+| `actions.*.request.expect.success` | bool | the above, `response`, `status` |
+| `actions.*.request.capture.*` | | the above, `response`, `status` |
+| `tools.*.inputs.*.default` | | `task` |
+| `tools.*.output` | | `task`, `ask`, `target`, `connection`, `response`, `status`, `capture`, `inputs` |
+| `connection.oauth2.identity` | | `response` |
+| `on.*.to.*` | | `task`, `ask` |
+| `on.*.mark.*.value` | | `task`, `ask`, `target`, `connection`, `response`, `capture` |
+
+`item` is seen only when the event has `forEach`. Captures are the names in
+the event's `lookup.capture`, each seen by its own name. `inputs` is seen by an
+action only when a tool runs it. A capture named like a built-in name shadows
+it, and is warned about.
+
+What an action has at run time depends on what runs it:
+
+| Run by | Has |
+| --- | --- |
+| a tool | `task`, `inputs`, `connection` |
+| an `on` binding | `task`, `ask`, `target`, `connection` |
+| a `schedule` | `connection` |
+
+## Integration values
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `body` | dyn | The delivery or poll response, parsed as JSON. |
+| `headers` | dyn | The delivery's headers, by lowercase name. |
+| `raw` | string | The delivery's body as text. |
+| `cursor` | string | The poll's cursor, `""` before the first. |
+| `connection` | string | The team's OAuth access token. |
+| `response` | dyn | The response body, parsed as JSON when it is JSON, else text; null when empty. |
+| `status` | dyn | The response's HTTP status. |
+| `capture` | map | The request's `capture` values, by name. |
+| `item` | dyn | The current entry of `forEach`. |
+| `file` | dyn | The current entry of `attaches.each`. |
+| `inputs` | map | The tool's inputs, by name. |
+| `target` | map of string | The values of the binding's `to`, and `channel` from `routes`. |
+
+`task`:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `task.line` | string | The key of the task's line. |
+| `task.station` | string | The name of the task's station. |
+| `task.stationKey` | string | The key of the task's station. |
+| `task.marks` | map of string | The task's marks, by kind, as in `task.marks["slack.thread"]`. |
+
+`ask`:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `ask.body` | string | What the task asks, when it waits on a person; otherwise `""`. When it waits on an approval, ends with a link to decide it. |
+| `ask.link` | dyn | The address of the conversation in the inbox, or null. |
+| `ask.station` | string | The name of the task's station. |
+
+## Hook positions
+
+| Position | Returns | Sees |
+| --- | --- | --- |
+| `hook.when` | bool | `event`, `task`, `run`, `vars`, `hook` |
+| `hook.steps.*.with.*` | | the above, `step` |
+| `hook.steps.*.request.url` | | the above, `step` |
+| `hook.steps.*.request.headers.*` | | the above, `step` |
+| `hook.steps.*.request.body` | | the above, `step` |
+
+A hook's `match` is compiled into conditions of the same kind as `when`.
+
+## Hook values
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `event` | object | The event's fields. Every event has `event.at`, an ISO 8601 time. The rest are listed per event in [Events](/docs/reference/terraform/hook#events). |
+| `task.id` | string | The task's id. |
+| `task.title` | string | The task's title. |
+| `task.url` | string | The task's address in Spotlight. |
+| `task.line` | string | The key of the task's line. |
+| `task.station` | string | The name of the task's station. |
+| `task.stationKey` | string | The key of the task's station. |
+| `task.marks` | map of string | The task's marks, by kind. |
+| `task.repositories` | list of string | The line's repositories, as `owner/name`. |
+| `task.pullRequest` | dyn | The task's pull request address, or null. |
+| `run.id` | string | The run's id. Only on events that happen in a run. |
+| `vars` | map of string | The hook's `vars`. |
+| `hook.key` | string | The hook's key. |
+| `step.<name>.status` | string | `done`, `failed` or `waiting`, for a step before this one. |
+| `step.<name>.output` | dyn | That step's response. |
+
+## Type-checking
+
+Every expression is type-checked against what its position sees when the
+definition is written.
+
+| Problem | Integration | Hook |
+| --- | --- | --- |
+| does not parse | error, write refused | error, write refused |
+| does not type-check, or returns the wrong type | warning, definition kept | error, write refused |
+
+An integration warning reads `does not check: <message>`, followed by `; did you mean <suggestion>?` when there is one. Warnings are returned in the
+resource's `warnings`, and the Terraform provider shows them as warnings on the
+attribute.
+
+`body` and `response` are `dyn` unless a shape declares them. See
+[Shapes](/docs/reference/terraform/integration#shapes).
+
+## Check API
+
+```text
+POST /api/expressions/check
+```
+
+Type-checks one expression where it would be written, as `terraform plan`
+does. Needs the `plan` permission; a workspace token without it is refused
+with `403`. It takes the same credentials and returns the same problems as the
+[resource API](/docs/reference/api/resource-api).
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `position` | string | Where the expression is written, as in `integration.webhook.events[0].when` or `hook.steps[0].with.text`. Begins with `integration` or `hook`. |
+| `expression` | string | The CEL, without `${{ }}`. |
+| `definition` | object | The whole integration or hook, as it would be created. |
+
+```json
+{
+  "position": "hook.when",
+  "expression": "event.inputz.query != ''",
+  "definition": { "key": "grafana-reads", "on": "tool.used", "steps": [{ "name": "notify", "call": "grafana.search" }] }
+}
+```
+
+The response:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `type` | string or null | The CEL type the expression returns, or null when it does not check. |
+| `errors` | array | Each has `message`, `span` (`start`, `end`, or null) and `suggestion` (or null). |
+| `warnings` | array | Each has `position` and `message`. |
+
+`422` when the request is not shaped as a check, when the position names
+neither an integration nor a hook attribute, when the definition holds errors
+(each listed under `definition`), or when the position holds no expression in
+the definition.
+
+## Positions API
+
+```text
+GET /api/expressions/positions
+```
+
+Returns every position, integration and hook, as a list. It needs any
+credential.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `position` | string | The position, beginning with `integration` or `hook`, with `[*]` for any key or index, as in `integration.webhook.events[*].when`. |
+| `returns` | string or null | `bool`, `list`, or null. |
+| `sees` | array | The names the expression sees, each with `name`, `type` and nested `fields`. |
+| `alsoSees` | array | Names seen only in some definitions: `item`, `captures`, `inputs`. |

@@ -1,0 +1,124 @@
+---
+type: how-to
+icon: SquarePen
+title: Connect an integration that signs in with OAuth
+description: Authorize Spotlight at a service so a team's integration can call it with your grant.
+---
+
+Some integrations act on a service with an OAuth grant instead of a stored key.
+Someone signs in at the service once, and the grant then serves the whole team.
+You need:
+
+- To be an owner or admin of the workspace. Spotlight refuses the connection
+  for anyone else, both when it starts and when the service sends you back.
+- An account at the service that may grant the scopes the integration asks for.
+- The integration defined for the team with a `connection.oauth2` block, as
+  below.
+- An OAuth client for the integration, held by Spotlight's deployment. It is
+  registered at the service with the redirect URL
+  `https://<your Spotlight address>/api/integrations/oauth/callback`, and
+  Spotlight looks it up by the integration's `integration` name. Without it the
+  connect button opens nothing.
+
+## Declare the connection
+
+If the integration does not have one yet, add `connection.oauth2` to its
+definition, and have the requests that act for the team use it. With the
+[Terraform provider](/docs/reference/terraform/terraform-provider):
+
+```hcl
+resource "spotlight_integration" "core_acme" {
+  team_id = spotlight_team.core.id
+  definition = {
+    integration = "acme"
+    name        = "Acme"
+    connection = {
+      oauth2 = {
+        authorize = "https://acme.example/oauth/authorize"
+        token     = "https://acme.example/oauth/token"
+        scopes    = ["issues:write"]
+        identity  = "$${{ response.account.name }}"
+      }
+    }
+    actions = {
+      comment = {
+        request = {
+          method = "POST"
+          url    = "https://api.acme.example/comments"
+          body   = { issue = "$${{ inputs.issue }}", text = "$${{ inputs.body }}" }
+          auth   = { oauth2 = { connection = true } }
+        }
+      }
+    }
+  }
+}
+```
+
+`identity` is optional. It reads the service's token response and names the
+account the card shows once connected; point it at whatever field your service
+returns. Run `terraform apply`.
+
+## Connect
+
+<Steps>
+<Step>
+
+In the sidebar, open the team, then **Settings**, then **Integrations**. Under
+**Hosts**, the integration's card reads "Not connected yet."
+
+</Step>
+<Step>
+
+Select **Connect to `<Name>`**, where `<Name>` is the integration's `name`. The
+button reads **Opening…** and then takes you to the service.
+
+</Step>
+<Step>
+
+Sign in at the service if it asks, and approve the access it lists. Do this
+within 10 minutes, in the same browser, while still signed in to Spotlight as
+yourself.
+
+</Step>
+</Steps>
+
+The service sends you back to the team's **Integrations** page. The card now
+reads `Connected as <account>.`, or "Connected." if the integration has no
+`identity`. Requests that use `auth = { oauth2 = { connection = true } }` now
+carry the grant, and Spotlight renews it with the service's refresh token when
+it expires.
+
+## Reconnect
+
+To link a different account, or after the service withdrew Spotlight's access,
+select **Reconnect to `<Name>`** on the same card and authorize again. The new
+grant replaces the old one for the team.
+
+## If it does not connect
+
+If you select **Connect to `<Name>`** and the button returns to that label
+without taking you anywhere, Spotlight would not begin. Either you are not an
+owner or admin of the workspace, or the deployment has no OAuth client for this
+integration.
+
+If you authorized at the service but land on Spotlight's start page instead of
+the team's **Integrations** page, the connection was refused, and Spotlight
+shows no message. The card still reads "Not connected yet." Check that:
+
+- you are an owner or admin of the workspace;
+- you came back within 10 minutes of selecting **Connect to `<Name>`**;
+- you did not sign in to Spotlight as someone else in the meantime;
+- you approved the request at the service rather than declining it.
+
+Then select **Connect to `<Name>`** again. If it fails every time, the service
+may be refusing Spotlight's client or its redirect URL, which whoever runs your
+Spotlight deployment can check.
+
+## Related
+
+- [`spotlight_integration`](/docs/reference/terraform/integration#connection): every
+  `connection` field, and the connect and callback endpoints.
+- [Give stations a tool from an HTTP API](/docs/integrations/give-stations-a-tool-from-an-http-api):
+  turn the integration's requests into tools agents can call.
+- [Roles and permissions](/docs/reference/roles-and-permissions): who is an
+  owner or admin.

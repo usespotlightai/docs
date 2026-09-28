@@ -1,0 +1,46 @@
+---
+type: reference
+icon: BookText
+title: spotlight_workspace_runners
+description: The fields of a workspace's runners resource, which names its runner pools and runner trusts, and the warnings it gives.
+---
+
+The `spotlight_workspace_runners` resource, and the workspace runners resource
+of the API: the runner pools and runner trusts of a workspace, named by key. A
+workspace has at most one. Writing it needs the `manage-runners` permission;
+see [Roles and permissions](/docs/reference/roles-and-permissions).
+
+| Kind | Endpoint | Terraform | Address |
+| --- | --- | --- | --- |
+| `workspace-runners` | `/api/resources/workspaces/{workspaceId}/workspace-runners` | `spotlight_workspace_runners` | `<workspace slug>` |
+
+See [Resource API](/docs/reference/api/resource-api) for the operations, headers
+and errors every kind shares.
+
+## Example
+
+```hcl
+resource "spotlight_workspace_runners" "acme" {
+  workspace_id = spotlight_workspace.acme.id
+  trusts       = [spotlight_runner_trust.production_cluster.key]
+  pools        = [spotlight_runner_pool.ephemeral.key]
+}
+```
+
+## Fields
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `trusts` | array of strings | `[]` | [Runner trust](/docs/reference/terraform/runner-trust) keys, each once. |
+| `pools` | array of strings | `[]` | [Runner pool](/docs/reference/terraform/runner-pool) keys, each once. |
+
+## Warnings
+
+| Path | Warning |
+| --- | --- |
+| `pools[<n>]` | `names <key>, but the workspace has no runner pool by that key` |
+| `trusts[<n>]` | `names <key>, but the workspace trusts no workload by that key` |
+
+## Delete
+
+Deleting it leaves every runner pool and runner trust as it is.

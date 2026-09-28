@@ -1,0 +1,123 @@
+---
+type: concept
+icon: Lightbulb
+title: Why configuration lives in Terraform
+description: Why Spotlight's lines, stations, secrets and pools are written through Terraform or the resource API and only shown in the web app, what stays writable there, and what the choice costs.
+---
+
+Spotlight's web app shows a team's configuration and never changes it. Lines
+and their stations, prompts, skills, integrations, hooks, harness profiles,
+secrets, pools and trusts are all written through Spotlight's resource API,
+and in practice through the Terraform provider that sits on top of it. The
+Station page shows a station's harness, model and prompt, but has nothing to
+edit them with.
+
+The work itself stays fully writable in the app: creating and moving tasks,
+answering the inbox, approving tool calls, chatting with the agent,
+commenting. So do the things that concern people and not the machinery:
+creating a workspace, inviting people, changing their roles.
+
+## One source of truth
+
+The main reason is that configuration should live in one place. If both a
+Terraform file and a settings form can change a station's prompt, then one of
+them is wrong as soon as someone uses the other. Either Terraform overwrites a
+change someone made in the app, or the app holds a change the repository does
+not know about, and the next person to read the repository is misled.
+
+With the app read-only for configuration, there is nothing to reconcile. What
+is in the team's Terraform is what Spotlight runs, and the repository stays the
+complete record of it.
+
+The same choice removes a second layer of validation. A form that edits a
+line has to know every rule a line must follow, and so does the API behind it.
+With one way in, the rules live once, in the resource API, and Terraform
+reports whatever the API refuses. It also means far less of the app to build
+and keep working.
+
+## The alternative that was turned down
+
+The other design is familiar from cloud consoles: the configuration is
+editable in the app and also in Terraform, and when the two disagree, the next
+plan shows the drift and someone decides which side wins. It lets a person fix
+a prompt in a few seconds without leaving the browser.
+
+Spotlight considered that design and decided against it, for the reasons above.
+How often the two sides would disagree is part of the argument. Drift is
+manageable when changes in the console are rare and exceptional. A team tuning
+its agents changes prompts and stations often, and every such change made in the
+app would be a disagreement waiting for the next plan. The app instead shows the
+configuration in full, so people can see what a station does, and leaves
+changing it to the one place where changes are reviewed.
+
+## What stays in the browser
+
+A few things do not fit Terraform, and are done with clicks instead.
+
+Connecting GitHub installs Spotlight's GitHub App on an organisation, which
+happens on GitHub's side, in a browser, as someone allowed to install apps
+there. Connecting an integration over OAuth works the same way: a person
+signs in to the other service and grants access. Neither is something a
+Terraform run can do on a person's behalf.
+
+## Secret values in Terraform
+
+Secret values stay in Terraform, though they are awkward there. Terraform keeps
+what it applies in its state file, and a secret value in a state file is a
+secret stored in one more place. The provider takes secret values as write-only
+attributes, which Terraform sends to Spotlight and never records in state, with
+a version number to change when the value should be written again. A secret kept
+in AWS Secrets Manager goes further: Terraform names it, and the value never
+passes through Terraform or Spotlight's control plane at all. The [`spotlight_secret`](/docs/reference/terraform/secret)
+reference has both forms.
+
+## A way in for existing teams
+
+A workspace created in the web app does not start with a Terraform
+repository. It starts with two [built-in lines](/docs/reference/built-ins/built-in-lines)
+that work before anyone has written any configuration, and a team usually
+wants to change them once it has seen them run.
+
+Writing that configuration by hand, to match what Spotlight already holds,
+would be the tedious part. The workspace menu's Download as Terraform does it
+instead: it writes the workspace's whole configuration as a Terraform module,
+with each station's prompt as a file of its own and import blocks that adopt
+the resources Spotlight already has, so the team's first Terraform describes
+what is already running. [Manage Spotlight with Terraform](/docs/configuration/manage-spotlight-with-terraform) walks through it.
+
+## Catching mistakes before they apply
+
+Some of Spotlight's configuration is more than data. Integrations and hooks
+carry expressions that are evaluated later, when an event arrives or a tool is
+called. A misspelt field in one of those used to surface only at that moment,
+as an empty value in a message nobody expected to be empty.
+
+Because a change made through Terraform goes through a plan, Spotlight can check
+expressions there. During `terraform plan`, the provider sends each expression
+to the control plane, which checks it against what will be in scope where it is
+used. A name or field that is not in scope there fails the plan, at the
+attribute that holds it, before anything is applied. The [Expressions](/docs/reference/api/expressions)
+reference describes the scopes.
+
+## What teams give up
+
+Before a team can change a single prompt, someone has to set up a Terraform
+workflow: a repository, the provider, and a [workspace
+token](/docs/reference/api/workspace-token) for it to call Spotlight with. Only a
+workspace owner or admin, signed in as a person, can issue a workspace token,
+and there is no page in the app for it. How much that matters depends on the
+team: one that already runs Terraform adds a provider to a workflow it has,
+while one that does not has a real hurdle between seeing an agent's prompt and
+improving it.
+
+Small changes also take longer. Fixing a word in a prompt means a commit, a
+plan and an apply, where a settings form would have taken a moment.
+
+Against that, prompts, tools and permissions decide what agents do in a team's
+repositories, which makes them the kind of thing a team wants to review before
+it changes and trace afterwards. A Terraform workflow already gives that, where
+an app would have to rebuild it. Teams that want the review without storing a
+long-lived token can have their CI exchange its own identity for a short-lived
+one; [Run Terraform from GitHub Actions without a stored token](/docs/configuration/run-terraform-from-github-actions) covers that. And the
+resource API is open to any client, for teams that would rather write
+configuration some other way.

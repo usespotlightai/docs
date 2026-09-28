@@ -1,0 +1,105 @@
+---
+type: reference
+icon: BookText
+title: spotlight_runner_pool
+description: The fields of a runner pool, how a pull pool's token is issued and rotated, and what deleting a pool does.
+---
+
+The `spotlight_runner_pool` resource, and the runner pool resource of the API:
+a pool that admits runners into a workspace. Hosts claim a pull pool's work
+with its token, and Spotlight calls a push pool to start a runner for each run.
+Writing one needs the `manage-runners` permission; see
+[Roles and permissions](/docs/reference/roles-and-permissions).
+
+| Kind | Endpoint | Terraform | Address |
+| --- | --- | --- | --- |
+| `runner-pool` | `/api/resources/workspaces/{workspaceId}/runner-pools` | `spotlight_runner_pool` | `<key>` |
+
+See [Resource API](/docs/reference/api/resource-api) for the operations, headers
+and errors every kind shares.
+
+## Example
+
+```hcl
+resource "random_password" "ephemeral" {
+  length  = 48
+  special = false
+}
+
+resource "random_password" "provision" {
+  length  = 32
+  special = false
+}
+
+resource "spotlight_runner_pool" "ephemeral" {
+  workspace_id  = spotlight_workspace.acme.id
+  key           = "ephemeral"
+  labels        = ["linux"]
+  max_runs      = 8
+  token         = random_password.ephemeral.result
+  token_version = 1
+}
+
+resource "spotlight_runner_pool" "k8s_jobs" {
+  workspace_id = spotlight_workspace.acme.id
+  key          = "k8s-jobs"
+  labels       = ["gpu"]
+  provision = {
+    url            = "https://provision.example.com/runs"
+    secret         = "whsec_${base64encode(random_password.provision.result)}"
+    secret_version = 1
+  }
+}
+```
+
+## Fields
+
+A pool without `provision` is pulled from: hosts claim work from it with the
+pool token. A pool with `provision` is pushed to: Spotlight calls
+`provision.url` for each run, as described in
+[Provision call](/docs/reference/events/provision-call), and the pool has no
+token. Which of the two a pool is cannot change; in Terraform, adding or
+removing `provision` replaces the pool.
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `key` | string | required | Lowercase words joined by dashes, at most 64 characters. Placement ignores it; lines and stations place work on the pool by its `labels`. Fixed: an update that changes it is refused; Terraform replaces the resource. |
+| `labels` | array of strings | `[]` | Names a line or station may use in `runners` to place work on the pool. Lowercase words joined by dashes, at most 64 characters, each once. |
+| `maxRuns` | integer or null | `null` | The most runs the pool serves at once, 1 to 10,000. Null is no limit. |
+| `token` | string | none | Pull pools only. Write-only. 32 to 255 of `A-Z a-z 0-9 . _ ~ -`. Without it, Spotlight issues one; see [Pool token](#pool-token). |
+| `tokenVersion` | integer | none | Pull pools only. At least `0`. A change must come with a new `token`. |
+| `provision.url` | string | none | An absolute `http` or `https` URL with no credentials and no fragment, at most 2,048 characters. Required with `provision`. |
+| `provision.secret` | string | none | Write-only. `whsec_` followed by 24 to 64 base64-encoded bytes. Required with `provision`: on create and whenever `secretVersion` changes. |
+| `provision.secretVersion` | integer | none | At least `0`. A change, with a new `secret`, rotates the secret. |
+| `mode` | string | read-only | `pull` or `push`. |
+
+In Terraform, `token` and `provision.secret` are write-only and need Terraform
+1.11 or later. A token Spotlight issues is not kept in the Terraform state.
+
+[`spotlight_workspace_runners`](/docs/reference/terraform/workspace-runners)
+names a workspace's pools by key.
+
+## Pool token
+
+- A pool created without `token` gets one from Spotlight, returned once in the
+  `Spotlight-Pool-Token` response header, never again.
+- Spotlight keeps only its hash.
+- A token is given once, ever. A token another pool holds is refused with
+  `is already another pool's token; give each pool its own`. A token rotated
+  away, or held by a pool since deleted or replaced, is refused to every pool,
+  the pool that held it included, with
+  `was given to a pool before, and a pool token is given once, ever: one rotated away, or held by a pool since deleted or replaced, never works again; give a new one`.
+- Rotating with a new `tokenVersion` refuses the old token at once. Runs
+  already claimed keep their own one-run credentials.
+- `token` and `tokenVersion` on a push pool are refused.
+
+## Warnings
+
+| Path | Warning |
+| --- | --- |
+| `provision.url` | `is not https; its calls carry a one-run token, so a production deployment refuses to make them` |
+
+## Delete
+
+Deleting a pool retires it. Runs its runners already hold carry on to their
+end.

@@ -1,0 +1,183 @@
+---
+type: how-to
+icon: SquarePen
+title: Run Terraform from GitHub Actions without a stored token
+description: Plan pull requests and apply the main branch from GitHub Actions, with each job exchanging its GitHub OIDC token for a short-lived workspace token.
+---
+
+Two workspace token trusts do the work: one for pull requests, which may only
+plan, and one for `main`, which may apply. You need:
+
+- A repository holding the Terraform configuration for the workspace. If you
+  don't have one, [put the workspace under Terraform](/docs/configuration/manage-spotlight-with-terraform)
+  first.
+- An owner or admin account in the workspace, to issue one short-lived token.
+
+The examples use the repository `acme/platform` and the workspace `acme`.
+
+## Define the trusts
+
+CI cannot create the trusts it signs in through. Keep them in a small Terraform
+root of their own, apart from the configuration CI applies, and apply it by hand
+once.
+
+<Steps>
+<Step>
+
+Write the root, with one trust for pull requests and one for `main`:
+
+```hcl
+data "spotlight_workspace" "acme" {
+  slug = "acme"
+}
+
+resource "spotlight_workspace_token_trust" "github_pull_requests" {
+  workspace_id = data.spotlight_workspace.acme.id
+  key          = "github-pull-requests"
+  issuer       = "https://token.actions.githubusercontent.com"
+  subject      = "repo:acme/platform:pull_request"
+  scopes       = ["plan"]
+}
+
+resource "spotlight_workspace_token_trust" "github_main" {
+  workspace_id = data.spotlight_workspace.acme.id
+  key          = "github-main"
+  issuer       = "https://token.actions.githubusercontent.com"
+  subject      = "repo:acme/platform:ref:refs/heads/main"
+  scopes       = ["configure", "secrets"]
+}
+
+output "plan_trust" {
+  value = spotlight_workspace_token_trust.github_pull_requests.id
+}
+
+output "apply_trust" {
+  value = spotlight_workspace_token_trust.github_main.id
+}
+```
+
+If the configuration manages runner pools, runner trusts or the workspace's
+runners, add `runners` to the `github-main` scopes. If applies go through a
+GitHub environment, use `repo:acme/platform:environment:<name>` as its subject
+so the environment's protection rules gate each apply.
+
+</Step>
+<Step>
+
+[Issue a workspace token](/docs/administration/issue-a-workspace-token) with `trusts`
+and every scope the trusts grant, here `["configure", "secrets", "trusts"]`,
+and the shortest expiry that lets you finish. Add `runners` if a trust grants
+it.
+
+</Step>
+<Step>
+
+Apply the root with that token:
+
+```bash
+export SPOTLIGHT_URL=https://<your Spotlight address>
+SPOTLIGHT_API_TOKEN=<workspace token> terraform apply
+terraform output
+```
+
+Note the two trust ids the output prints.
+
+</Step>
+<Step>
+
+[Revoke the token](/docs/administration/issue-a-workspace-token#revoke-a-token).
+
+</Step>
+</Steps>
+
+To change a trust later, repeat these steps: a short-lived token with `trusts`,
+an apply of this root, and a revocation.
+
+## Set the repository variables
+
+In the repository's **Settings**, under **Secrets and variables** and then
+**Actions**, add these as variables, not secrets. A trust's id is not secret,
+since only a job the trust admits can use it.
+
+| Variable | Value |
+| --- | --- |
+| `SPOTLIGHT_URL` | Your Spotlight address, with `https://` |
+| `SPOTLIGHT_PLAN_TRUST` | The id of `github-pull-requests` |
+| `SPOTLIGHT_APPLY_TRUST` | The id of `github-main` |
+
+## Remove the stored token from the configuration
+
+The provider finds everything it needs in the environment. Leave its block
+empty, or remove it:
+
+```hcl
+provider "spotlight" {}
+```
+
+If the provider block or the job still sets `token` or `SPOTLIGHT_API_TOKEN`,
+the provider stops: it never uses a stored token and a trust together.
+
+## Add the workflow
+
+Save this as `.github/workflows/terraform.yml`:
+
+```yaml
+name: terraform
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  SPOTLIGHT_URL: ${{ vars.SPOTLIGHT_URL }}
+
+jobs:
+  plan:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    env:
+      SPOTLIGHT_OIDC_TRUST: ${{ vars.SPOTLIGHT_PLAN_TRUST }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform init -input=false
+      - run: terraform plan -input=false
+
+  apply:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    env:
+      SPOTLIGHT_OIDC_TRUST: ${{ vars.SPOTLIGHT_APPLY_TRUST }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform init -input=false
+      - run: terraform apply -input=false -auto-approve
+```
+
+Keep `permissions: id-token: write`: the provider requests an OIDC token for
+each exchange. Give your state backend its credentials as you would for any
+other workflow.
+
+## Check that it works
+
+Open a pull request that changes the configuration. The `plan` job runs and
+shows the plan. Merge it, and the `apply` job applies it.
+
+If a job fails with `401`, the trust did not admit the job's token. Check that
+the trust's `subject` matches the job: `repo:acme/platform:pull_request` for a
+pull request, `repo:acme/platform:ref:refs/heads/main` for a push to `main`.
+
+If the `apply` job fails with `403`, the diagnostic names the scope its trust
+lacks. Add it to the trust's `scopes` and apply the trusts root again.
+
+## Related
+
+- [`spotlight_workspace_token_trust`](/docs/reference/terraform/workspace-token-trust): every field,
+  and the settings for GitLab, CircleCI and Buildkite.
+- [Ways in: pools, trusts and tokens](/docs/administration/ways-in-pools-trusts-and-tokens)

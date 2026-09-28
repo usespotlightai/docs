@@ -1,0 +1,130 @@
+---
+type: reference
+icon: BookText
+title: GitHub events
+description: The happenings GitHub deliveries raise, the marks and branches they find tasks by, review tasks and the App installation callback.
+---
+
+GitHub reaches Spotlight through the Spotlight GitHub App. Each delivery is
+routed to the workspace that connected the App installation it came from, and
+read into happenings. Lines react to happenings with their reactions; see
+[`spotlight_line`](/docs/reference/terraform/line).
+
+## Happenings
+
+| GitHub event | Condition | Happening | Spoken |
+| --- | --- | --- | --- |
+| `pull_request` | action `opened`, `reopened` or `ready_for_review` | `github.pull_request.opened` | no |
+| `pull_request` | action `closed`, merged | `github.pull_request.merged` | no |
+| `pull_request` | action `closed`, not merged | `github.pull_request.closed-unmerged` | no |
+| `pull_request_review` | review state `changes_requested` | `github.pull_request.changes-requested` | yes |
+| `pull_request_review` | action `submitted`, any other state | `github.pull_request.commented` | yes |
+| `issue_comment` | action `created` | `github.pull_request.commented` | yes |
+| `pull_request_review_comment` | action `created` | `github.pull_request.commented` | yes |
+| any of the four rows above | the comment or review contains `@` | also `github.pull_request.mentioned` | yes |
+| `check_suite` | action `completed`, conclusion `failure` | `github.checks.failed` | no |
+
+A spoken happening carries the words of the comment or review, with the file
+and lines it is about where there are any. Those words can answer a task that
+awaits review; see [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves).
+
+Each happening also has a label and a line of text written to the task's
+notes when the delivery carries no words:
+
+| Happening | Label | Text |
+| --- | --- | --- |
+| `github.pull_request.opened` | Pull request opened | `A pull request was opened for review.` |
+| `github.pull_request.merged` | Pull request merged | `The pull request was merged.` |
+| `github.pull_request.closed-unmerged` | Pull request closed unmerged | `The pull request was closed without being merged.` |
+| `github.pull_request.changes-requested` | Changes requested | `Changes were requested on the pull request.` |
+| `github.pull_request.commented` | Pull request commented on | `The pull request was commented on.` |
+| `github.pull_request.mentioned` | Mentioned on a pull request | `Somebody mentioned Spotlight on the pull request.` |
+| `github.checks.failed` | Checks failed | `The checks failed on the pull request.` |
+
+An `installation` delivery with action `deleted` disconnects the workspace from
+GitHub.
+
+### Deliveries from bots
+
+A delivery counts as a bot's when its sender, comment author or review author
+has GitHub user type `Bot`. The happenings a bot's delivery raises are dropped,
+except `github.pull_request.opened`.
+
+## Marks
+
+| Mark | Worn by | Value |
+| --- | --- | --- |
+| `git.pull-request` | The task that opened the pull request, from the moment it opens. | The pull request's URL. |
+| `github.review` | The task that reviews the pull request. | The pull request's URL. |
+
+Both are finding marks. A mark belongs to at most one task in a workspace.
+
+## How a happening finds its task
+
+A happening names what it concerns: a branch, marks, or both.
+
+| Concern | Taken from | Finds |
+| --- | --- | --- |
+| Branch `spotlight/<taskId>` | The pull request's head branch, or the check suite's head branch. | The task with that id. |
+| `git.pull-request` mark | The pull request's URL. | The task that opened the pull request. |
+
+Every happening except `opened` and `mentioned` that names a pull request is
+also sent a second time, concerning the `github.review` mark of that pull
+request. The task that wears that mark hears it.
+
+A branch outside `spotlight/` finds no task by its name. A delivery that names
+neither a branch nor a pull request is refused.
+
+## Review tasks
+
+`github.pull_request.opened` and `github.pull_request.mentioned` ask for a
+review. Spotlight chooses a line that:
+
+- has role `review`;
+- has no repositories, or names the pull request's repository;
+- has a review policy (`reviews`) that takes the pull request.
+
+Lines that name the repository come first, then lines in order of key.
+
+If an unfinished task already wears the pull request's `github.review` mark,
+that task hears the happening. Otherwise a new task opens on the chosen line:
+
+| Property | Value |
+| --- | --- |
+| Station | The line's first work station. |
+| Title | The pull request's title. |
+| Description | `Review <url>`, then the pull request's description. |
+| Mark | `github.review` with the pull request's URL. |
+
+A line's review policy (`reviews`) decides which pull requests it takes. See
+[Review policy fields](/docs/reference/terraform/line#reviews-fields).
+
+## Built-in tools
+
+The `pull-request`, `review-comment` and `review` tools are described in
+[Built-in tools and skills](/docs/reference/built-ins/built-in-tools-and-skills).
+
+## Installation callback
+
+After the App is installed, GitHub sends the browser to `/github/installed` on
+the Spotlight address, with these query parameters:
+
+| Parameter | Value |
+| --- | --- |
+| `installation_id` | The installation's id. |
+| `setup_action` | `request` when an organisation owner still has to approve the App. |
+| `state` | The workspace and team the install started from, set by Spotlight. |
+
+The page connects the installation with
+`POST /api/workspaces/{slug}/github`, body `{"installationId": "<id>"}`.
+
+| Status | When |
+| --- | --- |
+| `204` | Connected. |
+| `403` | Not an owner or admin, or not an installation the person administers. |
+| `409` | The installation is already connected to another workspace. |
+
+One installation connects one workspace. The connection covers every team in
+the workspace. See
+[GitHub connection](/docs/reference/roles-and-permissions#github-connection)
+for who may connect.

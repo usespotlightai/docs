@@ -1,0 +1,148 @@
+---
+type: concept
+icon: Lightbulb
+title: How outside events reach a task
+description: How Spotlight decides which task a GitHub or Slack event is about, why some marks are used to find a task and others never are, and what an event can do once it arrives.
+---
+
+Most of what happens to a task in Spotlight happens inside Spotlight: an agent
+hands it on, or a person moves it. But a lot of the work a task stands for
+happens somewhere else. A pull request is reviewed on GitHub, a check fails in
+CI, someone replies in a Slack thread. Each of those is an event about a task,
+and Spotlight has to work out which task, and then what the event should do to
+it.
+
+## Integrations turn events into happenings
+
+Spotlight does not read GitHub or Slack payloads directly when it decides what
+to do with a task. An integration reads them first. GitHub's is built in; a
+team defines others, such as Slack or an issue tracker, as
+[integration resources](/docs/reference/terraform/integration). Either way, the
+integration's job is to take a delivery, check it really came from where it
+says, and raise a happening from it.
+
+A happening is Spotlight's own account of the event: a name such as
+`github.pull_request.merged` or `slack.app_mention`, some words to show on the
+task, and a set of marks that say what the event is about. Everything after
+this point works on happenings, never on the original payload, so a line can
+react to a Slack mention and a GitHub merge with the same kind of rule.
+
+Every webhook an integration accepts is verified, and there is no way to
+declare one unsigned, because agents act on whatever a delivery says. A forged
+delivery could put a wrong note on a task, or start a run with words an
+attacker chose.
+
+An integration also recognises Spotlight's own echoes. When Spotlight posts a
+question to a Slack thread or comments on a pull request, the host sends that
+post back as an event. The integration recognises those deliveries as
+Spotlight's own, and Spotlight drops the happenings they would raise, so a task
+does not hear itself talk.
+
+## Finding the task
+
+A happening finds its task in one of two ways. Branches are the simpler:
+Spotlight names the branch it works a task on after the task itself, so an event
+that carries a branch name, such as a failed check suite, says directly which
+task it concerns.
+
+Marks cover everything else. A mark is a handle a task is known by in the
+outside world, written as a kind and a value: the pull request a task opened,
+the review it is doing, the Slack thread it started in. When a task opens a pull
+request it starts wearing that pull request's mark, and any later happening that
+carries the same mark finds it.
+
+A mark names one task in a workspace. If a new task comes to wear a mark that
+another task already wears, the new task takes it over. This keeps the question
+"which task is this about" from ever having two answers, and it is why an
+integration opens a new task on one line, never on every line that might want
+it.
+
+## Why some marks never find anything
+
+Not every mark is a good handle. A Slack mention arrives with the thread it
+started and the channel it was posted in. The thread identifies one piece of
+work. The channel does not: a team might open dozens of tasks from the same
+channel.
+
+Spotlight keeps these apart. A mark is either a finding mark, used to look the
+task up, or an ambient mark, declared with `find: false`. A task wears ambient
+marks like any other, and an integration can read them later, for example to
+decide which channel to post a question in. But an ambient mark is never used
+to find a task. Many tasks come from the same channel, so matching by one would
+tie a new message to whichever task happened to be wearing it.
+
+Ambient marks still follow the rule that a mark names one task, so the channel
+mark is always worn by the task most recently opened there, and an integration
+that reads the channel from an older task no longer finds it. The channel is
+still never used to decide which task a new message is about.
+
+This distinction came from a real failure. When a channel was a finding mark,
+the second mention in a channel matched the task opened by the first. If that
+task was already completed, the new mention did nothing at all, and nobody could
+see why. Separating how a task is found from what a task wears removes that kind
+of mistake, though it leaves one more field to think about when writing an
+integration: every mark has to be one or the other, and the default is to find.
+
+## When nothing is found
+
+A happening that finds no task can open one, if the integration says so. It
+names a line role, such as `delivery`, and optionally a station. Spotlight
+opens the task on the team's line with that role, at the named station or at
+the line's first work station, and the new task wears all of the happening's
+marks, finding and ambient alike. From then on, later events carrying the same
+finding marks reach this task.
+
+Opening by role, not by line, means an integration says what kind of work an
+event starts, and the team decides where that work lands by which line holds
+the role.
+
+A happening that finds nothing and opens nothing is dropped. Pull request
+review requests take a slightly different route, because a line's review policy
+decides whether to take them at all; [Have Spotlight review pull requests](/docs/integrations/review-pull-requests) covers it.
+
+## What a happening does to the task it finds
+
+Once a happening has its task, the line's reactions decide what it does. A
+reaction is a rule on the line: this happening, perhaps only while the task
+stands at this station, moves the task to that station. On Delivery, for
+example, a failed check sends the task back to implementation; the other
+reactions are listed in [Built-in lines](/docs/reference/built-ins/built-in-lines). When a
+reaction moves a task, the move works like a person's: a queued run is
+withdrawn, a working run is asked to stop, and if the new station has an agent,
+a new run starts with the event's words on the trail. A move into completed also
+finishes the task.
+
+A task at completed hears nothing more. A happening the line has no rule for
+leaves the task where it is.
+
+There is one case that needs no rule. If the task is waiting on a person, and
+the happening carries words someone said, such as a reply in the task's Slack
+thread, those words answer the waiting question in place. The run resumes
+exactly as if the person had answered in the inbox. A reaction that moves the
+task still wins over this: a request for changes on GitHub sends the task to
+code review even if it was waiting on a question. [Asking a
+person](/docs/inbox/asking-a-person) covers the questions themselves.
+
+A reply finds its task only when both marks name the thread's first message,
+as [Open tasks from Slack and post questions back](/docs/integrations/open-tasks-from-slack) shows.
+
+## A delivery is heard once
+
+Webhook senders retry. GitHub and Slack both send a delivery again if they are
+unsure the first one arrived, and a poll can see the same item twice. If
+Spotlight acted on every copy, one merge could move a task twice, or one reply
+could answer two questions.
+
+So Spotlight records each happening it has acted on, keyed by the delivery it
+came in and what it says, in the same transaction as the reaction itself. A
+second copy finds the record and is ignored. The record is kept for 30 days.
+
+Hooks can also cause events that come back as new deliveries, and a chain of
+those can loop. That is guarded separately, by following the chain of causes;
+see the [`spotlight_hook`](/docs/reference/terraform/hook) reference for the limits.
+
+A task can be moved by agents and people as well as by events, and [Lines,
+stations and tasks](/docs/getting-started/lines-stations-and-tasks) describes how
+the three share one task without overwriting each other's decisions. The names
+of GitHub's happenings and the marks it sets are listed in [GitHub
+events](/docs/reference/events/github-events).

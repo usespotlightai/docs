@@ -1,0 +1,165 @@
+---
+type: reference
+icon: BookText
+title: Change stacks and decisions
+description: How a run's diff becomes a change stack of cohorts and layers, how its layers are checked, and the decisions Spotlight draws from a run, with their kinds, standing and disputes.
+---
+
+A change stack is a run's diff arranged for review. A decision is a choice an
+agent made during a run, drawn from what it said. A station turns each on in
+its [station fields](/docs/reference/terraform/line#station-fields):
+
+| Station field | Effect |
+| --- | --- |
+| `diffs: true` | After each run, a change stack is drafted for each checkout that changed. |
+| `check` | Each change stack drafted at the station is checked with this command, so it has effect only with `diffs: true`. With both set, every repository of the line must have `setup`. |
+| `decisions: true` | After each completed run, decisions are drafted from it. |
+
+Both are drafted by Spotlight after the run, not by the agent. Both need the
+deployment to have drafting set up; where it does not, a change stack is
+refused with `Change stacks are not set up on this Spotlight deployment`, and
+no decisions are drafted.
+[Reviewing an agent's changes](/docs/runs/reviewing-an-agents-changes)
+gives the reasons.
+
+## Change stacks
+
+### States
+
+| State | Meaning |
+| --- | --- |
+| `drafting` | The diff is received and the stack is being drafted. |
+| `ready` | Every change in the diff is placed in exactly one layer. |
+| `failed` | Drafting did not finish. The stack carries the reason. |
+
+| Message | Cause |
+| --- | --- |
+| `The change stack could not be drafted.` | Every drafting attempt failed. |
+| `Drafting was interrupted before it finished.` | Drafting stopped without a reason. |
+
+Drafting is attempted at most 4 times. Each attempt may take 30 minutes, and
+the wait before the next starts at 30 seconds and doubles. A diff is at most
+6 MiB and 2,000 changes.
+
+### Structure
+
+A stack is an ordered list of cohorts. A cohort is an ordered list of layers.
+
+| Part | Holds |
+| --- | --- |
+| Cohort | A kind, a title and an intent. |
+| Layer | A title, a summary, the changes it places, a note on each file it changes, and the earlier layers it depends on with the reason for each. |
+
+| Cohort kind | Holds |
+| --- | --- |
+| `change` | The changes a reviewer reads, in layers that build on one another. |
+| `incidental` | Lockfiles, generated files, test snapshots, pure renames and formatting-only changes. Spotlight places these itself. |
+
+A diff whose changes are all incidental gives a ready stack at once.
+
+### Checks
+
+A station's `check` command is run against the stack in a sandbox of its own,
+from the line's runner image, on a runner that meets the run's placement.
+
+| Step | Checked tree |
+| --- | --- |
+| The whole change | The run's diff applied in full. Always first. |
+| Each `change` layer, in order | The incidental changes and every layer up to and including this one. |
+
+- Each repository's `setup` runs before the first step, and again before any
+  step whose lockfile changes differ from the step before.
+- When the whole change fails, the layers are not checked.
+- When the whole change passes and a layer fails, the stack is redrafted once
+  and checked again.
+- A step may take 5 minutes, and a check 60 minutes in all. The last 16,000
+  characters of each step's output are kept.
+
+| Check state | Meaning |
+| --- | --- |
+| `waiting` | Waiting for a runner to claim and run it. |
+| `checked` | Every step ran. Each step passed or failed. |
+| `skipped` | The check did not run. It carries a skip code. |
+
+| Code | Cause |
+| --- | --- |
+| `no-base` | Spotlight does not know where the run began, so nothing could be checked against it. |
+| `no-checkout` | Spotlight does not know which checkout the changes are from. |
+| `checkout-failed` | Spotlight could not lay out a copy of the checkout to check. |
+| `setup-failed` | The checkout could not be made ready before the check ran. |
+| `no-room` | The runner had no room to check the layers. |
+| `out-of-time` | There was no time left to check the layers. |
+| `no-image` | The runner image the line names could not be pulled. |
+| `nobody-checked` | No runner checked the layers within 60 minutes. |
+| `unprovisioned` | No runner could be provisioned to check the layers. |
+
+A push pool receives a check as provision work of kind `check`. See
+[Provision call](/docs/reference/events/provision-call).
+
+### Where a change stack is shown
+
+- The run's change stack page in the web app, reached from the task's
+  "Changes" property. See [Web app](/docs/reference/app/web-app).
+- A comment on the task's pull request, kept up to date with the latest ready
+  stack, when the workspace is connected to GitHub.
+
+## Decisions
+
+### Kinds
+
+| Kind | Label in the pull request comment |
+| --- | --- |
+| `trade-off` | Trade-off |
+| `assumption` | Assumption |
+| `limitation` | Limitation |
+| `rejected-approach` | Rejected approach |
+| `deviation` | Deviation |
+
+### Fields
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `kind` | string | One of the kinds above. |
+| `title` | string | At most 120 characters. |
+| `why` | string | The reasons, at most 2,000 characters. |
+| `alternatives` | array of strings | What was weighed and set aside. At most 5, each at most 300 characters. |
+| `paths` | array of strings | The files the decision bears on. 1 to 20. |
+| `steps` | array of integers | The steps of the run the decision is drawn from. 1 to 20. |
+| `disputes` | array of objects | Each has the file, the person and the reason. |
+
+A drafted decision that breaks these limits is dropped.
+
+### Drafting
+
+- Decisions are drafted after a run completes at a station with
+  `decisions: true`, unless the task reviews a pull request.
+- A task has one set of decisions. Each later drafting replaces it.
+- Drafting is attempted as for a change stack. When every attempt fails, the
+  task keeps the decisions it had.
+
+### Standing
+
+| Standing | Meaning |
+| --- | --- |
+| `proposed` | Drafted, and open to disputes. Later runs may replace it. |
+| `stands` | The task's pull request merged. Nothing is drafted for the task again. |
+
+When the pull request is closed without merging, the decisions are discarded.
+Decisions that stand are listed by
+`GET /api/workspaces/{slug}/decisions`, filtered by `repository`, `path`,
+`since` and `until` (merge times).
+
+### Disputes
+
+A member of the task's team disputes a decision by replying to it on one of
+its files in the change stack page. A reason is 1 to 1,000 characters.
+
+### Where decisions are shown
+
+- The change stack page, beside the files each decision bears on.
+- A comment on the task's pull request, when the workspace is connected to
+  GitHub. It is withdrawn when the task has no decisions.
+- The briefing of each later run on the task, under `## Decisions on record`,
+  with each dispute. A run at a station with `decisions: true` is also briefed
+  under `## Say what you decide`. See
+  [Briefing](/docs/reference/hosts/sandbox#briefing).

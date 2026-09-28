@@ -1,0 +1,86 @@
+---
+type: reference
+icon: BookText
+title: Provision call
+description: The request Spotlight sends a push pool for each run or check, its signature and body, and how a failed call is retried.
+---
+
+For each run or check a push pool is to serve, Spotlight calls the pool's
+`provision.url` to start a runner. The pool, its URL and its secret are set on
+[`spotlight_runner_pool`](/docs/reference/terraform/runner-pool).
+
+## Request
+
+```text
+POST <provision.url>
+content-type: application/json
+webhook-id: <runner id>
+webhook-timestamp: <Unix seconds>
+webhook-signature: v1,<signature>
+```
+
+The signature is made as for a hook's [HMAC](/docs/reference/terraform/hook#hmac)
+signing, with `provision.secret` as the secret.
+
+## Body
+
+```json
+{
+  "type": "work.provision",
+  "timestamp": "<ISO 8601 time>",
+  "data": {
+    "kind": "run",
+    "runId": "<run id>",
+    "stackId": null,
+    "taskId": "<task id>",
+    "workspaceId": "<workspace id>",
+    "pool": "<pool key>",
+    "labels": ["<label>"],
+    "image": "<image reference or null>",
+    "runner": { "id": "<runner id>", "token": "<one-run token>" },
+    "spotlightUrl": "<Spotlight address>",
+    "claimBy": "<ISO 8601 time>"
+  }
+}
+```
+
+| Field | Description |
+| --- | --- |
+| `kind` | `run` or `check`. |
+| `runId` | The run. |
+| `stackId` | The change stack, for a `check`; otherwise null. |
+| `taskId` | The task, or null. |
+| `pool` | The pool's key. |
+| `labels` | The placement the work asks for. |
+| `image` | The image the line names, or null. |
+| `runner.id`, `runner.token` | The runner to start and its one-run token. |
+| `spotlightUrl` | The address the runner connects to. |
+| `claimBy` | The runner must claim the work by this time, 5 minutes after the work was reserved for it. |
+
+## Delivery
+
+| Item | Value |
+| --- | --- |
+| Timeout | 10 seconds. |
+| Redirects | Not followed. |
+| Accepted | Any `2xx` response. |
+| Hosts | Only hosts on the deployment's outbound allow-list. |
+
+A run that wears secrets is never provisioned by a push pool.
+
+## Failures
+
+When several push pools fit the work, a failed call tries the next pool. When
+the last pool fails, the work's provisioning fails:
+
+| Code | Cause | Retried |
+| --- | --- | --- |
+| `unreachable` | The call could not be made. | yes |
+| `refused` | The response was not `2xx`. | yes |
+| `lapsed` | The pool accepted the work, but no runner claimed it by `claimBy`. | yes |
+| `not-allowed` | The URL's host is not allowed, or the URL is not `https` where that is refused. | no |
+| `unusable` | The pool's provision secret cannot be opened. | no |
+| `harness-missing` | The runner the pool started does not have the work's harness installed. | no |
+
+A retried failure gets up to 5 attempts in all, 5, 10, 20 and 40 seconds
+apart.

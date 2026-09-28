@@ -1,0 +1,135 @@
+---
+type: reference
+icon: BookText
+title: spotlight_workspace_token_trust
+description: The fields of a workspace token trust, the workloads it admits, and the exchange that mints short-lived workspace tokens through it.
+---
+
+The `spotlight_workspace_token_trust` resource, and the API's
+`workspace-token-trust` kind: a trust that lets a CI workload exchange the OIDC
+token its platform issues for a short-lived
+[workspace token](/docs/reference/api/workspace-token).
+
+| Kind | Endpoint | Terraform | Address |
+| --- | --- | --- | --- |
+| `workspace-token-trust` | `/api/resources/workspaces/{workspaceId}/token-trusts` | `spotlight_workspace_token_trust` | `<key>` |
+
+See [Resource API](/docs/reference/api/resource-api) for the operations, headers
+and errors every kind shares.
+
+## Example
+
+```hcl
+resource "spotlight_workspace_token_trust" "github_main" {
+  workspace_id = spotlight_workspace.acme.id
+  key          = "github-main"
+  issuer       = "https://token.actions.githubusercontent.com"
+  subject      = "repo:acme/platform:ref:refs/heads/main"
+  claims = {
+    repository_owner = "acme"
+  }
+  scopes           = ["configure", "secrets"]
+  lifetime_minutes = 15
+}
+```
+
+## Fields
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `key` | string | required | Lowercase words joined by dashes, at most 64 characters. Fixed: an update that changes it is refused; Terraform replaces the resource. |
+| `issuer` | string | required | The issuer the workload's token must name in `iss`. `https`, or `http` only for `localhost`, `127.0.0.1` or `[::1]`. No query, fragment or credentials. At most 255 characters. |
+| `audience` | string | `spotlight` | A value the token's `aud` must hold. One word, at most 255 characters. |
+| `subject` | string | required | A pattern the token's `sub` must match. See [patterns](#patterns). |
+| `claims` | map of name to string | `{}` | Further claims the token must carry, each matching its pattern. At most 16. See [patterns](#patterns). |
+| `scopes` | array of strings | required | The scopes of every token the trust mints, as for a [workspace token](/docs/reference/api/workspace-token#scopes). |
+| `lifetimeMinutes` | integer | `15` | 1 to 60. How long a minted token admits its bearer. |
+| `definedBy` | string | read-only | The person who defined the trust, or who issued the token that defined it. |
+
+## Patterns
+
+`subject` and each value of `claims` is one word of at most 255 characters,
+with no whitespace. `*` stands for any run of characters, colons included.
+
+A `subject` with a `*` must name its owner before the first `*`: the text
+before it must contain `/`.
+
+| `subject` | Accepted |
+| --- | --- |
+| `repo:acme/platform:ref:refs/heads/main` | yes |
+| `repo:acme/platform:*` | yes |
+| `repo:acme/*` | yes |
+| `repo:*` | no |
+| `*` | no |
+
+A refused subject reads `names the owner it admits before any *, as in repo:acme/* or repo:acme/platform:*; a trust open to every owner would admit any workload its issuer signs a token for`.
+
+Claim names are lowercase letters, digits and `_`, starting with a letter, at
+most 64 characters. `iss`, `sub`, `aud`, `exp`, `nbf`, `iat` and `jti` may not
+be named. Only claims whose value is a string can match.
+
+## Platform subjects
+
+| Platform | Issuer | `sub` |
+| --- | --- | --- |
+| GitHub Actions, pull request | `https://token.actions.githubusercontent.com` | `repo:<owner>/<repository>:pull_request` |
+| GitHub Actions, push | `https://token.actions.githubusercontent.com` | `repo:<owner>/<repository>:ref:refs/heads/<branch>` |
+| GitHub Actions, environment | `https://token.actions.githubusercontent.com` | `repo:<owner>/<repository>:environment:<name>` |
+| GitLab CI/CD | `https://gitlab.com`, or the instance's address | set by the platform |
+| CircleCI | `https://oidc.circleci.com/org/<organization id>` | set by the platform |
+| Buildkite | `https://agent.buildkite.com` | set by the platform |
+
+## Who may define a trust
+
+Writing a trust needs the `manage-token-trusts` permission. See
+[Roles and permissions](/docs/reference/roles-and-permissions).
+
+A token may define a trust only with scopes it holds itself, and may change a
+trust only when it holds both the trust's current scopes and the new ones.
+Otherwise the write is refused with `The <key> token trust would grant scopes the token defining it does not hold`.
+A person who is an owner or admin is not limited this way.
+
+## Exchange
+
+```text
+POST /api/workspace-tokens/exchange
+```
+
+Needs no credentials. Takes an optional `Spotlight-Client` header.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `trust` | string | The trust's `id`. |
+| `token` | string | The OIDC token the platform issued the workload. |
+
+### Workload token verification
+
+The workload's token is verified against the keys the issuer publishes at
+`<issuer>/.well-known/openid-configuration`. It must be signed with `RS256`,
+`RS384`, `RS512`, `ES256`, `ES384` or `PS256`, carry `sub` and `exp`, and be
+current within 30 seconds. A [runner trust](/docs/reference/terraform/runner-trust#admission)
+verifies a host's token the same way.
+
+A `200` response:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `token` | string | The workspace token, sent as `Authorization: Bearer <token>`. |
+| `tokenId` | string | Its id. |
+| `workspaceId` | string | The workspace it acts in. |
+| `scopes` | array of strings | The trust's scopes. |
+| `expiresAt` | string | After this RFC 3339 time it admits nobody. |
+
+Every refusal is `401` with `No such trust, a token its issuer did not sign for its audience, a workload it does not admit, or a closed workspace`.
+
+Each exchange is recorded as a
+[configuration change](/docs/reference/api/resource-api#configuration-changes): a
+created workspace token, with the trust, the subject, the scopes and the
+expiry.
+
+## Minted tokens
+
+- A minted token acts for the trust's `definedBy`, within the trust's scopes.
+- It is not listed among the workspace's tokens.
+- Any change to the trust's terms stops every token minted before the change.
+- Deleting the trust stops every token it minted, from that moment.

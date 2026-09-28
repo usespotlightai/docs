@@ -1,0 +1,112 @@
+---
+type: how-to
+icon: SquarePen
+title: Have Spotlight review pull requests
+description: Have the Review line review a pull request when someone mentions Spotlight on it, or every pull request as it opens, and skip the ones you don't want reviewed.
+---
+
+A review runs on a host like any other work, against a pull request the
+GitHub App can see. You need:
+
+- The GitHub App installed on the repositories. If it isn't,
+  [connect GitHub](/docs/integrations/connect-github) first.
+- A host serving the workspace. If you don't have one,
+  [run a host](/docs/hosts/run-a-host).
+
+## Ask for a review by mention
+
+The built-in Review line already reviews a pull request when someone mentions
+`@spotlight` in a comment or review on it. Write a comment on the pull request:
+
+```text
+@spotlight please review this
+```
+
+A task for the pull request opens on the Review line, titled with the pull
+request's title. When its run finishes, the review appears on the pull request,
+with comments on the lines it concerns.
+
+## Change which pull requests are reviewed
+
+Everything else is set in the `reviews` block of the Review line's
+`spotlight_line` resource. If you don't manage the workspace with Terraform yet,
+[start from a download of it](/docs/configuration/manage-spotlight-with-terraform).
+
+To review every pull request as it opens, set `start`:
+
+```hcl
+resource "spotlight_line" "core_review" {
+  team_id = spotlight_team.core.id
+  key     = "review"
+  name    = "Review"
+  role    = "review"
+
+  reviews {
+    start = "opened"
+  }
+
+  # station blocks as before
+}
+```
+
+A mention still asks for a review with `start = "opened"`. Drafts are skipped
+until they are marked ready for review.
+
+To have it respond to a different handle, set `mention`:
+
+```hcl
+reviews {
+  mention = "@acme-review"
+}
+```
+
+To skip pull requests by certain authors, such as bots, list their GitHub
+logins in lower case:
+
+```hcl
+reviews {
+  start = "opened"
+
+  skip {
+    authors = ["dependabot[bot]", "renovate[bot]"]
+  }
+}
+```
+
+To review pull requests Spotlight opened itself, set
+`skip { spotlight = false }`. To review drafts as they open with
+`start = "opened"`, set `skip { drafts = false }`. A mention on a draft asks
+for a review either way.
+
+Run `terraform apply`.
+
+If Terraform reports that the line "reviews pull requests, which only a line
+whose role is review does", you added `reviews` to a line without
+`role = "review"`. A team has one line with that role.
+
+If you remove the `reviews` block, the line stops reviewing pull requests.
+
+## Limit reviews to some repositories
+
+With no repositories, the Review line reviews pull requests in every repository
+the GitHub App is installed on. To limit it, add a `repository` block for each
+repository it should review:
+
+```hcl
+resource "spotlight_line" "core_review" {
+  # team_id, key, name, role and reviews as above
+
+  repository {
+    name = "acme/web"
+  }
+}
+```
+
+Run `terraform apply`.
+
+## Related
+
+- [Reviews fields](/docs/reference/terraform/line#reviews-fields), with their defaults.
+- [GitHub events](/docs/reference/events/github-events): the pull request events
+  Spotlight hears.
+- [Reviewing an agent's changes](/docs/runs/reviewing-an-agents-changes)

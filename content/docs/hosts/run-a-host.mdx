@@ -1,0 +1,132 @@
+---
+type: how-to
+icon: SquarePen
+title: Install a host
+description: Install spotlight host on a Linux or macOS machine so it starts sandboxes for a pull pool's runs.
+---
+
+A host takes work from one pull pool and starts a sandbox for each run it
+claims. Before you install one, have ready:
+
+- The pool's token. If you don't have one, [create a pull pool](/docs/hosts/create-a-pull-pool)
+  first.
+- Docker, Podman, OrbStack or Colima, running.
+- `curl` or `wget`, and `sha256sum` or `shasum`, for the install script.
+- `git`, which the host uses to keep mirrors of the repositories runs check out.
+- An API key for the harness your lines use, such as an Anthropic key for
+  Claude Code.
+
+## Install the host
+
+Run the install script with the pool's token. Put your
+[Spotlight address](/docs/reference/glossary#spotlight-address) in place of
+`<your Spotlight address>`, as the command on the Runners page does:
+
+```bash
+curl -fsSL https://<your Spotlight address>/api/install.sh | SPOTLIGHT_TOKEN=<pool token> sh
+```
+
+To run more than one sandbox at a time, set the capacity in the same command:
+
+```bash
+curl -fsSL https://<your Spotlight address>/api/install.sh | SPOTLIGHT_TOKEN=<pool token> SPOTLIGHT_CAPACITY=4 sh
+```
+
+On Linux, run it as root to install a system service with its configuration
+in `/etc/spotlight`, or as yourself to install a service for your user, with
+its configuration in `~/.spotlight`. On a Mac, run it as yourself: the host
+runs as a launchd agent for your user, beside Docker Desktop, OrbStack or
+Colima.
+
+The script ends with:
+
+```text
+spotlight host: serving https://<your Spotlight address>: this machine shows on the workspace's Runners page once it reports
+```
+
+If you install as yourself on Linux and the machine should keep serving after
+you log out, run the command the script prints:
+
+```bash
+loginctl enable-linger $USER
+```
+
+If you want to run the host under your own supervisor instead of a service,
+add `SPOTLIGHT_NO_SERVICE=1` to the install command. The script then prints the
+command to start it.
+
+## Give the host your harness key
+
+Write the key to `sandbox.env`, beside the host's configuration.
+
+<Tabs items={['As root', 'As yourself']}>
+<Tab value="As root">
+
+```bash
+echo 'ANTHROPIC_API_KEY=<your key>' | sudo tee -a /etc/spotlight/sandbox.env
+sudo chmod 600 /etc/spotlight/sandbox.env
+```
+
+</Tab>
+<Tab value="As yourself">
+
+```bash
+echo 'ANTHROPIC_API_KEY=<your key>' >> ~/.spotlight/sandbox.env
+chmod 600 ~/.spotlight/sandbox.env
+```
+
+</Tab>
+</Tabs>
+
+The sandbox never sees `host.env`, so keys go in `sandbox.env` only. For
+Codex, Cursor or a Claude subscription, see
+[Give hosts your harness keys](/docs/hosts/give-sandboxes-your-harness-keys).
+
+## Restart the host
+
+The host reads its settings when it starts. Run `spotlight host install` again
+to restart the service:
+
+<Tabs items={['As root', 'As yourself']}>
+<Tab value="As root">
+
+```bash
+sudo /usr/local/bin/spotlight host install
+```
+
+</Tab>
+<Tab value="As yourself">
+
+```bash
+~/.spotlight/bin/spotlight host install
+```
+
+If `/usr/local/bin` was writable when you installed, the binary is at
+`/usr/local/bin/spotlight` instead.
+
+</Tab>
+</Tabs>
+
+## Check that it is serving
+
+Open **Runners** in the workspace sidebar. The machine appears under **Hosts**
+with its name, the pool it serves, and the harnesses its runner image holds. Its
+status reads **Idle** until it claims a run.
+
+If the machine does not appear within a minute, read the host's log:
+
+| Service | Log |
+| --- | --- |
+| systemd, as root | `journalctl -u spotlight-host` |
+| systemd, as yourself | `journalctl --user -u spotlight-host` |
+| launchd | `~/Library/Logs/spotlight-host.log` |
+
+The host exits with code `3` when Spotlight refuses its token. Check that the
+token belongs to a pool that still exists and has not been rotated.
+
+## Related
+
+- [Host settings](/docs/reference/hosts/host-configuration): every setting the
+  host reads.
+- [Install script](/docs/reference/cli/install-script)
+- [Why every run gets a fresh sandbox](/docs/hosts/why-every-run-gets-a-fresh-sandbox)

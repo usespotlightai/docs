@@ -1,0 +1,61 @@
+---
+type: reference
+icon: BookText
+title: spotlight_team
+description: The fields of a team, and who may create, change and delete one.
+---
+
+The `spotlight_team` resource, and the team resource of the API: a group
+inside a workspace that holds lines, skills, harness profiles, integrations,
+hooks and chats.
+
+| Kind | Endpoint | Terraform | Address |
+| --- | --- | --- | --- |
+| `team` | `/api/resources/workspaces/{workspaceId}/teams` | `spotlight_team` | `<key>` |
+
+See [Resource API](/docs/reference/api/resource-api) for the operations, headers
+and errors every kind shares.
+
+## Example
+
+```hcl
+resource "spotlight_team" "core" {
+  workspace_id = spotlight_workspace.acme.id
+  key          = "core"
+  name         = "Core"
+}
+```
+
+## Fields
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `key` | string | required | Names the team within its workspace, and prefixes the address of everything it holds. Lowercase words joined by dashes, at most 64 characters. Fixed: an update that changes it is refused; Terraform replaces the resource. |
+| `name` | string | required | What the team is called. 1 to 100 characters. |
+| `workspaceId` | string | read-only | The workspace that holds the team. |
+
+## Rules
+
+| Operation | Rule |
+| --- | --- |
+| create | Needs `configure`. The team holds nothing. |
+| update | Needs `configure`. Changes `name` only. |
+| delete | Needs `configure`. Refused with `409` `in-use` while the team holds any line, skill, harness profile, integration or hook. |
+| list | Every team of the workspace. |
+| import | `GET /api/resources/workspaces/{workspaceId}/teams/import?address=<key>` |
+
+An in-use refusal names what is left, as in
+`The core team still holds line delivery; delete those first`. See
+[Roles and permissions](/docs/reference/roles-and-permissions) for who holds
+each permission.
+
+A team created through the resource API or Terraform has no lines. The first
+team of a workspace created in the web app starts with two; see
+[A workspace created in the web app](/docs/reference/terraform/workspace#a-workspace-created-in-the-web-app).
+
+## In Terraform
+
+- `spotlight_team` creates, changes and deletes a team. Its import id is
+  `<workspace id>/<key>`.
+- The data source `spotlight_team` reads a team without managing it. See
+  [Provider](/docs/reference/terraform/terraform-provider#data-sources).

@@ -1,0 +1,108 @@
+---
+type: reference
+icon: BookText
+title: Built-in tools and skills
+description: The tools and skills Spotlight gives runs itself, their inputs, when each is given, and the catalog of tools and skills by plan.
+---
+
+Besides the tools an [integration](/docs/reference/terraform/integration) offers,
+Spotlight has tools and skills of its own. An agent calls a tool with
+`spotlight <tool>`; see [Agent commands](/docs/reference/cli/agent-commands).
+
+## Built-in tools
+
+| Tool | Given to | Also gives the skill |
+| --- | --- | --- |
+| `pull-request` | Runs at a station that lists it in `tools`. | `spotlight-pull-request` |
+| `review-comment` | Runs at a station that lists it in `tools`. | `spotlight-review` |
+| `review` | Runs at a station that lists it in `tools`. | `spotlight-review` |
+| `propose-task` | Every chat run. A station cannot give it. | none |
+
+In the input tables, a piped input may come from standard input, as described
+under [spotlight &lt;tool&gt;](/docs/reference/cli/agent-commands#spotlight-tool).
+
+### pull-request
+
+Opens a pull request for the task's branch, `spotlight/<taskId>`, into the
+repository's default branch (`main` if GitHub names none). If a pull request is
+already open for the branch, that one is returned. The task then wears the
+`git.pull-request` [mark](/docs/reference/events/github-events#marks).
+
+| Input | Type | Required | Piped | Description |
+| --- | --- | --- | --- | --- |
+| `title` | string | yes | no | What it does. |
+| `body` | string | no | yes | The detail, as Markdown. |
+| `repository` | string | no | no | Which of the line's repositories, where it works several. |
+
+### review-comment
+
+Leaves a comment on a line of the pull request the task reviews. The comment is
+held until the review is submitted.
+
+| Input | Type | Required | Piped | Description |
+| --- | --- | --- | --- | --- |
+| `path` | string | yes | no | The file, from the root of the repository. |
+| `line` | number | yes | no | The line it is about, or the last of several. |
+| `start-line` | number | no | no | The first line, where it is about several. |
+| `side` | string | no | no | `new` for a line the pull request leaves, `old` for one it removes. |
+| `body` | string | yes | yes | What is wrong and what would fix it, as Markdown. |
+
+### review
+
+Submits the comments left so far as one review of the pull request the task
+reviews.
+
+| Input | Type | Required | Piped | Description |
+| --- | --- | --- | --- | --- |
+| `verdict` | string | no | no | `comment`, `approve` or `request-changes`. |
+| `body` | string | no | yes | What the review comes down to, as Markdown. |
+
+### propose-task
+
+Proposes a task in the chat the run works for. Nothing is created until the
+person accepts the proposal. See
+[Proposals](/docs/reference/app/tasks-runs-and-the-inbox#proposals).
+
+| Input | Type | Required | Piped | Description |
+| --- | --- | --- | --- | --- |
+| `line` | string | yes | no | The key of the line it belongs on. |
+| `station` | string | yes | no | The key of the station on that line to start it at. |
+| `title` | string | yes | no | What the task is, in a line. |
+| `description` | string | no | yes | What whoever works it needs to know, as Markdown. |
+
+## Built-in skills
+
+Spotlight gives its own skills wherever they apply. A station may not name a
+skill starting `spotlight-`.
+
+| Skill | Given to |
+| --- | --- |
+| `spotlight-handover` | Every run at a station. |
+| `spotlight-pull-request` | Runs given the `pull-request` tool. |
+| `spotlight-review` | Runs given the `review-comment` or `review` tool. |
+
+A run is also given the tools listed in the `tools` of each team skill its
+station gives. See [`spotlight_skill`](/docs/reference/terraform/skill).
+
+## Catalog
+
+Spotlight publishes catalog tools and skills, named
+`catalog.<name>@<version>`. A station gives one by that exact name in its
+`tools` or `skills`.
+
+| Item | Kind | Plan | Inputs or uses |
+| --- | --- | --- | --- |
+| `catalog.web-search@1.0.0` | tool | `team` | `query` (string, required) |
+| `catalog.web-search@1.1.0` | tool | `team` | `query` (string, required), `limit` (number) |
+| `catalog.fetch-page@1.0.0` | tool | `free` | `url` (string, required) |
+| `catalog.research@1.0.0` | skill | `team` | uses `catalog.web-search@1.1.0` and `catalog.fetch-page@1.0.0` |
+
+A workspace's plan is `free`, `team` or `enterprise`, and each plan includes
+the ones before it. A workspace with no plan set, or whose plan has lapsed,
+is on `free`.
+
+- A line that gives a catalog item the workspace's plan does not include is
+  refused when it is written.
+- A run at such a station is refused.
+- A catalog skill is laid out in the folder `spotlight-catalog-<name>`, and
+  brings the catalog tools it uses.

@@ -1,0 +1,190 @@
+---
+type: how-to
+icon: SquarePen
+title: Provision runners from your own platform
+description: Have Spotlight call your endpoint for each run, and start a one-run container there instead of keeping hosts running.
+---
+
+A push pool has no hosts. For each run or check it is to serve, Spotlight calls
+an HTTPS endpoint of yours, and the endpoint starts a container that does that
+one piece of work and exits. Use it when your platform starts containers on
+demand, such as a job scheduler or a serverless container service.
+
+Two things work differently from a host, and they decide whether a push pool
+suits a line:
+
+- The container has no egress service. A run whose harness profile gives an
+  MCP server a secret never goes to a push pool; it waits for a host.
+- The host's `sandbox.env` does not apply. Harness keys go in the container's
+  environment, where the agent can read them.
+
+You need:
+
+- Terraform 1.11 or later, with the provider set up using a token that has the
+  `runners` scope. See
+  [Manage Spotlight with Terraform](/docs/configuration/manage-spotlight-with-terraform).
+- An HTTPS endpoint on a host that Spotlight's deployment allows outbound calls
+  to.
+- A platform that can start a container which reaches your Spotlight address
+  over HTTPS.
+- An API key for each harness your lines use.
+
+## Create the pool
+
+Give the pool a `provision` block with your endpoint's URL and a signing
+secret, and keep the secret where the endpoint can read it:
+
+```hcl
+data "spotlight_workspace" "acme" {
+  slug = "acme"
+}
+
+resource "random_password" "provision" {
+  length  = 32
+  special = false
+}
+
+locals {
+  provision_secret = "whsec_${base64encode(random_password.provision.result)}"
+}
+
+resource "spotlight_runner_pool" "jobs" {
+  workspace_id = data.spotlight_workspace.acme.id
+  key          = "jobs"
+  labels       = ["jobs"]
+
+  provision = {
+    url            = "https://provision.acme.example/spotlight"
+    secret         = local.provision_secret
+    secret_version = 1
+  }
+}
+
+output "provision_secret" {
+  value     = local.provision_secret
+  sensitive = true
+}
+```
+
+Run `terraform apply`, then give the endpoint the value of
+`terraform output -raw provision_secret`.
+
+Work from any line that does not name runners may come to this pool as well as
+to your hosts. To send a line's or a station's work here in particular, name
+one of the pool's labels on it, as in
+[Send a line's work to particular runners](/docs/hosts/place-work-on-particular-runners).
+To cap how many containers run at once, add `max_runs`.
+
+## Verify each call
+
+Spotlight signs every call as [Standard Webhooks](https://www.standardwebhooks.com)
+does, so a Standard Webhooks library can verify it. To verify it yourself,
+compute an HMAC-SHA256 over `<webhook-id>.<webhook-timestamp>.<raw body>`,
+keyed with the bytes that the part of the secret after `whsec_` decodes to, and
+compare it with the base64 value after `v1,` in `webhook-signature`. In Node:
+
+```js
+import { createHmac, timingSafeEqual } from 'node:crypto';
+
+const key = Buffer.from(process.env.PROVISION_SECRET.slice('whsec_'.length), 'base64');
+
+export function verified(headers, rawBody) {
+  const id = headers['webhook-id'];
+  const timestamp = headers['webhook-timestamp'];
+  if (!id || !timestamp || Math.abs(Date.now() / 1000 - Number(timestamp)) > 300) {
+    return false;
+  }
+  const expected = createHmac('sha256', key).update(`${id}.${timestamp}.${rawBody}`).digest();
+  return (headers['webhook-signature'] ?? '').split(' ').some((each) => {
+    const [version, value = ''] = each.split(',');
+    const given = Buffer.from(value, 'base64');
+    return version === 'v1' && given.length === expected.length && timingSafeEqual(given, expected);
+  });
+}
+```
+
+Verify against the body exactly as it arrived, before parsing it. Answer `401`
+to a call that fails.
+
+## Start the runner
+
+The body is JSON of type `work.provision`. Read these fields from `data`:
+
+| Field | Use |
+| --- | --- |
+| `runner.id` | Name the container or job after it. |
+| `runner.token` | Pass it as `SPOTLIGHT_TOKEN`. It is good for this one piece of work. |
+| `spotlightUrl` | Pass it as `SPOTLIGHT_URL`. |
+| `image` | The image to start. When it is `null`, start the image hosts use by default, `ghcr.io/usespotlightai/spotlight-runner:<release>`, where `<release>` is a Spotlight release tag. |
+| `claimBy` | The container must have claimed the work by this time. |
+
+`data.kind` is `run` or `check`; start the same container for both.
+[Provision call](/docs/reference/events/provision-call) lists
+every field.
+
+Start the container with those two variables and your harness keys, and leave
+the image's entrypoint and user as they are. The entrypoint is
+`spotlight runner`, which runs as root and hands the agent a user of its own.
+With Docker, the equivalent is:
+
+```bash
+docker run --rm --name "spotlight-<runner id>" \
+  -e SPOTLIGHT_URL="<spotlightUrl>" \
+  -e SPOTLIGHT_TOKEN="<runner token>" \
+  -e ANTHROPIC_API_KEY="<your key>" \
+  <image>
+```
+
+For other harnesses, pass the variables they read instead, as listed in
+[Harnesses](/docs/reference/hosts/harnesses). The agent receives everything in the
+container's environment except the `SPOTLIGHT_` variables, so pass only what
+the harness needs.
+
+The runner registers, claims its work, does it, and exits. If nothing is
+waiting for it after 5 minutes, it exits too. Remove the container when it
+stops.
+
+## Answer quickly
+
+Answer any `2xx` within 10 seconds, and start the container after answering or
+in the background. Spotlight treats a later answer, a redirect or any other
+status as a failure. It then offers the work to the next push pool that fits,
+or, after `refused`, `unreachable` or `lapsed`, tries again later, up to 5
+attempts in all. The other causes below fail the run at once.
+
+Every call names a new runner, and its id is also the `webhook-id` header. If
+your endpoint receives the same runner id twice, start only one container. A
+name derived from the id, as above, does this on most platforms.
+
+## Check that it works
+
+Move a task to a station whose work the pool may take, as in
+[Add a task and move it along a line](/docs/tasks/add-and-move-tasks).
+On **Runners**, a card `Pool jobs` appears under **Provisioned by a pool**. It
+reads **Starting** until the runner claims the work, then **Running**.
+
+If the run fails instead, its message begins
+`No runner was provisioned for it in N attempts; the last was`, followed by
+the cause:
+
+| Cause | What to do |
+| --- | --- |
+| `refused: answered <status>` | Your endpoint answered with that status. Check its signature verification and its logs. |
+| `unreachable` | Spotlight could not call the endpoint. Check the URL and that it answers within 10 seconds. |
+| `not-allowed` | Spotlight's deployment does not allow outbound calls to the endpoint's host, or the URL is not `https`. |
+| `lapsed` | The endpoint accepted, but no runner claimed the work in time. Check that the container started and can reach `spotlightUrl`. |
+| `unusable` | Spotlight cannot open the pool's provision secret. Set the secret again with a new `secret_version`. |
+| `harness-missing` | The image does not have the station's harness installed. |
+
+## Related
+
+- [`spotlight_runner_pool`](/docs/reference/terraform/runner-pool): every pool
+  field.
+- [Provision call](/docs/reference/events/provision-call): the call a push pool
+  receives, and its failures.
+- [Give hosts your harness keys](/docs/hosts/give-sandboxes-your-harness-keys):
+  which key each harness needs.
+- [Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image):
+  build the image a push pool is asked to start.
+- [Ways in: pools, trusts and tokens](/docs/administration/ways-in-pools-trusts-and-tokens):
+  when to choose a push pool over hosts.

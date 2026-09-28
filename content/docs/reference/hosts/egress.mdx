@@ -1,0 +1,167 @@
+---
+type: reference
+icon: BookText
+title: Egress
+description: The proxy beside each sandbox, what it admits and refuses, which secrets it wears toward which hosts, and the responses it returns.
+---
+
+Egress is `spotlight egress`, a container a host starts beside each sandbox
+for one run and destroys with it. It is the sandbox's only way out.
+[The sandbox is the security boundary](/docs/security/the-sandbox-is-the-security-boundary)
+gives the reasons.
+
+## Topology
+
+| Part | Value |
+| --- | --- |
+| Sandbox network | `spotlight-<runner id>`, an internal network. The sandbox joins only this network. |
+| Egress container | `spotlight-egress-<runner id>`, on the sandbox network with the alias `egress`, and on `SPOTLIGHT_SANDBOX_NETWORK` or the engine's default network. |
+| Egress image | `SPOTLIGHT_EGRESS_IMAGE`, default `ghcr.io/usespotlightai/spotlight-runner:<release>`, run with entrypoint `spotlight egress`. |
+| Port | `3128` |
+| Proxy address | `http://sandbox:<credential>@egress:3128`, in the sandbox's `HTTP_PROXY` and `HTTPS_PROXY`. The credential is random, for this run alone. |
+| Extra hosts entries | `SPOTLIGHT_SANDBOX_HOSTS` |
+
+A client in the sandbox that ignores the proxy has no route out. See
+[Inside a sandbox](/docs/reference/hosts/sandbox#the-runners-environment) for the
+proxy and certificate variables.
+
+On start, egress reads `/run/spotlight/egress.json` from the host and deletes
+it. It redeems the run's secrets from Spotlight, for up to 1 minute. It then
+listens, and writes its certificate authority for the host to lay into the
+sandbox. The host waits up to 90 seconds for it. On `SIGTERM` it stops within 5
+seconds and clears the secret values it held.
+
+## Admitted hosts
+
+| `SPOTLIGHT_EGRESS_ALLOW` | Admitted |
+| --- | --- |
+| unset or empty | Any host. |
+| a list | Each exact host listed, and the subdomains of each `*.<domain>` entry. `*.example.com` admits `api.example.com`, not `example.com`. |
+
+Host names are compared without regard to case. The Spotlight address, and the
+storage hosts Spotlight names for the run, are always admitted. `*` alone is
+refused at host start.
+
+## Refused addresses
+
+Egress checks the address it connects to, after resolving the host name.
+
+| Address | Refused |
+| --- | --- |
+| Loopback, link-local (including `169.254.169.254`), multicast, unspecified, `0.0.0.0/8` | Always. |
+| Private (RFC 1918, IPv6 unique local), `100.64.0.0/10`, `64:ff9b::/96`, `2002::/16` | Unless an allow-list entry names the host. An empty allow-list names no host. |
+| Any other | Never. |
+
+## TLS
+
+| Property | Value |
+| --- | --- |
+| Certificate authority | One per run, ECDSA P-256, made by egress. The key stays in egress's memory. |
+| Lifetime | 48 hours |
+| Name constraints | The hosts egress wears something toward. With none, `spotlight.invalid`. |
+| Intercepted | `CONNECT` to port `443` of a host egress wears something toward. HTTP/1.1, TLS 1.2 or later. |
+| Not intercepted | Every other `CONNECT`, tunnelled to the host named in it. |
+| Upstream trust | The egress image's system certificates, plus `SPOTLIGHT_EGRESS_TRUST`. |
+
+A client that pins certificates fails against an intercepted host. Egress
+removes `Proxy-Authorization` from every request it passes on.
+
+## What egress wears
+
+Egress [wears](/docs/reference/glossary#wear) a secret: on requests to the host
+the secret is bound to, it replaces a request header with the secret's value.
+
+### Harness keys
+
+A host holds the harness keys in its [settings](/docs/reference/hosts/host-configuration#harness-keys)
+and hands them to egress. The sandbox gets `spotlight-egress:<NAME>` in their
+place. Egress replaces the header only when it holds exactly that stand-in,
+with its prefix, as in `authorization: Bearer spotlight-egress:OPENAI_API_KEY`.
+
+Egress logs one of these reasons and sends the request without the harness
+key:
+
+- `the host's allow-list does not admit <host>`
+- `it is empty or more than one line`
+
+### Run secrets
+
+A secret an MCP server's environment names, as `secret.<NAME>`, is worn for
+the run. The MCP server gets `spotlight-egress:<NAME>`. Egress replaces the
+bound header on every request to the bound host. See
+[`spotlight_secret`](/docs/reference/terraform/secret) and
+[Give an MCP server a secret](/docs/security/give-an-mcp-server-a-secret).
+
+| Secret source | How egress gets the value |
+| --- | --- |
+| Kept by Spotlight | Sealed to a key egress makes for the run (X25519, HKDF-SHA256, AES-256-GCM, bound to the run and the secret). |
+| AWS Secrets Manager | Read by egress with the host's AWS identity, from the default credential chain and `SPOTLIGHT_EGRESS_ENV`. Only a secret `SPOTLIGHT_EGRESS_READS` admits. |
+
+Egress logs one of these reasons and sends the request without the run
+secret:
+
+- `the host holds a key of its own for <host>`
+- `the host's allow-list does not admit <host>`
+- `the host does not let egress read <secret id>`
+- `another secret is already worn in <Header> toward <host>`
+- `it holds more than one line, so it cannot be worn in a header`
+
+Reading a secret from AWS Secrets Manager fails with:
+
+| Message | Cause |
+| --- | --- |
+| `find the host's AWS identity: <error>` | No AWS identity. |
+| `AWS Secrets Manager answered <code>` | An AWS error. |
+| `AWS Secrets Manager could not be asked: <error>` | AWS not reached. |
+| `AWS Secrets Manager holds no text for it` | No text value. |
+| `its value in AWS Secrets Manager is not JSON, so it has no <field> field` | `field` set, value not JSON. |
+| `its value in AWS Secrets Manager holds no text at <field>` | `field` missing. |
+
+Egress logs each failure, and the request goes out without that secret.
+
+## Responses
+
+| Status | Message | Cause |
+| --- | --- | --- |
+| `407` | `egress answers only the sandbox it was started for` | No proxy credential, or the wrong one. |
+| `400` | `egress is a proxy: ask it for an absolute URL, or CONNECT to a host` | A request that is neither `CONNECT` nor an absolute URL. |
+| `403` | `egress does not let this sandbox reach <host>` | The allow-list does not admit the host. |
+| `502` | `egress could not reach <target>: egress never opens a connection to <ip>` | An always-refused address. |
+| `502` | `egress could not reach <target>: egress opens a connection to the private address <ip> only for a host the allow-list names` | A private address the allow-list does not name. |
+| `502` | `egress could not reach <target>: <error>` | Any other connection failure. |
+| `502` | `egress could not stand in for <host>: <error>` | No certificate could be made for an intercepted host. |
+
+Connections time out after 30 seconds, and TLS handshakes upstream after 15
+seconds.
+
+## Egress start failures
+
+These fail the run with `The sandbox's egress did not start: <error>`:
+
+| Message | Cause |
+| --- | --- |
+| `the control plane handed no credential for the sandbox's egress` | Spotlight handed no egress credential with the work. |
+| `egress was not ready within 1m30s` | Egress did not publish its authority in time. |
+| `pull the egress image <image>: <error>` | The egress image could not be pulled. |
+
+If Spotlight refuses to redeem the run's secrets, egress starts wearing none
+and logs `the control plane gave egress nothing to wear`. If it cannot reach
+Spotlight within 1 minute, it logs
+`gave up redeeming the run's secrets; the sandbox goes out wearing none`.
+
+## Hook calls
+
+A [hook](/docs/reference/terraform/hook) that runs on a host is sent from a one-off
+egress container, `spotlight-egress-call-<id>`, under the same allow-list and
+address rules. Only `http` and `https` are sent, and redirects are not
+followed.
+
+## Limitations
+
+- Egress cannot itself send through another proxy.
+- A runner a push pool provisions has no egress. A run that wears secrets is
+  never reserved for one; it waits for a host.
+- `CURSOR_API_KEY` and any other variable not listed under
+  [Harness keys](/docs/reference/hosts/host-configuration#harness-keys) enter the
+  sandbox as they are.
+- Logins that refresh their own tokens are not worn.

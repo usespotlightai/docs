@@ -1,0 +1,96 @@
+---
+type: concept
+icon: Lightbulb
+title: Why agents talk back through a command line
+description: Why an agent reports its handover, replies and tool calls through the spotlight command in its sandbox, what an MCP server would have offered instead, and where MCP still fits.
+---
+
+An agent working a task has things to tell Spotlight. At the end of a run it
+has to say where the task goes next and leave a note for whoever picks it up.
+On a pull request review it answers comments. On a station with tools it calls
+them. All of this goes through one command, `spotlight`, which is on the path
+in every sandbox:
+
+```bash
+spotlight handover --next code-review --note "Implemented the retry; tests pass."
+```
+
+The command talks to a small endpoint the runner starts for that run, on the
+sandbox's own loopback, and the runner passes what the agent said on to the
+control plane. A handover travels with the rest of the run's result. The agent
+needs nothing but a shell. [Agent commands](/docs/reference/cli/agent-commands)
+lists them.
+
+A command line is not the obvious choice for this. The protocol built for
+giving agents tools is MCP, and Spotlight built an MCP server for exactly this
+channel before dropping it in favour of the command.
+
+## What MCP offered
+
+An MCP server describes its tools with a schema, and the harness presents the
+model with that schema. A handover defined that way cannot be malformed: the
+model fills in typed fields, the harness checks them, and a call that does not
+fit is never made. That is a real advantage, and for a channel that decides
+where a task goes next, getting the call right matters.
+
+## Context and reach
+
+Two things about MCP weighed more than that advantage.
+
+One is context. The harness loads each server's tool descriptions into the
+model's context before the first prompt. Every tool Spotlight exposed that way
+would be paid for in every run, whether or not the agent used it, on top of
+whatever servers the team loads for its own tools.
+
+The other is reach. An MCP server works only with agents that speak MCP.
+Spotlight wants the agent to be pluggable: Claude Code, Codex, Cursor, and
+whatever comes next. A command works with anything that has a shell.
+
+## What the command line keeps
+
+The advantage worth keeping from MCP was validation that happens while the
+agent can still act on it. A handover to a station the task cannot reach
+should fail in front of the agent, with enough information to fix it, and not
+later in the control plane after the agent has stopped.
+
+A command can do that too. When an agent names a station its station does not
+hand on to, the command refuses in the terminal and lists the ones it may
+choose. When a note is too long, it says how long the note is and what the
+limit is. Tools behave the same way: a missing input prints the tool's usage,
+and a tool the run was not given is refused with the list of tools it was.
+The agent reads the error, corrects the call and runs it again, which is what
+agents already do with every other command they run.
+
+That is the trade Spotlight made. The model loses a schema it cannot violate
+and gets a command it can call wrong and be corrected on, at a fraction of the
+context an MCP server's tool descriptions take, and with any agent that has a
+shell. Our view is that for an agent that reads its errors, the two end in
+much the same place.
+
+The command line also keeps the surface in one place. When an agent needs to
+tell Spotlight something new, the answer is another subcommand of `spotlight`,
+not another server to run in every sandbox.
+
+## A floor with no dependencies
+
+Underneath the command there is one more way for an agent to report its outcome.
+If a run ends without the agent having handed over, the runner looks for a file,
+`.spotlight/outcome.json`, in the workspace and reads the next station and note
+from there. Writing a file needs no command, no network and no protocol. It is
+the fallback for an agent that can do nothing else, and it is kept working for
+that reason.
+
+If an agent neither hands over nor leaves the file, Spotlight puts the task to
+a person, as [Lines, stations and
+tasks](/docs/getting-started/lines-stations-and-tasks) describes.
+
+## MCP is still there for a team's own tools
+
+The decision is about Spotlight's own channel, the one through which an agent
+reports back. It says nothing against MCP in general. A team that has MCP
+servers it wants its agents to use can name them in a [harness
+profile](/docs/reference/terraform/harness-profile), and each harness gets them in its
+own format, with any secrets they need worn by egress. A team that would rather
+describe an HTTP API as tools can do that on an
+[integration](/docs/reference/terraform/integration), and its agents call those tools
+through the same `spotlight` command as everything else.

@@ -1,0 +1,250 @@
+---
+type: reference
+icon: BookText
+title: spotlight_hook
+description: The fields of a hook, the events it fires on, the requests it sends, and how it signs, refuses, calls back and fails.
+---
+
+The `spotlight_hook` resource, and the API's `hook` kind: a team's rule that
+runs steps when an event happens to one of the team's tasks.
+
+| Kind | Endpoint | Terraform | Address |
+| --- | --- | --- | --- |
+| `hook` | `/api/resources/teams/{teamId}/hooks` | `spotlight_hook` | `<team key>/<key>` |
+
+See [Resource API](/docs/reference/api/resource-api) for the operations, headers
+and errors every kind shares.
+
+## Example
+
+```hcl
+resource "spotlight_hook" "migrations" {
+  team_id = spotlight_team.core.id
+  key     = "migrations-need-a-dba"
+  on      = "pull-request.opening"
+  match = {
+    paths = ["db/migrations/**"]
+  }
+  steps = [
+    {
+      name    = "review"
+      request = { url = "https://dba.acme.dev/review" }
+    },
+  ]
+  signing = {
+    oidc = { audience = "https://dba.acme.dev" }
+  }
+  failure         = "block"
+  timeout_seconds = 20
+}
+```
+
+## Fields
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `key` | string | required | Lowercase words joined by dashes, at most 64 characters. Fixed: an update that changes it is refused; Terraform replaces the resource. |
+| `on` | string | required | The event the hook fires on. See [events](#events). |
+| `match.tools` | array of strings | `[]` | Tools, as `<integration>.<tool>`. Only on `tool.using` and `tool.used`. Each must be offered by an integration of the team. |
+| `match.lines` | array of strings | `[]` | Line keys. |
+| `match.stations` | array of strings | `[]` | Station keys. |
+| `match.repositories` | array of strings | `[]` | Repositories, as `owner/name`. On the pull request events, matched against the pull request's repository; on the others, against any of the line's repositories. |
+| `match.paths` | array of strings | `[]` | Globs of changed paths. Only on `pull-request.opening` and `pull-request.merged`. |
+| `when` | string | none | An expression that returns bool, written bare or as `${{ }}`. See [Hook positions](/docs/reference/api/expressions#hook-positions). |
+| `vars` | map of name to string | `{}` | Values expressions read as `vars.<name>`. Names start with a letter or `_`, then letters, digits and `_`. |
+| `steps` | array of objects | required | At least one. See [steps](#steps). |
+| `signing` | object | none | How requests are signed. See [signing](#signing). Required when any step makes a request. |
+| `failure` | string | `continue` | `continue` or `block`. What a failed step does to the event. `block` only on a before event. |
+| `timeoutSeconds` | integer | `10` | 1 to 30. Bounds each request, and a hook on a before event as a whole. |
+
+In Terraform, `signing.secret` is the write-only `signing.secret_wo`, and
+`signing.secretVersion` is `signing.secret_wo_version`.
+
+A hook fires when every non-empty `match` list matches and `when` holds. An
+empty list matches everything.
+
+Glob syntax in `match.paths`:
+
+| Pattern | Matches |
+| --- | --- |
+| `**` | any characters, including `/` |
+| `*` | any characters except `/` |
+| `?` | one character except `/` |
+| a trailing `/` | everything under that directory |
+
+## Events
+
+| Event | Timing | In a run | `tools` match | `paths` match | Event fields |
+| --- | --- | --- | --- | --- | --- |
+| `tool.using` | before | yes | yes | | `at`, `tool`, `inputs` |
+| `tool.used` | after | yes | yes | | `at`, `tool`, `inputs`, `output`, `failed` |
+| `run.starting` | before | yes | | | `at` |
+| `run.ended` | after | yes | | | `at`, `outcome` |
+| `handover.giving` | before | yes | | | `at`, `to`, `note` |
+| `pull-request.opening` | before | yes | | yes | `at`, `repository`, `branch`, `title`, `changed` |
+| `pull-request.merged` | after | no | | yes | `at`, `url`, `repository`, `mergeCommit`, `changed` |
+| `task.opened` | after | no | | | `at` |
+| `task.moved` | after | no | | | `at`, `from`, `to` |
+
+A before event waits while its hooks run, and a hook can stop it. An after
+event has already happened; its hooks are queued and run afterwards.
+
+`changed` is a list of paths. Expressions on an event in a run also see
+`run.id`. See [Hook values](/docs/reference/api/expressions#hook-values) for every
+value an expression sees.
+
+## Steps
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `name` | string | required | Lowercase words joined by dashes. Unique within the hook. Later steps read this step as `step.<name>`. |
+| `call` | string | none | A tool, as `<integration>.<tool>`, offered by an integration of the team. |
+| `with` | object | none | The tool's inputs. Only with `call`. Strings may hold expressions. |
+| `request` | object | none | A request to make. |
+
+A step names exactly one of `call` and `request`. Steps run in order. A step
+that fails stops the steps after it.
+
+A step may not call a tool with `approval`; the step fails with
+`not-allowed`.
+
+`request`:
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `url` | string | required | Where the request goes. May hold expressions. `https` unless `from` is `network`. |
+| `headers` | map of name to string | `{}` | Extra headers. May hold expressions. May not be `authorization`, `content-type`, `host`, or start with `webhook-` or `spotlight-`. |
+| `body` | string, number, boolean, array or object | none | The JSON body. Strings may hold expressions. Without it, the event, task and run, as below. |
+| `from` | string | `spotlight` | `spotlight` or `network`. `spotlight`: Spotlight sends it, to a host on the deployment's outbound allow-list, checked when the hook is written. `network`: one of the workspace's hosts sends it. |
+
+Every request is a `POST`. Without `body`, the body is:
+
+```json
+{ "hook": "<key>", "on": "<event>", "occurrence": "<id>", "event": {}, "task": {}, "run": { "id": "<run id>" } }
+```
+
+`run` is null on an event outside a run. A step's output is its response
+body, parsed as JSON when it is JSON, cut at 16 KiB.
+
+## Request headers
+
+| Header | Value |
+| --- | --- |
+| `content-type` | `application/json` |
+| `user-agent` | `Spotlight-Hooks/1` |
+| `webhook-id` | A message id, the same on every retry of one step of one occurrence. |
+| `webhook-timestamp` | Unix seconds. |
+| `webhook-signature` | With HMAC signing. |
+| `authorization` | `Bearer <token>`, with OIDC signing. |
+| `spotlight-hook` | The hook's key. |
+| `spotlight-callback-url` | `https://<your Spotlight address>/api/hook-callbacks` |
+| `spotlight-callback-token` | A token for the [callbacks](#callbacks). |
+| `spotlight-cause` | The firing that caused this one, when it has a cause. |
+
+## Signing
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `signing.secret` | string | none | Write-only. `whsec_` followed by 24 to 64 base64-encoded bytes. Required on create and whenever `secretVersion` changes. |
+| `signing.secretVersion` | integer | none | At least `1`. A change, with a new `secret`, rotates the secret. A read returns only this. Required with `secret`. |
+| `signing.oidc.audience` | string | none | The token's `aud`. Required with `oidc`. |
+
+`signing` is either `{ secret, secretVersion }` or `{ oidc }`.
+
+### HMAC
+
+The signature follows [Standard Webhooks](https://www.standardwebhooks.com):
+
+```text
+webhook-signature: v1,<base64 of HMAC-SHA256(key, "<webhook-id>.<webhook-timestamp>.<body>")>
+```
+
+The key is the bytes the part after `whsec_` decodes to.
+
+### OIDC
+
+The request carries `Authorization: Bearer <token>`, an ES256 JWT:
+
+| Claim | Value |
+| --- | --- |
+| `iss` | `https://<your Spotlight address>/api` |
+| `aud` | `signing.oidc.audience` |
+| `sub` | `hook:<workspace id>/<team id>/<hook key>` |
+| `iat`, `exp` | The token lives 5 minutes. |
+| `jti` | A fresh id. |
+| `occurrence` | The occurrence of the event. |
+| `webhook_id` | The `webhook-id` header. |
+| `body_sha256` | base64url of the SHA-256 of the body. |
+
+| Discovery | Address |
+| --- | --- |
+| OpenID configuration | `https://<your Spotlight address>/api/.well-known/openid-configuration` |
+| Keys | `https://<your Spotlight address>/api/.well-known/jwks.json` |
+
+A hook with `oidc` is refused when the deployment has no key to sign hook
+tokens with: `asks for OIDC tokens, but this Spotlight has no key to sign them with; sign with a secret instead, or set HOOK_SIGNING_KEY`.
+
+## Refusing an event
+
+A hook on a before event refuses the event when:
+
+- a step's response is `2xx` with a JSON body whose `refuse` is a non-empty string, whatever `failure` is; or
+- a step fails and `failure` is `block`.
+
+```json
+{ "refuse": "Migrations need a DBA's review first." }
+```
+
+The event is refused with `The hook <key> refused: <reason>`, or `The hook <key> failed at <step> (<reason>), and it blocks on failure`.
+With `continue`, a failed step lets the event go on.
+
+The hooks on one before event have 60 seconds together.
+
+## Callbacks
+
+The token in `spotlight-callback-token` lives 15 minutes and is sent as
+`Authorization: Bearer <token>`.
+
+| Endpoint | Body | Returns |
+| --- | --- | --- |
+| `GET /api/hook-callbacks/task` | | `200` with the task: `id`, `title`, `url`, `line`, `station`, `stationKey`, `marks`, `repositories`, `pullRequest`, `hook`. |
+| `POST /api/hook-callbacks/notes` | `{ "body": "<text>" }`, 1 to 20,000 characters | `204`. The note appears on the task as said by the hook. |
+
+`POST /api/hook-callbacks/notes` takes an optional `Idempotency-Key`; a retry
+with the same key is said once. A missing, expired or unknown token is refused
+with `401`. An empty or too long note is refused with `400`.
+
+## Failures
+
+| Code | Cause | Retried |
+| --- | --- | --- |
+| `unreachable` | Nothing responded, the request got no response within the time left, or no host of the workspace took a `network` request in time. | yes |
+| `timeout` | The hook's time ran out before the step began, or a called tool did not finish within it. | yes |
+| `throttled` | Responded `408`, `425` or `429`. | yes |
+| `server-error` | Responded `5xx`. | yes |
+| `tool-failed` | The called tool failed. | yes |
+| `errored` | Anything else went wrong while the step ran. | yes |
+| `rejected` | Responded with any other status that is not `2xx`. | no |
+| `not-allowed` | The request was not `https`, went to a host that is not allowed, could not be signed, or the tool is not offered or needs approval. | no |
+| `unwritable` | An expression in the step could not be evaluated. | no |
+| `broken` | The hook no longer reads as it was written. | no |
+| `loop` | The [loop guard](#loop-guard) stopped it. | no |
+| `superseded` | The failure is not reported, because the task has moved on from the station the hook fired at, has finished, or is gone. | no |
+
+A hook on an after event is retried up to 8 attempts in all, from 2 seconds
+apart doubling to 1 hour. A hook on a before event is not retried.
+
+## Loop guard
+
+Every firing of a hook on an after event carries the chain of firings
+and events that caused it. A webhook delivery to Spotlight that carries the
+`spotlight-cause` header it was sent, or a callback, joins that chain.
+A firing is stopped with `loop` when:
+
+| Stop | Condition |
+| --- | --- |
+| repeated | The hook would fire again for something already in its chain. |
+| too deep | The chain is already 8 causes deep. |
+| recurring | The hook fired 3 times for the same change in the last 10 minutes. |
+
+A stopped firing is reported on the task.

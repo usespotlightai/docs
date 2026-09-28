@@ -1,0 +1,80 @@
+---
+type: reference
+icon: BookText
+title: Built-in lines
+description: The Delivery and Review lines Spotlight opens for the first team of a workspace created in the web app.
+---
+
+When a workspace is created in the web app, Spotlight opens two lines for its
+first team: Delivery and Review. A team created through the
+[resource API](/docs/reference/api/resource-api) or Terraform gets no lines. See
+[A workspace created in the web app](/docs/reference/terraform/workspace#a-workspace-created-in-the-web-app).
+
+Both are ordinary lines, with the fields described in
+[`spotlight_line`](/docs/reference/terraform/line). Neither names repositories. Every `work` station
+of both has `harness` set to `claude-code`, with no model, effort or profile.
+
+The same team gets a task titled `Set up your team` at Delivery's backlog.
+
+## Delivery
+
+| Line field | Value |
+| --- | --- |
+| `key` | `delivery` |
+| `name` | `Delivery` |
+| `role` | `delivery` |
+
+| Key | Name | Kind | Passes to | Ends | Diffs | Decisions | Tools |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `backlog` | Backlog | `backlog` | `triage` | no | no | no | |
+| `triage` | Triage | `work` | `spec`, `implementation` | no | no | no | |
+| `spec` | Spec | `work` | `implementation` | no | no | no | |
+| `implementation` | Implementation | `work` | `code-review` | no | no | yes | |
+| `code-review` | Code Review | `work` | `implementation` | yes | no | no | `pull-request` |
+| `completed` | Completed | `completed` | | no | no | no | |
+
+| Happening | From | To |
+| --- | --- | --- |
+| `github.checks.failed` | any station | `implementation` |
+| `github.pull_request.commented` | any station | `code-review` |
+| `github.pull_request.changes-requested` | any station | `code-review` |
+| `github.pull_request.merged` | any station | `completed` |
+
+## Review
+
+| Line field | Value |
+| --- | --- |
+| `key` | `review` |
+| `name` | `Review` |
+| `role` | `review` |
+
+| Key | Name | Kind | Passes to | Ends | Diffs | Decisions | Tools |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `backlog` | Backlog | `backlog` | `code-review` | no | no | no | |
+| `code-review` | Review | `work` | | yes | yes | no | `review-comment`, `review` |
+| `completed` | Completed | `completed` | | no | no | no | |
+
+| Happening | From | To |
+| --- | --- | --- |
+| `github.pull_request.mentioned` | any station | `code-review` |
+| `github.pull_request.merged` | any station | `completed` |
+| `github.pull_request.closed-unmerged` | any station | `completed` |
+
+The Review line's review policy (`reviews`) has every default. See
+[Review policy fields](/docs/reference/terraform/line#reviews-fields).
+
+## Station prompts
+
+Each `work` station has a Markdown prompt. Backlog and completed stations have
+none.
+
+| Line | Station | Opens with | Asks the agent to |
+| --- | --- | --- | --- |
+| Delivery | `triage` | "Decide what is actually being asked for, and whether it is clear and coherent enough to plan against." | Read only, state what the request comes down to, and hand on to Spec once a plan could be written against it. |
+| Delivery | `spec` | "Take the request as triage settled it and turn it into a plan someone can implement without going back to the requester." | Write a plan: the approach, the files and functions to change, how to test it, and what is out of scope. |
+| Delivery | `implementation` | "Make the change the spec describes, and no more than it." | Make the change with tests, leave tests and linter passing, and push the task's branch. |
+| Delivery | `code-review` | "Review the change against what was asked for, not against how you would have written it." | Hand the task back to implementation with findings, or open a pull request and hand on to `done`. |
+| Review | `code-review` | "Review the pull request this task names." | Leave comments with `spotlight review-comment`, submit them with `spotlight review`, make no edits, and hand on to `done`. |
+
+A built-in line is changed and deleted like any other line. See
+[Change a line's stations](/docs/lines/change-a-lines-stations).

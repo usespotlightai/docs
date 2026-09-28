@@ -1,0 +1,124 @@
+---
+type: concept
+icon: Lightbulb
+title: How a conversation survives between runs
+description: Why Spotlight keeps a task's whole workspace between runs, why the workspace is always /workspace, and why the work survives losing a conversation.
+---
+
+Every run gets a fresh sandbox, and the sandbox is destroyed when the run ends
+(see [Why every run gets a fresh
+sandbox](/docs/hosts/why-every-run-gets-a-fresh-sandbox)). Yet an agent
+that asked a person a question can pick up its conversation once the answer
+arrives, with its reasoning, its edits and its half-finished plan intact. It
+does so in a different container, and possibly on a different machine. The
+mechanism behind that starts with where a harness keeps a conversation.
+
+## Where a harness keeps a conversation
+
+A harness such as Claude Code or Codex keeps its conversations in files. To
+resume one, the harness is started with the conversation's id and reads those
+files back.
+
+Everything else follows from how the harness finds them. Claude Code files a
+conversation under a directory named after the working directory it was started
+in. The same files under a different working directory are invisible to it:
+asked to resume, it answers that the session does not exist. A conversation is
+therefore tied to a path, whatever machine the path is on. Move the working
+directory and the harness's state together, to the same path on another machine,
+and the conversation moves with them. Nothing else needs to go.
+
+## Keep the workspace, and the conversation comes with it
+
+Spotlight builds on that. It points each harness's state directory into the
+workspace itself, under `.spotlight/state`, so a run's workspace holds both the
+checkout the agent worked in and the harness's record of the conversation.
+
+At the end of a run, the runner packs that workspace into an archive and
+stores it. The archive belongs to the task at that station (or to a chat, for
+the agent's planning chats). When a later run of the same task at the same
+station starts, for example after a person answers its question or approves a
+tool call, the runner restores the archive into its fresh sandbox before the
+harness starts, and asks the harness to resume the conversation it left.
+
+The archive holds the whole workspace, checkout included, and the two belong
+together. A conversation refers to files: what the agent read, what it changed,
+what it meant to run next. Restoring the conversation without the checkout it
+was about would hand the agent a memory of work that is no longer there.
+
+## Why the workspace is always /workspace
+
+A conversation is filed under its working directory, so resuming needs the same
+directory every time. In Spotlight that directory is `/workspace`, for every run
+and check, wherever it runs. Each repository is checked out beneath it, at
+`/workspace/<name>`.
+
+Because the path is fixed, resume is safe on any host: the harness state lives
+inside the task's own archive and lands at the same place wherever the archive
+is unpacked. It also gives teams something stable to build on. An image built
+from the runner image can bake a checkout, with its dependencies installed, at
+the path the run will use, so the run only has to fetch and switch branches.
+[Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image)
+covers that.
+
+The checkout is just as portable, since a run's clone does not depend on the
+host's git mirror once it is made (see [Fresh, not
+cold](/docs/hosts/why-every-run-gets-a-fresh-sandbox#fresh-not-cold)).
+
+## Resume on any host
+
+Put together, this means a conversation does not belong to a host. The host
+that ran the first turn may be busy, stopped or gone by the time a person
+answers. The next run can go to any host that is able to take it, restores the
+workspace and carries on.
+
+The alternative would be to send every follow-up run back to the machine that
+started the conversation. That would make an answered question wait for one
+particular machine, and it would lose the conversation whenever that machine
+was replaced. Keeping the workspace in an archive avoids both.
+
+## When a session is lost
+
+Resume can fail. The archive may have expired, or the harness may not
+recognise the session it is asked for. When the harness says the session is
+gone, the runner logs it and starts a new conversation instead of failing the
+run.
+
+That is safe because the conversation was never what carried the work. What
+carries a task from run to run is the briefing, which includes the notes every
+earlier agent left when it handed over. A new conversation starts with less
+context than a resumed one, but it starts with what it needs. [Lines, stations
+and tasks](/docs/getting-started/lines-stations-and-tasks) explains the notes. A
+resumed conversation is an improvement on top of that, and Spotlight treats it
+as one.
+
+## Chats give back what was not heard
+
+Planning chats with the agent have a variant of the same problem. A person
+sends messages, a run is started to answer them, and the run fails before the
+agent has a session, for example because its setup failed. From the person's
+side the messages were sent. From the agent's side they were never heard.
+
+Spotlight decides by the session. A chat run that ends without reporting a
+session kept nothing, so the chat takes back the messages that went to it, and
+they go again with the person's next message. The rule is on the cautious side.
+A run that fails after the agent read the messages but before it reported a
+session sends them a second time. Spotlight accepts that, because a duplicate
+beats a loss.
+
+## What an archive keeps, and for how long
+
+Archives expire once no later run will restore them, and go at once when their
+task or chat is deleted. Past that, the next run at the station starts a new
+conversation, and the notes carry the work as above. How long each kind of
+archive is kept, and how large one may be, is in [Limits and
+timeouts](/docs/reference/limits-and-timeouts#workspace-archives).
+
+An archive also leaves things out when something else can put them back. When a
+repository has a setup command, the archive skips the files the repository
+ignores, such as installed dependencies and build output, since the image and
+the setup command lay them down again in the next sandbox. That keeps archives
+small and restores quick, at the price of rebuilding those files in every run,
+since the setup command runs every time. Build output kept outside the
+checkout, where restoring the checkout does not touch it, survives a restore;
+[Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image) covers building such an
+image.

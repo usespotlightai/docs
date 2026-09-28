@@ -1,0 +1,129 @@
+---
+type: how-to
+icon: SquarePen
+title: Give stations a skill
+description: Give the agents at chosen stations a skill's instructions and files in every run.
+---
+
+A skill is a folder with a `SKILL.md`, defined for a team and given to
+stations. You need the team's configuration in Terraform. If you don't manage
+the workspace with Terraform yet,
+[start from a download of it](/docs/configuration/manage-spotlight-with-terraform).
+
+## Write the skill
+
+<Steps>
+<Step>
+
+Make a folder for the skill beside the configuration, such as
+`skills/core/grafana/`, and write its `SKILL.md`. It opens with frontmatter
+giving the skill's `name` and a `description`, and its body holds the
+instructions:
+
+```text
+---
+name: grafana
+description: Look up dashboards
+---
+Search before you guess.
+```
+
+The `name` is the key stations give the skill by: lowercase words joined by
+dashes, not starting with `spotlight-`.
+
+</Step>
+<Step>
+
+If the skill uses integration tools, list them in the frontmatter. A station
+with this skill also gets these tools:
+
+```text
+---
+name: grafana
+description: Look up dashboards
+tools:
+  - grafana.search
+---
+```
+
+</Step>
+<Step>
+
+If the skill needs a secret, name it under `secrets` with what it is for. A
+station leaves the skill out of its runs until the workspace holds a secret by
+that name:
+
+```text
+---
+name: grafana
+description: Look up dashboards
+secrets:
+  GRAFANA_TOKEN: Read-only token its tools use
+---
+```
+
+</Step>
+<Step>
+
+Add any other files the agent should have, such as queries or examples, within
+the [skill's file limits](/docs/reference/terraform/skill#files).
+
+</Step>
+</Steps>
+
+## Define it for the team
+
+Add a `spotlight_skill` resource that reads each file of the folder, by its path
+within the folder:
+
+```hcl
+resource "spotlight_skill" "core_grafana" {
+  team_id = spotlight_team.core.id
+  key     = "grafana"
+  files = {
+    "SKILL.md"               = file("${path.module}/skills/core/grafana/SKILL.md")
+    "queries/latency.promql" = file("${path.module}/skills/core/grafana/queries/latency.promql")
+  }
+}
+```
+
+The `key` must be the `name` in `SKILL.md`.
+
+## Give it to stations
+
+Add the skill's key to the `skills` of each station whose agent should have it,
+in the line's `spotlight_line` resource:
+
+```hcl
+station {
+  key       = "implementation"
+  name      = "Implementation"
+  harness   = "claude-code"
+  skills    = [spotlight_skill.core_grafana.key]
+  passes_to = ["code-review"]
+}
+```
+
+Run `terraform apply`.
+
+The skill appears under the team's **Settings**, in **Skills**, and on the
+Station page of each station that gives it.
+
+## Give a catalog skill
+
+Spotlight also offers skills of its own in a catalog. Name one in a station's
+`skills` by its name and version, as `catalog.<name>@<version>`:
+
+```hcl
+skills = ["catalog.research@1.0.0"]
+```
+
+[What a station gives](/docs/reference/terraform/skill#what-a-station-gives) lists the
+catalog skills. Which of them a station may give depends on the workspace's
+plan. If the plan does not include the skill, Terraform refuses the station's
+`skills` and says so.
+
+## Related
+
+- [`spotlight_skill`](/docs/reference/terraform/skill): the `SKILL.md` fields, file rules and limits.
+- [Change a line's stations](/docs/lines/change-a-lines-stations)

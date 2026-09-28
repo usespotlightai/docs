@@ -1,0 +1,52 @@
+---
+type: how-to
+icon: SquarePen
+title: Require approval before a tool runs
+description: Make an integration's tool wait for a person to approve each call before Spotlight sends it.
+---
+
+Use this for tools whose effect is hard to undo, such as posting in public. You
+need an integration that offers the tool. If you don't have one, see
+[Give stations a tool from an HTTP API](/docs/integrations/give-stations-a-tool-from-an-http-api).
+
+## Add an approval to the tool
+
+In the integration's definition, give the tool an `approval` with `because`:
+the reason a person reads before they decide.
+
+```hcl
+tools = {
+  comment = {
+    does        = "comment"
+    description = "Comment on the issue."
+    inputs = {
+      issue = { type = "string", required = true }
+      body  = { type = "string", required = true }
+    }
+    approval = {
+      because = "It posts publicly, under the team's name."
+    }
+  }
+}
+```
+
+Run `terraform apply`.
+
+## Approve or reject each call
+
+When an agent calls the tool, nothing is sent: the task's inbox item shows the
+tool, the reason and the inputs, with **Approve** and **Reject**, and the work
+resumes once someone decides. See
+[Answer the inbox](/docs/inbox/answer-the-inbox#approve-or-reject-a-request).
+
+If agents should ask before commands or file changes instead of tool calls,
+use a harness profile's `ask` rules. See
+[Limit what agents may do](/docs/agents/limit-what-agents-may-do).
+
+## Related
+
+- [`spotlight_integration`](/docs/reference/terraform/integration), for the `approval`
+  field.
+- [Approvals](/docs/reference/app/tasks-runs-and-the-inbox#approvals): the rules an
+  approval follows.
+- [Asking a person](/docs/inbox/asking-a-person)

@@ -1,12 +1,14 @@
 {
-  "name": "docs",
+  "name": "spotlight-docs",
   "version": "0.0.34",
   "private": true,
   "scripts": {
     "build": "next build",
     "dev": "next dev",
     "start": "next start",
-    "types:check": "next typegen && tsc --noEmit"
+    "types:check": "next typegen && tsc --noEmit",
+    "lint:prose": "node scripts/lint-prose.mjs",
+    "lint:links": "node scripts/check-links.mjs"
   },
   "dependencies": {
     "cn": "^0.3.0",
@@ -16,7 +18,8 @@
     "lucide-react": "^1.47.0",
     "next": "16.3.5",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react-dom": "^19.3.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",

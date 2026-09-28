@@ -1,0 +1,151 @@
+---
+type: how-to
+icon: SquarePen
+title: Manage Spotlight with Terraform
+description: Adopt a workspace from its Terraform download, then change its configuration with the Spotlight provider.
+---
+
+Once a workspace is under Terraform, its teams, lines, skills, integrations,
+hooks, harness profiles, secrets, token trusts and runner configuration change
+through `terraform apply`. You need:
+
+- Terraform 1.11 or later. The module holds write-only values, such as secret
+  values, which older versions cannot send.
+- A workspace token for the workspace. If you don't have one,
+  [issue a workspace token](/docs/administration/issue-a-workspace-token) with the scopes
+  for what the module manages: `configure`, plus `secrets` if it holds secrets,
+  `runners` if it holds runner pools or runner trusts, and `trusts` if it holds
+  workspace token trusts.
+
+## Download the workspace
+
+In Spotlight, open the workspace menu at the top of the sidebar and choose
+**Download as Terraform**. The browser saves `<slug>-terraform.zip`, which holds
+a `<slug>-terraform` folder. Unzip it where the configuration will live, usually
+a repository of its own:
+
+| File | Holds |
+| --- | --- |
+| `main.tf` | A resource for everything in the workspace, each with an `import` block beside it |
+| `variables.tf` | A sensitive variable for each value Spotlight never answers, such as a secret's value; left out when there are none |
+| `prompts/` | Each station's prompt, as `prompts/<team>/<line>/<station>.md`, read with `file()` |
+| `skills/` | Each skill's files, as `skills/<team>/<skill>/`, read with `file()` |
+
+If the menu item reads **Could not download. Try again**, choose it again.
+
+## Point the provider at Spotlight
+
+Give the provider your Spotlight address and the token through the environment:
+
+```bash
+export SPOTLIGHT_URL=https://<your Spotlight address>
+export SPOTLIGHT_API_TOKEN=<workspace token>
+```
+
+`main.tf` has no provider block. To set the address and token in the
+configuration instead, add one and keep the token in a variable:
+
+```hcl
+provider "spotlight" {
+  url   = "https://<your Spotlight address>"
+  token = var.spotlight_token
+}
+
+variable "spotlight_token" {
+  type      = string
+  sensitive = true
+}
+```
+
+Keep the token out of version control.
+
+## Give the variables their values
+
+Give each variable in `variables.tf` that has no default the value Spotlight
+holds for it, for example in a `terraform.tfvars` file you keep out of version
+control:
+
+```hcl
+secret_linear_api_key = "<the secret's value>"
+```
+
+A variable for a pull pool's token defaults to `null` and needs no value to
+adopt the pool.
+
+## Adopt the workspace
+
+```bash
+terraform init
+terraform apply
+```
+
+The first apply imports every resource through its `import` block and plans no
+change. If the plan shows changes, the workspace changed after you downloaded it:
+download it again and repeat.
+
+After the apply you can delete the `import` blocks, or leave them; Terraform
+ignores an `import` block for a resource already in its state.
+
+## Make changes
+
+Edit the configuration and run `terraform apply`. The plan checks every
+expression in an integration or a hook against Spotlight before anything is
+written, so a misspelt field fails the plan at the attribute that holds it.
+
+If a plan fails with `403`, the diagnostic names the scope the token lacks.
+Issue a new token that also has that scope.
+
+If the configuration is changed outside Terraform, through the resource API,
+the next plan changes it back.
+
+## Add a workspace to an existing configuration
+
+A token cannot create a workspace. A person creates one by signing up, and
+Terraform adopts it with an `import` block that names its slug:
+
+```hcl
+import {
+  to = spotlight_workspace.acme
+  id = "acme"
+}
+
+resource "spotlight_workspace" "acme" {
+  name = "Acme"
+  slug = "acme"
+}
+```
+
+Every other resource can be imported by an id of the form
+`<workspace id>/<address>`, as the downloaded module does, or by its identity in
+Terraform 1.12 and later:
+
+```hcl
+import {
+  to = spotlight_line.core_delivery
+  identity = {
+    id = "<line id>"
+  }
+}
+```
+
+## Stop managing a workspace
+
+To stop managing the workspace without deleting it, replace its resource with a
+`removed` block:
+
+```hcl
+removed {
+  from = spotlight_workspace.acme
+
+  lifecycle {
+    destroy = false
+  }
+}
+```
+
+## Related
+
+- [Provider](/docs/reference/terraform/terraform-provider): every resource,
+  attribute and import id.
+- [Run Terraform from GitHub Actions without a stored token](/docs/configuration/run-terraform-from-github-actions)
+- [Why configuration lives in Terraform](/docs/configuration/why-configuration-lives-in-terraform)

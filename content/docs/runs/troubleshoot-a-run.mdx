@@ -1,0 +1,148 @@
+---
+type: troubleshooting
+icon: LifeBuoy
+title: Troubleshoot a run
+description: Work from what you see on a task, a run or the inbox to the cause, and change what stops the run.
+---
+
+Some of the fixes below need the host's log, others the line's Terraform, so
+have access to both.
+
+## The task shows In progress but nothing happens
+
+Open the task. Under **Activity**, the latest run reads **Queued**: it is
+waiting for a runner to claim it. Open **Runners** in the workspace sidebar and
+look for the first of these that applies:
+
+- No host is listed, or every host reads **Not answering**: no machine is
+  taking work. [Run a host](/docs/hosts/run-a-host), or read the log of the
+  one that stopped answering.
+- A host reads `Running <n> of <capacity>` with every slot taken: it is full,
+  and the run waits for a free slot. Raise the host's capacity or add a host.
+- No host's harness pills, under its images, include the station's harness
+  (the Run page shows that harness below the composer): use a runner image
+  that includes it. See [Harnesses](/docs/reference/hosts/harnesses).
+- An image row reads `Refused: <reason>`: the host will not start runs from
+  it. Fix the reason as in the table below.
+- The line or station names `runners` or an image: only a host that matches
+  that placement can claim the run. Compare the names on the Runners page
+  (`Pool <key>`, `Trust <key>`, the images) with the line. See
+  [Send a line's work to particular runners](/docs/hosts/place-work-on-particular-runners).
+
+| Refusal reason | What to change |
+| --- | --- |
+| `this host's SPOTLIGHT_RUNNER_IMAGE does not admit it` | Add the image, or a prefix that covers it, to `SPOTLIGHT_RUNNER_IMAGE` on the host. See [Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image#let-the-hosts-serve-it). |
+| `could not pull it: …` | Check the image reference and the host's registry access. See [Pull runner images from a private registry](/docs/hosts/pull-images-from-a-private-registry). |
+| `could not look inside it: …` | Check that the image is built on the Spotlight runner image. See [Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image). |
+| `its runner is release …, older than the … this control plane needs` | Rebuild the image on a newer runner release. |
+
+## The run failed with a message
+
+A failed run puts an item in the assignee's inbox that starts "The run failed:"
+and gives the reason. If the Run page reads "This run failed before any work
+was done.", the run never reached the agent; the message is on the inbox item.
+[Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages)
+lists every message and its code.
+
+| Message | What to change |
+| --- | --- |
+| `The runner image <image> could not be pulled: …` | The image reference or the host's registry credentials. See [Pull runner images from a private registry](/docs/hosts/pull-images-from-a-private-registry). |
+| `The runner image <image> is refused: …` | Fix the refusal reason as in the table above. |
+| `The runner image <digest> no longer holds <harness>, which this run needs` | Put the harness back in the image, or change the station's harness. |
+| `The sandbox's egress did not start: …` | Read the host's log. See [Egress](/docs/reference/hosts/egress). |
+| `prepare: git clone <path>: …` | Check that the GitHub App can read the repository and that the line names it correctly. See [Point a line at your repositories](/docs/lines/point-a-line-at-your-repositories). |
+| `prepare: preparing <path> did not finish within 10m0s` | Check the host's network to GitHub. See [Limits and timeouts](/docs/reference/limits-and-timeouts). |
+| `start agent: …`, `open a session: …` | If the rest of the message names authentication, check the harness key the host gives sandboxes. See [Give hosts your harness keys](/docs/hosts/give-sandboxes-your-harness-keys). |
+| `resume the session: …` | The harness could not reopen the task's earlier conversation. |
+| `fetch attachment <id>: …` | One of the task's attachments could not be fetched into the sandbox. |
+| `No runner was provisioned for it in N attempts; the last was …` | Check the push pool's provision endpoint. See [Provision call](/docs/reference/events/provision-call). |
+| `Its hooks could not be asked after N tries: …` | Check the hook named in the message. See [`spotlight_hook`](/docs/reference/terraform/hook). |
+
+For a message that names neither a setting nor a guide, read the rest of it,
+then the host's log.
+
+When you have fixed the cause, reply to the item to start a new run at the
+same station, as in [Answer the inbox](/docs/inbox/answer-the-inbox),
+or move the task to where it should go next, as in
+[Add a task and move it along a line](/docs/tasks/add-and-move-tasks#move-the-task).
+
+## The run refused to start
+
+A station's run fails before it starts when the station asks for something
+the team or workspace does not have. The message after "The run failed:" says
+which:
+
+- `harness_profile_unknown: The <Station> station names the <profile> harness profile, which its team does not hold`:
+  create that harness profile for the team, or remove it from the station. See
+  [Limit what agents may do](/docs/agents/limit-what-agents-may-do).
+- `not_entitled: …` or `entitlement_lapsed: …`: the station gives a catalog
+  item that the workspace's plan does not include, or that its plan included
+  before the plan lapsed. Remove the item from the station.
+- `catalog_item_unknown: …` or `catalog_item_wrong_kind: …`: the station names
+  a catalog item that does not exist, or names it as the wrong kind. Correct
+  the reference on the station.
+
+Refused runs are not retried. After changing the station, reply to the item.
+
+## The run was given up on
+
+"The run was given up on after N attempts without finishing." means runners
+claimed the run and then stopped reporting, N times in a row. Spotlight puts a
+lost run back in the queue by itself before it gives up.
+
+Read the log of the host that claimed it around the time of each attempt.
+Look for the host stopping or restarting, and for the warning
+`the sandbox ran past its time`, which the host logs when it stops a sandbox
+at its run time limit. See [Limits and timeouts](/docs/reference/limits-and-timeouts).
+
+## The inbox item says it failed N times
+
+`×N` on an inbox row (the tooltip reads "Failed N times") means the same
+failure happened again in the same conversation. Find the message in the
+tables above and fix what it names before you reply again.
+
+## The agent worked without the repository's setup
+
+A failing setup command does not fail the run; the agent starts without it.
+
+On the Run page, open the **Ran setup** step. Its output ends with
+`Setting up <path> failed: …`. Fix the repository's `setup` command in the
+line, then reply to the item, or
+[move the task](/docs/tasks/add-and-move-tasks#move-the-task) back to the
+station to run it again.
+
+## The agent ignored, missed or was misled by what the team knows
+
+Open the Run page and expand **Remembered** under the briefing. It lists:
+
+- **Briefed**: the memories the run was told before it started.
+- **Cut by the cap**: memories that reached the run but were left out because
+  the briefing holds at most eight, or 3,000 characters. At most twenty are
+  listed, the nearest to making it first. The agent could still find them in
+  `.spotlight/memory` in its workspace.
+- **Recalled**: the memories the agent looked up with `spotlight recall`, or
+  read from `.spotlight/memory`. Each `spotlight recall` is also a
+  `spotlight.recall` span in the task's trace, with the words or handle it
+  asked for and how many it found.
+- **Proposed**: what the run put to the team to keep, and where each stands.
+
+Then read it against what went wrong:
+
+| What you see | Cause | What to change |
+| --- | --- | --- |
+| The memory it needed is in no list, and not on the Memory page | Nobody kept it. | Write it on the team's Memory page, or turn on `memories` at the station. |
+| It is on the Memory page but in no list | It doesn't reach this run's line, station, repository or files. | Correct it to apply more widely. |
+| It is under **Cut by the cap** | Memories that are more specific, closer to the task's words, or warnings filled the briefing. | Retire memories that no longer help, narrow where others apply, or say the memory in words the task will use. |
+| It is under **Briefed** or **Recalled** and the agent acted against it | The agent didn't follow it. | Say it more plainly in a correction, or in the station's prompt. |
+| A listed memory is itself wrong | The memory is wrong. | Select **This was wrong** beside it and give a reason. It is retired, and later runs aren't told it. |
+
+Each memory's handle links to it on the team's Memory page, which also shows
+how many runs were briefed with it or recalled it. A run counts as briefed once
+it is queued with the memory, even if it is withdrawn before it starts.
+
+## Related
+
+- [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages)
+  and [Failure codes](/docs/reference/app/tasks-runs-and-the-inbox#failure-codes),
+  with which codes are retried.
+- [Host settings](/docs/reference/hosts/host-configuration)

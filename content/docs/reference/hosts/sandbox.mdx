@@ -1,0 +1,183 @@
+---
+type: reference
+icon: BookText
+title: Inside a sandbox
+description: The runner image, the sandbox's files and environment, and the phases of a run in the order the runner takes them.
+---
+
+A host starts one sandbox for each run or check, from a runner image, and
+destroys it when the run ends. [Why every run gets a fresh sandbox](/docs/hosts/why-every-run-gets-a-fresh-sandbox)
+gives the reasons.
+
+## Runner image
+
+The default image is `ghcr.io/usespotlightai/spotlight-runner:<release>`.
+A line can name an image of its own, built `FROM` it. See
+[Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image).
+
+| Part | Value |
+| --- | --- |
+| Base | `debian:bookworm-slim` |
+| Packages | `git`, `jq`, `curl`, `ca-certificates`, `bash`, Node.js 20 |
+| npm packages | `@anthropic-ai/claude-code`, `@agentclientprotocol/claude-agent-acp`, `@agentclientprotocol/codex-acp` |
+| Cursor | `cursor-agent`, installed under `/opt/cursor` and linked at `/usr/local/bin/cursor-agent` |
+| `spotlight` | `/usr/local/bin/spotlight` |
+| Agent user | `agent`, uid `2000`, shell `/bin/bash`, home `/home/agent` |
+| `/workspace` | owned by `agent`, mode `0700` |
+| `ENV` | `SPOTLIGHT_AGENT_USER=agent`, `SPOTLIGHT_WORKSPACE=/workspace` |
+| `USER` | `root` |
+| `ENTRYPOINT` | `["spotlight", "runner"]` |
+
+The runner runs as root. The harness, setup commands and the agent's own
+commands run as `agent`. See [Harnesses](/docs/reference/hosts/harnesses) for what
+each harness package provides.
+
+## Files
+
+| Path | Contents |
+| --- | --- |
+| `/workspace` | The workspace. Every run and check uses the same path. |
+| `/workspace/<repository>` | Each checkout, named by the repository's name without its owner. `acme/api` is at `/workspace/api`. |
+| `/workspace/.spotlight/attachments/<attachment id>/<name>` | Each file attached to the task, or to a message during the run. |
+| `/workspace/.spotlight/memory` | Every standing team [memory](/docs/reference/glossary#memory) that applies to the run, one file per memory named by its handle, under `team/`, `line/`, `station/` or `repositories/<owner>/<name>/<path>/`. Laid afresh each run; changing the files changes nothing the team remembers. |
+| `/workspace/.spotlight/state` | The harness's state directory, `SPOTLIGHT_STATE_DIR`. Holds the harness's sessions and the files a [harness profile](/docs/reference/terraform/harness-profile) lays down. |
+| `/workspace/.claude/skills` | Skills, for Claude Code. |
+| `/workspace/.spotlight/skills` | Skills, for Cursor and Codex. |
+| `/workspace/.spotlight/outcome.json` | Read if the agent never runs `spotlight handover`. See [Agent commands](/docs/reference/cli/agent-commands#without-a-handover). |
+| `/run/spotlight/handed.json` | The work the host handed the sandbox, mode `0400`. The runner deletes it after reading it. |
+| `/etc/spotlight/egress/authority.pem` | The run's egress certificate authority. |
+| `/etc/spotlight/egress/bundle.pem` | The image's system certificates with the egress authority added. |
+| `/spotlight/mirrors/<repository>.git` | The host's mirror of each repository, mounted read-only when the host has one. |
+
+At start the runner also appends the egress authority to each of these files
+that exists in the image: `/etc/ssl/certs/ca-certificates.crt`,
+`/etc/pki/tls/certs/ca-bundle.crt`, `/etc/ssl/cert.pem`.
+
+## Environment
+
+### The runner's environment
+
+A host sets these on the sandbox:
+
+| Variable | Value |
+| --- | --- |
+| `SPOTLIGHT_URL` | `SPOTLIGHT_SANDBOX_URL` from the host configuration. |
+| `SPOTLIGHT_HANDED` | `/run/spotlight/handed.json` |
+| `SPOTLIGHT_MIRRORS` | `/spotlight/mirrors`, when mirrors are mounted. |
+| `HTTP_PROXY`, `HTTPS_PROXY`, `http_proxy`, `https_proxy` | `http://sandbox:<credential>@egress:3128`, with a credential for this run alone. |
+| `NO_PROXY`, `no_proxy` | `localhost,127.0.0.1,::1` |
+| `SSL_CERT_FILE`, `REQUESTS_CA_BUNDLE`, `CURL_CA_BUNDLE`, `GIT_SSL_CAINFO` | `/etc/spotlight/egress/bundle.pem` |
+| `NODE_EXTRA_CA_CERTS` | `/etc/spotlight/egress/authority.pem` |
+| Variables from `SPOTLIGHT_SANDBOX_ENV` and `SPOTLIGHT_SANDBOX_PASS` | As given, except harness keys, which become `spotlight-egress:<NAME>`. See [Host settings](/docs/reference/hosts/host-configuration#harness-keys). |
+
+A runner a push pool provisions gets `SPOTLIGHT_URL` and a one-run
+`SPOTLIGHT_TOKEN` from its provider instead, and has no egress. See
+[The spotlight command](/docs/reference/cli/spotlight-command#spotlight-runner) for
+the variables the runner reads.
+
+### The agent's environment
+
+The harness, and every command the agent runs, get the runner's environment
+with these changes:
+
+| Change | Variables |
+| --- | --- |
+| Removed | Every variable starting with `SPOTLIGHT_`. |
+| Set to the agent user's | `HOME`, `USER`, `LOGNAME`, `SHELL` |
+| Set | `TERM=xterm-256color`, `COLORTERM=truecolor` |
+| Set for the run | `SPOTLIGHT_HANDOVER_URL`, `SPOTLIGHT_HANDOVER_TOKEN`, `SPOTLIGHT_STATE_DIR` |
+| Set by the harness | The harness's own variables. See [Harnesses](/docs/reference/hosts/harnesses). |
+| Set for tracing | `TRACEPARENT` |
+
+Git commits in a checkout use `user.name` `Spotlight` and `user.email`
+`noreply@usespotlight.ai`, unless `SPOTLIGHT_GIT_AUTHOR_NAME` and
+`SPOTLIGHT_GIT_AUTHOR_EMAIL` reach the runner.
+
+## Run phases
+
+The runner takes these phases in order. A failure in a phase marked "fails the
+run" ends the run with that message and exit code `-1`.
+
+| Phase | What happens | Time limit | On failure |
+| --- | --- | --- | --- |
+| Restore | When the run carries on a conversation, the workspace archive of the previous run is fetched and unpacked into `/workspace`. | 30 minutes to fetch | Starts with an empty workspace. |
+| Checkout | Each repository is cloned into `/workspace/<repository>`, from the host's mirror when there is one, or fetched when the checkout already exists. The run's branch or ref is checked out. Runs as root. | 10 minutes for all checkouts | Fails the run: `prepare: <error>`, or `prepare: preparing <path> did not finish within 10m0s`. |
+| Attachments | Each attachment is written to `.spotlight/attachments/<id>/<name>`. | | Fails the run: `fetch attachment <id>: <error>`. |
+| Skills | Skills from earlier runs are removed, and the station's skills are written. | | Fails the run. |
+| Memory | The memory folder from earlier runs is cleared, and every standing memory that applies to the run is written under `.spotlight/memory`. | | Recorded. The run continues, with only a `README.md` in the folder saying the team's memory could not be read. |
+| Harness files | The harness profile's files are written under `.spotlight/state`. | | Fails the run. |
+| Ownership | `/workspace` is given to `agent`. Files `agent` already owns are left alone. | | Fails the run: `hand over workspace: <error>`. |
+| Setup | Each repository's `setup` runs in its checkout as `agent`, with `/bin/sh -c`. | 15 minutes per checkout | Recorded. The run continues. |
+| Harness start | The harness starts in `/workspace` as `agent`, over the Agent Client Protocol. The previous session is resumed, or a new session opens. A session the harness no longer holds opens a new one. | | Fails the run: `start agent: <error>`, `resume the session: <error>` or `open a session: <error>`. |
+| Prompt | The [briefing](#briefing) is sent. Each message a person sends during the turn cancels the turn and is sent next. When a turn ends, messages waiting are sent as the next prompt. With none, the harness stops. | | See below. |
+| Change stacks | For a station with `diffs: true`, each checkout's changes are sent for a change stack. | | Skipped for that checkout. |
+| Archive | When the run carries a conversation, the workspace is packed and stored for the next run. | 2 GiB packed, 8 GiB unpacked; 30 minutes to upload | Skipped. |
+| Completion | The exit code, the handover and the session id are reported. | | |
+
+The host stops the whole sandbox, in any phase, once it has run for
+`SPOTLIGHT_RUN_TIMEOUT` (default `6h`).
+
+A turn that ends with `end_turn`, `max_tokens` or `cancelled` finishes the
+prompt phase with exit code `0`. Any other stop reason gives `1`. A harness
+that fails mid-turn gives `-1`. A person stopping the run ends it as stopped.
+
+When a [harness profile](/docs/reference/terraform/harness-profile) asks before a kind of
+action, the harness's permission request goes to Spotlight, which allows it,
+refuses it, or puts it to a person. A request put to a person cancels the turn
+and ends the run. Requests of other kinds are allowed.
+
+| Profile kind | Harness permission kinds |
+| --- | --- |
+| `read` | `read`, `search` |
+| `edit` | `edit`, `delete`, `move` |
+| `execute` | `execute` |
+
+A change stack check runs in a sandbox of its own, in place of a run. See
+[Checks](/docs/reference/app/change-stacks-and-decisions#checks).
+
+## Briefing
+
+The briefing is the first prompt a task's run sends its harness. It holds
+these parts, in this order, each only where it applies:
+
+| Part | Holds |
+| --- | --- |
+| The station's prompt | The station's `prompt`, as written. |
+| `## <task title>` | The task's title and description. |
+| Attachments | The task's attachments, under `Attached, in the workspace:`. |
+| `## Already done` | Each note on the task, under the name of the station it was written at. |
+| `## Decisions on record` | The task's [decisions](/docs/reference/app/change-stacks-and-decisions#decisions) and their disputes. |
+| `## What the team has learned` | The standing team [memories](/docs/reference/glossary#memory) that bear most closely on the run, at most eight or 3,000 characters. A memory must apply to the run's team, line, station and repositories. It is ranked by how specific its scope is, how well its words match the task's title, description and latest notes, whether it warns (a failure, a rejected approach or a correction), and whether earlier runs recalled it; then the newest first. A memory about paths comes in once the task has touched them, or when its words match the task. Each is named by its handle, such as `M-12`. |
+| `## The rest of what the team remembers` | Where the memory folder is, how it is laid out, and when to look there. Left out when no memory applies. |
+| `## Remembering` | When to propose a memory with `spotlight remember`. |
+| `## Say what you decide` | At a station with `decisions: true`: the kinds of decision to say as they are made. |
+| `## The workspace` | The line's repositories and the directory each is checked out in. |
+| `## Skills` | For `cursor` and `codex`: each skill's `SKILL.md` path and description. |
+| `## Answering the pull request` | Remarks on the task's pull request that nobody has answered, with their handles for `spotlight reply`. |
+| `## When you are done` | How to run `spotlight handover`, and the keys of the stations the run may pass the task to. |
+
+A chat's run has a briefing of its own. Its first one also lists what the team has learned, taking only memories kept for the whole team or its repositories and matching them against what the person said, and points at the memory folder. A chat has no task to ground a memory in, so it is not told to run `spotlight remember`.
+
+## Journal steps
+
+These phases record their output on the run under a step name:
+
+| Step | Messages |
+| --- | --- |
+| `restore` | `Restored the workspace the conversation was left in (<size>)`, `Started afresh: <error>` |
+| `prepare` | `reusing <path>`, `cloning <path> from the host's mirror`, `cloning <path>`, and git's output |
+| `setup` | The command's output, and `Setting up <path> failed: <error>` on failure. |
+| `archive` | `Captured the workspace for the next run (<size>)`, `Coalesced: nothing changed since the workspace was restored`, `Skipped: <error>` |
+
+A run that fails before its harness starts records a `failed` event with the
+failure message. See
+[Troubleshoot a run](/docs/runs/troubleshoot-a-run).
+
+## Host messages that fail a run
+
+| Message | Cause |
+| --- | --- |
+| `The runner image <image> could not be pulled: <error>` | No pull and no local copy. |
+| `The runner image <image> is refused: <reason>` | The host does not serve the image. |
+| `The runner image <digest> no longer holds <harness>, which this run needs` | The image changed and lost the station's harness. |
+| `The sandbox's egress did not start: <error>` | See [Egress](/docs/reference/hosts/egress). |

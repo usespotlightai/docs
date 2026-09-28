@@ -1,0 +1,119 @@
+---
+type: how-to
+icon: SquarePen
+title: Change a line's stations
+description: Edit the station blocks of a line's Terraform resource to change a station, add one or remove one.
+---
+
+A line's stations are the `station` blocks of its `spotlight_line` resource,
+in the order they appear on the board. You need the line in Terraform. If you
+don't manage the workspace with Terraform yet,
+[start from a download of it](/docs/configuration/manage-spotlight-with-terraform).
+
+## Change a station
+
+Edit the station's block. A station keeps its tasks through any change except a
+change to its `key`.
+
+```hcl
+station {
+  key       = "implementation"
+  name      = "Implementation"
+  harness   = "claude-code"
+  model     = "<model>"
+  effort    = "high"
+  prompt    = file("${path.module}/prompts/core/delivery/implementation.md")
+  decisions = true
+  memories  = true
+  tools     = [spotlight_integration.core_linear.tools["comment"]]
+  skills    = [spotlight_skill.core_grafana.key]
+  passes_to = ["code-review"]
+}
+```
+
+- To change what the agent is told, edit the station's prompt file under
+  `prompts/`. The downloaded module reads each prompt with `file()`.
+- To change the agent, set `harness` to `claude-code`, `codex` or `cursor`, and
+  optionally `model` and `effort`. Left out, `model` and `effort` are the
+  harness's own defaults.
+- To change where a task may go next, list station keys in `passes_to`.
+
+[Station fields](/docs/reference/terraform/line#station-fields) lists the rest, such as
+`ends`, `diffs`, `check`, `decisions` and `memories`. Tools, skills and profiles have
+guides of their own:
+[Give stations a tool from an HTTP API](/docs/integrations/give-stations-a-tool-from-an-http-api),
+[Give stations a skill](/docs/lines/give-stations-a-skill) and
+[Limit what agents may do](/docs/agents/limit-what-agents-may-do).
+
+Run `terraform apply`, then open the station from the board to check the
+result. The Station page shows its harness, model, prompt and skills.
+
+## Add a station
+
+Add a `station` block between the backlog and the completed station, at the
+place it should appear on the board, and add its key to the `passes_to` of each
+station that hands tasks to it:
+
+```hcl
+station {
+  key       = "spec"
+  name      = "Spec"
+  harness   = "claude-code"
+  prompt    = file("${path.module}/prompts/core/delivery/spec.md")
+  passes_to = ["implementation"]
+}
+```
+
+Leave out `kind`; a station without one is a work station, where agents run.
+Run `terraform apply`.
+
+## Remove a station
+
+<Steps>
+<Step>
+
+Move every task off the station, as in
+[Add a task and move it along a line](/docs/tasks/add-and-move-tasks#move-the-task).
+Moving a task to the backlog or to **Completed** starts no run.
+
+</Step>
+<Step>
+
+Delete the station's block. Remove its key from every other station's
+`passes_to` and from every `reaction` that names it in `to` or `from`.
+
+</Step>
+<Step>
+
+Run `terraform apply`.
+
+</Step>
+</Steps>
+
+If tasks still stand on the station, Terraform reports that the line "would
+strand work" at it and names how many tasks stand there. Move them and run
+`terraform apply` again. Changing a station's `key` counts as removing the station and adding
+another, so the same applies.
+
+## If Terraform refuses the layout
+
+- If it reports the stations "must open with their backlog", move the station
+  with `kind = "backlog"` to the top.
+- If it reports they "must close with completed", move the station with
+  `kind = "completed"` to the bottom.
+- If it reports they "must end where they end", remove `passes_to` from the
+  completed station.
+- If it reports a station "must hand on to a station work is done at", remove
+  the backlog or completed station from that station's `passes_to`.
+- If it reports stations "must not hand on to themselves", remove the station's
+  own key from its `passes_to`.
+- If it reports that a repository "has to say how its checkout is made ready",
+  a station has both `check` and `diffs = true`: give every repository of the
+  line a `setup`.
+
+## Related
+
+- [Layout rules](/docs/reference/terraform/line#layout-rules), in the line reference.
+- [Built-in lines](/docs/reference/built-ins/built-in-lines): the stations Delivery and
+  Review start with.
+- [Lines, stations and tasks](/docs/getting-started/lines-stations-and-tasks)

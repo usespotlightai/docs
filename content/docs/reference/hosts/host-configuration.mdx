@@ -1,0 +1,170 @@
+---
+type: reference
+icon: BookText
+title: Host settings
+description: The variables spotlight host reads, where it reads them from, and what it keeps on disk.
+---
+
+`spotlight host` reads its configuration when it starts. A change takes effect
+when the host restarts.
+
+## Where settings come from
+
+The host reads a file of `KEY=VALUE` lines. Lines starting with `#` are
+comments, and quotes around a value are removed. A variable set in the host's
+own environment overrides the same variable in the file.
+
+| Condition | File |
+| --- | --- |
+| `SPOTLIGHT_HOST_CONFIG` is set | that path |
+| running as root | `/etc/spotlight/host.env` |
+| otherwise | `~/.spotlight/host.env` |
+
+The [install script](/docs/reference/cli/install-script) writes this file with mode
+`0600`.
+
+## Connection
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `SPOTLIGHT_URL` | required | The Spotlight address. A trailing `/` is removed. |
+| `SPOTLIGHT_TOKEN` | none | A pull pool's token. |
+| `SPOTLIGHT_TRUST` | none | The id of a runner trust. |
+| `SPOTLIGHT_OIDC_TOKEN_FILE` | none | Path to the workload's OIDC token. Required with `SPOTLIGHT_TRUST`. Read again on every request. |
+| `SPOTLIGHT_HOST_NAME` | none | The name shown on the Runners page. Without it, the machine's hostname. |
+
+Exactly one of `SPOTLIGHT_TOKEN`, or `SPOTLIGHT_TRUST` with
+`SPOTLIGHT_OIDC_TOKEN_FILE`, must be set.
+
+## Sandboxes
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `SPOTLIGHT_CAPACITY` | `1` | Sandboxes the host runs at once. At least `1`. |
+| `SPOTLIGHT_RUNNER_IMAGE` | `ghcr.io/usespotlightai/spotlight-runner:<release>`, or `:latest` for a binary built without a release | Comma-separated images the host serves. Each entry is an exact image reference, or a prefix ending in `*` such as `ghcr.io/acme/*`. The first exact entry is the default image, used by every line that names none. If no entry is exact, the built-in default is added. |
+| `SPOTLIGHT_REGISTRY_CONFIG` | `$DOCKER_CONFIG/config.json`, else `~/.docker/config.json` | A Docker config file whose `auths` the host pulls with. Read on every pull. See [registry credentials](#registry-credentials). |
+| `SPOTLIGHT_RUN_TIMEOUT` | `6h` | A Go duration. A sandbox running longer is stopped and destroyed. |
+| `SPOTLIGHT_SANDBOX_ENV` | `sandbox.env` beside the config file | A file of variables every sandbox gets. A missing default file is ignored; a missing named file is an error. |
+| `SPOTLIGHT_SANDBOX_PASS` | none | Comma-separated names of the host's own variables to pass into every sandbox. |
+| `SPOTLIGHT_SANDBOX_URL` | `SPOTLIGHT_URL` | The Spotlight address as sandboxes and egress reach it. |
+| `SPOTLIGHT_SANDBOX_NETWORK` | none | A container network egress joins, beside the sandbox's own network. |
+| `SPOTLIGHT_SANDBOX_HOSTS` | none | Comma-separated `host:ip` entries added to egress's hosts file. |
+| `DOCKER_HOST` | none | The container engine, as `unix://` or `tcp://`. Without it, the host looks for a socket, as below. |
+
+With `DOCKER_HOST` unset, the host tries these sockets in order:
+`/var/run/docker.sock`, `~/.docker/run/docker.sock`,
+`~/.orbstack/run/docker.sock`, `~/.colima/default/docker.sock`,
+`~/.colima/docker.sock`, `/run/podman/podman.sock`,
+`$XDG_RUNTIME_DIR/podman/podman.sock`.
+
+The sandbox environment, from `SPOTLIGHT_SANDBOX_ENV` and
+`SPOTLIGHT_SANDBOX_PASS`, may not set `SPOTLIGHT_URL`, `SPOTLIGHT_TOKEN`,
+`SPOTLIGHT_TRUST`, `SPOTLIGHT_OIDC_TOKEN_FILE` or `SPOTLIGHT_HANDED`, and may
+not carry the pool token in any variable. The same holds for the egress
+environment.
+
+### Registry credentials
+
+The file named by `SPOTLIGHT_REGISTRY_CONFIG` is JSON. The host reads only its
+`auths` object; `credsStore` and `credHelpers` are ignored.
+
+```json
+{
+  "auths": {
+    "ghcr.io": { "username": "<user>", "password": "<token>" }
+  }
+}
+```
+
+Each key of `auths` names a registry. The registry of an image is the first
+part of its name when that part holds a `.` or a `:`, or is `localhost`; any
+other image is on Docker Hub.
+
+| Registry | Keys looked up, in order |
+| --- | --- |
+| Docker Hub | `https://index.docker.io/v1/`, `index.docker.io`, `docker.io`, `registry-1.docker.io` |
+| any other | `<registry>`, `https://<registry>`, `http://<registry>` |
+
+| Entry field | Description |
+| --- | --- |
+| `auth` | Base64 of `<username>:<password>`. When set, used in place of `username` and `password`. |
+| `username` | The user to pull as. |
+| `password` | The password or access token. |
+| `identitytoken` | A registry identity token, sent with the pull. |
+
+A missing file, or no entry for the registry, pulls anonymously. A file that
+cannot be read or parsed, or an `auth` that is not base64, makes the host log
+`could not read the registry credentials, so it pulls anonymously` and pull
+without credentials.
+
+### Harness keys
+
+These variables, when `SPOTLIGHT_SANDBOX_ENV` or `SPOTLIGHT_SANDBOX_PASS`
+gives them a value, are held by egress. The sandbox gets the stand-in
+`spotlight-egress:<NAME>`.
+
+| Variable | Worn toward | Header |
+| --- | --- | --- |
+| `ANTHROPIC_API_KEY` | `api.anthropic.com` | `x-api-key` |
+| `CLAUDE_CODE_OAUTH_TOKEN` | `api.anthropic.com` | `authorization: Bearer` |
+| `OPENAI_API_KEY` | `api.openai.com` | `authorization: Bearer` |
+| `CODEX_API_KEY` | `api.openai.com` | `authorization: Bearer` |
+
+Any other variable, including `CURSOR_API_KEY`, enters the sandbox as it is.
+
+## Egress
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `SPOTLIGHT_EGRESS_ALLOW` | none | Comma-separated hosts sandboxes may reach. An entry is an exact host, or `*.example.com` for its subdomains. `*` alone is refused. Without it, any host is admitted; see [Admitted hosts](/docs/reference/hosts/egress#admitted-hosts). |
+| `SPOTLIGHT_EGRESS_READS` | none | Comma-separated AWS Secrets Manager secret names or ARNs egress may read, or prefixes ending in `*`. |
+| `SPOTLIGHT_EGRESS_IMAGE` | `ghcr.io/usespotlightai/spotlight-runner:<release>`, or `:latest` for a binary built without a release | The image egress runs from. Entries in `SPOTLIGHT_RUNNER_IMAGE` do not change it. |
+| `SPOTLIGHT_EGRESS_ENV` | `egress.env` beside the config file | A file of variables only egress gets. |
+| `SPOTLIGHT_EGRESS_PASS` | none | Comma-separated names of the host's own variables to pass to egress only. |
+| `SPOTLIGHT_EGRESS_TRUST` | none | A PEM file of certificate authorities egress trusts upstream. Sandboxes do not trust them. |
+
+See [Egress](/docs/reference/hosts/egress) for what egress admits and refuses.
+
+## State
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `SPOTLIGHT_STATE` | `/var/lib/spotlight-host` as root on Linux, else `~/.spotlight/host` | The host's state directory, created with mode `0700`. |
+
+The state directory holds:
+
+| Path | Contents |
+| --- | --- |
+| `<state>/host-id` | The host's id, made on first start. |
+| `<state>/host.lock` | A lock held while the host runs. A second host on the same directory refuses to start. |
+| `<state>/mirrors/<workspace>/<repo>.git` | Bare mirrors of the repositories the host has checked out. Mounted read-only into sandboxes. Needs `git` on the host. |
+
+A host id serves one pool or trust at a time. Spotlight refuses a host id that
+is already serving another pool or trust.
+
+## Validation
+
+The host checks every setting before it starts and reports all problems
+together. Messages include:
+
+| Message | Cause |
+| --- | --- |
+| `SPOTLIGHT_URL is required` | No address. |
+| `SPOTLIGHT_TOKEN and SPOTLIGHT_TRUST are different ways in; give one` | A token together with a trust or a token file. |
+| `SPOTLIGHT_TOKEN (a pull pool's token) is required, or SPOTLIGHT_TRUST and SPOTLIGHT_OIDC_TOKEN_FILE to claim through a runner trust` | Neither a token nor a trust. |
+| `SPOTLIGHT_OIDC_TOKEN_FILE names the workload token file, and is required with SPOTLIGHT_TRUST` | Trust without a token file. |
+| `SPOTLIGHT_CAPACITY: "<x>" is not a count of at least 1` | Bad capacity. |
+| `SPOTLIGHT_RUN_TIMEOUT: "<x>" is not a duration such as 6h` | Bad timeout. |
+| `SPOTLIGHT_RUNNER_IMAGE: "<x>" is not an image reference such as ghcr.io/acme/runner:main` | Bad image entry. |
+| `SPOTLIGHT_EGRESS_ALLOW: "*" allows everything; leave the list empty for that` | `SPOTLIGHT_EGRESS_ALLOW=*`. |
+| `the sandbox environment sets <NAME>, which only the host holds` | A sandbox variable names a host credential. |
+| `the sandbox environment carries the pool token in <NAME>` | A sandbox variable holds the pool token. |
+
+The same two problems in the egress environment are prefixed `egress: `.
+A host that finds another host already holding its state directory stops with
+`another spotlight host already serves from <state>: <error>`.
+
+## Exit codes
+
+See [The spotlight command](/docs/reference/cli/spotlight-command#exit-codes) for
+the exit codes of `spotlight host`.

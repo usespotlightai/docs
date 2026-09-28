@@ -1,0 +1,169 @@
+---
+type: how-to
+icon: SquarePen
+title: Create a pull pool and get its token
+description: Define a pull pool with Terraform or the resource API and keep the token its hosts claim work with.
+---
+
+A host claims work with its pool's token. To create the pool you need to be an
+owner or admin of the workspace, or to hold a
+[workspace token](/docs/administration/issue-a-workspace-token) with the `runners`
+scope. Spotlight keeps only a hash of the token, so store the value as soon as
+you have it.
+
+## Create the pool
+
+Choose a key of lowercase words joined by dashes, such as `build-machines`. It
+can't be changed later.
+
+<Tabs items={['Terraform', 'Resource API']}>
+<Tab value="Terraform">
+
+This needs Terraform 1.11 or later, because the token is a write-only
+argument, and the provider set up with a workspace token that has the `runners`
+scope. [Manage Spotlight with Terraform](/docs/configuration/manage-spotlight-with-terraform)
+covers the provider.
+
+Generate the token with `random_password`, and let the token's version decide
+when a new one is made:
+
+```hcl
+data "spotlight_workspace" "acme" {
+  slug = "acme"
+}
+
+locals {
+  build_machines = {
+    key           = "build-machines"
+    token_version = 1
+  }
+}
+
+resource "random_password" "build_machines" {
+  length  = 48
+  special = false
+
+  keepers = local.build_machines
+}
+
+resource "spotlight_runner_pool" "build_machines" {
+  workspace_id  = data.spotlight_workspace.acme.id
+  key           = local.build_machines.key
+  token         = random_password.build_machines.result
+  token_version = local.build_machines.token_version
+}
+
+output "build_machines_token" {
+  value     = random_password.build_machines.result
+  sensitive = true
+}
+```
+
+Run `terraform apply`, then read the token:
+
+```bash
+terraform output -raw build_machines_token
+```
+
+The token is kept in the Terraform state as part of `random_password`, so
+treat the state as secret. If you leave `token` out, Spotlight issues a token
+that Terraform does not keep, and you cannot read it back.
+
+</Tab>
+<Tab value="Resource API">
+
+Sign in to Spotlight, open any page of the workspace, and open the browser's
+developer console. Paste this, with the key you want for the pool:
+
+```js
+const slug = location.pathname.split('/')[2];
+const workspace = await (await fetch(`/api/workspaces/${slug}`)).json();
+const created = await fetch(`/api/resources/workspaces/${workspace.id}/runner-pools`, {
+  method: 'POST',
+  headers: { 'content-type': 'application/json', 'idempotency-key': crypto.randomUUID() },
+  body: JSON.stringify({ key: 'build-machines' }),
+});
+console.log(created.status, created.headers.get('spotlight-pool-token'));
+```
+
+The console prints `201` and the token. The token is in the
+`Spotlight-Pool-Token` response header of this response only; a retry with the
+same idempotency key does not return it. A `403` means you are not an owner or admin of
+the workspace.
+
+To call the API from elsewhere, send the same request with
+`Authorization: Bearer <workspace token>`.
+
+</Tab>
+</Tabs>
+
+## Label the pool
+
+If lines should be able to send work to this pool in particular, give it
+labels. In Terraform, add `labels = ["linux"]`; in the API body, add
+`"labels": ["linux"]`. [Send a line's work to particular runners](/docs/hosts/place-work-on-particular-runners)
+shows how lines name them.
+
+## Limit how many runs it takes
+
+If the pool should serve only so many runs at once, however many hosts serve
+it, set `max_runs` in Terraform or `maxRuns` in the API.
+[`spotlight_runner_pool`](/docs/reference/terraform/runner-pool#fields)
+gives its range.
+
+## Rotate the token
+
+Use a token no pool has held before. The old one stops working at once, and
+runs already claimed carry on.
+
+<Tabs items={['Terraform', 'Resource API']}>
+<Tab value="Terraform">
+
+Raise `token_version` in the locals, for example to `2`. Because the locals are
+the password's `keepers`, `terraform apply` generates a new password and sends
+it with the new version. Read it again with `terraform output`.
+
+</Tab>
+<Tab value="Resource API">
+
+An update replaces the whole pool, so send back its current fields with a new
+token and a changed `tokenVersion`. On an update you supply the token
+yourself. In the developer console:
+
+```js
+const slug = location.pathname.split('/')[2];
+const workspace = await (await fetch(`/api/workspaces/${slug}`)).json();
+const { items } = await (await fetch(`/api/resources/workspaces/${workspace.id}/runner-pools`)).json();
+const pool = items.find((each) => each.key === 'build-machines');
+const read = await fetch(`/api/resources/runner-pools/${pool.id}`);
+const token = crypto.randomUUID().replaceAll('-', '') + crypto.randomUUID().replaceAll('-', '');
+const updated = await fetch(`/api/resources/runner-pools/${pool.id}`, {
+  method: 'PUT',
+  headers: { 'content-type': 'application/json', 'if-match': read.headers.get('etag') },
+  body: JSON.stringify({
+    key: pool.key,
+    labels: pool.labels,
+    maxRuns: pool.maxRuns,
+    token,
+    tokenVersion: (pool.tokenVersion ?? 0) + 1,
+  }),
+});
+console.log(updated.status, token);
+```
+
+The console prints `200` and the new token.
+
+</Tab>
+</Tabs>
+
+Hosts still holding the old token stop with exit code `3`. Give each one the
+new token in `SPOTLIGHT_TOKEN` in its `host.env`, and
+[restart it](/docs/hosts/run-a-host#restart-the-host).
+
+## Related
+
+- [Install a host](/docs/hosts/run-a-host)
+- [Run hosts without a stored token](/docs/hosts/admit-hosts-through-a-runner-trust),
+  for hosts on a platform that issues workload tokens.
+- [Pool token](/docs/reference/terraform/runner-pool#pool-token):
+  the rules a pool token follows.

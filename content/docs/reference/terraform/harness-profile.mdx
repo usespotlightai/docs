@@ -1,0 +1,171 @@
+---
+type: reference
+icon: BookText
+title: spotlight_harness_profile
+description: The fields of a harness profile, how each harness receives it, and the warnings Spotlight gives where a harness cannot hold a rule.
+---
+
+The `spotlight_harness_profile` resource, and the API's `harness-profile`
+kind: a team's set of permission rules, MCP servers and native harness
+settings. A station names one in its `profile`.
+
+| Kind | Endpoint | Terraform | Address |
+| --- | --- | --- | --- |
+| `harness-profile` | `/api/resources/teams/{teamId}/harness-profiles` | `spotlight_harness_profile` | `<team key>/<key>` |
+
+See [Resource API](/docs/reference/api/resource-api) for the operations, headers
+and errors every kind shares.
+
+## Example
+
+```hcl
+resource "spotlight_harness_profile" "core_careful" {
+  team_id = spotlight_team.core.id
+  key     = "careful"
+
+  permissions = {
+    allow = ["read", "edit", "execute(npm test *)"]
+    ask   = ["execute(git push *)"]
+    deny  = ["read(.env)"]
+  }
+
+  mcp_servers = [
+    {
+      name    = "acme"
+      command = "npx"
+      args    = ["-y", "acme-mcp"]
+      env     = { ACME_API_KEY = "secret.ACME_API_KEY" }
+    },
+  ]
+
+  native = {
+    claude-code = { includeCoAuthoredBy = false }
+    codex       = "model_verbosity = \"low\"\n"
+  }
+}
+```
+
+## Fields
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `key` | string | required | What stations name the profile by, as in `careful`. Lowercase words joined by dashes, at most 64 characters. Fixed: an update that changes it is refused; Terraform replaces the resource. |
+| `permissions.allow` | array of strings | `[]` | [Rules](#permission-rules) for what the agent may do. |
+| `permissions.ask` | array of strings | `[]` | Rules for what the agent asks a person about first. |
+| `permissions.deny` | array of strings | `[]` | Rules for what the agent may never do. |
+| `mcpServers` | array of objects | `[]` | Stdio [MCP servers](#mcp-servers). |
+| `native` | object | `{}` | Each harness's own settings, by harness id. See [native settings](#native-settings). |
+
+`permissions` accepts no other keys.
+
+## Permission rules
+
+A rule is a kind, alone or with a pattern in parentheses.
+
+| Kind | Covers |
+| --- | --- |
+| `read` | reading and searching files |
+| `edit` | editing, deleting and moving files |
+| `execute` | running commands |
+
+| Rule | Meaning |
+| --- | --- |
+| `execute` | every command |
+| `execute(npm test *)` | commands matching the pattern |
+| `read(.env)` | reading the paths matching the pattern |
+
+- A pattern may not be empty.
+- A rule may appear once, under one of `allow`, `ask` and `deny`.
+- For each kind, a bare rule sets what happens to anything no patterned rule
+  matches. A kind has at most one bare rule.
+- A kind with no bare rule is allowed.
+- A rule with a pattern is an exception to the kind's bare rule.
+
+An `ask` rule becomes a Spotlight approval. A permission request is put to a
+person only when its kind has an `ask` rule, bare or patterned; a request of
+any other kind is allowed. See
+[Approvals](/docs/reference/app/tasks-runs-and-the-inbox#approvals).
+
+## MCP servers
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `name` | string | required | Lowercase words joined by dashes, at most 64 characters. Each name once per profile. |
+| `command` | string | required | The command that starts the server, as in `npx`. |
+| `args` | array of strings | `[]` | Its arguments. |
+| `env` | map of name to string | `{}` | Its environment. Names match `^[A-Za-z_][A-Za-z0-9_]*$`. |
+
+An `env` value is plain text, stored and shown as written, or a reference to a
+workspace [secret](/docs/reference/terraform/secret) written `secret.<NAME>`, as in
+`secret.ACME_API_KEY`.
+
+- A reference must name a secret the workspace holds, or the write is refused
+  with `422`.
+- The server receives a stand-in, and [egress](/docs/reference/hosts/egress) wears
+  the value on the server's requests to the hosts the secret is bound to.
+- A secret a profile references cannot be deleted.
+
+Every harness gets the servers when its session starts. Cursor also gets them in
+`cursor/mcp.json`.
+
+## Native settings
+
+| Key | Value | Read by the harness as |
+| --- | --- | --- |
+| `claude-code` | an object | Claude Code settings JSON |
+| `codex` | a string of TOML | Codex `config.toml` |
+| `cursor` | an object | Cursor CLI config JSON |
+
+A key that names no harness, a `claude-code` or `cursor` value that is not an
+object, and a `codex` value that does not parse as TOML are refused with `422`.
+
+## How each harness receives it
+
+A run's harness gets the profile's settings as files in the run's state
+directory, `.spotlight/state` within the run's workspace. See
+[Inside a sandbox](/docs/reference/hosts/sandbox#files). Spotlight does not remove a
+repository's own settings files, such as `.claude/settings.json` or
+`AGENTS.md`.
+
+| Harness | Files | Directory variable | Also |
+| --- | --- | --- | --- |
+| `claude-code` | `claude/settings.json` | `CLAUDE_CONFIG_DIR` | `ask` and `deny` rules go into the session as managed settings, with bypass-permissions mode disabled. |
+| `codex` | `codex/config.toml`, `codex/rules/spotlight.rules` | `CODEX_HOME` | The harness runs in codex-acp's `read-only` mode, with a workspace-write sandbox on every turn. |
+| `cursor` | `cursor/cli-config.json`, `cursor/mcp.json` | `CURSOR_CONFIG_DIR` | |
+
+| Harness | What the files hold |
+| --- | --- |
+| `claude-code` | `permissions.allow` and `permissions.defaultMode` from the rules, then `native.claude-code` layered over them. `defaultMode` is `acceptEdits` unless `edit` is not allowed. Each MCP server is allowed as `mcp__<name>`. |
+| `codex` | `config.toml` is `native.codex` as written. `spotlight.rules` holds a `prefix_rule` for each `execute` rule with a pattern. |
+| `cursor` | `cli-config.json` holds `permissions.allow` and `permissions.deny` from the rules, then `native.cursor` layered over them. `mcp.json` holds the MCP servers. |
+
+## Warnings
+
+Where a harness cannot hold a rule as written, the profile's `warnings` name
+the approximation. The write succeeds. Warnings include:
+
+| Harness | Case | Effect |
+| --- | --- | --- |
+| `claude-code` | A looser patterned rule under a bare `deny`, or under a bare `ask` for `read` | The bare rule holds for the whole kind. |
+| `claude-code`, `cursor` | `native` sets a key the rules also write | The native value replaces it. |
+| `codex` | Any `read` rule other than `allow` | Not held; Codex reads what its sandbox can see. |
+| `codex` | A bare `edit` rule other than `allow`, or any `edit` rule with a pattern | Not held; edits are decided by the sandbox. |
+| `codex` | A bare `execute` rule other than `allow` | Not held; only patterned `execute` rules are. |
+| `codex` | An `execute` pattern with a wildcard other than a final `*` word | Written as every command starting with the words before the wildcard. |
+| `codex` | An `execute` pattern starting with a wildcard | Left out. |
+| `codex` | `native.codex` sets `approval_policy`, `approvals_reviewer` or `sandbox_mode` | Replaced on every turn. |
+| `cursor` | A bare `ask` for `read` | Read is allowed. |
+| `cursor` | A patterned rule under a bare `deny` | The kind is denied. |
+| `cursor` | An `ask` rule under an allowed kind | Denied instead. |
+| `cursor` | An `execute` pattern of more than one word | Written for the command's first word only. |
+| `cursor` | Any MCP server | May not load: Cursor asks a person to approve each server, and ACP carries no such request. |
+
+## Delete
+
+A delete is refused with `409` `in-use` while any station names the profile.
+
+A station that names a profile its team does not hold is not refused when the
+line is written; its runs are refused.
+
+See [Limit what agents may do](/docs/agents/limit-what-agents-may-do)
+and [Give an MCP server a secret](/docs/security/give-an-mcp-server-a-secret).

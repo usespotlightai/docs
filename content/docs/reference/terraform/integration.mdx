@@ -1,0 +1,408 @@
+---
+type: reference
+icon: BookText
+title: spotlight_integration
+description: Every key of an integration definition, the rules Spotlight checks when it is written, and the endpoints a definition gives a team.
+---
+
+The `spotlight_integration` resource, and the integration resource of the
+API: a team's definition of an outside service, with the webhooks it sends,
+the happenings they raise, the tools agents may call on it, and how Spotlight
+connects to it. Its body is a definition object, sent as the
+`definition` of `spotlight_integration` in Terraform or as the JSON body of the
+resource API.
+
+| Kind | Endpoint | Terraform | Address |
+| --- | --- | --- | --- |
+| `integration` | `/api/resources/teams/{teamId}/integrations` | `spotlight_integration` | `<team key>/<integration>` |
+
+See [Resource API](/docs/reference/api/resource-api) for the operations, headers
+and errors every kind shares, and [Expressions](/docs/reference/api/expressions)
+for how the expressions inside a definition are written and what each sees.
+
+## Example
+
+```hcl
+resource "spotlight_integration" "core_acme" {
+  team_id = spotlight_team.core.id
+  definition = {
+    integration = "acme"
+    name        = "Acme"
+    webhook = {
+      verify = {
+        hmac = { secret = "secret.ACME_SIGNING", header = "acme-signature" }
+      }
+      events = [{
+        when = "$${{ body.type == \"issue\" && body.action == \"updated\" }}"
+        raise = {
+          happening = "acme.issue.updated"
+          marks     = [{ kind = "acme.issue", value = "$${{ body.issue.id }}" }]
+        }
+      }]
+    }
+    actions = {
+      comment = {
+        request = {
+          method = "POST"
+          url    = "https://api.acme.example/comments"
+          body   = { issue = "$${{ inputs.issue }}", text = "$${{ inputs.body }}" }
+          auth   = { secrets = ["secret.ACME_API_KEY"] }
+        }
+      }
+    }
+    tools = {
+      comment = {
+        does        = "comment"
+        description = "Comment on an Acme issue."
+        inputs = {
+          issue = { type = "string", required = true }
+          body  = { type = "string", required = true }
+        }
+      }
+    }
+  }
+}
+```
+
+Acme stands for any HTTP service. A station gives this tool as `acme.comment`.
+
+## Top level
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `integration` | string | required | The name the host is addressed by. Prefixes its tools, happenings and webhook address. Fixed: an update that changes it is refused; Terraform replaces the resource. |
+| `name` | string | none | The name shown in the web app. Without it, the `integration` value. |
+| `types` | map of name to object | `{}` | Named shapes that expressions are type-checked against. |
+| `connection` | object | none | How the team links to the host. See [connection](#connection). |
+| `webhook` | object | none | Deliveries the host sends. See [webhook](#webhook). |
+| `poll` | object | none | A request Spotlight repeats. See [poll](#poll). |
+| `schedule` | object | none | An action Spotlight runs on a cron schedule. See [schedule](#schedule). |
+| `actions` | map of name to object | `{}` | Requests to the host. See [actions](#actions). |
+| `tools` | map of name to object | `{}` | Actions offered to agents and hooks. See [tools](#tools). |
+| `on` | map of name to object | `{}` | Actions run when a task event happens. See [on](#on). |
+
+A definition must do something: it has a `webhook`, a `poll`, a `schedule`, at
+least one action, or at least one `on` binding. Otherwise it is refused with
+`must do something: a webhook, a poll, a schedule, or an action to run`.
+
+A read adds two fields that cannot be set: `source`, equal
+to `integration`, and `tools`, a map from each tool's name in the definition to
+the name stations and hooks use, as in `{ "comment": "acme.comment" }`.
+
+## Names
+
+| Name | Pattern | Example |
+| --- | --- | --- |
+| `integration` | lowercase letters and digits, one word; not `catalog` | `acme` |
+| action, tool, tool input | lowercase words joined by dashes | `post-message` |
+| happening | the integration's own name, a dot, then dotted words of lowercase letters, digits, `_` and `-` | `acme.issue.updated` |
+| mark kind | a source name, a dot, then dotted words as for a happening | `acme.issue` |
+| secret reference | `secret.` and a secret name of capitals, digits and `_`, starting with a capital, at most 64 characters | `secret.ACME_API_KEY` |
+| type name | starts with a capital, then letters and digits | `Issue` |
+
+A happening that does not begin with the integration's name is refused. One
+integration may not raise the same happening twice, offer the same tool twice,
+or bind the same task event twice.
+
+An integration named `github` receives no webhook deliveries at its team
+address: every delivery there returns `401`. The name `github` belongs to
+the built-in GitHub source.
+
+## Shapes
+
+A shape is a map from field name to a type, written as text such as `string`,
+`list<Issue>` or a type name from `types`, or to a nested shape. Shapes appear
+in `types`, `webhook.shape`, `poll.shape` and a request's `response`. They are
+used only to type-check expressions. A shape that cannot be read, or `types`
+that name themselves in a cycle, produce a warning and are then ignored.
+
+## Connection
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `oauth2.authorize` | string | required | The host's authorization endpoint. |
+| `oauth2.token` | string | required | The host's token endpoint. |
+| `oauth2.scopes` | array of strings | `[]` | Scopes asked for, joined by spaces. |
+| `oauth2.identity` | string | none | An expression. Names the linked account, shown as "Connected as" in the web app. Sees `response`, the token endpoint's response. |
+| `manual.secrets` | array of strings | `[]` | Secrets the connection uses, each a secret reference, `secret.<NAME>`. |
+
+### OAuth connect and callback
+
+An integration with `connection.oauth2` shows a `Connect to <name>` button,
+`Reconnect to <name>` once linked, on the team's Integrations settings page.
+It links only when the deployment holds an OAuth client for the integration's
+name.
+
+| Step | Endpoint | Behaviour |
+| --- | --- | --- |
+| Begin | `POST /api/teams/{teamId}/integrations/{source}/connect` | Needs a signed-in owner or admin of the workspace (the `administer` permission). Returns `{ "url": ... }`, the authorization URL with `client_id`, `redirect_uri`, `response_type=code`, `scope` and a signed `state`, and sets a one-time cookie. `404` when there is no such team, the person may not link it, or the host does not link over OAuth. |
+| Callback | `GET /api/integrations/oauth/callback` | Needs the same signed-in person, still an owner or admin, and the cookie. Exchanges the code and keeps the grant sealed. Redirects to `/w/<slug>/team/<teamId>/settings/integrations?connected=<source>`, or to `/?integration=failed`. |
+
+The `state` expires after 10 minutes. Access tokens are refreshed with the
+grant's refresh token. A request with `auth.oauth2` wears the access token as
+`Authorization: Bearer`.
+
+## Webhook
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `shape` | object | none | The shape of `body`, for type-checking. |
+| `verify` | object | required | How a delivery is verified. Exactly one of `hmac`, `token`, `asymmetric` or `jwt`. See [verify](#verify). |
+| `respond` | object | none | A handshake response. `when` (an expression that returns bool) and `body` (an expression). When `when` holds, Spotlight returns `200` with `body` and does not read the delivery further. |
+| `mine` | string | none | An expression that returns bool. When it holds, the delivery is the host echoing Spotlight's own post, and its happenings are dropped. |
+| `route` | object | none | `by` (expression). Type-checked. Deliveries go to the integration's team whatever it returns. |
+| `parse` | string | `json` | `json` or `form`. Kept in the definition. Not used when a delivery is read. |
+| `delivery` | string | none | An expression. The delivery's id. A delivery with an id already taken is not processed again. Without it, the SHA-256 of the raw body. |
+| `events` | array of objects | required | At least one. See [events](#events). |
+
+### Delivery address
+
+```text
+POST https://<your Spotlight address>/api/webhooks/w/<workspace slug>/t/<team key>/<integration>
+```
+
+| Status | When |
+| --- | --- |
+| `200` with the `respond.body` text | The delivery is verified and `respond.when` holds. |
+| `204` | The delivery is verified and accepted. It is read afterwards. |
+| `401` | The signature does not verify, or there is no such workspace, team or integration. The response does not say which. |
+
+An accepted delivery whose processing fails is retried up to 8 attempts in
+all, from 2 seconds apart doubling to 1 hour.
+
+### Verify
+
+`hmac`:
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `algorithm` | string | `sha256` | `sha256`, `sha1` or `sha512`. The HMAC digest. |
+| `secret` | string | required | The signing secret. A secret reference, `secret.<NAME>`. |
+| `signed` | string | none | An expression. The text that was signed. Sees `body`, `headers` and `raw`. Without it, the raw body. |
+| `encoding` | string | `hex` | `hex` or `base64`. How the signature is written. |
+| `prefix` | string | `""` | Text written before the signature, as in `v0=`. |
+| `header` | string | none | The header that carries the signature. A delivery without it is refused, and without `header` no delivery verifies. |
+| `freshness.at` | string | none | An expression. The delivery's time in Unix seconds. A delivery whose time cannot be read is refused. Required with `freshness`. |
+| `freshness.within` | string | none | Seconds, written as `300s`. A delivery further than this from now is refused. Required with `freshness`. |
+
+`token`:
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `secret` | string | required | The shared token. A secret reference, `secret.<NAME>`. |
+| `header` | string | none | The header that carries it. Compared whole. A delivery without it is refused, and without `header` no delivery verifies. |
+
+`asymmetric`:
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `algorithm` | string | required | `ed25519` or `rsa-sha256`. The signature algorithm. |
+| `key` | string | required | The public key: hex of the raw key for `ed25519`, PEM for `rsa-sha256`. May hold expressions. |
+| `signed` | string | none | An expression. The text that was signed. Without it, the raw body. |
+| `encoding` | string | `hex` | `hex` or `base64`. How the signature is written. |
+| `header` | string | none | The header that carries the signature. A delivery without it is refused, and without `header` no delivery verifies. |
+| `freshness` | object | none | As for `hmac`. |
+
+`jwt`:
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `jwks` | string | required | Where the signing keys are published. |
+| `header` | string | `authorization` | The header that carries the token. A `Bearer ` prefix is removed. |
+| `audience` | string | none | When set, the token's `aud` must hold it. |
+| `issuer` | string | none | When set, the token's `iss` must equal it. |
+
+A `jwt` token must be signed with `RS256`. An expired token is refused.
+
+`verify` accepts no other way. `oauth2` and `secrets` are refused with
+`verifies a delivery by hmac, token, asymmetric or jwt`.
+
+## Events
+
+`webhook.events` and `poll.events` are lists of events. Each event is read
+against every delivery or poll response, in order, and raises one happening when
+its `when` holds.
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `forEach` | string | none | An expression that returns a list. The event is read once for each item, which expressions see as `item`. |
+| `when` | string | required | An expression that returns bool. The event raises only when it holds. An expression that fails to evaluate counts as false. |
+| `lookup.request` | object | none | A further request made before raising. See [requests](#requests). When it does not succeed, the event raises without the captures. |
+| `lookup.capture` | map of name to string | none | Values read from the lookup's response. Raise expressions see each by its name. Each value is an expression. Required with `lookup`. |
+| `raise` | object | required | See [raise](#raise). |
+
+### Raise
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `happening` | string | required | The happening's name. Begins with the integration's name. |
+| `label` | string | none | What a person picking a happening reads. Without it, the happening's name. |
+| `told` | string | none | How the happening reads in a note on the task. Without it, the happening's name. |
+| `spoken` | boolean | `false` | Whether the happening carries words to the task. |
+| `say` | string | none | An expression. The words carried. |
+| `opens` | object | none | Opens a task when no task is found. See below. |
+| `branch` | string | none | An expression. A branch name that finds a task. |
+| `marks` | array of objects | `[]` | Marks that find a task, or are worn by the task this opens. |
+| `attaches` | object | none | Files attached to the task. See below. |
+
+A raise must name a `branch` or at least one mark with `find: true`; otherwise
+it is refused with `needs a branch or a mark, or nothing could find a task from it`.
+When neither evaluates to a value, reading the delivery fails.
+
+Mark:
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `kind` | string | required | The mark kind, source first. |
+| `value` | string | required | An expression. The mark's value. A mark whose value is empty is not worn. |
+| `find` | boolean | `true` | `true`: the mark finds the task the happening is about. `false`: the task this opens wears it, and it never finds a task. |
+
+`opens`:
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `onto` | string | required | The role of the line to open on, in lowercase words joined by dashes. |
+| `at` | string | none | The key of the station to open at. Without it, or with a key the line does not have, the line's first `work` station. |
+| `title` | string | required | An expression. The task's title. No task opens when it is empty. |
+| `description` | string | none | An expression. The task's description. |
+| `assignBy.email` | string | none | An expression. The email of the person to assign. |
+
+A task opens only on a line of the team whose role is `onto`, and only when
+the raise wears at least one mark.
+
+`attaches`:
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `each` | string | required | An expression that returns a list, one entry per file. Later fields see each entry as `file`. |
+| `name` | string | required | An expression. The file name. An entry with no name is skipped. |
+| `type` | string | none | An expression. The content type. |
+| `size` | string | none | An expression. The size in bytes. |
+| `fetch` | object | required | The request that downloads the file. |
+
+## Poll
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `shape` | object | none | The shape of `body`, for type-checking. |
+| `every` | string | required | Whole seconds between polls, written as `60s`. |
+| `request` | object | required | The request made each time. Sees `cursor` and `connection`. |
+| `cursor` | string | none | An expression. The next cursor, read from the response. Sees `body` and `cursor`. |
+| `events` | array of objects | required | At least one. Read against the response, which expressions see as `body`. |
+
+A poll whose request is refused raises nothing.
+
+## Schedule
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `cron` | string | required | A cron expression: five fields, or six with seconds first. |
+| `do` | string | required | The action to run. It must be defined in `actions`. |
+
+## Actions
+
+Each entry of `actions` is `{ "request": <request> }`. Action names are
+lowercase words joined by dashes, at most 64 characters.
+
+### Requests
+
+A request appears in `actions`, `poll.request`, `lookup.request` and
+`attaches.fetch`.
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `response` | object | none | The shape of `response`, for type-checking. |
+| `method` | string | `POST` | `GET`, `POST`, `PUT`, `PATCH` or `DELETE`. The HTTP method. |
+| `url` | string | required | The address. May hold expressions. |
+| `query` | map of name to string | `{}` | Query parameters. A parameter that evaluates to nothing is left out. Values may hold expressions. |
+| `headers` | map of name to string | `{}` | Request headers. A header that evaluates to nothing is left out. Values may hold expressions. |
+| `body` | string, array or object | none | A string is sent as it is. A list or object is sent as JSON, with `content-type: application/json` unless a header sets it. Strings inside may hold expressions. |
+| `auth` | object | none | Exactly one of `oauth2` or `secrets`. See below. |
+| `expect.success` | string | none | An expression that returns bool. When set, decides whether the request succeeded. |
+| `expect.status` | array of integers | none | Statuses that count as success, when `expect.success` is not set. |
+| `capture` | map of name to string | none | Values read from the response. Each value is an expression. |
+| `retry` | object | none | `times` (integer, default `0`) and `backoff` (string). Kept in the definition; a request is sent once. |
+
+Without `expect`, a request succeeds on any `2xx` status. An expression in
+`url`, `query`, `headers` or `body` that fails to evaluate fails the request
+before it is sent.
+
+`auth`:
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `oauth2.connection` | boolean | `true` | Must be `true`. Wears the team's OAuth access token as `Authorization: Bearer`. |
+| `secrets` | array of strings | none | Secret references, `secret.<NAME>`, at least one when set. Each secret is worn in its bound header toward the hosts it is bound to. A request to any other host goes without it. Redirects are not followed. |
+
+`auth` accepts no other way, and is refused with `authenticates a request by its oauth2 connection, or by the secrets it wears toward the hosts they are bound to`. See [Bindings](/docs/reference/terraform/secret#bindings).
+
+Every request goes only to hosts on the deployment's outbound allow-list. A
+request to another host is refused with `<host>: is not among the hosts this deployment allows outbound calls to`.
+
+## Tools
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `does` | string | required | The action the tool runs. It must be defined in `actions`. |
+| `description` | string | required | When an agent should use the tool. May not be empty. |
+| `approval.because` | string | none | When set, each use first asks a person, who is shown this text. May not be empty. |
+| `inputs` | map of name to object | `{}` | The tool's inputs. |
+| `output` | string | none | An expression. What the tool returns. Sees `response`, `status`, `capture` and `inputs`. Without it, the `capture` map. |
+
+Input:
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `type` | string | `string` | `string`, `number` or `boolean`. The input's type. Expressions see `number` as `dyn` and `boolean` as `bool`. |
+| `description` | string | none | Shown to the agent. |
+| `required` | boolean | `false` | Whether the agent must give it. |
+| `default` | string | none | The value when none is given. Sees `task`. May hold expressions. |
+| `piped` | boolean | `false` | The input may be piped to the tool command. At most one input per tool, and it must be a `string`. |
+
+An agent calls a tool as `<integration>.<tool>`. A tool whose request fails
+returns `the integration answered <status>: <body>`, with the body cut at 500
+characters. See [Approvals](/docs/reference/app/tasks-runs-and-the-inbox#approvals)
+and [Require approval before a tool runs](/docs/integrations/require-approval-before-a-tool-runs).
+
+A tool that a station gives or a hook matches or calls cannot be withdrawn
+from the definition; the update is refused with `409`.
+
+## On
+
+`on` maps a task event to a binding. The events are:
+
+| Event | Happens when |
+| --- | --- |
+| `task.opened` | A task is opened by a happening from outside Spotlight. |
+| `task.pull-request-opened` | A task's pull request is opened. |
+| `task.asked` | A task asks a person. |
+
+Binding:
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `do` | string | required | The action to run. It must be defined in `actions`. |
+| `to` | map of name to string | `{}` | Values the action sees in `target`. Sees `task` and `ask`. Each value is an expression. |
+| `routes` | map of name to string | `{}` | Keyed by line key. When `to` gives no `channel`, the value for the task's line is used as `target.channel`. |
+| `mark` | array of objects | `[]` | Marks the task wears after the action succeeds. Sees `response` and `capture`. `find` is not read here. |
+
+A binding runs only when `target` holds a `channel` or a `thread`. Otherwise
+nothing is sent.
+
+## Secrets in expressions
+
+No expression may read a secret. An expression containing `secret.` or
+`secret[` is refused with `reads a secret's value, which nothing may; name the secret in auth.secrets and Spotlight wears it toward the hosts it is bound to`.
+
+Secret references are not checked against the workspace's secrets when the
+definition is written. A request that wears a missing secret fails with
+`The workspace holds no secret named <NAME>; define it before anything uses it`.
+
+## Errors and warnings
+
+A definition that does not match the schema, an expression that does not
+parse, and a broken rule above are errors: the write is refused with `422`
+and each problem is listed at its path, as in
+`webhook.events[0].raise.happening`. An expression that parses but does not
+type-check is a warning: the definition is kept, and the warning is returned
+in `warnings`. See [Type-checking](/docs/reference/api/expressions#type-checking).

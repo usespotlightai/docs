@@ -1,0 +1,101 @@
+---
+type: concept
+icon: Lightbulb
+title: Which run goes first
+description: How Spotlight orders the runs waiting in a workspace, why a station's place in the line's graph matters and its column position does not, and what else decides where and when a run starts.
+---
+
+At any moment a workspace can have more runs waiting than there are sandboxes
+to run them. A busy morning might queue a triage run for a new request, an
+implementation run for a task that has passed spec, and a chat someone
+started on the Agent page. When a host has room for one more, Spotlight has to
+choose, and what it chooses by is less obvious than the board makes it look.
+
+## Priority comes from the line's shape
+
+Each run gets a priority when it is queued, and the priority of a task's run
+is the depth of its station in the line: how many steps it takes to reach that
+station from the backlog, following the stations each one may hand a task on
+to. Where there is more than one path, the shortest counts. On Delivery,
+triage is one step from the backlog. Triage may pass a task to spec or straight
+to implementation, so both are two steps away, and code review is three.
+
+When a host asks for work, Spotlight offers it the waiting run with the
+highest priority. Between runs of the same priority, the one that has waited
+longest goes first.
+
+Because only the shortest path counts, an edge that leads back to a station
+already reached does not change its depth. Delivery's code review may send a
+task back to implementation, but implementation stays at depth two, because it
+was already reached on the way forward. A line with rework loops keeps a stable
+order, and a task sent back for more work competes at the same priority it had
+the first time.
+
+Priority is compared across the whole workspace, not within one line. A run at
+depth three on one line goes before a run at depth one on another.
+
+## Deeper runs first
+
+The effect is that runs further along a line go before runs nearer its start.
+A task about to be reviewed is taken up before a new request is triaged.
+
+No reason for this order is written down, so what follows is our
+interpretation: it finishes work already in flight before starting new work. A
+task at code review has had several runs spent on it and is close to a pull
+request; a task at triage has had none. If capacity is short, taking the deeper
+run first turns the investment already made into something finished sooner, and
+it keeps a line from filling up with half-done tasks while new ones keep
+arriving at the front. A steady stream of deep work can, in turn, keep a new
+request waiting. With enough hosts that never matters, because everything runs
+at once; the order only decides anything when there is a queue.
+
+## Chats go ahead of everything
+
+A planning chat on the Agent page runs the same way as a task, as a run a host
+claims. Chat runs have a fixed priority of 1000, well above the depth of any
+station on a realistic line, so they are offered before any task run.
+
+In a chat a person is typing and waiting for a reply, while a task run works
+while nobody watches. Putting the conversation first, as we see it, keeps the
+wait off the only run someone is sitting in front of.
+
+## Column order is only for people
+
+The board shows a line's stations as columns in a fixed order, and that order
+has no effect on which run goes first. Priority is worked out from the
+hand-on graph alone, so moving a column would change nothing about the queue.
+That is why the board does not let people reorder columns: the order is part of
+the line's definition, written alongside everything else about it (see the
+[`spotlight_line`](/docs/reference/terraform/line) reference).
+
+The row on screen is a convenience for reading. The graph is what Spotlight
+acts on, both here and when it checks where an agent may hand a task
+([Lines, stations and tasks](/docs/getting-started/lines-stations-and-tasks)
+describes that side).
+
+## Priority is not the only thing that decides
+
+Priority only orders the runs a particular host could take. Before it is
+compared, the waiting runs are narrowed to those the host asking can serve: its
+placement must match the run's (see [Send a line's work to particular runners](/docs/hosts/place-work-on-particular-runners)), its image must
+include the run's harness, and it must have room. How a run that was handed
+back or lost returns to the queue is in [Tasks, runs and the
+inbox](/docs/reference/app/tasks-runs-and-the-inbox).
+
+So a lower-priority run can start first if the only host with room is one the
+higher-priority run cannot use. Capacity sets the pace: each host runs as many
+sandboxes at once as it is configured for, and a pool can cap how many of its
+runs are running at once. A pool that is full is offered nothing until a run
+ends.
+
+Push pools, which Spotlight calls to start a sandbox for each run, are served
+in the same priority order, less the runs that wear secrets; [The sandbox is
+the security boundary](/docs/security/the-sandbox-is-the-security-boundary)
+explains why those wait for a host.
+
+Taken together, placement and harness decide which runs a host could take,
+capacity decides whether it takes one now, and depth and age decide which. The
+limits involved are listed in [Limits and
+timeouts](/docs/reference/limits-and-timeouts), and pools and hosts in
+[`spotlight_runner_pool`](/docs/reference/terraform/runner-pool) and
+[`spotlight_runner_trust`](/docs/reference/terraform/runner-trust).

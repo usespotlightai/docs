@@ -1,0 +1,234 @@
+---
+type: reference
+icon: BookText
+title: The spotlight command
+description: The subcommands of the spotlight binary, what each reads, prints and exits with, and the service units spotlight host install writes.
+---
+
+`spotlight` is one binary. A host runs `spotlight host`. Each sandbox runs
+`spotlight runner` and `spotlight egress` from the runner image. An agent runs
+the [agent commands](/docs/reference/cli/agent-commands) inside its sandbox.
+
+## Synopsis
+
+```text
+spotlight host
+spotlight host install
+spotlight runner
+spotlight runner harnesses <json>
+spotlight egress
+spotlight version
+spotlight help
+```
+
+Any other first argument is taken as an [agent command](/docs/reference/cli/agent-commands).
+
+| Invocation | Output | Exit code |
+| --- | --- | --- |
+| `spotlight` with no arguments | Usage on standard error. | `1` |
+| `spotlight help`, `-h` or `--help` | Usage on standard output. | `0` |
+| `spotlight version` | The release, such as `20260926-01`. A binary built without one prints `dev`. | `0` |
+
+## spotlight host
+
+```text
+spotlight host
+```
+
+Serves a pull pool or a runner trust. The host claims work, starts a fresh
+sandbox and egress for each run or check, and destroys both when it ends.
+Any argument other than `install` prints the usage and exits `1`.
+
+| Reads | Reference |
+| --- | --- |
+| The host configuration file and environment | [Host settings](/docs/reference/hosts/host-configuration) |
+| The container engine | [Host settings](/docs/reference/hosts/host-configuration#sandboxes) |
+| The state directory | [Host settings](/docs/reference/hosts/host-configuration#state) |
+
+The host logs JSON lines to standard output. Each line a sandbox prints
+appears in the host's log as an entry with the message `sandbox` and the line
+in `said`. Errors that stop the host print to
+standard error as `spotlight host: <error>`.
+
+| Message | When |
+| --- | --- |
+| `serving` | The host started. |
+| `the container runtime is not answering yet` | The engine did not respond. The host retries. |
+| `could not report to the control plane, still trying` | Spotlight did not respond. The host retries. |
+| `destroyed a sandbox left behind` | A sandbox from an earlier host process was removed at start. |
+| `started a sandbox` | A run or check began. |
+| `the sandbox finished` | The sandbox exited. |
+| `the sandbox ran past its time` | `SPOTLIGHT_RUN_TIMEOUT` passed. The sandbox is stopped with a 30-second grace. |
+| `could not start a sandbox; claiming from this image pauses` | Claims for that image pause, longer after each failure in a row, up to about 30 seconds. |
+| `gave up the work: its way out did not start` | Egress did not start. The run fails, or the check is skipped. |
+| `the host is stopping, so the work is left to be claimed again` | The host stopped before the sandbox started. |
+| `the control plane will not have this host; it stops claiming and lets its sandboxes finish` | Spotlight refused the host. It exits `3`. |
+
+### Exit codes
+
+| Code | Meaning |
+| --- | --- |
+| `0` | Stopped on `SIGINT` or `SIGTERM`. |
+| `1` | A configuration or runtime error. |
+| `3` | Spotlight refused the host: an unknown or rotated credential, a host id serving another pool or trust, or a host Spotlight holds no report from through that pool or trust. |
+
+## spotlight host install
+
+```text
+spotlight host install
+```
+
+Installs `spotlight host` as a service and starts it. It loads the host
+configuration first and refuses to install if it is invalid:
+
+```text
+spotlight host: <config path> is not ready to serve: <problems>
+```
+
+The service runs the binary at its resolved path (symbolic links followed),
+with `SPOTLIGHT_HOST_CONFIG` set to the configuration path.
+
+| Platform | Service | Messages |
+| --- | --- | --- |
+| Linux | systemd unit `spotlight-host` | `spotlight host: running as the systemd service spotlight-host (<unit path>)` |
+| macOS | launchd agent `ai.usespotlight.host` | `spotlight host: running as the launchd agent ai.usespotlight.host, logging to <log path>` |
+| Other | none | ``installing a service on <os> is not supported; run `spotlight host` under your own supervisor`` |
+
+### systemd unit
+
+| | As root | As another user |
+| --- | --- | --- |
+| Unit file | `/etc/systemd/system/spotlight-host.service` | `~/.config/systemd/user/spotlight-host.service` |
+| `systemctl` scope | system | `--user` |
+| `WantedBy` | `multi-user.target` | `default.target` |
+
+After writing the unit, `host install` runs `systemctl daemon-reload`,
+`systemctl enable spotlight-host` and `systemctl restart spotlight-host`. As a
+user other than root it also prints:
+
+```text
+spotlight host: to keep it running after you log out: loginctl enable-linger <user>
+```
+
+| Setting | Value |
+| --- | --- |
+| `Description` | `Spotlight host: a fresh runner for every run` |
+| `After` | `network-online.target docker.service podman.socket` |
+| `Wants` | `network-online.target` |
+| `ExecStart` | `"<binary>" host` |
+| `Environment` | `"SPOTLIGHT_HOST_CONFIG=<config path>"` |
+| `Restart` | `always` |
+| `RestartSec` | `5` |
+| `RestartPreventExitStatus` | `3` |
+| `TimeoutStopSec` | `90` |
+
+### launchd agent
+
+| Key | Value |
+| --- | --- |
+| File | `~/Library/LaunchAgents/ai.usespotlight.host.plist` |
+| `Label` | `ai.usespotlight.host` |
+| `ProgramArguments` | `<binary>`, `host` |
+| `EnvironmentVariables` | `SPOTLIGHT_HOST_CONFIG=<config path>`, `PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin` |
+| `RunAtLoad` | true |
+| `KeepAlive` | true |
+| `ThrottleInterval` | `60` |
+| `ExitTimeOut` | `90` |
+| `StandardOutPath`, `StandardErrorPath` | `~/Library/Logs/spotlight-host.log` |
+
+`host install` runs `launchctl bootout gui/<uid>/ai.usespotlight.host`, then
+`launchctl bootstrap gui/<uid> <plist path>`. The agent restarts after exit
+code `3` as after any other.
+
+### Exit codes
+
+| Code | Meaning |
+| --- | --- |
+| `0` | The service is installed and started. |
+| `1` | The configuration is invalid, the platform is unsupported, or `systemctl` or `launchctl` failed. |
+
+## spotlight runner
+
+```text
+spotlight runner
+```
+
+The runner image's entrypoint. It does the one run or check its sandbox was
+started for, then exits. It takes no arguments other than `harnesses`.
+Any other argument fails with `usage: spotlight runner [harnesses <json>]`.
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `SPOTLIGHT_URL` | required | The Spotlight address. |
+| `SPOTLIGHT_HANDED` | none | The file of work a host handed the sandbox. The host sets it. |
+| `SPOTLIGHT_TOKEN` | none | The one-run credential a push pool's provider passes. |
+| `SPOTLIGHT_WORKSPACE` | `/workspace` | The workspace directory. |
+| `SPOTLIGHT_AGENT_USER` | none | The user the harness runs as. The default runner image sets `agent`. When set, the runner must run as root. |
+| `SPOTLIGHT_GIT_AUTHOR_NAME` | `Spotlight` | `user.name` in each checkout. |
+| `SPOTLIGHT_GIT_AUTHOR_EMAIL` | `noreply@usespotlight.ai` | `user.email` in each checkout. |
+
+Exactly one of `SPOTLIGHT_HANDED` or `SPOTLIGHT_TOKEN` must be set.
+
+### Messages
+
+| Message | Cause |
+| --- | --- |
+| `SPOTLIGHT_URL is required` | No address. |
+| `SPOTLIGHT_TOKEN and SPOTLIGHT_HANDED are different ways to be given work; give one` | Both set. |
+| `SPOTLIGHT_HANDED names the work a host handed this runner, or SPOTLIGHT_TOKEN is the one-run credential a push pool provisioned it with` | Neither set. |
+| `the work it was handed carries no one-run credential` | The handed file holds no credential. |
+| `could not trust the egress authority, so TLS through egress may fail` | A warning. The egress authority could not be added to the image's bundles. |
+| `nothing was reserved for it in time` | With `SPOTLIGHT_TOKEN`, no work arrived within 5 minutes. The runner exits `0`. |
+
+The runner logs JSON lines to standard output. See
+[Inside a sandbox](/docs/reference/hosts/sandbox) for what it does inside the sandbox.
+
+### Exit codes
+
+| Code | Meaning |
+| --- | --- |
+| `0` | The run or check ended, whatever its outcome, or nothing was reserved in time. |
+| `1` | The runner could not start or was refused. |
+
+## spotlight runner harnesses
+
+```text
+spotlight runner harnesses '<json array>'
+```
+
+Looks for the given harnesses in the image and prints one JSON line with the
+runner's release and each harness it found, with its models and version. The
+host runs it against each image it serves. See [Harnesses](/docs/reference/hosts/harnesses).
+
+```bash
+spotlight runner harnesses '[]'
+```
+
+```json
+{"release":"20260926-01","harnesses":[]}
+```
+
+### Exit codes
+
+| Code | Meaning |
+| --- | --- |
+| `0` | Printed. |
+| `1` | The argument is not a JSON array: `spotlight runner: read the harnesses to look for: <error>`. |
+
+## spotlight egress
+
+```text
+spotlight egress
+```
+
+The proxy a host starts beside each sandbox. It takes no arguments; any
+argument prints the usage and exits `1`. It reads what the host handed it from
+`/run/spotlight/egress.json` and deletes the file. See
+[Egress](/docs/reference/hosts/egress).
+
+### Exit codes
+
+| Code | Meaning |
+| --- | --- |
+| `0` | Stopped on `SIGINT` or `SIGTERM`. |
+| `1` | Egress could not start. |

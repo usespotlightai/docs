@@ -1,0 +1,114 @@
+---
+type: how-to
+icon: SquarePen
+title: Run hosts without a stored token
+description: Let hosts on Kubernetes or a cloud platform claim work with their workload's OIDC token, so they hold no Spotlight token.
+---
+
+The host will present its workload's token, such as a Kubernetes projected
+service account token, where it would otherwise present a pool token. You need:
+
+- To be an owner or admin of the workspace, or a
+  [workspace token](/docs/administration/issue-a-workspace-token) with the `runners`
+  scope.
+- The platform's OIDC issuer URL, over https. Spotlight finds the issuer's
+  signing keys through OIDC discovery, so the issuer must be reachable from
+  Spotlight.
+- The exact subject of the workload's tokens. For a Kubernetes service account
+  it has the form `system:serviceaccount:<namespace>:<service account>`.
+- A container engine the host can reach, as for any host.
+
+## Define the trust
+
+The token's issuer, subject and audience must all match the trust. The subject
+must match exactly; wildcards are not supported. The audience is `spotlight`
+unless you set another.
+
+<Tabs items={['Terraform', 'Resource API']}>
+<Tab value="Terraform">
+
+```hcl
+data "spotlight_workspace" "acme" {
+  slug = "acme"
+}
+
+resource "spotlight_runner_trust" "production_cluster" {
+  workspace_id = data.spotlight_workspace.acme.id
+  key          = "production-cluster"
+  issuer       = "https://oidc.eks.eu-west-1.amazonaws.com/id/EXAMPLE"
+  subject      = "system:serviceaccount:spotlight:runner"
+}
+
+output "production_cluster_trust" {
+  value = spotlight_runner_trust.production_cluster.id
+}
+```
+
+After `terraform apply`, `terraform output -raw production_cluster_trust`
+prints the trust's id.
+
+</Tab>
+<Tab value="Resource API">
+
+Send `POST /api/resources/workspaces/<workspace id>/runner-trusts` with an
+`Idempotency-Key` header:
+
+```json
+{
+  "key": "production-cluster",
+  "issuer": "https://oidc.eks.eu-west-1.amazonaws.com/id/EXAMPLE",
+  "subject": "system:serviceaccount:spotlight:runner"
+}
+```
+
+The response is `201` with the trust, and its `id` field is the trust's id.
+From the browser console, follow the pattern in
+[Create a pull pool and get its token](/docs/hosts/create-a-pull-pool), posting to
+`runner-trusts` with this body.
+
+</Tab>
+</Tabs>
+
+If lines should send work to these hosts in particular, add `labels` to the
+trust. [Send a line's work to particular runners](/docs/hosts/place-work-on-particular-runners)
+shows how lines name them.
+
+## Give the workload its token
+
+Mount the platform's token for the workload into the host's file system, issued
+for the trust's audience. For Kubernetes, that is a projected service account
+token with the audience `spotlight`. Note the path it is mounted at. The
+platform may rotate the file in place.
+
+## Start the host with the trust
+
+Give the host the trust's id and the token's path instead of a pool token. With
+the install script:
+
+```bash
+curl -fsSL https://<your Spotlight address>/api/install.sh | SPOTLIGHT_TRUST=<trust id> SPOTLIGHT_OIDC_TOKEN_FILE=/var/run/secrets/token sh
+```
+
+If you run `spotlight host` directly, for example as a container's command, set
+the same variables with `SPOTLIGHT_URL` in its environment:
+
+```bash
+SPOTLIGHT_URL=https://<your Spotlight address> SPOTLIGHT_TRUST=<trust id> SPOTLIGHT_OIDC_TOKEN_FILE=/var/run/secrets/token spotlight host
+```
+
+Do not set `SPOTLIGHT_TOKEN` as well. The host refuses to start with both.
+
+## Check that it is serving
+
+Open **Runners** in the workspace sidebar. The host appears under **Hosts**
+with **Trust production-cluster** beneath its name.
+
+If the host exits with code `3`, Spotlight refused its token. Check the issuer,
+the subject and the audience against the token the platform mounted.
+
+## Related
+
+- [`spotlight_runner_trust`](/docs/reference/terraform/runner-trust):
+  every field of a trust, and how it admits a host.
+- [Ways in: pools, trusts and tokens](/docs/administration/ways-in-pools-trusts-and-tokens),
+  on when a trust fits better than a pool.

@@ -1,0 +1,121 @@
+---
+type: concept
+icon: Lightbulb
+title: Asking a person
+description: Why Spotlight's inbox holds conversations and not tasks, who sees a question, how failures and approvals become questions, and why only a real decision counts as one.
+---
+
+An agent in Spotlight works on its own until it needs someone. Then it asks,
+and the task waits. Failures, stopped runs and tool calls that need permission
+end up in the same place, as questions put to a person. How those questions are
+grouped, who gets them, and what counts as an answer each follow from one idea
+about what a person is being asked for.
+
+## The inbox holds conversations
+
+The inbox lists conversations rather than tasks, and a conversation is a stretch
+of one task's trail: it starts when the task first asks a person something, and
+it ends when the task is passed on to another station or finishes. Every answer,
+every follow-up question and every note in between belongs to that one
+conversation.
+
+A task that asks at triage, is answered, asks again, and is then passed on to
+spec has had one conversation. If spec later asks something, that is a second
+conversation and a second inbox item. Both stay in the inbox after they are
+resolved, so a person can go back to what was said.
+
+Our reading of the design, which the product does not spell out, is that a
+person attends to a question and its back-and-forth. A task can travel a whole
+line and ask at three stations. Each of those is a separate exchange with its
+own context, and each is over once the task moves on. Listing the task once
+would blur them together; listing every note would split one exchange into
+many. The conversation is the unit that matches how the back-and-forth goes.
+
+It also connects to how the board works. Spotlight does not keep a status field
+on a task (see [Lines, stations and
+tasks](/docs/getting-started/lines-stations-and-tasks)). A task is waiting for a
+person when its last question has no answer, and its conversation stays open in
+the inbox, answered or not, until the task is passed on. The board and the
+inbox read one trail.
+
+## Who sees a question
+
+A conversation appears in the inbox of the task's assignee and nobody else's;
+how a task comes to have one is in [Tasks, runs and the
+inbox](/docs/reference/app/tasks-runs-and-the-inbox). A task that an outside event
+opened may have none, and then its question reaches no one's inbox, though the
+board still shows the task awaiting review and a Slack integration can carry
+the question to the task's thread, where a reply answers it (see [How outside
+events reach a task](/docs/getting-started/how-outside-events-reach-a-task)).
+
+Talking to a run while it works is limited the same way. Only the assignee can
+send words to a running agent, and those words land on the trail as part of
+the task's story.
+
+## Failures are questions too
+
+When a run fails, is stopped, or ends without saying what should happen next,
+Spotlight puts the task to a person, with a note saying what happened. A failure
+is recorded with where it came from, such as a run or a hook, and a code.
+
+Failures tend to repeat. A hook endpoint that is down fails on every firing,
+and a loop that the loop guard stops can recur. If the task is already waiting
+on a person over the same failure, from the same source with the same code,
+Spotlight counts it again on the existing note instead of asking a new
+question. Once it has happened more than once, the inbox shows how many times.
+A broken endpoint therefore produces one item whose count keeps rising, and the
+count itself tells a person something: a failure seen once is different from
+one seen twenty times.
+
+## Approvals belong on the task
+
+Some things an agent may only do with permission. An integration tool can
+declare that a person must approve each use, with a reason that is shown when
+they decide (see [Require approval before a tool runs](/docs/integrations/require-approval-before-a-tool-runs)). A harness profile can
+say the same about the harness's own actions, such as running a command or
+editing a file: its `ask` rules send those requests to a person in the same way
+(see the [`spotlight_harness_profile`](/docs/reference/terraform/harness-profile) reference). Those
+harness rules are guardrails; what actually limits an agent is described in
+[The sandbox is the security
+boundary](/docs/security/the-sandbox-is-the-security-boundary).
+
+When an agent reaches one of these, the task asks, the run lets go of it, and
+the approval appears in the assignee's inbox as a conversation with Approve and
+Reject on it. The agent hears from its own call that a person has been asked and
+that it should stop and hand over. The approval lives on the task's own trail
+rather than in a separate list of pending approvals, because an approval is
+never meaningful on its own: it is a conversation on a task. Keeping it there
+means asking, deciding and using the approval happen in one save of one task,
+and the inbox shows and answers it with the machinery it already has.
+
+The rules on a decision are narrow, and each has a plain effect (the full set is
+in [Tasks, runs and the
+inbox](/docs/reference/app/tasks-runs-and-the-inbox#approvals)). A grant covers one
+call, so a person approves an action they can read in full, never a blanket
+permission for whatever the agent does next. It is bound to the station that
+asked and to the exact call, the same tool with the same inputs or the same
+harness action, so approving a comment on one issue does not approve a comment
+on another, and a grant for a harness action never satisfies a tool with a
+similar name. The grant is spent in the same save that lets the call through, so
+two calls racing for one approval cannot both use it; if the call then fails,
+the grant is given back. A refusal stands at the station that asked, which keeps
+an agent from wearing a person down by asking the same thing again; another
+station asks afresh. And a decision is made once.
+
+## A reply is not a decision
+
+A person can answer an approval with words and no decision. The run resumes
+with those words, and the approval stays undecided. Only the Approve or Reject
+action counts, and only when a person takes it.
+
+Free text makes a poor record of consent, in the docs' view. "Sure, but not on
+main" is neither a yes nor a no, and a system that guessed would sometimes guess
+wrong about something the person meant to control. Asking for an explicit
+decision keeps the record unambiguous. It also means the other ways words reach
+a task, such as a reply in a Slack thread, can carry the conversation forward
+without being able to grant anything.
+
+What a person sees and how they answer is in
+[Answer the inbox](/docs/inbox/answer-the-inbox), and the states a
+task and its conversations can be in are listed in [Tasks, runs and the
+inbox](/docs/reference/app/tasks-runs-and-the-inbox).

@@ -1,0 +1,323 @@
+---
+type: reference
+icon: BookText
+title: Agent commands
+description: The spotlight commands an agent runs inside its sandbox to hand a task over, answer a remark, read a trace, recall and propose team memories, and use tools.
+---
+
+An agent runs these commands from anywhere in its sandbox. Each one talks to
+a server the runner starts on the loopback interface for that run. They work
+only inside a Spotlight run.
+
+```text
+spotlight handover --next <where> [--note <text>]
+spotlight reply --to <handle> [--body <text>] [--resolve]
+spotlight trace --task <id> [--out <path>]
+spotlight recall "<words>" | <handle>
+spotlight remember --kind <kind> --body <text> [--path <path>]... [--reach <reach>] [--supersedes <handle>]
+spotlight tools
+spotlight <tool> [--<input> <value>...]
+```
+
+The tools Spotlight itself gives are listed in
+[Built-in tools and skills](/docs/reference/built-ins/built-in-tools-and-skills).
+[Why agents talk back through a command line](/docs/agents/agents-talk-back-through-a-command-line)
+gives the reasons.
+
+## Environment
+
+The runner sets these in the harness's environment. Every other `SPOTLIGHT_`
+variable is removed from it.
+
+| Variable | Value |
+| --- | --- |
+| `SPOTLIGHT_HANDOVER_URL` | The address of the run's loopback server, as `http://127.0.0.1:<port>/`. |
+| `SPOTLIGHT_HANDOVER_TOKEN` | A random token for this run, sent as `Authorization: Bearer`. |
+| `SPOTLIGHT_STATE_DIR` | The harness's state directory, `/workspace/.spotlight/state`. |
+
+Without `SPOTLIGHT_HANDOVER_URL` and `SPOTLIGHT_HANDOVER_TOKEN`, each command
+fails:
+
+| Command | Message |
+| --- | --- |
+| `handover` | `no run to hand over: spotlight runs inside a Spotlight workspace` |
+| `reply` | `no run to answer for: spotlight runs inside a Spotlight workspace` |
+| `trace` | `no run to read a trace from: spotlight runs inside a Spotlight workspace` |
+| `recall` | `no run to recall from: spotlight runs inside a Spotlight workspace` |
+| `remember` | `no run to remember from: spotlight runs inside a Spotlight workspace` |
+| `tools` | `no run to reach for tools in: spotlight runs inside a Spotlight workspace` |
+| `<tool>` | `could not read this run's tools to find "<name>": no run to reach for tools in: spotlight runs inside a Spotlight workspace` |
+
+## Common behaviour
+
+| | Value |
+| --- | --- |
+| Exit code on success | `0` |
+| Exit code on any error | `1`, with the message on standard error |
+| Request timeout | 2 minutes |
+| A refusal from the server | Printed as the server wrote it. |
+| A token that does not match | `not this run's token` |
+| Spotlight unreachable | `reach Spotlight: <error>` |
+
+## spotlight handover
+
+```text
+spotlight handover --next <where> [--note <text>]
+```
+
+Says where the task goes when the run ends. The run carries on until the
+agent's turn ends.
+
+| Flag | Required | Description |
+| --- | --- | --- |
+| `--next` | yes | Where the task goes. Matched without regard to case. |
+| `--note` | no | What the next station or person needs to know. Omitted, `-` or `/dev/stdin`: read from standard input to end of file, with surrounding whitespace trimmed. |
+
+`--next` takes one of the values the run is offered: the keys of the stations
+a run at the current station may pass to, in line order, then `review`, then
+`done` where the current station ends the line. When each is offered, and what
+it does to the task, is in
+[Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover).
+
+Running `handover` again replaces the earlier choice. The last accepted one
+counts.
+
+| Output | When |
+| --- | --- |
+| `Handed over to <next>.` | A station was named. |
+| `Put to a person. The task waits here until someone answers.` | `--next review` |
+| `Closed where it stands.` | `--next done` |
+
+| Message | Cause |
+| --- | --- |
+| `--next is required` | No `--next`. The usage follows. |
+| `"<next>" is not one of: <options>` | `--next` names nothing on offer. The options are listed. |
+| `unreadable handover` | The request body was not JSON. |
+| `read the note: <error>` | Standard input could not be read. |
+
+```bash
+spotlight handover --next code-review --note "Added retries to the webhook client."
+spotlight handover --next review < question.md
+```
+
+### Without a handover
+
+If the agent never runs `handover`, the runner reads
+`/workspace/.spotlight/outcome.json` when the harness exits:
+
+```json
+{ "next": "code-review", "note": "Added retries to the webhook client." }
+```
+
+The file is ignored when it is missing, is not JSON, or has an empty `next`.
+With neither a handover nor the file, the task goes to a person. See
+[Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover).
+
+## spotlight reply
+
+```text
+spotlight reply --to <handle> [--body <text>] [--resolve]
+```
+
+Answers a remark on the task's pull request. The run's briefing lists the open
+remarks and their handles, such as `c12`.
+
+| Flag | Required | Description |
+| --- | --- | --- |
+| `--to` | yes | The remark's handle. |
+| `--body` | yes | The answer. Omitted, `-` or `/dev/stdin`: read from standard input. |
+| `--resolve` | no | Resolves the thread as well. |
+
+| Output | When |
+| --- | --- |
+| `Answered <handle>.` | Without `--resolve`. |
+| `Answered <handle>, and resolved it.` | With `--resolve`. |
+
+| Message | Cause |
+| --- | --- |
+| `--to is required` | No `--to`. |
+| `--body is required` | No body, and nothing on standard input. |
+| `say which remark` | The handle is blank. |
+| `say something back` | The body is blank. |
+| `unreadable answer` | The request body was not JSON. |
+| `read the answer: <error>` | Standard input could not be read. |
+
+```bash
+spotlight reply --to c12 --body "Renamed, thanks." --resolve
+spotlight reply --to c14 < answer.md
+```
+
+## spotlight trace
+
+```text
+spotlight trace --task <id> [--out <path>]
+```
+
+Writes a task's trace to a file as indented JSON.
+
+| Flag | Required | Description |
+| --- | --- | --- |
+| `--task` | yes | The task whose trace to write. |
+| `--out` | no | The file to write. Default: a new file `spotlight-trace-*.json` in the temporary directory. |
+
+On success it prints one line: `Wrote the trace to <path>`, the number of
+nodes, the number of faults, the time the trace spans, and advice to search
+the file rather than load it whole.
+
+| Message | Cause |
+| --- | --- |
+| `--task is required` | No `--task`. |
+| `say which task` | The task id is blank. |
+| `open <path>: <error>` | `--out` could not be created. |
+
+## spotlight recall
+
+```text
+spotlight recall "<words>"
+spotlight recall <handle>
+```
+
+Reads what the run's team remembers, beyond the memories its briefing lists.
+Only [memories](/docs/reference/glossary#memory) that stand in the run's own
+team are read, never proposed, rejected or retired ones, and never another
+team's.
+
+Given words, it searches the bodies of the team's standing memories and prints
+at most ten, the best match first. Words are matched by their English stem, so
+`retry` finds `retries`. Each is printed as:
+
+```text
+M-12 · rejected approach · line, in acme/api at src/uploads
+  Retrying uploads from a queue needs a worker we do not run.
+  From a run on task <task id>, approved by Ada Lovelace on 2026-09-21
+```
+
+A memory a person wrote on the Memory page reads `Written by <name> on <date>`
+on its last line. With no match it prints
+`The team remembers nothing about "<words>". Try other words.`
+
+Every memory a recall returns is recorded against the run, and shows under
+**Recalled** on its Run page; the recall itself is a `spotlight.recall` span in
+the task's trace.
+
+Given a handle, such as `M-12` or `m-12`, it prints that one memory in full: its
+kind, whether it stands or was retired, its body, where it applies, the steps
+and notes it rests on, the `spotlight trace` command for its task, the memory
+it replaced, and, once retired, why and what replaced it.
+
+| Message | Cause |
+| --- | --- |
+| `say what to look for` | No words. The usage follows. |
+| `There is no memory <handle> for this caller` | No memory has that handle in the run's team. |
+| `A memory is recalled by at most 500 characters of words it holds, or by its handle, like M-12` | The words are blank or too long. |
+
+```bash
+spotlight recall upload retries
+spotlight recall M-12
+```
+
+## spotlight remember
+
+```text
+spotlight remember --kind <kind> --body <text> [--path <path>]... [--reach <reach>] [--supersedes <handle>]
+```
+
+Proposes a memory from inside the run. It rests on the step the agent ran the
+command from; where that step can't be found, on the last thing the agent said.
+It waits in the inbox beside the run, with anything drafted from the run, until
+a teammate approves, edits or rejects it, and is kept only once approved. A
+memory from a task that came from outside the team is marked as such and is
+approved on its own. Proposing the same memory twice from one run keeps one.
+
+| Flag | Required | Description |
+| --- | --- | --- |
+| `--kind` | yes | `rationale`, `rejected-approach`, `failure`, `environment`, `preference` or `correction`. |
+| `--body` | yes | What to remember. Omitted, `-` or `/dev/stdin`: read from standard input. |
+| `--path` | no | A file or folder the memory bears on, relative to the current directory or absolute. It must be inside one of the run's checkouts, and every `--path` in one repository. Repeat for more. |
+| `--reach` | no | Where it applies: `team`, `line` or `station`. Default: `line`. |
+| `--supersedes` | no | The handle of a standing memory of the team that this one corrects. Approving it retires that one. |
+
+On success it prints `Proposed <kind> for the <reach>: <body>`, and that the
+memory waits for a person's approval.
+
+| Message | Cause |
+| --- | --- |
+| `--kind is required` | No `--kind`. The usage follows. |
+| `--body is required` | No body, and nothing on standard input. |
+| `put everything in flags, not "<word>"` | A word outside any flag. |
+| `A memory is one of rationale, rejected-approach, failure, environment, preference, correction, not <kind>` | `--kind` names no kind. |
+| `A memory reaches one of team, line, station, not <reach>` | `--reach` names no reach. |
+| `<path> is outside the repositories this run checked out; name a path inside one of: <directories>` | A `--path` is outside every checkout. |
+| `A memory bears on paths of one repository at a time` | The paths are in different repositories. |
+| `A memory supersedes only a memory standing in the run's team, and <handle> is not one` | `--supersedes` names a retired memory, or one of another team. |
+| `A memory is remembered only from a task's run; in a chat, ask the person to write it on the team's Memory page` | The run is a chat's. |
+
+```bash
+spotlight remember --kind rationale --body "Uploads retry in the request, not from a queue." --path src/uploads
+spotlight remember --kind correction --supersedes M-7 < correction.md
+```
+
+## spotlight tools
+
+```text
+spotlight tools
+```
+
+Lists the tools the run was given. Each entry is the tool's signature, its
+description, and a line for each input that has a description. For a tool
+`acme.comment` with a required input `issue` and an optional piped input
+`body`:
+
+```text
+spotlight acme comment --issue <string> [--body <string> (or piped in)]
+  <description>
+    --issue  <input description>
+```
+
+| Signature part | Meaning |
+| --- | --- |
+| `--<input> <type>` | An input that takes a value. The type is `string` or `number`. |
+| `--<input>` | A boolean input, given as a bare flag. |
+| `(or piped in)` | The input may come from standard input. |
+| `[...]` | Optional, or has a default. |
+
+A run given no tools prints `This run was given no tools.`
+
+## spotlight &lt;tool&gt;
+
+```text
+spotlight <integration> <tool> [--<input> <value>...]
+spotlight <integration>.<tool> [--<input> <value>...]
+```
+
+Calls a tool the run was given. A tool named `acme.comment` is called as
+`spotlight acme comment` or `spotlight acme.comment`. Its flags are its
+inputs. A built-in tool, such as `pull-request`, is called by its name alone,
+as in `spotlight pull-request`. See [`spotlight_integration`](/docs/reference/terraform/integration)
+for how an integration defines tools and their inputs.
+
+| Input | How it is given |
+| --- | --- |
+| `string` or `number` | `--<input> <value>` |
+| `boolean` | `--<input>`, present or absent |
+| Piped | `--<input> <value>`, or `--<input> -`, or `--<input> /dev/stdin`, or omitted with standard input not a terminal. Empty piped input counts as not given. |
+
+The tool's result is printed to standard output. When the tool returns
+`{"output": ...}`, a string output is printed as it is and any other output as
+indented JSON. Any other result is printed as it came.
+
+| Message | Cause |
+| --- | --- |
+| `no such command "<name>"` | No granted tool has that name. The usage and the run's tools follow. |
+| `--<input> is required` | A required input without a default was not given. The tool's signature follows. |
+| `<command>: <flag error>` | A flag the tool does not take, or a missing value. The tool's signature follows. |
+| `this run was not given "<name>"; it was given: <tools>` | The tool is not granted to the run. |
+| `unreadable input: hand the tool JSON` | The input is over 8 MiB, or is not JSON. |
+| `could not read this run's tools to find "<name>": <error>` | The tool list could not be read. |
+
+Other failures are the tool's own error as Spotlight reports it.
+
+```bash
+spotlight acme comment --issue <issue> --body "Deployed to staging."
+git diff | spotlight acme comment --issue <issue>
+```

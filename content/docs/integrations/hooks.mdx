@@ -1,0 +1,142 @@
+---
+type: concept
+icon: Lightbulb
+title: Hooks and reactions
+description: Why Spotlight has hooks beside a line's reactions, why only a hook before an event can hold it back, why calls into a private network go out through a host's egress, and how hooks are kept from looping.
+---
+
+A line already has a way to hear the outside world. Its reactions are rules
+of the form "when this happening arrives, move the task there": a failed check
+sends a task back to implementation, a merged pull request moves it to
+completed. Reactions let events in other systems move work in Spotlight.
+
+Hooks carry information the other way. A hook is a team resource that fires on
+something Spotlight itself is doing, such as an agent about to use a tool, a run
+about to start or a pull request about to open, and sends a request to a system
+the team runs, or calls one of the team's tools. The system on the other end
+sees what is happening as it happens, and for some events it can say no.
+
+## What a reaction cannot do
+
+A reaction decides everything from inside the line's definition. It can match
+a happening and a station and move a task, and nothing more. It cannot consult
+anything outside Spotlight, and it only acts on events that come from outside.
+
+Many of the rules a team cares about live in its own systems and depend on
+facts Spotlight does not have. A database team may want to see every pull
+request that touches migrations before it opens, and decide by who is on call
+that week. A security team may want a record of every tool an agent used, kept
+in its own audit store. Neither rule can be written as a reaction, because
+Spotlight knows nothing about the rota or the store. As hooks, the rules stay
+in the systems that own them, and Spotlight asks.
+
+A hook's endpoint can also answer back. Each request carries a short-lived
+callback token, with which the endpoint can read the task it fired for or leave
+a note on it. A review that takes a few minutes can answer the request at once
+and post its findings on the task when it is done.
+
+## Before and after
+
+Every event a hook can fire on is either before or after. The before events are
+the moments Spotlight is about to do something that matters outside it: using
+a tool, starting a run, handing a task on, and opening a pull request. The
+after events are things that have already happened: a tool was used, a run
+ended, a pull request was merged, a task was opened or moved. The [`spotlight_hook`](/docs/reference/terraform/hook#events)
+reference lists them.
+
+Only a hook on a before event can hold anything back, and Spotlight refuses a
+hook definition that asks to block on an after event. By the time an after
+event fires, the pull request is merged or the tool has run; there is nothing
+left to stop, and the hook hears about it afterwards.
+
+A before-hook runs while the event waits. It can refuse by answering with a
+reason, or, when it is marked to block on failure, by failing. What a refusal
+means depends on the moment. A tool call is not made, and the agent is told
+which hook held it back and why.
+A run does not start. A handover is held back and the task is put to a person
+with the hook's reason beside the agent's note. A pull request is not opened.
+[Check or block a pull request before it opens](/docs/integrations/check-a-pull-request-before-it-opens) builds one of these.
+
+Because something is waiting, a before-hook is kept short. Each one's steps
+share the hook's timeout, at most 30 seconds, all the before-hooks on one
+event have 60 seconds together, and a before-hook gets one attempt. A hook on an
+after event has no one waiting on it, so it is queued and retried with growing
+gaps when its endpoint is down or busy.
+
+A hook on `tool.using` fires after any approval the tool needs has been given.
+A person's approval and a hook's check are separate gates, and a tool call
+passes both.
+
+## Reaching systems in a private network
+
+By default, Spotlight sends a hook's request itself, from its own servers, to an
+address the deployment allows. That works for a public endpoint. A team's
+review service, audit store or deploy system is often reachable only from
+inside its own network, where Spotlight cannot connect.
+
+A hosted Spotlight cannot reach into that network, but a host can reach out of
+it. So a request marked `from = "network"` is not sent by Spotlight. It waits
+until one of the workspace's hosts claims it, the same way hosts claim runs, by
+asking. The host sends it from a one-off egress container and returns the
+answer.
+
+Other designs were considered. One was to allow private calls only from inside
+a live run, where a sandbox and its egress already exist. That would have left
+out every event outside a run, such as a merged pull request or a task moved
+by a person, and those need to reach private endpoints too. Pulling calls
+through hosts covers both.
+
+Because the call goes through egress rather than straight from the host
+process, it passes the same allow-list and address rules as every connection
+out of a sandbox. Details are in the [Egress](/docs/reference/hosts/egress#hook-calls)
+reference.
+
+## Signed, every time
+
+A hook that makes requests must sign them; Spotlight refuses one without a
+signing method. A hook's endpoint does things on Spotlight's word: it records
+what an agent did, it lets a pull request through, it writes a note on a task.
+The signature is how it tells a request from Spotlight apart from anything else
+that can reach the same address.
+
+A team picks one of two forms. With a shared secret, each request carries an
+HMAC signature in the Standard Webhooks format. With OIDC, each request carries
+a short-lived token signed by Spotlight, naming the workspace, team and hook,
+with a digest of the body; the endpoint checks it against Spotlight's published
+keys and needs no secret of its own.
+
+Either way, the request is signed inside Spotlight before any host sees it. A
+host that carries a `network` call into the team's network holds no signing
+secret, and cannot sign a request of its own.
+
+The same rule runs the other way. Every delivery Spotlight accepts from an
+integration is verified too, as [How outside events reach a
+task](/docs/getting-started/how-outside-events-reach-a-task) describes.
+
+## Loops
+
+Hooks and integrations together can make a cycle. A hook on `task.moved` posts
+to a Slack channel; the integration hears the post as a happening; a reaction
+moves the task; the hook fires again. Each step is reasonable on its own, and
+the whole runs until someone notices.
+
+Spotlight follows causes to catch this. Every firing of an after-hook records
+the chain of firings and events that led to it, and its requests carry the
+firing in a `spotlight-cause` header. A webhook delivery that echoes that
+header back, or a callback made with the firing's token, joins the same chain.
+The guard then stops a firing that would repeat something already in its
+chain, or that would make the chain more than eight causes deep.
+
+Not every system echoes a header. Slack, for one, does not, and a loop through
+Slack arrives at Spotlight looking like a fresh event. For those, the guard
+also counts: a hook that has already fired three times for the same change in
+the last ten minutes is stopped before it fires again. The chain catches the loops it can see, and the count
+catches the rest.
+
+A stopped loop is not retried, since the next attempt would only loop again.
+It becomes a failure on the task, in the inbox, naming the chain it stopped.
+If the guard stops the same thing again before anyone has answered, the
+existing item counts the repeat instead of opening another; [Asking a
+person](/docs/inbox/asking-a-person) is about those items. A task that
+has moved on from the station the hook fired at, or has finished, is not
+interrupted with a failure that no longer concerns it.

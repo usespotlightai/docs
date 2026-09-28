@@ -1,0 +1,161 @@
+---
+type: reference
+icon: BookText
+title: Roles and permissions
+description: Workspace roles, the permissions they and workspace token scopes grant, and the rules for changing roles, inviting people and connecting GitHub.
+---
+
+A person's authority comes from their role in a workspace. A workspace token's
+authority comes from its scopes. Teams have no roles of their own: a
+workspace's members may work in every team of that workspace.
+
+## Roles
+
+| Role | Rank | Permissions |
+| --- | --- | --- |
+| `owner` | 2 | `read`, `plan`, `configure`, `manage-secrets`, `manage-runners`, `manage-token-trusts`, `administer` |
+| `admin` | 1 | `read`, `plan`, `configure`, `manage-secrets`, `manage-runners`, `manage-token-trusts`, `administer` |
+| `member` | 0 | `read`, `plan` |
+
+The web app shows the roles as Owner, Admin and Member. The person who creates
+a workspace is its owner. A person who accepts an invite joins as a member. A
+workspace always has at least one owner.
+
+A closed workspace grants nothing to anyone.
+
+## Permissions
+
+| Permission | Allows | Granted to |
+| --- | --- | --- |
+| `read` | See a workspace and its resources, and export it as Terraform. | Every role. Every token. |
+| `plan` | Check expressions, at `POST /api/expressions/check`. | Every person. Tokens with `plan` or `configure`. |
+| `configure` | Create, change and delete teams, lines, integrations, hooks, skills and harness profiles; change the workspace. | Owners, admins. Tokens with `configure`. |
+| `manage-secrets` | Create, change and delete secrets. | Owners, admins. Tokens with `secrets`. |
+| `manage-runners` | Create, change and delete runner pools, runner trusts and workspace runners. | Owners, admins. Tokens with `runners`. |
+| `manage-token-trusts` | Create, change and delete workspace token trusts. | Owners, admins. Tokens with `trusts`. |
+| `administer` | Issue, change and revoke workspace tokens; read [configuration changes](/docs/reference/api/resource-api#configuration-changes); close the workspace; invite people and take invites back; connect GitHub; connect an integration over OAuth. | Owners, admins. Never a token. |
+| `open-workspaces` | Create a workspace. | Every signed-in person. Never a token. |
+
+A request for something the caller cannot see returns `404`. A request to
+change something the caller can see but may not change returns `403`:
+
+| Permission missing | Title |
+| --- | --- |
+| `configure`, `manage-secrets`, `manage-runners`, `manage-token-trusts` | `Not allowed to change the <kind>` |
+| `administer` | `Not allowed to administer the <kind>` |
+| `open-workspaces` | `Not allowed to open a workspace` |
+| `plan` | `Not allowed to plan` |
+
+See [Resource API](/docs/reference/api/resource-api) for the error format.
+
+## Token scopes
+
+A workspace token carries one or more scopes. Each scope grants itself and the
+scopes listed beside it.
+
+| Scope | Also grants | Permissions |
+| --- | --- | --- |
+| `read` | | `read` |
+| `plan` | `read` | `read`, `plan` |
+| `configure` | `plan`, `read` | `read`, `plan`, `configure` |
+| `secrets` | `read` | `read`, `manage-secrets` |
+| `runners` | `read` | `read`, `manage-runners` |
+| `trusts` | `read` | `read`, `manage-token-trusts` |
+
+A token's scopes must include `read`, `plan` or `configure`, and name each
+scope once; see [Scopes](/docs/reference/api/workspace-token#scopes) for the
+messages. A token acts only in its own workspace. See
+[`spotlight_workspace_token_trust`](/docs/reference/terraform/workspace-token-trust) for tokens a
+trust mints.
+
+## Changing roles
+
+Roles are changed in the "Members" list of any team's "General" settings page
+(see [Web app](/docs/reference/app/web-app#team-pages)), or with
+`PATCH /api/workspaces/{slug}/members/{userId}`. The role changed is the
+person's role in the workspace, and holds in every team.
+
+- Only an owner or an admin may set roles.
+- An owner may change anyone's role, including their own.
+- An admin may change only members, and may not give the `owner` role.
+- The last owner may not be given another role.
+
+For an owner or admin, setting a person's role to the one they already hold
+changes nothing and is not refused. A refused change returns one of
+these:
+
+| Status | Message | Cause |
+| --- | --- | --- |
+| `403` | `That role is not yours to give: they are not of this workspace` | The person is not a member of the workspace. |
+| `403` | `That role is not yours to give: only an owner or an admin may set roles` | The caller is not an owner or admin. |
+| `403` | `That role is not yours to give: they are not below you` | An admin changing an owner or another admin. |
+| `403` | `That role is not yours to give: your own is not yours to change` | An admin changing their own role. |
+| `403` | `That role is not yours to give: nobody hands out a rank they do not hold` | An admin giving the `owner` role. |
+| `409` | `This workspace would be left with nobody who owns it. Make somebody else an owner first` | The last owner given another role. |
+
+The web app offers a role menu only where more than one role can be given.
+
+## Invites
+
+An invite asks one email address to join a team.
+
+- Only a workspace owner or admin may invite, or take an invite back.
+- An invite lasts 14 days.
+- Accepting needs the person to be signed in with the invited email address.
+- Accepting adds the person to the team, and to the workspace as a member if
+  they are not in it already. A person already in the workspace keeps their
+  role.
+- Inviting an address with an open or expired invite to the same team sends it
+  again, with a new link and a fresh 14 days. Inviting an address whose invite
+  was taken back sends a new invite.
+
+| State | Meaning |
+| --- | --- |
+| `open` | Sent, not yet accepted, taken back or expired. |
+| `accepted` | Accepted. |
+| `revoked` | Taken back. |
+| `expired` | Not accepted within 14 days. |
+
+| Status | Message | Cause |
+| --- | --- | --- |
+| `409` | `<email> is already on this team` | The address is already on the team. |
+| `403` | `This invite was sent to <email>. Sign in as them to accept it` | Signed in as another address. |
+| `409` | `This invite has already been accepted` | Already accepted. |
+| `409` | `This invite has been revoked` | Taken back. |
+| `409` | `This invite has run out. Ask for another` | Expired. |
+
+An accepted invite cannot be sent again or taken back. See
+[Invite people and change their roles](/docs/administration/invite-people-and-change-roles).
+
+## Actions only people can take
+
+These need a person signed in to Spotlight. A workspace token is refused:
+
+| Action | Needs |
+| --- | --- |
+| Anything under `administer` | An owner or admin. |
+| Creating a workspace | Any signed-in person. |
+| Approving or rejecting a tool call or harness permission | The assignee of the task that asks. |
+
+Answering the inbox, saying something to a run and stopping a run are also
+reserved to the task's assignee.
+
+## GitHub connection
+
+Connecting a GitHub App installation to a workspace needs both:
+
+| Condition | Checked by |
+| --- | --- |
+| The person is an owner or admin of the workspace. | Their workspace role. |
+| The person administers the installation. | GitHub, with the person's GitHub sign-in. For an organisation's installation, they are an active admin of the organisation. For a user's installation, they are that user. |
+
+| Status | Message | Cause |
+| --- | --- | --- |
+| `403` | `This workspace is not yours to connect: only an owner or an admin may` | Not an owner or admin. |
+| `403` | `That is not an installation you administer on GitHub` | Not the installation's administrator. |
+| `403` | `GitHub would not say whether that installation is yours. Sign in again, and if it keeps happening the sign-in is not authorised to list App installations.` | GitHub would not say. |
+| `409` | `GitHub installation <id> is already connected to another workspace. Disconnect it there first` | Connected to another workspace. |
+
+One installation connects one workspace. See
+[Installation callback](/docs/reference/events/github-events#installation-callback)
+and [Connect GitHub to a workspace](/docs/integrations/connect-github).

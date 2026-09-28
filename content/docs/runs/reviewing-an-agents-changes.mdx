@@ -1,0 +1,133 @@
+---
+type: concept
+icon: Lightbulb
+title: Reviewing an agent's changes
+description: What Spotlight gives a reviewer beside a raw diff, including change stacks, the decisions an agent recorded, and the per-run file changes, and why each is built the way it is.
+---
+
+A diff shows every line an agent changed, in file order and without reasons.
+File order is rarely the order anyone would explain a change in, and the
+reasons are often what a reviewer most needs. Spotlight adds three things
+around a diff to help a person review it: change stacks, recorded decisions,
+and the file changes each run made.
+
+## Change stacks: an order to read in
+
+A change stack takes a diff and arranges it for a reviewer. It splits the
+change into cohorts, which are pieces of work that stand on their own, and
+splits each cohort into layers, in the order a reviewer should read them. A
+cohort that adds an endpoint might have a layer for the new database column,
+then one for the service that uses it, then one for the handler and its tests.
+Each cohort has a title and an intent, each layer a summary, and each file in a
+layer a note. Changes that only follow from others, such as a lockfile, are set
+aside as incidental so they do not crowd the real work.
+
+Which stations draft stacks is set on the line (see the [`spotlight_line`](/docs/reference/terraform/line)
+reference and [Built-in
+lines](/docs/reference/built-ins/built-in-lines)), and a station that writes code can
+have one as well as a station that reviews a pull request.
+
+The stack has a page of its own under the run, is linked from the task, and is
+kept as a comment on the task's pull request, updated when a newer stack is
+ready.
+
+### Drafted after the run, not by the agent
+
+A stack is drafted after the agent has finished. The runner diffs each
+checkout against the point where the work branched off, sends the diff to
+Spotlight, and Spotlight asks a hosted model to arrange it. The agent is not
+involved and cannot skip it.
+
+This was not always so. Stacks began as something the agent was asked to
+produce, then as a tool it could call, and only later became a step that happens
+on its own once a station says it wants one. Now a stack does not depend on
+whether an agent chose to make one. It is made the same way for every run and
+every harness, and it describes the diff that was actually left instead of the
+agent's idea of what it changed. A review stack can also be drafted for a pull
+request that no agent in Spotlight wrote.
+
+### Rules the stack is held to
+
+An arrangement that reads well but is in the wrong order would mislead: a
+reviewer following it would meet code before the thing it depends on. So
+Spotlight works out some facts about the diff itself, without a model, and
+holds every stack to them. The principle is that nothing arrives before what it
+depends on. Code that uses something another change defines shares its cohort
+and never sits in an earlier layer; a test shares the cohort of the code it
+tests, in the layer where the last of that code arrives; both sides of a move
+sit in one layer; a migration opens its cohort; and every change appears
+exactly once.
+
+If the model's first arrangement breaks a rule, it is asked again with the
+problems listed. If it still breaks one, the stack fails with a note saying it
+could not place every change in order, because Spotlight does not accept the
+last attempt as good enough. More stacks fail that way, and none are silently
+mis-ordered. A failed stack leaves the reviewer with the plain diff, which is
+what they would have had anyway.
+
+### Checks on each layer
+
+If the station also has a `check` command, Spotlight runs it on the whole
+change, and then on each cohort a layer at a time: the base plus the first
+layer, then plus the second, and so on. A layer that fails its check points at
+where the ordering, or the code, went wrong, and a stack with failing layers is
+given one chance to be reordered.
+
+These checks are not run inside the run's sandbox. Each one is its own piece of
+work that a runner claims, like a run, starting from a clean checkout that the
+repository's `setup` command makes ready, so that a check does not depend on the
+run's session still being alive or on the run's warm checkout. A check that
+needed the original sandbox could not outlive it, and in Spotlight no sandbox
+outlives its run (see [Why every run gets a fresh
+sandbox](/docs/hosts/why-every-run-gets-a-fresh-sandbox)). Each check
+therefore starts cold, and `setup` is there to cover that. The `check` and
+`setup` fields are in the [`spotlight_line`](/docs/reference/terraform/line#station-fields)
+reference.
+
+## Decisions: the why beside the diff
+
+A diff shows what changed. It does not show that the agent assumed a field is
+never empty, chose a simpler algorithm and accepted that it is slower on large
+inputs, or tried one approach and dropped it. Those are the things a reviewer
+most needs to question, and they live in the agent's own account of its work:
+what it said, thought and planned during the run.
+
+A station with `decisions: true` has these drawn out after each run and kept
+with the task. By default that is Delivery's implementation station. Each
+decision is one of a few kinds (a trade-off, an assumption, a limitation, a
+rejected approach, or a deviation from what was asked), and each has to point
+to the steps of the run it rests on and to files the run changed. A decision
+that cannot is dropped, so every decision shown can be traced to something the
+agent did. A newer run's decisions replace the earlier ones.
+
+Decisions are recorded for two readers. A reviewer sees the why beside the diff,
+during review, when it can still change the outcome. And later, when something
+goes wrong, the people handling it can see which limitations were knowingly
+accepted and in which files. For that second use, a decision's standing changes
+when its pull request merges: it stands, and stays on record, found by
+repository, path and time. Decisions on a pull request closed without merging
+are discarded.
+
+The alternative would be to hold decisions back until a change has merged, as a
+record for later only, which would keep them out of the one moment they can
+still change the outcome. Spotlight shows them from the start, as a comment on
+the pull request and beside the files they bear on in the task's change stack,
+and lets people dispute a decision they disagree with. Decisions on record are
+also given to later runs of the task in their briefing, so a station that picks
+the work up again knows what was already settled.
+
+## File changes from the run journal
+
+The Run page and the inbox show which files a run changed and open any file's
+diff beside the conversation. The view comes from the run's journal, which
+records each file before and after every edit the agent makes through its
+harness's edit tools, so it needed nothing stored beside it. A change made by a
+shell command, such as a code generator or a `sed` over many files, is not an
+edit the journal sees and does not appear; the pull request and the change
+stack, built from git, do include it.
+
+So the run's file changes show which files one run touched, the stack gives an
+order to read the whole change in, and decisions show what the agent chose. A
+reviewer still reads the code, and the pull request is still reviewed and merged
+on GitHub (see [Have Spotlight review pull requests](/docs/integrations/review-pull-requests)). The three views shift the
+reviewer's time from reconstructing the change toward judging it.

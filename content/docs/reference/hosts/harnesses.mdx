@@ -1,0 +1,89 @@
+---
+type: reference
+icon: BookText
+title: Harnesses
+description: The agent CLIs Spotlight runs, how each is started and given a model and effort, and how a host finds which ones an image holds.
+---
+
+A harness is the agent CLI a station runs. A station names one by its id in
+`harness`. Spotlight runs three. The runner starts each over the Agent Client
+Protocol (ACP), in `/workspace`, as the `agent` user.
+
+## Built-in harnesses
+
+| | Claude Code | Cursor | Codex |
+| --- | --- | --- | --- |
+| Id | `claude-code` | `cursor` | `codex` |
+| Name | Claude Code | Cursor CLI | Codex |
+| ACP command | `claude-agent-acp` | `cursor-agent acp` | `codex-acp` |
+| Model binding | `ANTHROPIC_MODEL` environment variable | `--model <model>` argument | `model` in the JSON of `CODEX_CONFIG` |
+| Effort binding | `CLAUDE_CODE_EFFORT_LEVEL` environment variable | appended to the model as `<model>[effort=<effort>]`, when a model is set | `model_reasoning_effort` in the JSON of `CODEX_CONFIG` |
+| Model discovery | `GET https://api.anthropic.com/v1/models` | `cursor-agent models` | `GET https://api.openai.com/v1/models`, ids starting `gpt`, `o<digit>` or `codex` |
+| Key model discovery sends | `ANTHROPIC_API_KEY`, else `CLAUDE_CODE_OAUTH_TOKEN` | none; `cursor-agent models` signs in by itself | `CODEX_API_KEY`, else `OPENAI_API_KEY` |
+| Version probe | the bundled `claude` CLI's `--version` | `cursor-agent --version` | `codex-acp cli -V` |
+| Skills directory | `.claude/skills`, read by the harness | `.spotlight/skills`, listed in the briefing | `.spotlight/skills`, listed in the briefing |
+| Native settings format | JSON object | JSON object | `config.toml` text |
+
+A station names its harness; there is no default, and a station without one
+runs nothing. The work stations of the [built-in lines](/docs/reference/built-ins/built-in-lines)
+name `claude-code`.
+
+### Harness environment
+
+The runner sets these for the harness, besides the model and effort bindings.
+`${SPOTLIGHT_STATE_DIR}` is `/workspace/.spotlight/state`.
+
+| Harness | Variable | Value |
+| --- | --- | --- |
+| `claude-code` | `CLAUDE_CONFIG_DIR` | `${SPOTLIGHT_STATE_DIR}/claude` |
+| `claude-code` | `CLAUDE_CODE_ENABLE_TELEMETRY` | `1` |
+| `claude-code` | `CLAUDE_CODE_ENHANCED_TELEMETRY_BETA` | `1` |
+| `claude-code` | `OTEL_TRACES_EXPORTER` | `otlp` |
+| `claude-code` | `OTEL_METRICS_EXPORTER`, `OTEL_LOGS_EXPORTER` | `none` |
+| `claude-code` | `OTEL_EXPORTER_OTLP_PROTOCOL` | `http/json` |
+| `claude-code` | `OTEL_EXPORTER_OTLP_ENDPOINT` | the runner's loopback telemetry address |
+| `claude-code` | `OTEL_TRACES_EXPORT_INTERVAL` | `1000` |
+| `codex` | `CODEX_HOME` | `${SPOTLIGHT_STATE_DIR}/codex` |
+
+A [harness profile](/docs/reference/terraform/harness-profile) adds the harness's native
+settings, MCP servers and permission rules. See
+[Inside a sandbox](/docs/reference/hosts/sandbox#the-agents-environment) for the rest
+of the agent's environment.
+
+## Efforts
+
+Every harness takes the same efforts, from least to most: `low`, `medium`,
+`high`, `xhigh`, `max`. A station with no effort sets none.
+
+## Models
+
+A model id is the first field of each line a harness's discovery command
+prints, kept when it matches:
+
+```text
+^[a-z0-9][a-z0-9._:@/-]*$
+```
+
+A discovery command that fails, or does not finish within 15 seconds, lists no
+models. Model discovery runs behind an egress, which wears the host's harness
+keys toward the model endpoints.
+
+## Installed harnesses
+
+A harness counts as installed in an image when its ACP executable
+(`claude-agent-acp`, `cursor-agent` or `codex-acp`) is on `PATH`. The host
+runs `spotlight runner harnesses '<json>'` in each image it serves, within 2
+minutes, and reports each installed harness with its models and version. The
+[Runners page](/docs/reference/app/web-app#workspace-pages) shows them.
+
+A run goes only to an image that holds its station's harness. If an image
+changes and no longer holds it, the run fails with
+`The runner image <digest> no longer holds <harness>, which this run needs`.
+
+## Versions
+
+A harness's version is the one built into the runner image. The image digest
+pins it. The default image installs the latest release of each harness package
+when it is built. See
+[Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image)
+for an image with other versions.

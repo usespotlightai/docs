@@ -1,0 +1,119 @@
+---
+type: reference
+icon: BookText
+title: Install script
+description: The variables install.sh reads, the steps it takes in order, the files it writes and the messages it prints.
+---
+
+Spotlight serves a POSIX shell script at `/api/install.sh` on the Spotlight
+address. It needs no sign-in and reads no input. See
+[Install a host](/docs/hosts/run-a-host).
+
+```bash
+curl -fsSL https://<your Spotlight address>/api/install.sh | SPOTLIGHT_TOKEN=<pool token> sh
+```
+
+```bash
+curl -fsSL https://<your Spotlight address>/api/install.sh \
+  | SPOTLIGHT_TRUST=<trust id> SPOTLIGHT_OIDC_TOKEN_FILE=<token file> sh
+```
+
+## Variables
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `SPOTLIGHT_TOKEN` | none | A pull pool's token. Without it, the value in the existing configuration file. |
+| `SPOTLIGHT_TRUST` | none | A runner trust's id. Without it, the value in the existing configuration file. |
+| `SPOTLIGHT_OIDC_TOKEN_FILE` | none | The path to the workload's OIDC token. Without it, the value in the existing configuration file. |
+| `SPOTLIGHT_CAPACITY` | none | Written to the configuration when set. Without it, the value in the existing configuration file. |
+| `SPOTLIGHT_URL` | none | Written to the configuration. Without it, the public address of the Spotlight that served the script. |
+| `SPOTLIGHT_VERSION` | none | The `spotlight` release to install. Without it, the release of the Spotlight that served the script, else `latest`. |
+| `SPOTLIGHT_RUNNER_IMAGE` | `ghcr.io/usespotlightai/spotlight-runner:<version>` | The image pulled and written to the configuration. |
+| `SPOTLIGHT_REPO` | `usespotlightai/cli` | The GitHub repository releases are downloaded from. |
+| `SPOTLIGHT_DOWNLOAD_URL` | none | A base URL to download the binary and checksum from, in place of GitHub releases. |
+| `SPOTLIGHT_BIN_DIR` | `/usr/local/bin` as root or when writable, else `~/.spotlight/bin` | Where `spotlight` is installed. |
+| `SPOTLIGHT_HOST_CONFIG` | `/etc/spotlight/host.env` as root, else `~/.spotlight/host.env` | The configuration file written. |
+| `SPOTLIGHT_NO_SERVICE` | none | `1` installs without starting a service. |
+
+The binary is downloaded from:
+
+| `SPOTLIGHT_VERSION` | URL |
+| --- | --- |
+| `latest` | `https://github.com/<repo>/releases/latest/download/spotlight-<os>-<arch>` |
+| any other | `https://github.com/<repo>/releases/download/<version>/spotlight-<os>-<arch>` |
+
+`<os>` is `linux` or `darwin`. `<arch>` is `amd64` or `arm64`. The checksum is
+the same URL with `.sha256` appended.
+
+## Steps
+
+The script stops at the first failure. Each failure listed under
+[Messages](#messages) exits `1`.
+
+| Step | Action |
+| --- | --- |
+| 1 | Finds `curl` or `wget`, and `sha256sum` or `shasum`. |
+| 2 | Reads the platform from `uname -s` and `uname -m`. |
+| 3 | Chooses and creates the binary directory. |
+| 4 | Chooses the configuration path. |
+| 5 | Reads the credentials: each variable from the environment, else from the existing configuration file. |
+| 6 | Finds a container runtime: the first of `docker` or `podman` whose `info` succeeds. |
+| 7 | Downloads `spotlight` and its checksum, checks the checksum, and installs the binary. |
+| 8 | Writes the configuration file. |
+| 9 | Pulls the runner image with the runtime found in step 6. |
+| 10 | With `SPOTLIGHT_NO_SERVICE=1`, stops here. Otherwise runs `spotlight host install` with `SPOTLIGHT_HOST_CONFIG` set to the configuration path. |
+
+See [The spotlight command](/docs/reference/cli/spotlight-command#spotlight-host-install)
+for the service `spotlight host install` writes.
+
+## Files
+
+| Path | Mode | Contents |
+| --- | --- | --- |
+| `<bin dir>/spotlight` | executable | The binary. |
+| `<config path>` | `0600` | The host configuration. |
+
+The script writes the configuration file whole, replacing what was there. It
+holds only these keys:
+
+| Key | Written |
+| --- | --- |
+| `SPOTLIGHT_URL` | always |
+| `SPOTLIGHT_TOKEN` | when set |
+| `SPOTLIGHT_TRUST` | when set |
+| `SPOTLIGHT_OIDC_TOKEN_FILE` | when set |
+| `SPOTLIGHT_CAPACITY` | when set |
+| `SPOTLIGHT_RUNNER_IMAGE` | always |
+
+Running the script again drops any other key the file held. See
+[Host settings](/docs/reference/hosts/host-configuration) for every key the host
+reads, and the separate `sandbox.env` and `egress.env` files beside it.
+
+## Messages
+
+Every message goes to standard error, prefixed `spotlight host: `.
+
+| Message | When |
+| --- | --- |
+| `downloading spotlight <version> (<os>-<arch>)` | Step 7 begins. |
+| `installed <bin dir>/spotlight` | The binary is in place. |
+| `wrote <config path>` | The configuration is written. |
+| `pulling <image>` | Step 9 begins. |
+| `installed. Start it with: SPOTLIGHT_HOST_CONFIG=<config path> <bin dir>/spotlight host` | `SPOTLIGHT_NO_SERVICE=1`. |
+| `serving <spotlight address>: this machine shows on the workspace's Runners page once it reports` | The service is installed. |
+
+| Message | Cause |
+| --- | --- |
+| `need curl or wget to download spotlight` | Neither is on `PATH`. |
+| `need sha256sum or shasum to check what it downloads` | Neither is on `PATH`. |
+| `unsupported operating system: <os>` | Not Linux or macOS. |
+| `unsupported architecture: <arch>` | Not x86-64 or ARM64. |
+| `set SPOTLIGHT_TOKEN to a pull pool's token, or SPOTLIGHT_TRUST and SPOTLIGHT_OIDC_TOKEN_FILE to claim through a runner trust` | No token and no trust. |
+| `no container runtime answered: install and start Docker or Podman (on macOS, Docker Desktop, OrbStack or Colima), then run this again` | No runtime answered `info`. |
+| `could not download spotlight from <url>` | The binary download failed. |
+| `could not download the checksum from <url>.sha256` | The checksum download failed. |
+| `spotlight failed its checksum: expected <sha256>, got <sha256>` | The download does not match its checksum. |
+| `could not pull <image>` | The image pull failed. |
+
+See [The spotlight command](/docs/reference/cli/spotlight-command#spotlight-host-install)
+for the failures of `spotlight host install`.

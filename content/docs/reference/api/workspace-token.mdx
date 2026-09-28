@@ -1,0 +1,90 @@
+---
+type: reference
+icon: BookText
+title: Workspace tokens
+description: The fields and scopes of a workspace token, its value and header, and who may issue and revoke one.
+---
+
+A workspace token is a bearer credential that acts inside one workspace,
+within its scopes, for the resource API and the Terraform provider. It is
+issued through the resource API only. It has no Terraform resource, is not part
+of an export, and is not shown in the web app.
+
+| Kind | Endpoint | Terraform | Address |
+| --- | --- | --- | --- |
+| `workspace-token` | `/api/resources/workspaces/{workspaceId}/tokens` | none | `<name>` |
+
+See [Resource API](/docs/reference/api/resource-api) for the operations, headers
+and errors every kind shares.
+
+## Example
+
+```json
+{
+  "name": "ci",
+  "description": "Plans the platform repository on every pull request",
+  "scopes": ["plan"],
+  "expiresAt": "2026-12-31T23:59:59Z"
+}
+```
+
+## Endpoints
+
+| Operation | Endpoint | Description |
+| --- | --- | --- |
+| issue (create) | `POST /api/resources/workspaces/{workspaceId}/tokens` | Needs `Idempotency-Key`. Returns `201` and the token's value in the `Spotlight-Workspace-Token` response header. |
+| read | `GET /api/resources/tokens/{id}` | Never returns the value. |
+| describe (update) | `PUT /api/resources/tokens/{id}` | Changes `description` only. Needs `If-Match`. |
+| revoke (delete) | `DELETE /api/resources/tokens/{id}` | The token admits nobody from this moment. Needs `If-Match`. |
+| import | `GET /api/resources/workspaces/{workspaceId}/tokens/import?address=<name>` | |
+| list | `GET /api/resources/workspaces/{workspaceId}/tokens` | Every token issued by a person. Tokens minted through a [workspace token trust](/docs/reference/terraform/workspace-token-trust) are not listed. |
+
+Issuing, describing and revoking need the `administer` permission, which only
+a workspace owner or admin has, signed in as a person. No token can issue,
+describe or revoke a token. Reading, importing and listing need `read`.
+
+## Fields
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `name` | string | required | Lowercase words joined by dashes, at most 64 characters. Fixed: an update that changes it is refused. |
+| `scopes` | array of strings | required | At least one, each once. See [scopes](#scopes). Fixed: an update that changes it is refused. |
+| `description` | string | `""` | At most 255 characters. The only field an update changes. |
+| `expiresAt` | string or null | `null` | An RFC 3339 time when the token stops admitting anyone. Must be in the future. Null never expires. Fixed: an update that changes it is refused. |
+| `workspaceId` | string | read-only | The workspace the token acts in, and the only one. |
+| `issuedBy` | string | read-only | The person who issued it. |
+| `issuedAt` | string | read-only | When it was issued, as an RFC 3339 time. |
+
+## Scopes
+
+A token carries one or more of the scopes `read`, `plan`, `configure`,
+`secrets`, `runners` and `trusts`. See
+[Token scopes](/docs/reference/roles-and-permissions#token-scopes) for what
+each grants.
+
+| Message | Cause |
+| --- | --- |
+| `include read, plan or configure; secrets, runners and trusts are granted beside one of them` | None of `read`, `plan` or `configure` is named. |
+| `name each scope once` | A scope is named twice. |
+
+Each is returned at the path `scopes`.
+
+## What no token can do
+
+- Administer: issue, describe or revoke tokens, change members or roles, or
+  read the [configuration changes](/docs/reference/api/resource-api#configuration-changes).
+- Open a workspace. A workspace token acts only inside its own workspace.
+
+A request a token's scopes do not allow is refused with `403` and a problem
+naming the missing permission. A resource the token cannot see returns `404`.
+
+## Value
+
+| Property | Value |
+| --- | --- |
+| Format | 32 random bytes, base64url, with no prefix. |
+| Returned | Once, in the `Spotlight-Workspace-Token` header of the issuing response. Never again, not even to a retry with the same `Idempotency-Key`. |
+| Kept | As a SHA-256 hash only. |
+| Sent as | `Authorization: Bearer <token>` |
+
+A token that is revoked, or past `expiresAt`, is refused with `401`.

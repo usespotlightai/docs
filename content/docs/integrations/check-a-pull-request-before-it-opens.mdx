@@ -1,0 +1,131 @@
+---
+type: how-to
+icon: SquarePen
+title: Check or block a pull request before it opens
+description: Send a pull request an agent is about to open to your own endpoint, and hold it back when the endpoint refuses.
+---
+
+The example sends any pull request that touches database migrations to a
+DBA's review service before the agent opens it. You need:
+
+- Terraform set up with the Spotlight provider, using a token that has the
+  `configure` scope. See
+  [Manage Spotlight with Terraform](/docs/configuration/manage-spotlight-with-terraform).
+- An HTTPS endpoint you control that can check a signature or a token.
+
+## Define the hook
+
+Fire the hook on `pull-request.opening`, narrow it with `match`, and send one
+request step to your endpoint. Set `failure = "block"` so an endpoint that
+fails or does not answer in time also holds the pull request back.
+
+```hcl
+data "spotlight_workspace" "acme" {
+  slug = "acme"
+}
+
+data "spotlight_team" "core" {
+  workspace_id = data.spotlight_workspace.acme.id
+  key          = "core"
+}
+
+resource "spotlight_hook" "migrations" {
+  team_id = data.spotlight_team.core.id
+  key     = "migrations-need-a-dba"
+  on      = "pull-request.opening"
+  match = {
+    paths = ["db/migrations/**"]
+  }
+  vars = { migrations = "db/migrations/" }
+  steps = [
+    {
+      name = "review"
+      request = {
+        url  = "https://dba.acme.example/review"
+        body = "$${{ {'pr': event.title, 'files': event.changed.filter(path, path.startsWith(vars.migrations))} }}"
+      }
+    },
+  ]
+  signing = {
+    oidc = { audience = "https://dba.acme.example" }
+  }
+  failure         = "block"
+  timeout_seconds = 20
+}
+```
+
+To limit the hook to some repositories or lines, add `repositories` or `lines`
+to `match`. Without `body`, the request carries the hook's key, the event, the
+task and the run.
+
+Spotlight sends the request from its own servers, and the apply refuses the
+hook if the deployment does not allow outbound calls to your endpoint's host.
+To send it from inside your network instead, set `from = "network"` on the
+request, and a host of the workspace sends it.
+
+## Choose how the request is signed
+
+Every request step must be signed. Pick one:
+
+<Tabs items={['OIDC token', 'Shared secret']}>
+<Tab value="OIDC token">
+
+Keep the `oidc` block above. Each request carries
+`authorization: Bearer <token>`, a short-lived token whose issuer is
+`https://<your Spotlight address>/api`, whose audience is the one you set, and whose
+subject is `hook:<workspace id>/<team id>/migrations-need-a-dba`. Check it
+against the keys at `https://<your Spotlight address>/api/.well-known/jwks.json`.
+
+If the apply answers that this Spotlight has no key to sign OIDC tokens with,
+use a shared secret, or ask whoever runs Spotlight to set `HOOK_SIGNING_KEY`.
+
+</Tab>
+<Tab value="Shared secret">
+
+Replace the `signing` block with a secret in the Standard Webhooks format:
+
+```hcl
+resource "random_password" "hook" {
+  length  = 32
+  special = false
+}
+
+# inside spotlight_hook.migrations
+signing = {
+  secret_wo         = "whsec_${base64encode(random_password.hook.result)}"
+  secret_wo_version = 1
+}
+```
+
+Each request carries `webhook-id`, `webhook-timestamp` and `webhook-signature`,
+which any Standard Webhooks library verifies with the same secret. To rotate
+it, give a new secret and raise `secret_wo_version`.
+
+</Tab>
+</Tabs>
+
+Run `terraform apply`.
+
+## Answer from your endpoint
+
+To let the pull request open, answer with any 2xx. To hold it back, answer
+with a 2xx and a JSON body that has a `refuse` string, the reason:
+
+```json
+{ "refuse": "Migrations need a DBA's review first: ask in #dba." }
+```
+
+## Check a refusal
+
+Have an agent open a pull request that touches `db/migrations/` while your
+endpoint refuses. No pull request is opened. The agent's `pull-request` call
+fails with "The pull request was held back by a hook, so none was opened."
+followed by `The hook migrations-need-a-dba refused:` and your reason, and the
+agent carries on from that answer.
+
+## Related
+
+- [`spotlight_hook`](/docs/reference/terraform/hook): every field, event and header.
+- [Expressions](/docs/reference/api/expressions), for what `event` holds on each
+  event.
+- [Reviewing an agent's changes](/docs/runs/reviewing-an-agents-changes)

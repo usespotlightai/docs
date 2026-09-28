@@ -1,9 +1,18 @@
 import defaultMdxComponents from 'fumadocs-ui/mdx';
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+import { HomeCard, HomeSection } from './home';
 import type { MDXComponents } from 'mdx/types';
 
 export function getMDXComponents(components?: MDXComponents) {
   return {
     ...defaultMdxComponents,
+    HomeCard,
+    HomeSection,
+    Step,
+    Steps,
+    Tab,
+    Tabs,
     ...components,
   } satisfies MDXComponents;
 }

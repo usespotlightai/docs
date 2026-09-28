@@ -1,0 +1,71 @@
+---
+type: how-to
+icon: SquarePen
+title: Answer the inbox
+description: Get a task that waits on you moving again, by replying to its station or deciding on a request.
+---
+
+A task assigned to you stops at its station and waits for you when the station
+asks you something, when its run fails, or when a tool needs your approval.
+Each of these is an item in your inbox.
+
+## Open the item
+
+Open **Inbox** in the workspace sidebar and select an item under **Open**.
+Items under **Resolved** are read-only. The right pane shows the conversation:
+what the station was asked to do, the steps it took, and what it said last. The row's
+preview line and the last note tell you what it is waiting on.
+
+If the row shows `×N`, the same failure has happened N times. Before you
+answer again, follow
+[Troubleshoot a run](/docs/runs/troubleshoot-a-run).
+
+## Answer the station
+
+Write your reply in the box at the bottom of the item that reads **Reply…**.
+
+- Press Enter to send. Press Shift+Enter for a new line.
+- To give the station files, use **Attachments** or drop them on the composer.
+
+Sending starts a new run at the same station. The agent picks up its earlier
+conversation and reads your answer as the next thing said to it. The item stays
+under **Open** while that run works, and you can follow its steps live in the
+same pane.
+
+If the task was opened from Slack, a reply in the thread where its question was
+posted answers the item too. See
+[Open tasks from Slack and post questions back](/docs/integrations/open-tasks-from-slack).
+
+## Approve or reject a request
+
+An approval item shows `<name> needs your approval`, the reason given for
+asking, and the inputs the agent wants to use. It comes from a tool that
+requires approval or from a harness permission a profile sets to ask.
+
+If the agent should know why, write it in **Reasoning**. Then select
+**Approve** or **Reject**.
+
+The item then reads "You approved this." or "You rejected this." and a new
+run starts at the same station and picks up the conversation. An approval
+covers one call; the next call asks again. A rejection stands: the same call
+with the same inputs at this station is refused without asking you.
+
+If you write a reply instead of choosing, a new run starts
+with no decision and you are asked again when the agent next makes the call.
+
+## Send the task somewhere else instead
+
+If the task should not go back to the same station, move it rather than
+answering, as in
+[Add a task and move it along a line](/docs/tasks/add-and-move-tasks#move-the-task).
+The item closes with "This moved on to `<Station>`. There is nothing left to
+answer."
+
+## Related
+
+- [Steer or stop a run](/docs/runs/steer-or-stop-a-run)
+- [Require approval before a tool runs](/docs/integrations/require-approval-before-a-tool-runs),
+  which sets up the approvals that land here.
+- [Tasks, runs and the inbox](/docs/reference/app/tasks-runs-and-the-inbox): task
+  states and inbox items.
+- [Asking a person](/docs/inbox/asking-a-person)

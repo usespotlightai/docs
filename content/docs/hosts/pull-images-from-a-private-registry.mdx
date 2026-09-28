@@ -1,0 +1,76 @@
+---
+type: how-to
+icon: SquarePen
+title: Pull runner images from a private registry
+description: Give a host literal registry credentials in a Docker config file so it can pull runner images that need a login.
+---
+
+You need an installed host, and a username with a password or access token for
+the registry, such as a GitHub token that can read packages for `ghcr.io`.
+
+The host reads only the `auths` section of a Docker config file, and ignores
+`credsStore` and `credHelpers`. Without other settings it reads
+`$DOCKER_CONFIG/config.json`, or `~/.docker/config.json` for the user the
+service runs as. If that file already has literal `auths` for your registry,
+skip to [Check that it pulls](#check-that-it-pulls). Otherwise, as when your
+Docker config names a `credsStore` the way Docker Desktop's does, give the host
+a file of its own.
+
+## Write the credentials file
+
+Write the credentials beside the host's configuration:
+
+```json
+{
+  "auths": {
+    "ghcr.io": {
+      "username": "<user>",
+      "password": "<token>"
+    }
+  }
+}
+```
+
+Key each entry by the registry's host, as it appears at the start of the image
+name. For Docker Hub, use `https://index.docker.io/v1/`. For an entry in
+another form, such as `auth` or `identitytoken`, see
+[Registry credentials](/docs/reference/hosts/host-configuration#registry-credentials).
+
+Save it as `/etc/spotlight/registry.json` for a host installed as root, or
+`~/.spotlight/registry.json` for one installed as yourself, and make it
+readable only by its owner:
+
+```bash
+chmod 600 ~/.spotlight/registry.json
+```
+
+## Point the host at the file
+
+Add the file's full path to `host.env`:
+
+```bash
+SPOTLIGHT_REGISTRY_CONFIG=/etc/spotlight/registry.json
+```
+
+Then [restart the host](/docs/hosts/run-a-host#restart-the-host). After
+that, a change to the file needs no restart: the host reads the credentials
+again on every pull.
+
+Reinstalling drops this line from `host.env`; add it back afterwards.
+
+## Check that it pulls
+
+Open **Runners** in the sidebar. Under the host, the image's row lists its
+harnesses. If it reads **Refused** with `could not pull it`, check the entry's
+key and the token's access to the image.
+
+If the credentials cannot be read, the host logs
+`could not read the registry credentials, so it pulls anonymously` and tries
+without them. If a pull fails but the host has a copy of the image, it runs the
+copy and logs `could not pull the runner image, so it runs the copy it has`.
+
+## Related
+
+- [Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image)
+- [Registry credentials](/docs/reference/hosts/host-configuration#registry-credentials),
+  in the host configuration reference.

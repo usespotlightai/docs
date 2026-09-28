@@ -1,0 +1,398 @@
+---
+type: reference
+icon: BookText
+title: Glossary
+description: The terms Spotlight uses, in alphabetical order, with a link to each term's reference page.
+---
+
+## Approval
+
+A person's decision on one tool call, or one harness permission, that a run
+asked to use. A grant is spent by the call it allows; a refusal stands at the
+station that asked. See [Approvals](/docs/reference/app/tasks-runs-and-the-inbox#approvals).
+
+## Attachment
+
+A file of up to 25 MiB given with a task, an answer, a message to a run or a
+chat message. A run finds it in its workspace at
+`.spotlight/attachments/<id>/<name>`. See
+[Attachments](/docs/reference/app/tasks-runs-and-the-inbox#attachments).
+
+## Backlog
+
+The first station of every line, of kind `backlog`. Nothing runs there, so a
+task waits at the backlog until a person or a reaction moves it. See
+[`spotlight_line`](/docs/reference/terraform/line).
+
+## Before event
+
+A hook event that waits while its hooks run, such as `tool.using`. A hook on a
+before event can stop it. An after event, such as `task.moved`, has already
+happened when its hooks run. See [Events](/docs/reference/terraform/hook#events).
+
+## Board
+
+A line's page in the web app. It shows the line's stations and the tasks
+standing at them, in the views Backlog, Active and Completed. See
+[Web app](/docs/reference/app/web-app#team-pages).
+
+## Briefing
+
+The first prompt a task's run gives its agent: the station's prompt, the task,
+what earlier stations noted, the task's decisions, the repositories, skills,
+open remarks on the pull request, and how to hand over. See
+[Briefing](/docs/reference/hosts/sandbox#briefing).
+
+## Catalog
+
+Tools and skills Spotlight publishes, named `catalog.<name>@<version>`, such as
+`catalog.fetch-page@1.0.0`. A station gives them as it gives its own. Each item
+needs a [plan](#plan). See
+[Catalog](/docs/reference/built-ins/built-in-tools-and-skills#catalog).
+
+## Change stack
+
+A run's diff arranged for review as [cohorts](#cohort) of [layers](#layer).
+Spotlight drafts one after each run at a station with `diffs: true`. See
+[Change stacks and decisions](/docs/reference/app/change-stacks-and-decisions).
+
+## Chat
+
+A private planning conversation between one person and a team's agent, on the
+team's Agent page. A chat is worked by runs, and the agent can propose tasks in
+it. See [Chats](/docs/reference/app/tasks-runs-and-the-inbox#chats).
+
+## Check
+
+A station's one-line command, such as `npm test`, run against the whole change
+and then each layer of a change stack drafted at that station. See
+[Checks](/docs/reference/app/change-stacks-and-decisions#checks).
+
+## Cohort
+
+A group of layers in a change stack, of kind `change` or `incidental`, with a
+title and an intent. See
+[Structure](/docs/reference/app/change-stacks-and-decisions#structure).
+
+## Completed
+
+The last station of every line, of kind `completed`. Nothing runs there. A task
+moved to it is finished. See [`spotlight_line`](/docs/reference/terraform/line).
+
+## Configuration change
+
+A record of one create, update or delete of a workspace's configuration: who
+made it, through which client, and what changed. Owners and admins read them.
+See [Configuration changes](/docs/reference/api/resource-api#configuration-changes).
+
+## Conversation
+
+The stretch of a task's notes from a station putting the task to a person
+(an `asked` note) to the task next being passed on (a `passed` note). It is open
+until then. Each conversation is one inbox item. See
+[Notes](/docs/reference/app/tasks-runs-and-the-inbox#notes).
+
+## Decision
+
+A trade-off, assumption, limitation, rejected approach or deviation that
+Spotlight draws from what an agent said during a run at a station with
+`decisions: true`. People can dispute a decision. See
+[Decisions](/docs/reference/app/change-stacks-and-decisions#decisions).
+
+## Egress
+
+A proxy container a host starts beside each sandbox. The sandbox reaches the
+network only through it. Egress admits or refuses each connection and
+[wears](#wear) secrets toward the hosts they are bound to. See
+[Egress](/docs/reference/hosts/egress).
+
+## Handover
+
+What a task's run declares when it ends: pass the task to another station, put
+it to a person (`review`), or finish it (`done`). The agent declares it with
+`spotlight handover`. See [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover)
+and [Agent commands](/docs/reference/cli/agent-commands).
+
+## Happening
+
+A named event from outside Spotlight, such as `github.pull_request.merged`,
+raised by GitHub or by an integration. A happening finds the task it concerns
+and may move it, or opens a new task. See
+[GitHub events](/docs/reference/events/github-events) and
+[`spotlight_integration`](/docs/reference/terraform/integration).
+
+## Harness
+
+The agent command line a station runs: `claude-code` (Claude Code), `cursor`
+(Cursor CLI) or `codex` (Codex). See [Harnesses](/docs/reference/hosts/harnesses).
+
+## Harness key
+
+An API key or token a harness uses to reach its model provider, such as
+`ANTHROPIC_API_KEY`. A host gives them to its sandboxes from `sandbox.env`.
+Egress holds the ones it knows, and the sandbox gets a [stand-in](#stand-in).
+See [Harness keys](/docs/reference/hosts/host-configuration#harness-keys).
+
+## Harness profile
+
+A team's named set of permission rules, MCP servers and native harness
+settings. A station names one in its `profile`. See
+[`spotlight_harness_profile`](/docs/reference/terraform/harness-profile).
+
+## Hook
+
+A team's rule that runs steps when an event happens, such as `tool.using` or
+`pull-request.opening`. A hook on a [before event](#before-event) can stop that
+event. See [`spotlight_hook`](/docs/reference/terraform/hook).
+
+## Host
+
+A machine running `spotlight host`. It claims runs for a workspace and starts a
+fresh sandbox for each one. A host is admitted through a pull pool's token or a
+runner trust. See [Host settings](/docs/reference/hosts/host-configuration).
+
+## Inbox
+
+A person's list of conversations on the tasks assigned to them, across every
+team in a workspace. See
+[The inbox](/docs/reference/app/tasks-runs-and-the-inbox#the-inbox).
+
+## Integration
+
+A team's definition of an outside service: the webhooks it sends and the
+happenings they raise, the tools agents may call on it, and how Spotlight
+connects to it. See [`spotlight_integration`](/docs/reference/terraform/integration).
+
+## Label
+
+A name a runner pool or runner trust gives the runners it admits. A line's or
+station's `runners` place its work on runners that carry one of the labels. See
+[Placement](/docs/reference/terraform/line#placement).
+
+## Layer
+
+A step of a change stack: a title, a summary and the changes it places, built
+on the layers before it. A station's check runs on each layer of a `change` cohort
+together with the layers before it. See
+[Structure](/docs/reference/app/change-stacks-and-decisions#structure).
+
+## Line
+
+A team's workflow: an ordered set of stations, the reactions that move tasks
+between them, the repositories its runs work in, and an optional role. See
+[`spotlight_line`](/docs/reference/terraform/line) and [Built-in lines](/docs/reference/built-ins/built-in-lines).
+
+## Line role
+
+A word on a line that integrations open tasks onto. `delivery` and `review` are
+built in. Only a line with role `review` may carry a review policy
+(`reviews`). See [`spotlight_line`](/docs/reference/terraform/line).
+
+## Mark
+
+A handle a task is known by outside Spotlight: a kind and a value, such as
+`git.pull-request` and a pull request's URL. A mark belongs to at most one task
+in a workspace. A finding mark is used to find the task a happening concerns.
+An ambient mark (`find: false`) is [worn](#wear) by the task but never used to
+find it. See [Marks](/docs/reference/events/github-events#marks) and
+[`spotlight_integration`](/docs/reference/terraform/integration).
+
+## Memory
+
+Something a team knows that its repository can't tell, such as a rationale, a
+rejected approach, a failure, an environment quirk, a correction or a
+preference. A station with `memories: true` drafts proposed memories after each
+completed run, from what the agent said and from what people said on the task.
+Each is kept with the steps and notes it rests on. The run's memories arrive
+as one item in the inbox, where a teammate approves, edits or rejects each one.
+A memory from outside the team, such as a review of an outside author's pull
+request, carries a warning and is approved on its own. Approved memories stand;
+rejected ones are kept so they are not proposed again. The team's Memory page
+lists what stands, filtered by line, station, repository, path or kind. There
+you can write a memory yourself, correct one (the correction replaces it) or
+retire one with a reason; retired memories stay readable under Retired. Each
+standing memory has a handle, such as `M-12`, and runs are briefed with the ones
+that bear most closely on their work, whatever harness they run. Every memory
+that applies to a run is also laid out in its workspace under
+`.spotlight/memory`, for the agent to search; it can also search with
+`spotlight recall`, and propose one itself with `spotlight remember`; that
+proposal waits in the inbox beside the run like a drafted one. Each run's page
+lists what it was briefed with, what the cap cut, what it recalled and what it
+proposed, and the Memory page shows how many runs used each memory. See
+[Station fields](/docs/reference/terraform/line#station-fields) and
+[Agent commands](/docs/reference/cli/agent-commands#spotlight-recall).
+
+## Note
+
+An entry on a task's trail, of kind `asked`, `passed`, `answered` or `said`,
+with a voice (`station`, `person` or `world`) and a form. A note's words never
+change. See [Notes](/docs/reference/app/tasks-runs-and-the-inbox#notes).
+
+## Occurrence
+
+One instance of an event that hooks fire for, with an id of its own. A hook's
+request carries it as `occurrence`. See [`spotlight_hook`](/docs/reference/terraform/hook).
+
+## Placement
+
+The terms a run's runner must meet: the station's `runners` [labels](#label),
+or the line's where the station names none; the runner image; and the harness.
+See [Placement](/docs/reference/terraform/line#placement).
+
+## Plan
+
+A workspace's commercial plan: `free`, `team` or `enterprise`. Each plan
+includes the ones before it. The plan decides which catalog items a station may
+give. See [Catalog](/docs/reference/built-ins/built-in-tools-and-skills#catalog). The
+`plan` permission is unrelated; see
+[Roles and permissions](/docs/reference/roles-and-permissions).
+
+## Pool
+
+A runner pool: a workspace resource that admits runners. Hosts serve a pull
+pool and claim its runs with the pool's token. For a push pool, Spotlight calls
+a provision URL to start a runner for each run. See
+[`spotlight_runner_pool`](/docs/reference/terraform/runner-pool).
+
+## Proposal
+
+A task the agent proposes in a chat, naming a line and a station. It is open
+until the person accepts it, which creates the task, or dismisses it. See
+[Proposals](/docs/reference/app/tasks-runs-and-the-inbox#proposals).
+
+## Reaction
+
+A line's rule that moves a task to a station when a happening arrives,
+optionally only while the task stands at a given station. See
+[`spotlight_line`](/docs/reference/terraform/line) and
+[Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves).
+
+## Repository
+
+A GitHub repository, `owner/name`, named on a line. The line's runs check it
+out. It may name a runner `image` and a `setup` command. See
+[`spotlight_line`](/docs/reference/terraform/line).
+
+## Revision
+
+A counter on a task. It goes up each time the task moves to another station
+and when it is finished. A person's move must name the current revision. See
+[Tasks](/docs/reference/app/tasks-runs-and-the-inbox#tasks).
+
+## Run
+
+One execution of a harness in a fresh sandbox, either for a task at a station
+or for a chat. See [Runs](/docs/reference/app/tasks-runs-and-the-inbox#runs).
+
+## Runner
+
+The `spotlight runner` process inside a sandbox. It prepares the workspace,
+runs the harness for one run, and reports the run's steps and outcome to
+Spotlight. Every run gets a new runner. See
+[The spotlight command](/docs/reference/cli/spotlight-command#spotlight-runner).
+
+## Runner image
+
+The container image a sandbox runs from. A host serves the images its
+`SPOTLIGHT_RUNNER_IMAGE` allows. A line names one through its repositories'
+`image`; otherwise the host's default image is used. See
+[Host settings](/docs/reference/hosts/host-configuration#sandboxes).
+
+## Runner trust
+
+A workspace resource that admits hosts presenting an OIDC token from a named
+issuer, for a named subject, in place of a pool token. See
+[`spotlight_runner_trust`](/docs/reference/terraform/runner-trust).
+
+## Sandbox
+
+The container one run executes in. A host starts a fresh sandbox for each run.
+See [Inside a sandbox](/docs/reference/hosts/sandbox).
+
+## Secret
+
+A named value a workspace keeps. Spotlight [wears](#wear) it in a request
+header toward the hosts it is bound to; the value never enters a sandbox. See
+[`spotlight_secret`](/docs/reference/terraform/secret).
+
+## Skill
+
+Reusable instructions, a `SKILL.md` with other files, that a station gives its
+runs. See [`spotlight_skill`](/docs/reference/terraform/skill).
+
+## Spotlight address
+
+The URL a team's people, hosts and the Terraform provider reach Spotlight at,
+such as `https://acme.example.com`. Hosts and the provider read it from
+`SPOTLIGHT_URL`. See [Host settings](/docs/reference/hosts/host-configuration#connection).
+
+## Stand-in
+
+The value `spotlight-egress:<NAME>` a sandbox holds in place of a harness key
+or a run secret. Egress replaces it with the real value in the request header.
+See [What egress wears](/docs/reference/hosts/egress#what-egress-wears).
+
+## Station
+
+A step on a line, of kind `backlog`, `work` or `completed`. A work station
+may name a harness to work its tasks, and names its prompt, tools and skills,
+and the stations it passes to. See [`spotlight_line`](/docs/reference/terraform/line).
+
+## Task
+
+A unit of work. A task stands at one station of one line at a time, and
+carries a title, a description, attachments, a trail of notes, marks and an
+assignee. See [Tasks](/docs/reference/app/tasks-runs-and-the-inbox#tasks).
+
+## Team
+
+A group of people inside a workspace, with a key and a name. Lines,
+integrations, hooks, skills, harness profiles and chats belong to a team. See
+[`spotlight_team`](/docs/reference/terraform/team).
+
+## Tool
+
+An operation an agent calls through `spotlight` from inside a run. A tool is
+built in (such as `pull-request`), defined by an integration
+(`<integration>.<tool>`), or from the catalog. A station lists the tools its
+runs are given. See
+[Built-in tools and skills](/docs/reference/built-ins/built-in-tools-and-skills) and
+[`spotlight_integration`](/docs/reference/terraform/integration).
+
+## Trace
+
+The record of a task's runs and their steps, with their timings and faults.
+The web app shows it under Observability, `spotlight trace` writes it to a
+file, and a chat message can share up to 20. See
+[spotlight trace](/docs/reference/cli/agent-commands#spotlight-trace).
+
+## Wear
+
+A task wears a mark when it carries it. A request wears a secret when Spotlight
+or egress puts the secret's value in the bound header of a request to a host
+the secret is bound to. See [Bindings](/docs/reference/terraform/secret#bindings).
+
+## Workspace
+
+The top-level account in Spotlight, with a name and a URL slug. It holds teams,
+members and their roles, the GitHub connection, secrets, runner pools and
+trusts, and workspace tokens. See
+[`spotlight_workspace`](/docs/reference/terraform/workspace).
+
+## Workspace runners
+
+A workspace resource that names the workspace's runner pools and runner trusts
+by key. A workspace has at most one. See
+[`spotlight_workspace_runners`](/docs/reference/terraform/workspace-runners).
+
+## Workspace token
+
+A bearer token that acts inside one workspace within its scopes, for the
+resource API and the Terraform provider. Only a workspace admin or owner issues
+one. See [Workspace tokens](/docs/reference/api/workspace-token).
+
+## Workspace token trust
+
+A workspace resource that lets a CI workload exchange the OIDC token its
+platform issues for a short-lived workspace token. See
+[`spotlight_workspace_token_trust`](/docs/reference/terraform/workspace-token-trust).

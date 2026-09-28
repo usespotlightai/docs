@@ -1,0 +1,145 @@
+---
+type: concept
+icon: Lightbulb
+title: "Ways in: pools, trusts and tokens"
+description: The credentials that let a machine or a pipeline act in a Spotlight workspace, what each one can do, what it costs if it leaks, and why Spotlight has several kinds instead of one.
+---
+
+People reach a Spotlight workspace by signing in. Everything else that acts in
+it, a machine running agents or a pipeline applying Terraform, needs a
+credential of its own. Spotlight has five kinds, and they differ in who holds
+them, how long they last, and what can be done with one that is stolen.
+
+The five split into two families. Pool tokens, runner trusts and one-run
+credentials let machines do work: claim runs and carry them out. Workspace
+tokens and workspace token trusts let tools change configuration through the
+[resource API](/docs/reference/api/resource-api). The two families never overlap.
+A pool token cannot define a line, and a workspace token cannot claim a run.
+
+## Machines that do work
+
+### Pool tokens: a secret the host keeps
+
+A pull pool is a named group of hosts that share one token. A host holds the
+token and presents it every time it asks for work. Spotlight keeps only a hash
+of it, and a token Spotlight issues is shown only once.
+
+A pool token is given once, ever. A token that was rotated away, or that
+belonged to a pool since deleted, never works again, even if someone gives it
+to a new pool later. Rotating is a matter of giving the pool a new token: the
+old one stops being accepted at once, and runs already claimed with it carry on
+with their own credentials.
+
+The pool token is the simplest way in. It works on any machine that can make an
+outbound HTTPS connection, including a laptop behind a home router. Like any
+stored secret, it sits in a file on the host until someone rotates it, and
+anyone who copies it can claim the pool's runs from anywhere. [Create a pull pool and get its token](/docs/hosts/create-a-pull-pool) sets one up.
+
+A push pool turns this around. Spotlight has no token for it; it calls the
+pool's provisioning endpoint for each run, signs every call with a secret the
+pool was given, and hands the sandbox it starts a credential for that one run.
+The endpoint has to be HTTPS in production, because the call carries that
+credential.
+
+### Runner trusts: nothing stored at all
+
+Many platforms that run workloads, such as Kubernetes clusters and CI services,
+give each workload a short-lived identity token signed by the platform, an
+OIDC token. A runner trust tells Spotlight to accept one: tokens from this
+issuer, for this audience, with exactly this subject.
+
+A host admitted by a trust has no Spotlight secret. It presents its workload
+token, which it rereads from the platform on every claim, and each claim starts
+a runner for one run through the trust, the way a pool claim does. Spotlight
+never issues the host a credential of its own. There is nothing on the machine
+to steal that outlives the platform's own short-lived token, and nothing to
+rotate. A trust only works where a platform issues such tokens, though, and it
+is exactly as trustworthy as the issuer's idea of who a workload is. A runner
+trust keeps that idea narrow: the subject must match exactly, and it has no
+wildcards. [Run hosts without a stored token](/docs/hosts/admit-hosts-through-a-runner-trust) walks through it.
+
+### One-run credentials: what a sandbox gets
+
+Neither the pool token nor the workload token ever enters a sandbox. When a
+host claims a run, Spotlight answers with a credential that is good for that
+one run and nothing else, and that is what the host passes into the sandbox. A
+runner that holds it can take exactly one piece of work; asking for a second
+is refused. Inside the sandbox, the runner reads the credential from the file
+the host laid down and deletes the file. The agent's processes do not inherit
+the runner's Spotlight settings or its credential; from the runner they get a
+local address and a token for handing the task over.
+
+This is the credential side of [Why every run gets a fresh
+sandbox](/docs/hosts/why-every-run-gets-a-fresh-sandbox): whatever a run
+could do with what it was given ends when the run does. The credential that
+lets a host keep working stays on the host.
+
+The same thinking reaches git. A sandbox clones and pushes through Spotlight,
+which holds the GitHub App's credential and adds it on the way to GitHub. The
+app's credential is never sent to a runner. A run can reach only the
+repositories its own work names, and only while it still holds that work.
+
+## Tools that change configuration
+
+### Workspace tokens: stored and scoped
+
+A workspace token lets a program such as Terraform act in one workspace. Like a
+pool token it is stored as a hash, and it lasts until it is revoked or reaches
+its expiry, if it has one. What it may do is set by its scopes, fixed when it is
+issued. Most of them form a ladder from reading configuration to changing it,
+and three sit beside the ladder and are never implied by it. Two of those are
+set apart because of where the risk is.
+
+`secrets` is kept out of `configure` so that a leaked CI token cannot rebind a
+secret to a host its holder controls, and so capture the secret's value.
+`runners`, which manages pools, runner trusts and which of them serve the
+workspace, is kept apart because a runner claims runs, checks out repositories
+and acts on them with Spotlight's git access: adding a pool or trusting an
+issuer amounts to handing out a credential. The third, `trusts`, covers
+workspace token trusts, which mint tokens of their own (see below).
+
+No token administers the workspace; that stays with admins signed in as
+themselves. The scopes and who may issue a token are listed in [Workspace tokens](/docs/reference/api/workspace-token), and issuing one in [Issue a workspace token](/docs/administration/issue-a-workspace-token).
+
+### Workspace token trusts: tokens that expire on their own
+
+A workspace token in a pipeline's secret store has the weakness of any stored
+secret: a leaked token stays valid until someone revokes it. Workspace token
+trusts exist because CI platforms already issue short-lived OIDC tokens to each
+job, the same kind of token a runner trust accepts, and Spotlight checks them
+with the same verifier it uses for runner trusts.
+
+A pipeline sends its job's OIDC token to Spotlight with the trust it wants to
+use, and gets back a workspace token that expires within the hour. There is
+nothing to store in the pipeline and nothing to rotate. A trust can also tell
+jobs apart: its subject and claims are patterns, so a trust for the main branch
+can grant `configure` while a trust for pull requests grants only `plan`.
+
+Patterns bring a risk that exact subjects do not. A trust open to every owner
+would admit any workload its issuer signs a token for, which on a public CI
+service means anyone's. So a pattern must name its owner before its first
+wildcard, as in `repo:acme/*`.
+
+A trust is also tied to whoever stands behind it, and its tokens to the trust
+as it stood when they were minted; [`spotlight_workspace_token_trust`](/docs/reference/terraform/workspace-token-trust) lists those rules and the
+lifetimes. [Run Terraform from GitHub Actions without a stored token](/docs/configuration/run-terraform-from-github-actions) shows the whole setup.
+
+## Stored secrets and trusts compared
+
+The pattern across both families is the same. A stored secret, whether a pool
+token or a workspace token, is the most portable: it works anywhere, and it
+keeps working after it leaks until someone notices. An OIDC trust, for runners
+or for tokens, stores nothing, and a stolen token is worth minutes; in exchange
+it needs a platform that issues identities, and it moves trust onto that
+platform.
+
+Our recommendation is to use a trust wherever the platform supports one. A host
+on a Kubernetes cluster and Terraform in a CI pipeline both already have a
+workload identity to offer, and using it costs one resource. A pool token earns
+its place on a machine that has no identity of its own, and a stored workspace
+token on a laptop, for work done by hand. The one-run credential is not a
+choice; every run gets one, however its host got in.
+
+The reference pages list the fields:
+[`spotlight_runner_pool`](/docs/reference/terraform/runner-pool),
+[`spotlight_runner_trust`](/docs/reference/terraform/runner-trust), [Workspace tokens](/docs/reference/api/workspace-token) and [`spotlight_workspace_token_trust`](/docs/reference/terraform/workspace-token-trust).

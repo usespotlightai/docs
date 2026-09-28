@@ -1,13 +1,123 @@
 ---
-title: Hello World
-description: Your first document
+type: overview
+title: Spotlight Docs
+description: Spotlight gives a team's work to coding agents that run on machines the team controls. Guides, concepts and reference for using it.
 ---
 
-Welcome to the docs! You can start writing documents in `/content/docs`.
+import {
+  BookOpen, Bot, Boxes, CircleAlert, CircleStop, FileCode, FileDiff, GitBranch, GitMerge,
+  GitPullRequest, Inbox, KeyRound, LifeBuoy, Lock, MessageSquare, Network, Plug,
+  Rocket, Server, ServerCog, Shield, ShieldCheck, Signpost, SquareTerminal, Timer,
+  UserPlus, Workflow, Wrench,
+} from 'lucide-react';
 
-## What is Next?
+<HomeSection title="Popular">
+  <HomeCard href="/docs/getting-started/start-guide" icon={<Rocket />} title="Start guide">
+    Connect your computer, give a station a task, and answer its agent
+  </HomeCard>
+  <HomeCard href="/docs/hosts/run-a-host" icon={<Server />} title="Install a host">
+    Set up a machine to start a sandbox for each run it claims
+  </HomeCard>
+  <HomeCard href="/docs/integrations/connect-github" icon={<GitMerge />} title="Connect GitHub">
+    Install the GitHub App that agents clone, push and open pull requests through
+  </HomeCard>
+  <HomeCard href="/docs/tasks/plan-work-with-the-agent" icon={<MessageSquare />} title="Plan with the agent">
+    Talk a piece of work through and turn it into tasks
+  </HomeCard>
+</HomeSection>
 
-<Cards>
-  <Card title="Learn more about Next.js" href="https://nextjs.org/docs" />
-  <Card title="Learn more about Fumadocs" href="https://fumadocs.dev" />
-</Cards>
+<HomeSection title="Spotlight basics">
+  <HomeCard href="/docs/getting-started/lines-stations-and-tasks" icon={<Workflow />} title="Lines, stations and tasks">
+    How a task moves along a line, and who decides
+  </HomeCard>
+  <HomeCard href="/docs/getting-started/what-runs-where" icon={<Network />} title="What runs where">
+    What Spotlight holds, and what your machines run
+  </HomeCard>
+  <HomeCard href="/docs/tasks/add-and-move-tasks" icon={<GitBranch />} title="Add and move tasks">
+    Put work on a line and move it between stations
+  </HomeCard>
+  <HomeCard href="/docs/inbox/answer-the-inbox" icon={<Inbox />} title="Answer the inbox">
+    Reply to agents, and approve or reject their requests
+  </HomeCard>
+  <HomeCard href="/docs/runs/steer-or-stop-a-run" icon={<CircleStop />} title="Steer or stop a run">
+    Talk to an agent while it works, or stop it
+  </HomeCard>
+  <HomeCard href="/docs/runs/review-a-change-stack" icon={<FileDiff />} title="Review a change stack">
+    Read an agent's changes in the order they build on each other
+  </HomeCard>
+  <HomeCard href="/docs/getting-started/how-outside-events-reach-a-task" icon={<Signpost />} title="Outside events">
+    How a GitHub or Slack event finds its task
+  </HomeCard>
+  <HomeCard href="/docs/runs/troubleshoot-a-run" icon={<LifeBuoy />} title="Troubleshoot a run">
+    Find out why a run failed or never started
+  </HomeCard>
+</HomeSection>
+
+<HomeSection title="Set up your team">
+  <HomeCard href="/docs/configuration/manage-spotlight-with-terraform" icon={<FileCode />} title="Terraform">
+    Manage lines, integrations and secrets as code
+  </HomeCard>
+  <HomeCard href="/docs/lines/point-a-line-at-your-repositories" icon={<Boxes />} title="Repositories">
+    The GitHub repositories a line's runs check out
+  </HomeCard>
+  <HomeCard href="/docs/lines/change-a-lines-stations" icon={<Wrench />} title="Stations">
+    Edit, add or remove the stations on a line
+  </HomeCard>
+  <HomeCard href="/docs/integrations/review-pull-requests" icon={<GitPullRequest />} title="Pull request reviews">
+    Review a pull request when someone mentions Spotlight, or as it opens
+  </HomeCard>
+  <HomeCard href="/docs/integrations/give-stations-a-tool-from-an-http-api" icon={<Plug />} title="Tools">
+    A command agents run to call an HTTP API, without seeing its key
+  </HomeCard>
+  <HomeCard href="/docs/agents/limit-what-agents-may-do" icon={<Bot />} title="Agent permissions">
+    Allow, ask about or deny an agent's reads, edits and commands
+  </HomeCard>
+  <HomeCard href="/docs/administration/invite-people-and-change-roles" icon={<UserPlus />} title="People and roles">
+    Invite people and change what they may do
+  </HomeCard>
+  <HomeCard href="/docs/administration/issue-a-workspace-token" icon={<KeyRound />} title="Workspace tokens">
+    Issue a token for Terraform, scripts and CI
+  </HomeCard>
+</HomeSection>
+
+<HomeSection title="Run agents on your machines">
+  <HomeCard href="/docs/hosts/create-a-pull-pool" icon={<ServerCog />} title="Pull pools">
+    Create the pool your hosts take work from
+  </HomeCard>
+  <HomeCard href="/docs/hosts/give-sandboxes-your-harness-keys" icon={<KeyRound />} title="Harness keys">
+    Give hosts the keys agents reach their models with
+  </HomeCard>
+  <HomeCard href="/docs/hosts/admit-hosts-through-a-runner-trust" icon={<ShieldCheck />} title="Runner trusts">
+    Admit hosts by their platform's OIDC token instead of a pool token
+  </HomeCard>
+  <HomeCard href="/docs/hosts/run-a-line-in-your-own-image" icon={<Boxes />} title="Runner images">
+    Run a line in an image with your toolchain
+  </HomeCard>
+  <HomeCard href="/docs/security/limit-where-sandboxes-connect" icon={<Shield />} title="Egress">
+    Name the hosts sandboxes may reach
+  </HomeCard>
+  <HomeCard href="/docs/security/give-an-mcp-server-a-secret" icon={<Lock />} title="Secrets">
+    Give an MCP server an API key that never enters the sandbox
+  </HomeCard>
+  <HomeCard href="/docs/hosts/why-every-run-gets-a-fresh-sandbox" icon={<Timer />} title="Fresh sandboxes">
+    Why every run starts in a new container
+  </HomeCard>
+  <HomeCard href="/docs/security/the-sandbox-is-the-security-boundary" icon={<ShieldCheck />} title="Security boundary">
+    What keeps an agent inside its sandbox
+  </HomeCard>
+</HomeSection>
+
+<HomeSection title="Reference">
+  <HomeCard href="/docs/reference/terraform/terraform-provider" icon={<FileCode />} title="Terraform">
+    The provider, and the fields of every resource it manages
+  </HomeCard>
+  <HomeCard href="/docs/reference/hosts/host-configuration" icon={<SquareTerminal />} title="Host settings">
+    What a host reads when it starts, and what it keeps on disk
+  </HomeCard>
+  <HomeCard href="/docs/reference/errors-and-messages" icon={<CircleAlert />} title="Errors and messages">
+    The errors, refusals and warnings Spotlight shows, and their causes
+  </HomeCard>
+  <HomeCard href="/docs/reference/glossary" icon={<BookOpen />} title="Glossary">
+    The terms Spotlight uses
+  </HomeCard>
+</HomeSection>

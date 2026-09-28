@@ -1,0 +1,85 @@
+---
+type: how-to
+icon: SquarePen
+title: Give hosts your harness keys
+description: Hand a host the API keys its harnesses need, so agents reach Claude, OpenAI or Cursor models from their sandboxes.
+---
+
+Start from an installed host (see
+[Install a host](/docs/hosts/run-a-host)). Its
+sandboxes get their [harness keys](/docs/reference/glossary#harness-key), the
+API keys the harnesses reach their models with, from a file beside the host's
+configuration.
+
+## Write the keys to sandbox.env
+
+`sandbox.env` sits beside `host.env`: `/etc/spotlight/sandbox.env` for a host
+installed as root, `~/.spotlight/sandbox.env` for one installed as yourself.
+Add one `KEY=VALUE` line for each harness your lines use, and make the file
+readable only by its owner:
+
+```bash
+echo 'ANTHROPIC_API_KEY=<your key>' >> ~/.spotlight/sandbox.env
+chmod 600 ~/.spotlight/sandbox.env
+```
+
+Use the variable for your harness:
+
+| Harness | Variable |
+| --- | --- |
+| Claude Code, with an API key | `ANTHROPIC_API_KEY` |
+| Claude Code, with a Claude subscription | `CLAUDE_CODE_OAUTH_TOKEN` |
+| Codex | `OPENAI_API_KEY` or `CODEX_API_KEY` |
+| Cursor | `CURSOR_API_KEY` |
+
+For a Claude subscription, run `claude setup-token` on your own computer and
+use the token it prints as `CLAUDE_CODE_OAUTH_TOKEN`.
+
+Use API keys or a token from `claude setup-token`. Logins that refresh their
+own tokens, such as Codex signed in with ChatGPT or Claude signed in through a
+browser, do not work through egress.
+
+<Callout type="warn">
+
+`CURSOR_API_KEY` is not one of the keys egress holds. It enters the sandbox as
+it is, where the agent can read it.
+
+</Callout>
+
+Keep keys out of `host.env`: the host does not pass its own settings to the
+sandbox. Reinstalling leaves `sandbox.env` as it is.
+
+## Pass keys from the host's environment instead
+
+If you run `spotlight host` under your own supervisor and the keys are already
+in its environment, name them in `SPOTLIGHT_SANDBOX_PASS` instead of writing
+them to a file. Set it in the same environment:
+
+```bash
+SPOTLIGHT_SANDBOX_PASS=ANTHROPIC_API_KEY,OPENAI_API_KEY spotlight host
+```
+
+The host passes only the variables its own process has. Egress holds the known
+keys in the same way as keys from `sandbox.env`.
+
+## If a push pool provisions the runners
+
+Put the keys in the environment your provisioner gives each runner it starts,
+as in [Provision runners from your own platform](/docs/hosts/provision-runners-from-your-own-platform#start-the-runner).
+Such a runner has no egress, so the keys enter the sandbox as they are.
+
+## Restart the host
+
+The host reads the sandbox environment when it starts.
+[Restart it](/docs/hosts/run-a-host#restart-the-host) after every change.
+
+If you have limited where sandboxes connect with `SPOTLIGHT_EGRESS_ALLOW`, the
+list must admit the provider's host, such as `api.anthropic.com`, or egress
+does not add the key. See [Limit where sandboxes can connect](/docs/security/limit-where-sandboxes-connect).
+
+## Related
+
+- [Harnesses](/docs/reference/hosts/harnesses): what each harness reads.
+- [Harness keys](/docs/reference/hosts/host-configuration#harness-keys), for the keys
+  egress holds and the host each one is sent to.
+- [The sandbox is the security boundary](/docs/security/the-sandbox-is-the-security-boundary)

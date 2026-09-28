@@ -1,0 +1,123 @@
+---
+type: how-to
+icon: SquarePen
+title: Run a line in your own runner image
+description: Run a line's work in an image with your toolchain and dependencies already installed.
+---
+
+Each run starts from its line's image. To have your toolchain and your
+repository's dependencies already there, you need a line managed through
+Terraform or the resource API, a registry your hosts can pull from, and access
+to each host's `host.env`.
+
+## Build the image
+
+Build `FROM` Spotlight's runner image, at the release your hosts run. Keep
+these rules:
+
+- Build as `agent` (uid 2000), or hand what you bake to `agent`. Switch back to
+  `root` at the end, since the runner starts as root.
+- Bake each repository's checkout at `/workspace/<name>`, where `<name>` is the
+  repository's name without its owner. A run then only fetches and switches
+  branches.
+- Keep the harnesses the base image holds. A run goes only to an image that
+  holds its station's harness.
+
+For a Node.js repository `acme/web`:
+
+```dockerfile
+FROM ghcr.io/usespotlightai/spotlight-runner:<release>
+USER agent
+RUN git clone https://github.com/acme/web /workspace/web
+WORKDIR /workspace/web
+RUN npm ci
+USER root
+```
+
+For a Go repository `acme/api`, with Go copied in from its official image:
+
+```dockerfile
+FROM golang:1.26-bookworm AS go
+FROM ghcr.io/usespotlightai/spotlight-runner:<release>
+COPY --from=go /usr/local/go /usr/local/go
+ENV PATH=/usr/local/go/bin:$PATH GOPATH=/home/agent/go
+USER agent
+RUN git clone https://github.com/acme/api /workspace/api \
+    && cd /workspace/api && go mod download && go build ./...
+USER root
+```
+
+Clone a private repository with your build's own credentials. Push the image
+to your registry. If the registry is private, set up the hosts as in
+[Pull runner images from a private registry](/docs/hosts/pull-images-from-a-private-registry).
+
+To check which runner release the image holds, run it with `harnesses '[]'`:
+
+```bash
+docker run --rm ghcr.io/acme/web-runner:main harnesses '[]'
+```
+
+It prints the release as `release` in a line of JSON; ignore the empty
+`harnesses` list. A host refuses an image whose runner is older than Spotlight needs,
+so rebuild on a newer base when that happens.
+
+## Name the image on the line
+
+Set `image` on the line's `repository` block. Add `setup` if the checkout needs
+a command before each run, such as installing what changed since the image was
+built:
+
+```hcl
+resource "spotlight_line" "core_delivery" {
+  team_id = spotlight_team.core.id
+  key     = "delivery"
+  name    = "Delivery"
+
+  repository {
+    name  = "acme/web"
+    image = "ghcr.io/acme/web-runner:main"
+    setup = "npm ci"
+  }
+
+  # stations as before
+}
+```
+
+In the resource API, the fields are `image` and `setup` on each entry of
+`repositories`. A line names at most one image: if it has several
+repositories, they name the same image or none.
+
+## Let the hosts serve it
+
+A host serves only the images its `SPOTLIGHT_RUNNER_IMAGE` admits. Open the
+host's `host.env` and add your image to that line after the entry already
+there, separated by a comma. An entry is an exact image, or a prefix ending in
+`*` that admits every image under it:
+
+```bash
+SPOTLIGHT_RUNNER_IMAGE=ghcr.io/usespotlightai/spotlight-runner:<release>,ghcr.io/acme/*
+```
+
+Keep the first entry as it is: the first exact image is the default for lines
+that name none. Then [restart the host](/docs/hosts/run-a-host#restart-the-host).
+
+Reinstalling resets this line to the default image, so add your entry back
+after running the install script again.
+
+## Check that it is served
+
+The host checks every minute which images lines name. Open **Runners** in the
+sidebar. Under the host, your image appears in its own row with the harnesses
+it holds. If the row reads **Refused**, the reason follows. A refusal saying
+the host's `SPOTLIGHT_RUNNER_IMAGE` does not admit it means the entry does not
+match the name on the line.
+
+The host pulls the image again before every run, so a tag you push again
+reaches the next run without a restart.
+
+## Related
+
+- [Repository fields](/docs/reference/terraform/line#repository-fields), in the line
+  reference.
+- [Inside a sandbox](/docs/reference/hosts/sandbox): what a run sees inside the image.
+- [Why every run gets a fresh sandbox](/docs/hosts/why-every-run-gets-a-fresh-sandbox)

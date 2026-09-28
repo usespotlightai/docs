@@ -1,0 +1,144 @@
+---
+type: concept
+icon: Lightbulb
+title: Harnesses and harness profiles
+description: Why a station runs an agent CLI such as Claude Code, Codex or Cursor instead of calling a model, why the model and the harness version follow from the harness and its image, and what a harness profile says to each harness.
+---
+
+A station in Spotlight does not call a language model directly. It names a
+harness, an agent program that people also run in their own terminals: Claude
+Code, Codex or Cursor's CLI. For each run, the runner starts that program in the
+sandbox, hands it the briefing, and lets it work. Reading files, editing them,
+running commands and deciding what to do next all happen inside the harness,
+with the harness's own tools. The model is one of the harness's settings.
+
+## Building on agents that already exist
+
+A system like Spotlight could have its own agent loop: send a model the
+briefing, read back the tool calls, apply the edits, run the commands, trim the
+context when it grows. Each harness already does all of that, and does it for
+the models it was built around.
+
+Spotlight's design leans on what the harnesses bring, in several places. When a
+person answers a question and the task's next run picks up where the last one
+stopped, it resumes the harness's own session ([How a conversation survives
+between runs](/docs/runs/how-a-conversation-survives-between-runs)). A
+skill given to a Claude Code station lands in the directory Claude Code reads
+skills from. When a harness asks permission for something the team's profile
+says to ask about, the request becomes an approval in Spotlight's inbox. In our view, this is the main gain from
+running harnesses: the agent a team trusts in a terminal is the agent that works
+its tasks, and Spotlight adds the line, the inbox and the sandbox around it.
+
+Spotlight means agents to be interchangeable, and a harness is the unit it
+swaps. The same wish shaped how agents report back: a finished agent hands its
+task on with a shell command, which any harness can run
+([Why agents talk back through a command
+line](/docs/agents/agents-talk-back-through-a-command-line)).
+
+## One protocol for every harness
+
+Claude Code, Codex and Cursor each come with their own command-line interface,
+flags and output. The runner does not deal with any of that. It speaks the
+Agent Client Protocol (ACP) to all three:
+Cursor's CLI speaks it directly, and Claude Code and Codex speak it through
+bridge programs installed in the runner image. Over that one protocol the runner
+starts a session, sends the briefing, streams the agent's output to the run's
+journal, passes on what a person says while the agent is still working, and
+hears the harness's permission requests.
+
+Adding a harness therefore comes down to describing how to start it. Cursor
+was added that way, started exactly as Claude Code is, with no change to how
+the runner launches an agent. The per-harness details that do remain, such as
+how a model or an effort is passed, are in the [Harnesses](/docs/reference/hosts/harnesses)
+reference.
+
+## The model belongs to the harness
+
+A model id means something only to the harness that takes it. Claude Code
+takes Anthropic's ids, Codex takes OpenAI's, and Cursor's CLI takes its own. So a
+station names its harness first, and then a model within it.
+
+Spotlight keeps no list of models either. When a host looks inside a runner
+image, the runner there asks each harness it holds which models it can use,
+usually by calling the provider's models endpoint with the host's key. The
+models Spotlight offers for a harness are the ones hosts reported this way, so
+the list is whatever the keys on those hosts can reach. A station that names no
+model passes none, and the harness falls back to its own default.
+
+Effort is handled differently. The five levels, from `low` to `max`, are
+Spotlight's own, the same for every harness, and each harness receives the
+level in its own form. Unset, it passes nothing, like the model.
+
+## The image holds the version
+
+A harness is installed in the runner image and nowhere else. The host's
+installer puts only `spotlight` on the machine, and every run takes its
+harness from the image it starts in. Keeping harnesses in one place also
+removed a mismatch that existed when both the installer and the image
+installed an ACP bridge, each its own package.
+
+It follows that the image decides which release of a harness a run gets, and
+the image digest is the only pin. Stations once had a setting of their own
+for a harness version, and it was removed when lines began naming their own
+images: with the harness inside the image, the digest already says which
+release a run gets. A team that wants a particular release builds it into
+its image ([Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image)). Each run records the digest
+it ran in, and a host that finds a harness gone after an image changes fails
+the runs that needed it, instead of starting them without it.
+
+## One profile, three dialects
+
+The harnesses agree on very little about configuration. Claude Code reads a
+JSON settings file with allow, ask and deny lists; Codex reads `config.toml`
+and a separate rules file for commands; Cursor's CLI reads its own JSON, with
+allow and deny lists but no way to ask. A team that runs more than one harness,
+or wants to switch, would otherwise write the same intent once per harness, in
+each harness's format and with each one's edge cases.
+
+A [harness profile](/docs/reference/terraform/harness-profile) is that intent, written
+once. It says which reads, edits and commands are allowed, which need a person,
+and which are refused. It lists the MCP servers the agent gets. For whatever
+the common terms cannot say, it carries each harness's native settings to pass
+through as written. A station names a profile, and Spotlight translates it into
+the files and flags of whichever harness the station runs.
+
+The translation cannot always be exact. Cursor has no ask rules, so a rule that
+asks about part of what is otherwise allowed becomes a deny there. Codex
+decides edits by its own sandbox and cannot restrict reads. Cursor matches a
+command by its first word only. Spotlight accepts a profile with these gaps and
+reports them: the profile's `warnings` name each place where a harness got an
+approximation, and what it got instead. A team can
+then decide whether the approximation is acceptable for the stations that run
+that harness.
+
+## Where a profile sits
+
+A repository often carries its own agent settings: a `.claude/settings.json`,
+an `AGENTS.md`. Spotlight leaves those alone. The profile is written at the
+harness's user level, in the run's own state directory, and the repository's
+settings still apply on top of it, as they would on a developer's machine.
+
+That leaves the repository able to loosen what the profile allows. For the
+rules that must hold, Spotlight goes further where a harness gives it a place
+the repository cannot reach. Claude Code's ask and deny rules go into the
+session as managed settings. Codex runs in a mode where its approvals come to
+Spotlight on every turn. Cursor offers no such layer.
+
+An `ask` rule is where a profile meets the rest of Spotlight. When a harness
+asks permission for something an `ask` rule covers, the request goes to the
+inbox as an approval, the run lets the task go, and once a person approves, the
+next run resumes the same session and the same action goes through once.
+[Asking a person](/docs/inbox/asking-a-person) covers how those questions
+work.
+
+## What a profile cannot hold
+
+A harness enforces a profile's rules itself. An agent can find a way around its
+own harness's rules, and a repository can loosen what the harness does not
+enforce, so Spotlight treats permissions as guardrails: they keep a
+well-meaning agent on the path and give people a say where it matters to them.
+What contains an agent is the sandbox and its egress, which is the subject of
+[The sandbox is the security
+boundary](/docs/security/the-sandbox-is-the-security-boundary). [Limit what agents
+may do](/docs/agents/limit-what-agents-may-do) puts a profile
+together.

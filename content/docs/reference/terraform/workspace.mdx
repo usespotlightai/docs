@@ -1,0 +1,79 @@
+---
+type: reference
+icon: BookText
+title: spotlight_workspace
+description: The fields of a workspace, who may create, change and delete one, and what a workspace created in the web app starts with.
+---
+
+The `spotlight_workspace` resource, and the workspace resource of the API: the
+top-level account, which holds teams, members and their roles, the GitHub
+connection, secrets, runners and workspace tokens.
+
+| Kind | Endpoint | Terraform | Address |
+| --- | --- | --- | --- |
+| `workspace` | `/api/resources/workspaces` | `spotlight_workspace` | `<slug>` |
+
+See [Resource API](/docs/reference/api/resource-api) for the operations, headers
+and errors every kind shares.
+
+## Example
+
+```hcl
+import {
+  to = spotlight_workspace.acme
+  id = "acme"
+}
+
+resource "spotlight_workspace" "acme" {
+  name = "Acme"
+  slug = "acme"
+}
+```
+
+## Fields
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `name` | string | required | What the workspace is called. 1 to 100 characters. |
+| `slug` | string | required | The workspace's address in URLs, as in `/w/acme`. Lowercase letters and digits, with single dashes between them, at most 48 characters, written exactly as it is kept. Fixed: an update that changes it is refused; Terraform replaces the resource. |
+
+## Rules
+
+| Operation | Rule |
+| --- | --- |
+| create | Needs `open-workspaces`: any signed-in person, never a workspace token. The creator becomes the workspace's owner. |
+| update | Needs `configure`. Changes `name` only. |
+| delete | Needs `administer`. Refused with `409` `in-use` while the workspace holds any team, workspace token, workspace token trust, secret, runner pool, runner trust or workspace runners. Deleting closes the workspace. |
+| list | Every workspace the caller may read. A workspace token reads only its own. |
+| import | `GET /api/resources/workspaces/import?address=<slug>` |
+
+An in-use refusal names what is left, as in
+`The acme workspace still holds team core; delete those first`.
+A closed workspace grants nothing to anyone. See
+[Roles and permissions](/docs/reference/roles-and-permissions) for who holds
+each permission.
+
+## In Terraform
+
+- `spotlight_workspace` cannot be created by Terraform. The create is refused
+  with `403`, and the provider says to import the workspace by its slug.
+  Destroying it deletes the workspace, under the rules above.
+- The data source `spotlight_workspace` reads a workspace without managing it.
+  See [Provider](/docs/reference/terraform/terraform-provider#data-sources).
+
+## A workspace created in the web app
+
+The web app's form asks for a workspace name, a workspace URL (the slug) and a
+team name. It creates, in one step:
+
+- the workspace, with the person as its owner;
+- its first team, with the given name and a key made from it: lowercased, each
+  run of other characters turned into one dash, cut to 64 characters, with no
+  dash at either end;
+- the Delivery and Review lines on that team, as listed in
+  [Built-in lines](/docs/reference/built-ins/built-in-lines);
+- a task titled `Set up your team` at Delivery's backlog, assigned to the
+  owner.
+
+A workspace created through the resource API has no team. See
+[`spotlight_team`](/docs/reference/terraform/team) for teams.

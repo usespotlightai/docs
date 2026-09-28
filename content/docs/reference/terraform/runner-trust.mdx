@@ -1,0 +1,65 @@
+---
+type: reference
+icon: BookText
+title: spotlight_runner_trust
+description: The fields of a runner trust, and how it admits a host by the OIDC token the host's platform issues.
+---
+
+The `spotlight_runner_trust` resource, and the runner trust resource of the
+API: a trust that admits hosts presenting an OIDC token their platform issues,
+in place of a pool token. Writing one needs the `manage-runners`
+permission; see [Roles and permissions](/docs/reference/roles-and-permissions).
+
+| Kind | Endpoint | Terraform | Address |
+| --- | --- | --- | --- |
+| `runner-trust` | `/api/resources/workspaces/{workspaceId}/runner-trusts` | `spotlight_runner_trust` | `<key>` |
+
+See [Resource API](/docs/reference/api/resource-api) for the operations, headers
+and errors every kind shares.
+
+## Example
+
+```hcl
+resource "spotlight_runner_trust" "production_cluster" {
+  workspace_id = spotlight_workspace.acme.id
+  key          = "production-cluster"
+  issuer       = "https://oidc.eks.eu-west-1.amazonaws.com/id/EXAMPLE"
+  subject      = "system:serviceaccount:spotlight:runner"
+  labels       = ["gpu"]
+}
+```
+
+## Fields
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `key` | string | required | Lowercase words joined by dashes, at most 64 characters. Fixed: an update that changes it is refused; Terraform replaces the resource. |
+| `issuer` | string | required | The issuer the token must name in `iss`. `https`, or `http` only for `localhost`, `127.0.0.1` or `[::1]`. No query, fragment or credentials. At most 255 characters. |
+| `subject` | string | required | The token's `sub`, matched exactly. One word, at most 255 characters. `*` has no special meaning. |
+| `audience` | string | `spotlight` | A value the token's `aud` must hold. One word, at most 255 characters. |
+| `labels` | array of strings | `[]` | Names a line or station may use in `runners` to place work on the trust's hosts. Lowercase words joined by dashes, each once. |
+
+[`spotlight_workspace_runners`](/docs/reference/terraform/workspace-runners)
+names a workspace's trusts by key.
+
+## Admission
+
+A host serving a trust sends, on every request:
+
+| Header | Value |
+| --- | --- |
+| `Authorization` | `Bearer <the workload's OIDC token>` |
+| `Spotlight-Trust` | The trust's `id`. |
+
+The token is verified as a workspace token trust verifies a workload's token
+(see [Workload token verification](/docs/reference/terraform/workspace-token-trust#workload-token-verification)),
+and must match the trust's `issuer`, `subject` and `audience`. A host that is
+refused gets `401` with `Missing, rotated or unknown pool token, or a workload the trust does not admit`.
+A host id already serving another pool or trust gets `409`.
+
+The host sets `SPOTLIGHT_TRUST` and `SPOTLIGHT_OIDC_TOKEN_FILE`; see
+[Host settings](/docs/reference/hosts/host-configuration#connection).
+
+## Delete
+
+Deleting a trust stops it admitting hosts; they claim no more work through it.

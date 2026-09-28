@@ -1,0 +1,88 @@
+---
+type: how-to
+icon: SquarePen
+title: Limit where sandboxes can connect
+description: Set a host's egress allow-list so agents reach only the hosts you name, including private hosts behind an internal CA.
+---
+
+By default a sandbox reaches any public host and no private address. To narrow
+that, you need access to the host's `host.env`. The allow-list you set there
+applies to every sandbox the host starts and to the hooks it sends; Spotlight
+itself and the storage it hands runs stay reachable.
+
+## List the hosts
+
+Collect the hosts your runs need:
+
+- The model provider for each harness your lines use, such as
+  `api.anthropic.com` for Claude Code or `api.openai.com` for Codex. Egress adds
+  a harness key only toward a host the list admits.
+- The package registries your `setup` commands and agents install from, such as
+  `registry.npmjs.org` or `proxy.golang.org`.
+- The hosts of the tools and MCP servers your stations use, and of the hooks
+  the host sends.
+- Any private host a run needs, named explicitly (see below).
+
+An entry is an exact host, or `*.example.com` for the subdomains of
+`example.com`, with no scheme, port or path.
+[Admitted hosts](/docs/reference/hosts/egress#admitted-hosts) has the matching rules.
+
+## Set the allow-list
+
+Add the list to `host.env`, comma-separated:
+
+```bash
+SPOTLIGHT_EGRESS_ALLOW=api.anthropic.com,registry.npmjs.org,*.acme.internal
+```
+
+Then [restart the host](/docs/hosts/run-a-host#restart-the-host). The host
+checks the list when it starts, and on an entry it cannot read it refuses to
+start and names the entry.
+
+Reinstalling drops this line from `host.env`; add it back afterwards. If you
+run `spotlight host` under your own supervisor, you can set the variable in its
+environment instead, where it overrides `host.env`.
+
+## Reach a private host
+
+Egress opens a connection to a private address only for a host an entry names,
+exactly or by a `*.` pattern. Add the name the run uses for the private host,
+such as `git.acme.internal`. Loopback and link-local addresses, including the
+cloud metadata address, are always refused;
+[Refused addresses](/docs/reference/hosts/egress#refused-addresses) lists the ranges.
+
+## Trust an internal certificate authority
+
+If egress adds a secret to requests for a host whose certificate comes from an
+internal CA, or the host sends a hook to one, give egress the CA. Save the certificates
+as a PEM file beside `host.env` and add:
+
+```bash
+SPOTLIGHT_EGRESS_TRUST=/etc/spotlight/internal-ca.pem
+```
+
+Sandboxes do not trust these authorities. If the agent's own tools connect to
+the host directly, add the CA to your runner image as well; see
+[Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image).
+
+## Find refused requests
+
+A request to a host the list leaves out fails with status `403` and this
+message:
+
+```text
+egress does not let this sandbox reach <host>
+```
+
+A connection to an address egress never opens fails with `502` and a message
+starting `egress could not reach`. These reach whatever made the request, so
+look for them in the output of the agent's commands on the run page. Add the
+host to the list if the run needs it, and restart the host.
+
+## Related
+
+- [Egress](/docs/reference/hosts/egress)
+- [Host settings](/docs/reference/hosts/host-configuration#egress): every egress
+  setting on the host.
+- [The sandbox is the security boundary](/docs/security/the-sandbox-is-the-security-boundary),
+  on what egress protects.

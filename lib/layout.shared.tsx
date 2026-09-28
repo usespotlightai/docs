@@ -1,12 +1,12 @@
 import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
-import { appName, gitConfig } from './shared';
+import { SidebarTitle } from '@/components/chrome';
 
 export function baseOptions(): BaseLayoutProps {
   return {
     nav: {
-      // JSX supported
-      title: appName,
+      title: SidebarTitle,
     },
-    githubUrl: `https://github.com/${gitConfig.user}/${gitConfig.repo}`,
+    searchToggle: { enabled: false },
+    themeSwitch: { enabled: false },
   };
 }

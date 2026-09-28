@@ -1,0 +1,62 @@
+---
+type: how-to
+icon: SquarePen
+title: Point a line at your repositories
+description: Name the GitHub repositories a line works on, so its runs check them out and its stations can push branches and open pull requests.
+---
+
+The built-in Delivery and Review lines start with no repositories. Before you
+add some, you need:
+
+- The GitHub App installed on the repositories. If it isn't,
+  [connect GitHub](/docs/integrations/connect-github) first.
+- The line in Terraform. If you don't manage the workspace with Terraform yet,
+  [start from a download of it](/docs/configuration/manage-spotlight-with-terraform).
+
+## Add the repositories
+
+Add a `repository` block to the line's `spotlight_line` resource for each
+repository, named `owner/name`:
+
+```hcl
+resource "spotlight_line" "core_delivery" {
+  team_id = spotlight_team.core.id
+  key     = "delivery"
+  name    = "Delivery"
+  role    = "delivery"
+
+  repository {
+    name  = "acme/api"
+    setup = "go mod download"
+  }
+
+  repository {
+    name  = "acme/web"
+    setup = "npm ci"
+  }
+
+  # station blocks as before
+}
+```
+
+`setup` is a single command that runs in the checkout before each run, such as
+one that installs dependencies. To use tools the default runner image lacks,
+also set `image`, as in
+[Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image).
+The repositories of a line name at most one image between them.
+
+Run `terraform apply`.
+
+## Check the line
+
+Open the line's board and click the name of a work station. The
+**Repositories** pill on the Station page names the repository, or reads
+**2 repositories** for two, where it read **No repositories** before.
+
+## Related
+
+- [Repository fields](/docs/reference/terraform/line#repository-fields), in the line
+  reference.
+- [Have Spotlight review pull requests](/docs/integrations/review-pull-requests),
+  which also covers limiting the Review line to some repositories.
+- [Change a line's stations](/docs/lines/change-a-lines-stations)

@@ -1,0 +1,129 @@
+---
+type: how-to
+icon: SquarePen
+title: Issue a workspace token
+description: Issue a token that lets Terraform, a script or CI act in one workspace within the scopes you choose, and revoke it when it is no longer needed.
+---
+
+Spotlight has no page for tokens, so you issue and revoke them from the
+browser's developer console while signed in. Only an owner or admin of the
+workspace can do either.
+
+## Choose the scopes
+
+Give the token only what its job needs:
+
+| Job | Scopes |
+| --- | --- |
+| Terraform that manages lines, skills, integrations, hooks and harness profiles | `configure` |
+| Terraform that also manages secrets | `configure`, `secrets` |
+| Terraform that also manages runner pools and runner trusts | `configure`, `runners` |
+| Setting up workspace token trusts once, then revoking | `trusts` plus every scope the trusts grant |
+| CI that only runs `terraform plan` | `plan` |
+| A script that only reads | `read` |
+
+Every token needs one of `read`, `plan` or `configure`. `trusts` lets a token
+create trusts that mint tokens with any scope it holds, so give it only to a
+token with a short expiry. [Workspace tokens](/docs/reference/api/workspace-token)
+lists what each scope allows.
+
+## Issue the token
+
+<Steps>
+<Step>
+
+Open Spotlight in the workspace, then open the developer console. In Chrome
+and Edge, press <kbd>Cmd</kbd>+<kbd>Option</kbd>+<kbd>J</kbd> on a Mac or
+<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>J</kbd> on Linux and Windows. In Firefox,
+press <kbd>Cmd</kbd>+<kbd>Option</kbd>+<kbd>K</kbd> on a Mac or
+<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>K</kbd> on Linux and Windows. If the browser asks you to allow
+pasting, type `allow pasting` and press Enter.
+
+</Step>
+<Step>
+
+Paste this, with the name, scopes, description and expiry you want, and press
+Enter:
+
+```js
+const slug = location.pathname.split('/')[2];
+const workspace = await (await fetch(`/api/workspaces/${slug}`)).json();
+const issued = await fetch(`/api/resources/workspaces/${workspace.id}/tokens`, {
+  method: 'POST',
+  headers: { 'content-type': 'application/json', 'idempotency-key': crypto.randomUUID() },
+  body: JSON.stringify({
+    name: 'terraform',
+    scopes: ['configure', 'secrets'],
+    description: 'Applies the platform repository',
+    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+  }),
+});
+console.log(issued.status, issued.headers.get('spotlight-workspace-token'));
+```
+
+The name is lowercase words joined by dashes. Leave out `expiresAt`, or set it
+to `null`, for a token that never expires.
+
+</Step>
+<Step>
+
+The console prints `201` and the token. Copy it into your secret store now:
+Spotlight returns it this once and keeps only a hash.
+
+</Step>
+</Steps>
+
+If the console prints `403`, your account is a member of the workspace, not an
+owner or admin. If it prints `409`, a token with that name already exists. If it
+prints `422`, read the response body for the field it refuses:
+
+```js
+console.log(await issued.json());
+```
+
+The name, scopes and expiry are fixed once the token is issued. To change them,
+issue a new token and revoke the old one.
+
+## Revoke a token
+
+<Steps>
+<Step>
+
+In the console, list the workspace's tokens and find the one to revoke by its
+name:
+
+```js
+const slug = location.pathname.split('/')[2];
+const workspace = await (await fetch(`/api/workspaces/${slug}`)).json();
+const { items } = await (await fetch(`/api/resources/workspaces/${workspace.id}/tokens`)).json();
+console.table(items.map(({ id, name, version, expiresAt }) => ({ id, name, version, expiresAt })));
+```
+
+</Step>
+<Step>
+
+Revoke it by its `id`, sending its `version` as `If-Match`:
+
+```js
+const token = items.find((each) => each.name === 'terraform');
+const revoked = await fetch(`/api/resources/tokens/${token.id}`, {
+  method: 'DELETE',
+  headers: { 'if-match': `"${token.version}"` },
+});
+console.log(revoked.status);
+```
+
+The console prints `204`, and the token stops working at once.
+
+</Step>
+</Steps>
+
+If it prints `409`, the token changed since you listed it. List again and
+repeat.
+
+## Related
+
+- [Workspace tokens](/docs/reference/api/workspace-token): the fields, scopes and
+  errors.
+- [Run Terraform from GitHub Actions without a stored token](/docs/configuration/run-terraform-from-github-actions)
+- [Ways in: pools, trusts and tokens](/docs/administration/ways-in-pools-trusts-and-tokens)

@@ -1,0 +1,292 @@
+---
+type: get-started
+icon: GraduationCap
+title: Start guide
+description: Connect your own computer to Spotlight, give a station a task, and answer the question its agent asks you.
+---
+
+In this tutorial we will set up a Spotlight workspace, connect our computer to
+it as a host, and hand a task to the Triage station of the Delivery line. We
+will watch an agent read the task, answer the question it puts to us, and then
+close the task ourselves.
+
+## Before we start
+
+We need:
+
+- Our team's [Spotlight address](/docs/reference/glossary#spotlight-address).
+- A GitHub account. Spotlight signs you in with GitHub.
+- A Mac or Linux computer with Docker Desktop, OrbStack, Colima or Podman
+  installed and running.
+- An Anthropic API key. The agents in this tutorial run Claude Code, and they
+  use this key to reach the model.
+
+## Create a workspace
+
+<Steps>
+<Step>
+
+Open Spotlight and click **Continue with GitHub**. Approve the sign-in on
+GitHub.
+
+</Step>
+<Step>
+
+Spotlight asks us to create a workspace. Enter `Tutorial` as the name. Notice
+that the URL field fills itself in from the name. Click **Continue**.
+
+</Step>
+<Step>
+
+Name the first team `Product` and click **Create workspace**.
+
+</Step>
+</Steps>
+
+Spotlight opens the **Inbox**, and it already holds one item: **Set up your
+team**. Open it. It lists two steps, **Install the GitHub App** and **Run a
+harness**, and neither has a check mark yet. We will come back to it.
+
+In the sidebar, under **Your teams**, expand **Product**, then **Lines**. The
+team already has two lines, **Delivery** and **Review**. We will use Delivery.
+
+## Create a pool for your computer
+
+A host takes its work from a [pool](/docs/administration/ways-in-pools-trusts-and-tokens).
+We will create one from the browser's developer console, while signed in.
+
+<Steps>
+<Step>
+
+With the **Inbox** page open, open the developer console. In Chrome and Edge,
+press <kbd>Cmd</kbd>+<kbd>Option</kbd>+<kbd>J</kbd> on a Mac or
+<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>J</kbd> on Linux. In Firefox, press
+<kbd>Cmd</kbd>+<kbd>Option</kbd>+<kbd>K</kbd> on a Mac or
+<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>K</kbd> on Linux. If the browser asks you to allow
+pasting, type `allow pasting` and press Enter.
+
+</Step>
+<Step>
+
+Paste this and press Enter. It reads the workspace from the address bar,
+creates a pool called `my-computer`, and prints its token:
+
+```js
+const slug = location.pathname.split('/')[2];
+const workspace = await (await fetch(`/api/workspaces/${slug}`)).json();
+const created = await fetch(`/api/resources/workspaces/${workspace.id}/runner-pools`, {
+  method: 'POST',
+  headers: { 'content-type': 'application/json', 'idempotency-key': crypto.randomUUID() },
+  body: JSON.stringify({ key: 'my-computer' }),
+});
+console.log(created.status, created.headers.get('spotlight-pool-token'));
+```
+
+The console prints `201` followed by a long token. Copy the token and keep it
+somewhere safe for the next few minutes. Spotlight shows it only this once.
+
+If the console prints `403` instead, the account is not an owner or admin of
+the workspace. The account that created the workspace is its owner.
+
+</Step>
+<Step>
+
+Go back to **Inbox** and open **Set up your team**. **Run a harness** now has a
+check mark, even though no host is running yet: the workspace now has a pool
+for runs to go to.
+
+</Step>
+</Steps>
+
+## Start a host
+
+<Steps>
+<Step>
+
+Open a terminal on our computer. Save the Anthropic key where the host will
+find it:
+
+```bash
+mkdir -p ~/.spotlight
+echo 'ANTHROPIC_API_KEY=<your Anthropic key>' >> ~/.spotlight/sandbox.env
+chmod 600 ~/.spotlight/sandbox.env
+```
+
+The commands print nothing.
+
+</Step>
+<Step>
+
+In Spotlight, click **Runners** in the sidebar. The page says no host is serving
+the workspace and shows an install command. Copy it, replace `<pool token>`
+with the token from the console, and run it in the terminal. It looks like
+this:
+
+```bash
+curl -fsSL https://<your Spotlight address>/api/install.sh | SPOTLIGHT_TOKEN=<pool token> sh
+```
+
+The script downloads the `spotlight` program and the runner image, then starts
+the host as a service. The image download takes a few minutes. The last line
+reads:
+
+```text
+spotlight host: serving https://<your Spotlight address>: this machine shows on the workspace's Runners page once it reports
+```
+
+If it stops with `no container runtime answered`, start your container runtime
+and run the command again.
+
+</Step>
+<Step>
+
+Watch the **Runners** page. Within a minute our computer appears under
+**Hosts**, with **Pool my-computer** beneath its name. Under the runner image
+are pills for the harnesses it holds, **Claude Code** among them. Its status
+reads **Idle**.
+
+</Step>
+</Steps>
+
+## Give Triage a task
+
+<Steps>
+<Step>
+
+Open **Delivery**. The board shows the stations where agents work: Triage, Spec,
+Implementation and Code Review. Click **Backlog** at the top of the board. The
+board now shows only the backlog station.
+
+</Step>
+<Step>
+
+Click **+** beside **Backlog**. In **Task title**, enter:
+
+```text
+Make the settings page dark
+```
+
+In **Add description…**, enter:
+
+```text
+Give the settings page a dark theme, and keep it looking exactly as it does today.
+Ask me which of the two I want before doing anything else.
+```
+
+Click **Create task**.
+
+</Step>
+<Step>
+
+The task waits in the backlog. Notice that nothing runs while it is there.
+
+Point at the task and tick the box that appears beside it. A bar appears at
+the bottom of the board. Click **Move to Triage**.
+
+</Step>
+<Step>
+
+Click **Active**. The task now stands at **Triage**, marked **In progress**.
+On the **Runners** page, our host reads **Running 1 of 1**.
+
+</Step>
+</Steps>
+
+## Watch the run
+
+<Steps>
+<Step>
+
+Click the task's title to open it. Under **Activity** there is one row, for
+Triage. Click it.
+
+</Step>
+<Step>
+
+This is the run. At the top is what the agent was told: Triage's instructions
+and our task. Below that, steps appear as the agent works, each with a verb such
+as **Read** or **Thought**. Nothing arrives for the first moments while the
+sandbox starts.
+
+</Step>
+<Step>
+
+When the agent finishes, its note appears under what Triage said. The note ends
+with a question to us about which of the two we want, because our task asked
+for a contradiction and told it to check with us.
+
+</Step>
+</Steps>
+
+Go back to the board. The task still stands at Triage, now marked **Awaiting
+review**. It waits there until we answer.
+
+## Answer the agent
+
+<Steps>
+<Step>
+
+Open **Inbox**. There is a new item, **Make the settings page dark**, in bold
+because it is unread. Open it. It shows the same run, ending with Triage's
+question.
+
+</Step>
+<Step>
+
+In the box at the bottom that reads **Reply…**, write:
+
+```text
+Keep the page as it is today. This task was only a test.
+```
+
+Press Enter.
+
+</Step>
+<Step>
+
+Triage runs again, and the item shows its steps as they happen. Notice that it
+picks up where it left off, with our first request and its own question in front
+of it ([why this works](/docs/runs/how-a-conversation-survives-between-runs)).
+
+Wait until new steps stop appearing and the agent's note shows.
+
+</Step>
+</Steps>
+
+## Close the task
+
+We have seen what we came to see, so we will close the task ourselves and keep
+it from travelling further down the line.
+
+<Steps>
+<Step>
+
+Open the task from the board. On the right, under **Properties**, the first
+field shows the station the task stands at.
+
+</Step>
+<Step>
+
+Choose **Completed** from it. If a run was working the task, Spotlight stops
+it. The task moves to the completed station, and the **Runners** page shows the
+host **Idle** again.
+
+</Step>
+</Steps>
+
+## What we built
+
+We have a workspace with a pool, and a host of our own serving it. Spotlight
+gave that host a task, the host started a sandbox for the run, and Claude Code
+worked the task inside it using our key. The agent asked us a question through the inbox, took our
+answer in the same conversation, and we closed the task by moving it.
+
+From here:
+
+- [Lines, stations and tasks](/docs/getting-started/lines-stations-and-tasks)
+  explains what happened between the runs.
+- [Point a line at your repositories](/docs/lines/point-a-line-at-your-repositories)
+  gives Delivery code to work on, so Implementation can push a branch and Code
+  Review can open a pull request.
+- [Install a host](/docs/hosts/run-a-host) covers
+  running the host as root, on a server, and with other harnesses.

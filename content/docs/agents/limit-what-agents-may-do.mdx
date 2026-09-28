@@ -1,0 +1,78 @@
+---
+type: how-to
+icon: SquarePen
+title: Limit what agents may do
+description: Write a harness profile that allows, asks about or denies reads, edits and commands, and run a station with it.
+---
+
+The rules live in a team's harness profile, and a station names one profile.
+You need Terraform set up with the Spotlight provider, using a token that has
+the `configure` scope. See
+[Manage Spotlight with Terraform](/docs/configuration/manage-spotlight-with-terraform).
+
+## Write the rules in a harness profile
+
+Write each rule as `read`, `edit` or `execute`, alone or with a pattern in
+parentheses, and put it under `allow`, `ask` or `deny`. A rule with a pattern
+outranks a bare one, and anything no rule covers is allowed.
+
+```hcl
+data "spotlight_workspace" "acme" {
+  slug = "acme"
+}
+
+data "spotlight_team" "core" {
+  workspace_id = data.spotlight_workspace.acme.id
+  key          = "core"
+}
+
+resource "spotlight_harness_profile" "careful" {
+  team_id = data.spotlight_team.core.id
+  key     = "careful"
+  permissions = {
+    allow = ["read", "edit", "execute(npm test *)"]
+    ask   = ["execute(git push *)"]
+    deny  = ["read(.env)"]
+  }
+}
+```
+
+A call an `ask` rule covers waits for a person in the inbox, and the work
+resumes once someone approves or rejects it. See
+[Answer the inbox](/docs/inbox/answer-the-inbox#approve-or-reject-a-request).
+
+## Read the warnings
+
+Run `terraform apply`. If a harness cannot enforce a rule as written, the
+apply prints a warning on that rule naming what the harness does instead;
+through the resource API the warning is in the profile's `warnings`. For
+example, Cursor has no ask rules, so `execute(git push *)` above is denied
+there instead, and Codex reads whatever its sandbox can see, so it cannot
+enforce `read(.env)`.
+
+If a warning matters for a station, change the rule or run that station on
+another harness.
+
+## Run a station with the profile
+
+Set the station's `profile` to the profile's key:
+
+```hcl
+station {
+  key       = "implementation"
+  name      = "Implementation"
+  harness   = "claude-code"
+  profile   = spotlight_harness_profile.careful.key
+  passes_to = ["code-review"]
+}
+```
+
+Run `terraform apply`. The next run at that station runs with the profile.
+
+## Related
+
+- [`spotlight_harness_profile`](/docs/reference/terraform/harness-profile): every field, and how each
+  harness is told the rules.
+- [Require approval before a tool runs](/docs/integrations/require-approval-before-a-tool-runs),
+  the same idea for an integration's tools.
+- [The sandbox is the security boundary](/docs/security/the-sandbox-is-the-security-boundary)

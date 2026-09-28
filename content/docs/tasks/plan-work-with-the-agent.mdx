@@ -1,0 +1,78 @@
+---
+type: how-to
+icon: SquarePen
+title: Plan work with the agent
+description: Talk a piece of work through with an agent in a planning chat and turn its proposals into tasks.
+---
+
+Chats are private: only the person who starts one sees it. To plan in one you
+need:
+
+- A host serving the workspace with the harness you want to plan with. The chat
+  runs on the same hosts as any other run. See
+  [Install a host](/docs/hosts/run-a-host).
+- To let the agent read your code, the GitHub App connected to the workspace.
+  See [Connect GitHub to a workspace](/docs/integrations/connect-github).
+
+## Start a chat
+
+<Steps>
+<Step>
+
+Open your team in the sidebar and select **Agent**.
+
+</Step>
+<Step>
+
+Below the composer that reads **What are we planning?**, choose the harness,
+and the model and effort if you want something other than **Default model**.
+
+</Step>
+<Step>
+
+Under **Repositories**, tick the repositories the agent should have checked
+out. The list shows what the GitHub App can see; it reads "No repositories to
+choose from" when GitHub is not connected.
+
+</Step>
+<Step>
+
+Write what you want to work on and press Enter.
+
+</Step>
+</Steps>
+
+The harness, model and repositories are fixed for the chat once it starts. To
+change them, start another chat.
+
+To plan from what earlier runs did, start from their traces instead: open
+**Observability** in the team sidebar, tick the traces to discuss (a chat takes
+up to 20), and select **Discuss with the agent**. The Agent page opens with the
+traces attached to a new chat's composer; carry on from the second step.
+
+While the chat shows **The agent is working…**, you can stop it with the
+**Stop** button. Reply in the box that reads **Reply…**; attachments work there
+too.
+
+## Create the tasks it proposes
+
+The agent's proposals appear in the thread as **Proposed task:** rows, each
+with its state.
+
+Select a proposal to open it in a side panel, which shows the line and station
+it is proposed for, the title and the description. Select **Create task** to
+accept it, or **Dismiss** to decline it.
+
+An accepted task is created at the back of the proposed station, with you as
+its assignee. If that station has a harness, a run starts on the task at once.
+The proposal then reads **Task created**.
+
+**Create task** is unavailable when the proposal reads "A station that is
+gone": the station was removed from the line after the agent proposed it.
+
+## Related
+
+- [Tasks, runs and the inbox](/docs/reference/app/tasks-runs-and-the-inbox), for
+  what happens to a task once it exists.
+- [Harnesses](/docs/reference/hosts/harnesses)
+- [Lines, stations and tasks](/docs/getting-started/lines-stations-and-tasks)

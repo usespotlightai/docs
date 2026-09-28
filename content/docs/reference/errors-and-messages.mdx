@@ -1,0 +1,334 @@
+---
+type: reference
+icon: BookText
+title: Errors and messages
+description: The error, refusal and warning messages Spotlight shows, grouped by where they appear, with their causes and the pages that document them.
+---
+
+Each message is written as Spotlight shows it. A value in angle brackets, as
+in `<key>`, is filled in when the message is shown. Each row links to the
+reference page that documents the message and, where there is one, the guide
+that fixes its cause. Messages that report success or progress are on the
+pages for each command.
+
+## Run page and inbox
+
+### Notes on a task
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `The run finished without saying where the task should go next.` | The run made no handover declaration. | [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover) |
+| `The run ended without reporting an outcome.` | The run reported no outcome. | [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover) |
+| `The run asked for "<key>", which is not a station on this line.` | The handover named a key that is not a station on the line. | [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover) |
+| `The run asked for "<key>", where the task already stands.` | The handover named the station the task stands at. | [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover) |
+| `The run asked for "<key>", where nothing runs to take the task up.` | The handover named a station with no harness. | [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover) |
+| `The run asked for "<key>", which work does not pass to from where the task stands.` | The current station does not pass to the station named. | [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover) |
+| `The run said the work is done, and the line does not end where the task stands.` | The handover said `done` at a station without `ends: true`. | [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover) |
+| `The run failed: <message>` | The run failed. The message is one of the [run failure messages](#run-failure-messages). | [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-failed-with-a-message) |
+| `The run was given up on after <n> attempts without finishing.` | The runner was lost on the last attempt. Failure `runner-lost`. | [Failure codes](/docs/reference/app/tasks-runs-and-the-inbox#failure-codes), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-was-given-up-on) |
+| `Stopped from the console. It is back with you.` | A person stopped the run. | [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover), [Steer or stop a run](/docs/runs/steer-or-stop-a-run#stop-the-run) |
+| `The run said: <note>` | Follows the hook's reason when a hook on `handover.giving` refused the handover. | [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover), [Refusing an event](/docs/reference/terraform/hook#refusing-an-event) |
+| `This moved on. There is nobody left to tell here.` | Shown on a run page in place of the message box once the task has left the run's station. | [Steer or stop a run](/docs/runs/steer-or-stop-a-run#say-something-to-the-agent) |
+| `<name> needs your approval` | An approval item, from a tool that requires approval or a harness permission a profile sets to ask. | [Approvals](/docs/reference/app/tasks-runs-and-the-inbox#approvals), [Answer the inbox](/docs/inbox/answer-the-inbox#approve-or-reject-a-request) |
+
+### Run failure messages
+
+Each follows `The run failed: `. Where a run is refused for more than one
+reason, the reasons are joined with `; `.
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `The runner image <image> could not be pulled: <error>` | The host could not pull the line's image and holds no copy of it. | [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages), [Pull runner images from a private registry](/docs/hosts/pull-images-from-a-private-registry) |
+| `The runner image <image> is refused: <reason>` | The host does not serve the image. The reasons are those the [Runners page](#runners-page) shows. | [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-task-shows-in-progress-but-nothing-happens) |
+| `The runner image <digest> no longer holds <harness>, which this run needs` | The image changed and lost the station's harness. | [Harnesses](/docs/reference/hosts/harnesses), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-failed-with-a-message) |
+| `The sandbox's egress did not start: <error>` | Egress did not start. The error is one of the [egress start failures](#egress-start-failures). | [Egress start failures](/docs/reference/hosts/egress#egress-start-failures) |
+| `prepare: git clone <path>: <error>: <output>` | A repository could not be cloned. | [Run phases](/docs/reference/hosts/sandbox#run-phases), [Point a line at your repositories](/docs/lines/point-a-line-at-your-repositories) |
+| `prepare: preparing <path> did not finish within 10m0s` | The checkouts took longer than their time limit. | [Run phases](/docs/reference/hosts/sandbox#run-phases), [Limits and timeouts](/docs/reference/limits-and-timeouts) |
+| `fetch attachment <id>: <error>` | An attachment could not be written into the workspace. | [Run phases](/docs/reference/hosts/sandbox#run-phases) |
+| `hand over workspace: <error>` | `/workspace` could not be given to the agent user. | [Run phases](/docs/reference/hosts/sandbox#run-phases) |
+| `start agent: <error>` | The harness did not start. | [Run phases](/docs/reference/hosts/sandbox#run-phases) |
+| `resume the session: <error>` | The harness could not reopen the task's earlier conversation. | [Run phases](/docs/reference/hosts/sandbox#run-phases) |
+| `open a session: <error>` | The harness could not open a new conversation. | [Run phases](/docs/reference/hosts/sandbox#run-phases) |
+| `harness_profile_unknown: The <Station> station names the <profile> harness profile, which its team does not hold` | The station's `profile` names no profile of the team. | [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-refused-to-start) |
+| `catalog_item_unknown: <reason>` | The station names a catalog item that does not exist. | [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-refused-to-start) |
+| `catalog_item_wrong_kind: <reason>` | The station names a catalog tool as a skill, or a skill as a tool. | [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-refused-to-start) |
+| `not_entitled: <reason>` | The workspace's plan does not include a catalog item the station gives. | [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-refused-to-start) |
+| `entitlement_lapsed: <reason>` | The plan that included a catalog item the station gives has lapsed. | [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-refused-to-start) |
+| `No runner was provisioned for it in <n> attempts; the last was <failure>` | No push pool started a runner. The failure is a code and its detail, as in `refused: answered <status>`. | [Provision call failures](/docs/reference/events/provision-call#failures), [Provision runners from your own platform](/docs/hosts/provision-runners-from-your-own-platform#check-that-it-works) |
+| `Its hooks could not be asked after <n> tries: <reason>` | The run's `run.starting` hooks went unanswered on every attempt. | [Failure codes](/docs/reference/app/tasks-runs-and-the-inbox#failure-codes), [`spotlight_hook`](/docs/reference/terraform/hook) |
+
+### Egress start failures
+
+Each follows `The sandbox's egress did not start: `.
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `the control plane handed no credential for the sandbox's egress` | Spotlight handed no egress credential with the work. | [Egress start failures](/docs/reference/hosts/egress#egress-start-failures) |
+| `egress was not ready within 1m30s` | Egress did not publish its authority in time. | [Egress start failures](/docs/reference/hosts/egress#egress-start-failures) |
+| `pull the egress image <image>: <error>` | The egress image could not be pulled. | [Egress start failures](/docs/reference/hosts/egress#egress-start-failures) |
+
+### Run steps
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `Started afresh: <error>` | The previous run's workspace could not be restored. The run starts with an empty workspace. | [Journal steps](/docs/reference/hosts/sandbox#journal-steps) |
+| `Setting up <path> failed: <error>` | A repository's `setup` command failed. The run continues without it. | [Journal steps](/docs/reference/hosts/sandbox#journal-steps), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-agent-worked-without-the-repositorys-setup) |
+| `Skipped: <error>` | The workspace could not be archived for the next run. | [Journal steps](/docs/reference/hosts/sandbox#journal-steps) |
+
+## Host log and install script
+
+### Host
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `the container runtime is not answering yet` | The container engine did not respond. The host retries. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host) |
+| `could not report to the control plane, still trying` | Spotlight did not respond. The host retries. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host) |
+| `destroyed a sandbox left behind` | A sandbox from an earlier host process was removed at start. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host) |
+| `the sandbox ran past its time` | `SPOTLIGHT_RUN_TIMEOUT` passed. The sandbox is stopped with a 30-second grace. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-was-given-up-on) |
+| `could not start a sandbox; claiming from this image pauses` | A sandbox did not start. Claims for that image pause, longer after each failure in a row. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host) |
+| `gave up the work: its way out did not start` | Egress did not start. The run fails, or the check is skipped. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host) |
+| `the host is stopping, so the work is left to be claimed again` | The host stopped before the sandbox started. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host) |
+| `the control plane will not have this host; it stops claiming and lets its sandboxes finish` | Spotlight refused the host. It exits `3`. | [Exit codes](/docs/reference/cli/spotlight-command#exit-codes) |
+| `Missing, rotated or unknown pool token, or a workload the trust does not admit` | Spotlight refused the host's credential, with `401`. | [Admission](/docs/reference/terraform/runner-trust#admission), [Run hosts without a stored token](/docs/hosts/admit-hosts-through-a-runner-trust) |
+| `could not read the registry credentials, so it pulls anonymously` | The registry credentials file cannot be read or parsed, or an `auth` is not base64. | [Registry credentials](/docs/reference/hosts/host-configuration#registry-credentials), [Pull runner images from a private registry](/docs/hosts/pull-images-from-a-private-registry#check-that-it-pulls) |
+| `could not pull the runner image, so it runs the copy it has` | A pull failed, and the host has a copy of the image. | [Pull runner images from a private registry](/docs/hosts/pull-images-from-a-private-registry#check-that-it-pulls) |
+| `another spotlight host already serves from <state>: <error>` | Another host holds the state directory. | [Validation](/docs/reference/hosts/host-configuration#validation) |
+| `spotlight host: <config path> is not ready to serve: <problems>` | `spotlight host install` found the host configuration invalid. | [spotlight host install](/docs/reference/cli/spotlight-command#spotlight-host-install) |
+| ``spotlight host: installing a service on <os> is not supported; run `spotlight host` under your own supervisor`` | `spotlight host install` on a platform other than Linux or macOS. | [spotlight host install](/docs/reference/cli/spotlight-command#spotlight-host-install) |
+
+### Host settings
+
+The host checks every setting before it starts and reports all problems
+together. The two sandbox environment problems, found in the egress
+environment, are prefixed `egress: `.
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `SPOTLIGHT_URL is required` | No address. The runner gives the same message. | [Validation](/docs/reference/hosts/host-configuration#validation) |
+| `SPOTLIGHT_TOKEN and SPOTLIGHT_TRUST are different ways in; give one` | A token together with a trust or a token file. | [Validation](/docs/reference/hosts/host-configuration#validation) |
+| `SPOTLIGHT_TOKEN (a pull pool's token) is required, or SPOTLIGHT_TRUST and SPOTLIGHT_OIDC_TOKEN_FILE to claim through a runner trust` | Neither a token nor a trust. | [Validation](/docs/reference/hosts/host-configuration#validation), [Install a host](/docs/hosts/run-a-host) |
+| `SPOTLIGHT_OIDC_TOKEN_FILE names the workload token file, and is required with SPOTLIGHT_TRUST` | A trust without a token file. | [Validation](/docs/reference/hosts/host-configuration#validation), [Run hosts without a stored token](/docs/hosts/admit-hosts-through-a-runner-trust) |
+| `SPOTLIGHT_CAPACITY: "<x>" is not a count of at least 1` | A capacity that is not a count of at least 1. | [Validation](/docs/reference/hosts/host-configuration#validation) |
+| `SPOTLIGHT_RUN_TIMEOUT: "<x>" is not a duration such as 6h` | A timeout that is not a duration. | [Validation](/docs/reference/hosts/host-configuration#validation) |
+| `SPOTLIGHT_RUNNER_IMAGE: "<x>" is not an image reference such as ghcr.io/acme/runner:main` | An image entry that is not an image reference. | [Validation](/docs/reference/hosts/host-configuration#validation), [Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image#let-the-hosts-serve-it) |
+| `SPOTLIGHT_EGRESS_ALLOW: "*" allows everything; leave the list empty for that` | `SPOTLIGHT_EGRESS_ALLOW=*`. | [Validation](/docs/reference/hosts/host-configuration#validation), [Limit where sandboxes can connect](/docs/security/limit-where-sandboxes-connect#set-the-allow-list) |
+| `the sandbox environment sets <NAME>, which only the host holds` | A sandbox variable names a host credential. | [Validation](/docs/reference/hosts/host-configuration#validation) |
+| `the sandbox environment carries the pool token in <NAME>` | A sandbox variable holds the pool token. | [Validation](/docs/reference/hosts/host-configuration#validation) |
+
+### Runner
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `SPOTLIGHT_TOKEN and SPOTLIGHT_HANDED are different ways to be given work; give one` | Both are set. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
+| `SPOTLIGHT_HANDED names the work a host handed this runner, or SPOTLIGHT_TOKEN is the one-run credential a push pool provisioned it with` | Neither is set. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
+| `the work it was handed carries no one-run credential` | The handed file holds no credential. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
+| `could not trust the egress authority, so TLS through egress may fail` | A warning. The egress authority could not be added to the image's bundles. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
+| `nothing was reserved for it in time` | With `SPOTLIGHT_TOKEN`, no work arrived within 5 minutes. The runner exits `0`. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
+| `usage: spotlight runner [harnesses <json>]` | An argument other than `harnesses`. | [spotlight runner](/docs/reference/cli/spotlight-command#spotlight-runner) |
+| `Change stacks are not set up on this Spotlight deployment` | A station with `diffs: true` on a deployment without drafting set up. The runner logs the refusal, and the checkout gets no change stack. | [Change stacks and decisions](/docs/reference/app/change-stacks-and-decisions) |
+
+### Egress log
+
+Egress logs these. A harness key or run secret it gives a reason for is not
+worn, and requests go without it.
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `the host's allow-list does not admit <host>` | The host's egress allow-list does not admit the host the key or secret is worn toward. | [What egress wears](/docs/reference/hosts/egress#what-egress-wears), [Limit where sandboxes can connect](/docs/security/limit-where-sandboxes-connect) |
+| `it is empty or more than one line` | A harness key is empty or more than one line. | [Harness keys](/docs/reference/hosts/egress#harness-keys) |
+| `the host holds a key of its own for <host>` | A run secret is bound to a host a harness key already goes to. | [Run secrets](/docs/reference/hosts/egress#run-secrets) |
+| `the host does not let egress read <secret id>` | `SPOTLIGHT_EGRESS_READS` does not admit the AWS Secrets Manager secret. | [Run secrets](/docs/reference/hosts/egress#run-secrets), [Give an MCP server a secret](/docs/security/give-an-mcp-server-a-secret) |
+| `another secret is already worn in <Header> toward <host>` | Another secret is already worn in that header toward the host. | [Run secrets](/docs/reference/hosts/egress#run-secrets) |
+| `it holds more than one line, so it cannot be worn in a header` | A run secret's value is more than one line. | [Run secrets](/docs/reference/hosts/egress#run-secrets) |
+| `find the host's AWS identity: <error>` | No AWS identity. | [Run secrets](/docs/reference/hosts/egress#run-secrets) |
+| `AWS Secrets Manager answered <code>` | An AWS error. | [Run secrets](/docs/reference/hosts/egress#run-secrets) |
+| `AWS Secrets Manager could not be asked: <error>` | AWS was not reached. | [Run secrets](/docs/reference/hosts/egress#run-secrets) |
+| `AWS Secrets Manager holds no text for it` | The secret has no text value. | [Run secrets](/docs/reference/hosts/egress#run-secrets) |
+| `its value in AWS Secrets Manager is not JSON, so it has no <field> field` | `field` is set, and the value is not JSON. | [Run secrets](/docs/reference/hosts/egress#run-secrets) |
+| `its value in AWS Secrets Manager holds no text at <field>` | The value has no text at `field`. | [Run secrets](/docs/reference/hosts/egress#run-secrets) |
+| `the control plane gave egress nothing to wear` | Spotlight refused to redeem the run's secrets. Egress starts wearing none. | [Egress start failures](/docs/reference/hosts/egress#egress-start-failures) |
+| `gave up redeeming the run's secrets; the sandbox goes out wearing none` | Egress could not reach Spotlight within 1 minute. | [Egress start failures](/docs/reference/hosts/egress#egress-start-failures) |
+
+### Install script
+
+Every message goes to standard error, prefixed `spotlight host: `.
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `need curl or wget to download spotlight` | Neither is on `PATH`. | [Install script](/docs/reference/cli/install-script#messages) |
+| `need sha256sum or shasum to check what it downloads` | Neither is on `PATH`. | [Install script](/docs/reference/cli/install-script#messages) |
+| `unsupported operating system: <os>` | Not Linux or macOS. | [Install script](/docs/reference/cli/install-script#messages) |
+| `unsupported architecture: <arch>` | Not x86-64 or ARM64. | [Install script](/docs/reference/cli/install-script#messages) |
+| `set SPOTLIGHT_TOKEN to a pull pool's token, or SPOTLIGHT_TRUST and SPOTLIGHT_OIDC_TOKEN_FILE to claim through a runner trust` | No token and no trust. | [Install script](/docs/reference/cli/install-script#messages), [Install a host](/docs/hosts/run-a-host#install-the-host) |
+| `no container runtime answered: install and start Docker or Podman (on macOS, Docker Desktop, OrbStack or Colima), then run this again` | No container runtime answered `info`. | [Install script](/docs/reference/cli/install-script#messages), [Install a host](/docs/hosts/run-a-host#install-the-host) |
+| `could not download spotlight from <url>` | The binary download failed. | [Install script](/docs/reference/cli/install-script#messages) |
+| `could not download the checksum from <url>.sha256` | The checksum download failed. | [Install script](/docs/reference/cli/install-script#messages) |
+| `spotlight failed its checksum: expected <sha256>, got <sha256>` | The download does not match its checksum. | [Install script](/docs/reference/cli/install-script#messages) |
+| `could not pull <image>` | The image pull failed. | [Install script](/docs/reference/cli/install-script#messages) |
+
+## Inside a sandbox
+
+### Agent commands
+
+Each command exits `1` and prints its message on standard error.
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `no run to hand over: spotlight runs inside a Spotlight workspace` | `spotlight handover` without the run's handover variables. | [Environment](/docs/reference/cli/agent-commands#environment) |
+| `no run to answer for: spotlight runs inside a Spotlight workspace` | `spotlight reply` without the run's handover variables. | [Environment](/docs/reference/cli/agent-commands#environment) |
+| `no run to read a trace from: spotlight runs inside a Spotlight workspace` | `spotlight trace` without the run's handover variables. | [Environment](/docs/reference/cli/agent-commands#environment) |
+| `no run to reach for tools in: spotlight runs inside a Spotlight workspace` | `spotlight tools` without the run's handover variables. | [Environment](/docs/reference/cli/agent-commands#environment) |
+| `not this run's token` | The token does not match. | [Common behaviour](/docs/reference/cli/agent-commands#common-behaviour) |
+| `reach Spotlight: <error>` | Spotlight is unreachable. | [Common behaviour](/docs/reference/cli/agent-commands#common-behaviour) |
+| `--next is required` | `spotlight handover` without `--next`. | [spotlight handover](/docs/reference/cli/agent-commands#spotlight-handover) |
+| `"<next>" is not one of: <options>` | `--next` names nothing on offer. | [spotlight handover](/docs/reference/cli/agent-commands#spotlight-handover) |
+| `unreadable handover` | The request body was not JSON. | [spotlight handover](/docs/reference/cli/agent-commands#spotlight-handover) |
+| `read the note: <error>` | Standard input could not be read. | [spotlight handover](/docs/reference/cli/agent-commands#spotlight-handover) |
+| `--to is required` | `spotlight reply` without `--to`. | [spotlight reply](/docs/reference/cli/agent-commands#spotlight-reply) |
+| `--body is required` | No body, and nothing on standard input. | [spotlight reply](/docs/reference/cli/agent-commands#spotlight-reply) |
+| `say which remark` | The handle is blank. | [spotlight reply](/docs/reference/cli/agent-commands#spotlight-reply) |
+| `say something back` | The body is blank. | [spotlight reply](/docs/reference/cli/agent-commands#spotlight-reply) |
+| `unreadable answer` | The request body was not JSON. | [spotlight reply](/docs/reference/cli/agent-commands#spotlight-reply) |
+| `read the answer: <error>` | Standard input could not be read. | [spotlight reply](/docs/reference/cli/agent-commands#spotlight-reply) |
+| `--task is required` | `spotlight trace` without `--task`. | [spotlight trace](/docs/reference/cli/agent-commands#spotlight-trace) |
+| `say which task` | The task id is blank. | [spotlight trace](/docs/reference/cli/agent-commands#spotlight-trace) |
+| `open <path>: <error>` | `--out` could not be created. | [spotlight trace](/docs/reference/cli/agent-commands#spotlight-trace) |
+| `This run was given no tools.` | `spotlight tools` in a run given no tools. | [spotlight tools](/docs/reference/cli/agent-commands#spotlight-tools) |
+| `no such command "<name>"` | No granted tool has that name. | [Agent commands](/docs/reference/cli/agent-commands) |
+| `--<input> is required` | A required input without a default was not given. | [Agent commands](/docs/reference/cli/agent-commands) |
+| `<command>: <flag error>` | A flag the tool does not take, or a missing value. | [Agent commands](/docs/reference/cli/agent-commands) |
+| `this run was not given "<name>"; it was given: <tools>` | The tool is not granted to the run. | [Agent commands](/docs/reference/cli/agent-commands) |
+| `unreadable input: hand the tool JSON` | The input is over 8 MiB, or is not JSON. | [Agent commands](/docs/reference/cli/agent-commands) |
+| `could not read this run's tools to find "<name>": <error>` | The tool list could not be read. | [Agent commands](/docs/reference/cli/agent-commands) |
+
+### Tool calls and integration requests
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `<tool> needs a person's approval before it runs, and they have been asked in their inbox.` | The tool requires approval, and no unspent grant covers the call. An instruction to hand over follows. | [Approvals](/docs/reference/app/tasks-runs-and-the-inbox#approvals), [Require approval before a tool runs](/docs/integrations/require-approval-before-a-tool-runs) |
+| `the integration answered <status>: <body>` | The tool's request failed. The body is cut at 500 characters. | [Tools](/docs/reference/terraform/integration#tools) |
+| `The pull request was held back by a hook, so none was opened.` | A hook on `pull-request.opening` refused the pull request. The hook's refusal follows. | [Check or block a pull request before it opens](/docs/integrations/check-a-pull-request-before-it-opens#check-a-refusal) |
+| `The hook <key> refused: <reason>` | A hook on a before event refused the event. | [Refusing an event](/docs/reference/terraform/hook#refusing-an-event) |
+| `The hook <key> failed at <step> (<reason>), and it blocks on failure` | A step of a hook on a before event failed, and its `failure` is `block`. | [Refusing an event](/docs/reference/terraform/hook#refusing-an-event) |
+| `<host>: is not among the hosts this deployment allows outbound calls to` | An integration request, hook request or OAuth token exchange to a host not on the deployment's outbound allow-list. | [Requests](/docs/reference/terraform/integration#requests) |
+| `The workspace holds no secret named <NAME>; define it before anything uses it` | A secret is named but not defined. It fails where it is used. | [Where a secret is named](/docs/reference/terraform/secret#where-a-secret-is-named) |
+| `The <NAME> secret could not be read: this deployment does not read from AWS Secrets Manager` | An integration request made by Spotlight wears a secret from AWS Secrets Manager, and the deployment does not read from it. | [Sources](/docs/reference/terraform/secret#sources) |
+| `The <NAME> secret holds more than one line, so it cannot be worn in a request header` | The secret's value is more than one line. | [Bindings](/docs/reference/terraform/secret#bindings) |
+
+### Egress responses
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `egress answers only the sandbox it was started for` | `407`. No proxy credential, or the wrong one. | [Responses](/docs/reference/hosts/egress#responses) |
+| `egress is a proxy: ask it for an absolute URL, or CONNECT to a host` | `400`. A request that is neither `CONNECT` nor an absolute URL. | [Responses](/docs/reference/hosts/egress#responses) |
+| `egress does not let this sandbox reach <host>` | `403`. The allow-list does not admit the host. | [Responses](/docs/reference/hosts/egress#responses), [Limit where sandboxes can connect](/docs/security/limit-where-sandboxes-connect#find-refused-requests) |
+| `egress could not reach <target>: egress never opens a connection to <ip>` | `502`. An always-refused address. | [Refused addresses](/docs/reference/hosts/egress#refused-addresses) |
+| `egress could not reach <target>: egress opens a connection to the private address <ip> only for a host the allow-list names` | `502`. A private address the allow-list does not name. | [Refused addresses](/docs/reference/hosts/egress#refused-addresses), [Limit where sandboxes can connect](/docs/security/limit-where-sandboxes-connect#reach-a-private-host) |
+| `egress could not reach <target>: <error>` | `502`. Any other connection failure. | [Responses](/docs/reference/hosts/egress#responses) |
+| `egress could not stand in for <host>: <error>` | `502`. No certificate could be made for an intercepted host. | [Responses](/docs/reference/hosts/egress#responses) |
+
+## Resource API and Terraform
+
+### Problem types
+
+An error body's `type` is `urn:spotlight:problem:<slug>`, with one of these
+slugs.
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `bad-request` | `400`. The request is malformed. | [Errors](/docs/reference/api/resource-api#errors) |
+| `idempotency-key-required` | `400`. A create has no `Idempotency-Key`. | [Errors](/docs/reference/api/resource-api#errors) |
+| `malformed-if-match` | `400`. `If-Match` is not one entity tag. | [Errors](/docs/reference/api/resource-api#errors) |
+| `unsupported-api-version` | `400`. `Spotlight-Api-Version` names a version this server does not serve. | [Errors](/docs/reference/api/resource-api#errors) |
+| `unauthenticated` | `401`. No valid credentials. | [Errors](/docs/reference/api/resource-api#errors) |
+| `forbidden` | `403`. The caller's role or token scopes do not allow the request. | [Errors](/docs/reference/api/resource-api#errors), [Roles and permissions](/docs/reference/roles-and-permissions#permissions) |
+| `not-found` | `404`. No such resource that the caller may see. | [Errors](/docs/reference/api/resource-api#errors) |
+| `already-exists` | `409`. A create names an address already taken. | [Errors](/docs/reference/api/resource-api#errors) |
+| `moved-on` | `409`. `If-Match` names a version that is no longer current. | [Errors](/docs/reference/api/resource-api#errors) |
+| `in-use` | `409`. The write or delete would remove something another resource or a task still uses. | [Errors](/docs/reference/api/resource-api#errors) |
+| `conflict` | `409`. Another conflict with the resource's state. | [Errors](/docs/reference/api/resource-api#errors) |
+| `invalid` | `422`. One or more fields are wrong. | [Errors](/docs/reference/api/resource-api#errors) |
+| `idempotency-key-reused` | `422`. The `Idempotency-Key` was used for a different request body. | [Errors](/docs/reference/api/resource-api#errors) |
+| `precondition-required` | `428`. An update or delete has no `If-Match`. | [Errors](/docs/reference/api/resource-api#errors) |
+| `refused-upstream` | `502`. An upstream service refused. | [Errors](/docs/reference/api/resource-api#errors) |
+
+### Permission titles
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `Not allowed to change the <kind>` | `403`. The caller lacks `configure`, `manage-secrets`, `manage-runners` or `manage-token-trusts`. | [Permissions](/docs/reference/roles-and-permissions#permissions) |
+| `Not allowed to administer the <kind>` | `403`. The caller lacks `administer`. | [Permissions](/docs/reference/roles-and-permissions#permissions) |
+| `Not allowed to open a workspace` | `403`. The caller lacks `open-workspaces`. | [Permissions](/docs/reference/roles-and-permissions#permissions) |
+| `Not allowed to plan` | `403`. The caller lacks `plan`. | [Permissions](/docs/reference/roles-and-permissions#permissions) |
+
+### Refusals and warnings
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `The <slug> workspace still holds <what>; delete those first` | `409` `in-use`. A delete of a workspace that still holds resources. | [`spotlight_workspace`](/docs/reference/terraform/workspace#rules) |
+| `The <key> team still holds <what>; delete those first` | `409` `in-use`. A delete of a team that still holds resources. | [`spotlight_team`](/docs/reference/terraform/team#rules) |
+| `The <NAME> secret is still worn by <names>; stop those naming it first` | `409`. A delete of a secret an integration or a harness profile still names. | [Rules](/docs/reference/terraform/secret#rules) |
+| `is kept only by Spotlight; a secret read from AWS Secrets Manager is set there` | `valueWo` on a secret from AWS Secrets Manager. | [Sources](/docs/reference/terraform/secret#sources) |
+| `is already another pool's token; give each pool its own` | A pool token another pool holds. | [Pool token](/docs/reference/terraform/runner-pool#pool-token), [Create a pull pool and get its token](/docs/hosts/create-a-pull-pool) |
+| `was given to a pool before, and a pool token is given once, ever: one rotated away, or held by a pool since deleted or replaced, never works again; give a new one` | A pool token rotated away, or held by a pool since deleted or replaced. | [Pool token](/docs/reference/terraform/runner-pool#pool-token) |
+| `is not https; its calls carry a one-run token, so a production deployment refuses to make them` | A warning on a push pool's `provision.url`. | [Warnings](/docs/reference/terraform/runner-pool#warnings) |
+| `names <key>, but the workspace has no runner pool by that key` | A warning on `spotlight_workspace_runners` `pools`. | [`spotlight_workspace_runners`](/docs/reference/terraform/workspace-runners#warnings) |
+| `names <key>, but the workspace trusts no workload by that key` | A warning on `spotlight_workspace_runners` `trusts`. | [`spotlight_workspace_runners`](/docs/reference/terraform/workspace-runners#warnings) |
+| `must do something: a webhook, a poll, a schedule, or an action to run` | An integration definition with nothing to do. | [Top level](/docs/reference/terraform/integration#top-level) |
+| `verifies a delivery by hmac, token, asymmetric or jwt` | A webhook's `verify` uses another way. | [Verify](/docs/reference/terraform/integration#verify) |
+| `needs a branch or a mark, or nothing could find a task from it` | A raise with no `branch` and no mark with `find: true`. | [Raise](/docs/reference/terraform/integration#raise) |
+| `authenticates a request by its oauth2 connection, or by the secrets it wears toward the hosts they are bound to` | A request's `auth` uses another way. | [Requests](/docs/reference/terraform/integration#requests) |
+| `reads a secret's value, which nothing may; name the secret in auth.secrets and Spotlight wears it toward the hosts it is bound to` | An expression contains `secret.` or `secret[`. | [Secrets in expressions](/docs/reference/terraform/integration#secrets-in-expressions), [Give stations a tool from an HTTP API](/docs/integrations/give-stations-a-tool-from-an-http-api) |
+| `must be an expression, written as ${{ ... }}` | A field that holds one expression has something around it. | [Syntax](/docs/reference/api/expressions#syntax) |
+| `does not check: <message>` | A warning. An integration expression parses but does not type-check. `; did you mean <suggestion>?` follows when there is one. | [Type-checking](/docs/reference/api/expressions#type-checking) |
+| `asks for OIDC tokens, but this Spotlight has no key to sign them with; sign with a secret instead, or set HOOK_SIGNING_KEY` | A hook with `oidc` where the deployment has no key to sign hook tokens with. | [OIDC](/docs/reference/terraform/hook#oidc) |
+| `include read, plan or configure; secrets, runners and trusts are granted beside one of them` | A workspace token with none of `read`, `plan` or `configure`. | [Scopes](/docs/reference/api/workspace-token#scopes), [Issue a workspace token](/docs/administration/issue-a-workspace-token) |
+| `name each scope once` | A workspace token names a scope twice. | [Scopes](/docs/reference/api/workspace-token#scopes) |
+| `names the owner it admits before any *, as in repo:acme/* or repo:acme/platform:*; a trust open to every owner would admit any workload its issuer signs a token for` | A workspace token trust's subject pattern has no owner before `*`. | [Patterns](/docs/reference/terraform/workspace-token-trust#patterns) |
+| `The <key> token trust would grant scopes the token defining it does not hold` | A token defines or changes a trust with scopes it does not hold. | [Who may define a trust](/docs/reference/terraform/workspace-token-trust#who-may-define-a-trust) |
+| `No such trust, a token its issuer did not sign for its audience, a workload it does not admit, or a closed workspace` | `401`. An exchange through a workspace token trust was refused. | [Exchange](/docs/reference/terraform/workspace-token-trust#exchange), [Run Terraform from GitHub Actions without a stored token](/docs/configuration/run-terraform-from-github-actions) |
+| `Both a token and an OIDC trust` | The provider is configured with a token and a trust. | [Provider configuration](/docs/reference/terraform/terraform-provider#provider-configuration) |
+
+## Web app
+
+### Runners page
+
+An image the host will not start runs from reads `Refused: <reason>`, with
+one of these reasons.
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `this host's SPOTLIGHT_RUNNER_IMAGE does not admit it` | The image is not in the host's `SPOTLIGHT_RUNNER_IMAGE`. | [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-task-shows-in-progress-but-nothing-happens), [Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image#let-the-hosts-serve-it) |
+| `could not pull it: <error>` | The image could not be pulled. | [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-task-shows-in-progress-but-nothing-happens), [Pull runner images from a private registry](/docs/hosts/pull-images-from-a-private-registry) |
+| `could not look inside it: <error>` | The image could not be inspected. | [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-task-shows-in-progress-but-nothing-happens), [Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image) |
+| `its runner is release <release>, older than the <release> this control plane needs` | The image's runner release is too old. | [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-task-shows-in-progress-but-nothing-happens) |
+| `its runner reports no release, so it is older than the <release> this control plane needs` | The image's runner reports no release. | [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-task-shows-in-progress-but-nothing-happens) |
+
+### Change review
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `The change stack could not be drafted.` | Every drafting attempt failed. | [States](/docs/reference/app/change-stacks-and-decisions#states) |
+| `Drafting was interrupted before it finished.` | Drafting stopped without a reason. | [States](/docs/reference/app/change-stacks-and-decisions#states) |
+
+### Members, invites and GitHub
+
+The endpoints for roles, invites and the GitHub connection refuse with these.
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `That role is not yours to give: they are not of this workspace` | `403`. The person is not a member of the workspace. | [Changing roles](/docs/reference/roles-and-permissions#changing-roles), [Invite people and change their roles](/docs/administration/invite-people-and-change-roles) |
+| `That role is not yours to give: only an owner or an admin may set roles` | `403`. The caller is not an owner or admin. | [Changing roles](/docs/reference/roles-and-permissions#changing-roles) |
+| `That role is not yours to give: they are not below you` | `403`. An admin changing an owner or another admin. | [Changing roles](/docs/reference/roles-and-permissions#changing-roles) |
+| `That role is not yours to give: your own is not yours to change` | `403`. An admin changing their own role. | [Changing roles](/docs/reference/roles-and-permissions#changing-roles) |
+| `That role is not yours to give: nobody hands out a rank they do not hold` | `403`. An admin giving the `owner` role. | [Changing roles](/docs/reference/roles-and-permissions#changing-roles) |
+| `This workspace would be left with nobody who owns it. Make somebody else an owner first` | `409`. The last owner given another role. | [Changing roles](/docs/reference/roles-and-permissions#changing-roles) |
+| `<email> is already on this team` | `409`. The address is already on the team. | [Invites](/docs/reference/roles-and-permissions#invites) |
+| `This invite was sent to <email>. Sign in as them to accept it` | `403`. Signed in as another address. | [Invites](/docs/reference/roles-and-permissions#invites) |
+| `This invite has already been accepted` | `409`. The invite was already accepted. | [Invites](/docs/reference/roles-and-permissions#invites) |
+| `This invite has been revoked` | `409`. The invite was taken back. | [Invites](/docs/reference/roles-and-permissions#invites) |
+| `This invite has run out. Ask for another` | `409`. The invite expired. | [Invites](/docs/reference/roles-and-permissions#invites), [Invite people and change their roles](/docs/administration/invite-people-and-change-roles) |
+| `This workspace is not yours to connect: only an owner or an admin may` | `403`. The person is not an owner or admin. | [GitHub connection](/docs/reference/roles-and-permissions#github-connection), [Connect GitHub to a workspace](/docs/integrations/connect-github) |
+| `That is not an installation you administer on GitHub` | `403`. The person does not administer the installation. | [GitHub connection](/docs/reference/roles-and-permissions#github-connection) |
+| `GitHub would not say whether that installation is yours. Sign in again, and if it keeps happening the sign-in is not authorised to list App installations.` | `403`. GitHub would not say. | [GitHub connection](/docs/reference/roles-and-permissions#github-connection) |
+| `GitHub installation <id> is already connected to another workspace. Disconnect it there first` | `409`. The installation is connected to another workspace. | [GitHub connection](/docs/reference/roles-and-permissions#github-connection) |

@@ -1,0 +1,121 @@
+---
+type: concept
+icon: Lightbulb
+title: Lines, stations and tasks
+description: How a piece of work moves through a team's line, who decides where it goes next, and what follows from a task having no stored status.
+---
+
+A team in Spotlight organises its work as lines. A line is a row of stations,
+and a task stands at exactly one of them at a time. Most stations have an agent
+behind them: a harness such as Claude Code, a prompt that says what the station
+is for, and the tools and skills it may use. When a task arrives at one of these
+stations, the station works it. That piece of work is a run. Between runs, the
+questions are how a task gets from one station to the next, and who gets a say.
+
+## The shape of a line
+
+Every line starts with a backlog and ends with a completed station. Nothing runs
+at either. The backlog is where work waits until someone starts it, and the
+completed station is where the line puts work it is finished with. Between them
+are the work stations, and each one names the stations it may hand a task on to.
+
+A workspace created in the web app starts its first team with two lines (see
+[Built-in lines](/docs/reference/built-ins/built-in-lines)). Delivery takes a request from
+triage through a spec, an implementation and a code review that opens a pull
+request. Review takes someone else's pull request and reviews it. Both are
+ordinary lines, and a team can change them or define others in the same way
+(see the [`spotlight_line`](/docs/reference/terraform/line) reference).
+
+The hand-on lists are what give a line its shape. Delivery's code review station
+may hand a task back to implementation, so a line is a graph, not a pipeline.
+Spotlight uses that graph again when it decides [which run goes
+first](/docs/runs/which-run-goes-first).
+
+## The agent decides where the task goes next
+
+When a run finishes, the agent says what should happen to the task. It does this
+from inside its sandbox with one command, `spotlight handover`. It can pass the
+task on to one of the stations this station hands on to, and the same task moves
+there and a run starts at once; only a station with an agent can take a task
+this way. It can put the task to a person, in which case the task stays where it
+is and waits in the inbox of whoever it is assigned to. Or, at a station that
+ends the line, it can finish the task where it stands.
+
+The choices are checked while the agent can still act on them. If it names a
+station it cannot reach, the command refuses and lists the ones it can. The
+reasons for doing this through a command line are in [Why agents talk back
+through a command
+line](/docs/agents/agents-talk-back-through-a-command-line).
+
+If an agent says nothing, fails, or is stopped, Spotlight treats that as a
+question for a person, with a note saying what happened.
+
+The consequence is that one task can travel the whole of Delivery without anyone
+touching it. Triage passes it to spec, spec to implementation, implementation to
+code review, and code review opens a pull request and finishes. People come in
+where an agent asks for them, or where they choose to step in.
+
+## What travels with the task
+
+Each station's agent starts fresh, so something has to carry the work from one
+station to the next. What carries it is the note each agent leaves when it hands
+over. Every note is kept on the task, and the next station's briefing lists them
+under what has already been done, station by station.
+
+Spotlight passes on notes and not the previous run's full output. A run's output
+is long, and by the third station the part that matters would be buried under
+everything that came before it. A note is the previous agent's own account of
+what the next one needs to know.
+
+A station that picks the same task up again, for example after a person answers
+its question, is in a different position: it can resume its own conversation.
+[How a conversation survives between
+runs](/docs/runs/how-a-conversation-survives-between-runs) covers that.
+
+## People and events move tasks too
+
+The agent's handover is not the only way a task moves. A person can move it to
+any station, from the board or the task's page, and the move takes effect at
+once. The task lets go of
+any run on it: a run still waiting for a runner is withdrawn, and a run already
+working is asked to stop. If the new station has an agent, a new run starts
+there.
+
+Events outside Spotlight move tasks too. On Delivery, a failed check sends the
+task back to implementation and a merged pull request moves it to completed.
+These rules are part of the line's definition, as reactions. [How outside events
+reach a task](/docs/getting-started/how-outside-events-reach-a-task) explains how
+Spotlight works out which task an event is about.
+
+With agents, people and outside events all able to move a task, two of them will
+sometimes act at once. A run's handover only counts while its task still holds
+it. Once the task has moved, whatever the run declares when it ends is dropped,
+and a run that ends in failure is marked superseded. People's moves are
+guarded by counting, so that a drag made on a stale board cannot undo a move it
+never saw. A task carries a revision that goes up every time it moves or
+finishes, a person's move names the revision it was based on, and a move sent
+from an older revision is refused. Neither an agent's decision nor a person's is
+applied to a task that is no longer where they last saw it.
+
+## A task has no status field
+
+Spotlight does not store whether a task is running, waiting or finished. It
+works each state out from the task itself: a task is running when a run holds
+it, waiting for a person when its last question has no answer yet, and finished
+when a station finished it or it reached completed.
+
+Here the docs offer a reason of their own. A stored status would be a second
+record of facts the task already holds in its notes and its run, and a second
+record can disagree with the first. Worked out each time, the state cannot drift
+from the history it describes.
+
+One result is that finishing and moving are separate. When Delivery's code
+review station finishes a task, the task stays at code review with its pull
+request open. It moves to completed later, when the pull request is merged. The
+board shows where the work is, and the pull request shows what is left to do
+with it.
+
+The other result is that the inbox and the board show the same task from two
+sides. A task that waits for a person still stands at its station on the board,
+marked as awaiting review, and the question it waits on is in the inbox.
+[Asking a person](/docs/inbox/asking-a-person) is about that side.

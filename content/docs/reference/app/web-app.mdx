@@ -1,0 +1,90 @@
+---
+type: reference
+icon: BookText
+title: Web app
+description: The pages of the Spotlight web app by route, what each shows, and what can be changed there rather than only through the resource API.
+---
+
+The web app is served at the Spotlight address. Every page except `/login` and
+`/invites/<token>` is behind sign-in. Routes below are relative to the
+Spotlight address; `<slug>` is the workspace's slug and `<teamId>` a team's id.
+
+The web app shows configuration read-only. Lines, stations, skills,
+integrations, hooks, harness profiles, secrets, pools, trusts and tokens are
+written through the [resource API](/docs/reference/api/resource-api) or the
+[Terraform provider](/docs/reference/terraform/terraform-provider).
+
+## Navigation
+
+The sidebar holds, from the top:
+
+| Item | Leads to |
+| --- | --- |
+| The workspace menu | The signed-in email, a switch between the person's workspaces, "Create or join a workspace", "Download as Terraform" and "Log out". |
+| "Inbox" | The inbox, with the number of unread items. |
+| "Runners" | The runners page, with the number of hosts answering. |
+| "Your teams" | Each team the person can see. A team opens to "Agent", "Lines" (one entry per line), "Runs", "Observability" and "Settings" ("General", "Integrations", "Skills"). |
+
+"Download as Terraform" saves the workspace's
+[export](/docs/reference/api/resource-api#export) as a zip file of a Terraform
+module.
+
+## Pages outside a workspace
+
+| Route | Page | Shows and changes |
+| --- | --- | --- |
+| `/login` | Log in | "Continue with GitHub". |
+| `/workspaces/new` | Create workspace | "Workspace Name", "Workspace URL" and "Team Name", then "Create workspace". See [A workspace created in the web app](/docs/reference/terraform/workspace#a-workspace-created-in-the-web-app). |
+| `/invites/<token>` | Accept an invite | "Accept invitation" joins the team. See [Invites](/docs/reference/roles-and-permissions#invites). |
+| `/github/installed` | GitHub App callback | Connects the installation to the workspace. See [Installation callback](/docs/reference/events/github-events#installation-callback). |
+
+## Workspace pages
+
+| Route | Page | Shows | Can change |
+| --- | --- | --- | --- |
+| `/w/<slug>/inbox` | Inbox | The person's conversations, newest first, under "Open" and "Resolved". | Nothing on the list itself. |
+| `/w/<slug>/inbox/<itemId>` | Inbox item | The task's conversation: notes, the runs that worked it and their steps. | Answer the conversation, with attachments. "Approve" or "Reject" an approval. "Stop" a run still working the task. |
+| `/w/<slug>/runners` | Runners | Each host serving the workspace: its name, standing ("Idle", "Running N of M" or "Not answering"), the pool or trust it came through, and the images it serves (the "Default" marked) with the harnesses installed in each. Runners a push pool provisioned, as "Starting" or "Running". | Nothing. With no host, it shows the install command for a pull pool's token. |
+
+See [The inbox](/docs/reference/app/tasks-runs-and-the-inbox#the-inbox) for what
+an inbox item holds and who may answer it.
+
+## Team pages
+
+All team routes start with `/w/<slug>/team/<teamId>`. The team's own route
+opens its first line, or "Runs" when it has none.
+
+| Route | Page | Shows | Can change |
+| --- | --- | --- | --- |
+| `…/agent` | Agent | The person's chats with the team's agent. | Start a chat under "Plan with the agent". |
+| `…/agent/<chatId>` | Chat | The chat's messages and the tasks the agent proposed. | Say something, with attachments and shared traces. "Create task" or "Dismiss" a proposal. |
+| `…/lines/<lineId>` | Board | The line's stations as sections, with the tasks standing at each. The views "Backlog" (the backlog station), "Active" (work stations, the default) and "Completed" (the completed station). A task shows "Awaiting review" or that it is in progress. | Create a task under "New task" (title, description, attachments, "Create more", "Create task"). Move tasks by dragging, or select several and use "Move to". |
+| `…/lines/<lineId>/stations/<stationId>` | Station | The station's name and description. For a work station: its harness, model and effort, the line's repositories, the "Agent prompt" and the "Skills". | Nothing. |
+| `…/tasks/<taskId>` | Task | Title, description, attachments, and "Activity": every run of the task. Under "Properties": the station, the assignee, "Changes" and "Pull request". | Move the task with the station property. Assign it. "Delete task" from "Task options". |
+| `…/runs` | Runs | The team's runs, grouped by age, filtered by "All" or "Awaiting Review". | Nothing. |
+| `…/runs/<runId>` | Run | The briefing, the run's steps as they happen, and the files it changed. | Say something to the run, with attachments. "Stop" a run a runner holds. |
+| `…/runs/<runId>/changes` | Change stack | The run's change stack: cohorts, layers, each file's changes and notes, and the decisions on each file. | Comment on files and lines, then "Finish review" with a summary and "Comment", "Approve" or "Request changes". The review posts to the task's pull request, or once the task opens one. Dispute a decision by replying to it. |
+| `…/observability` | Observability | The team's task traces in a time range, from "Past 30 min" to "Past 90 days". | Select traces and "Discuss with the agent". |
+| `…/observability/tasks/<taskId>` | Task trace | One task's trace: its runs and their steps on a time scale. | Nothing. |
+| `…/settings/general` | General | "Team name", "Members" with their roles, and "Invited". | "Add a member" by email. Change a member's role. Unsend an invitation. |
+| `…/settings/integrations` | Integrations | "GitHub", and under "Hosts" each integration the team defines. | "Install it on GitHub" or "Manage on GitHub". "Connect to" or "Reconnect to" an integration that links over OAuth. |
+| `…/settings/skills` | Skills | The team's skills. | Nothing. |
+
+Only the task's assignee may answer, say something to a run or stop it. See
+[Roles and permissions](/docs/reference/roles-and-permissions) for who may
+invite, change roles and connect GitHub, and
+[Change stacks and decisions](/docs/reference/app/change-stacks-and-decisions) for
+what a change stack holds.
+
+## Changed only through the resource API
+
+| What | Where it is written |
+| --- | --- |
+| Workspace name, team name, teams after the first | [`spotlight_workspace`](/docs/reference/terraform/workspace), [`spotlight_team`](/docs/reference/terraform/team) |
+| Lines, stations, prompts, reactions, review policy | [`spotlight_line`](/docs/reference/terraform/line) |
+| Skills | [`spotlight_skill`](/docs/reference/terraform/skill) |
+| Harness profiles | [`spotlight_harness_profile`](/docs/reference/terraform/harness-profile) |
+| Integrations and hooks | [`spotlight_integration`](/docs/reference/terraform/integration), [`spotlight_hook`](/docs/reference/terraform/hook) |
+| Secrets | [`spotlight_secret`](/docs/reference/terraform/secret) |
+| Runner pools, runner trusts, workspace runners | [`spotlight_runner_pool`](/docs/reference/terraform/runner-pool), [`spotlight_runner_trust`](/docs/reference/terraform/runner-trust), [`spotlight_workspace_runners`](/docs/reference/terraform/workspace-runners) |
+| Workspace tokens and workspace token trusts | [Workspace tokens](/docs/reference/api/workspace-token), [`spotlight_workspace_token_trust`](/docs/reference/terraform/workspace-token-trust) |

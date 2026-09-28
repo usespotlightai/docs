@@ -1,0 +1,88 @@
+---
+type: how-to
+icon: SquarePen
+title: Send a line's work to particular runners
+description: Label pools and trusts, then name the labels on a line or a station so its runs go only to those runners.
+---
+
+Use this when a line's runs, or one station's, must stay on hosts inside a
+private network, or on hosts with a GPU. You need at least one
+[pull pool](/docs/hosts/create-a-pull-pool) or
+[runner trust](/docs/hosts/admit-hosts-through-a-runner-trust), and a line
+managed through Terraform or the resource API.
+
+## Label the pools and trusts
+
+Give each pool or trust the labels lines will name. A runner matches the labels
+of the pool or trust it claimed work through. A label is lowercase words joined
+by dashes:
+
+```hcl
+resource "spotlight_runner_pool" "office" {
+  workspace_id = data.spotlight_workspace.acme.id
+  key          = "office"
+  labels       = ["vpc-internal"]
+
+  # token and token_version as in "How to create a pull pool"
+}
+
+resource "spotlight_runner_trust" "gpu_cluster" {
+  workspace_id = data.spotlight_workspace.acme.id
+  key          = "gpu-cluster"
+  issuer       = "https://oidc.eks.eu-west-1.amazonaws.com/id/EXAMPLE"
+  subject      = "system:serviceaccount:spotlight:runner"
+  labels       = ["vpc-internal", "gpu"]
+}
+```
+
+In the resource API, the field is `labels` on the pool or trust.
+
+## Name the labels on the line
+
+Set `runners` on the line. A run goes to a runner that matches at least one of
+the labels listed:
+
+```hcl
+resource "spotlight_line" "core_delivery" {
+  team_id = spotlight_team.core.id
+  key     = "delivery"
+  name    = "Delivery"
+  runners = ["vpc-internal"]
+
+  # repositories and stations as before
+}
+```
+
+In the resource API, the line's body takes `"runners": ["vpc-internal"]`.
+
+## Send one station somewhere else
+
+If one station needs other runners, set `runners` on that station. A station
+that names runners uses its own list in place of the line's:
+
+```hcl
+  station {
+    key       = "implementation"
+    name      = "Implementation"
+    harness   = "claude-code"
+    runners   = ["gpu"]
+    passes_to = ["code-review"]
+  }
+```
+
+Stations that name no runners use the line's list. To keep a station inside the
+line's placement too, give the matching pools and trusts a label that means
+both, such as `vpc-internal-gpu`, and name that on the station.
+
+## Check where the work goes
+
+Move a task to the station. On **Runners**, the host that picks up the run
+reads **Running 1 of** its capacity. If no host does, the run stays **Queued**:
+no pool or trust carries a label it names.
+
+## Related
+
+- [Placement](/docs/reference/terraform/line#placement), in the line reference.
+- [Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image),
+  which also narrows where a line's work runs.
+- [Which run goes first](/docs/runs/which-run-goes-first)

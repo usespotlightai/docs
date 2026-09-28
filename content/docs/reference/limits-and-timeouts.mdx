@@ -1,0 +1,149 @@
+---
+type: reference
+icon: BookText
+title: Limits and timeouts
+description: The fixed limits, timeouts, lifetimes and retry schedules in Spotlight, grouped by area.
+---
+
+Values set by configuration show their default and name the setting. Field
+lengths and formats are on each resource's own page.
+
+## Runs
+
+See [Runs](/docs/reference/app/tasks-runs-and-the-inbox#runs).
+
+| Item | Value |
+| --- | --- |
+| Run lease | 60 seconds |
+| Lease renewal by the runner | every 2 seconds |
+| Lease renewal by the host while a sandbox starts | every 20 seconds |
+| Attempts when the runner is lost | 3 in all |
+| Attempts while hooks go unanswered | 6 in all, 5 seconds to 2 minutes apart |
+| Run wall clock on a host | `SPOTLIGHT_RUN_TIMEOUT`, default 6 hours |
+| Stop grace after the wall clock | 30 seconds |
+| Messages a person sends, checked for | every 2 seconds |
+
+## Hosts
+
+See [Host settings](/docs/reference/hosts/host-configuration).
+
+| Item | Value |
+| --- | --- |
+| Presence report | every 20 seconds |
+| Shown as answering | a report within the last 90 seconds |
+| Remembered after the last report | 24 hours |
+| Requirements refresh | every minute |
+| Claim long poll | 10 seconds |
+| Retry after a failed report or claim | about 2 seconds, doubling to about 30 seconds |
+| Sandboxes at once | `SPOTLIGHT_CAPACITY`, default 1 |
+
+## Pools
+
+See [`spotlight_runner_pool`](/docs/reference/terraform/runner-pool).
+
+| Item | Value |
+| --- | --- |
+| Push pool provision call timeout | 10 seconds |
+| Provision attempts | 5 in all, 5 seconds to 2 minutes apart |
+| Time for a provisioned runner to claim | 5 minutes |
+| Time a provisioned runner waits for its work | 5 minutes |
+| `maxRuns` | 1 to 10,000, or no limit |
+
+## Sandboxes
+
+See [Inside a sandbox](/docs/reference/hosts/sandbox#run-phases).
+
+| Item | Value |
+| --- | --- |
+| Sandbox start | 5 minutes |
+| Image inspection | 2 minutes |
+| Harness discovery command | 15 seconds each |
+| Wait for a repository mirror | 15 seconds |
+| One mirror refresh, at most | 30 minutes |
+| Checkouts | 10 minutes for all |
+| `setup` per checkout | 15 minutes |
+| Change stack check | 5 minutes a step, 60 minutes in all; see [Checks](/docs/reference/app/change-stacks-and-decisions#checks) |
+
+## Egress
+
+See [Egress](/docs/reference/hosts/egress).
+
+| Item | Value |
+| --- | --- |
+| Wait for egress to be ready | 90 seconds |
+| Redeeming the run's secrets | 1 minute |
+| Certificate authority lifetime | 48 hours |
+| Upstream connection | 30 seconds |
+| Upstream TLS handshake | 15 seconds |
+| Shutdown grace | 5 seconds |
+
+## Workspace archives
+
+See [Inside a sandbox](/docs/reference/hosts/sandbox#run-phases).
+
+| Item | Value |
+| --- | --- |
+| Packed size | 2 GiB |
+| Unpacked size | 8 GiB |
+| Upload or download | 30 minutes |
+| Kept after its task finishes, moves to another station or stops carrying the conversation | 7 days |
+| Kept after a newer archive replaces it | 1 hour |
+| An archive never sealed, kept | 24 hours |
+
+## Change stacks and decisions
+
+See [Change stacks and decisions](/docs/reference/app/change-stacks-and-decisions).
+
+| Item | Value |
+| --- | --- |
+| Diff | 6 MiB, 2,000 changes |
+| Drafting attempts | 4 in all, 30 minutes each, 30 seconds apart and doubling |
+| Waiting for a runner to check | 60 minutes |
+| Check output kept | 16,000 characters a step |
+
+## Agent commands
+
+See [Agent commands](/docs/reference/cli/agent-commands).
+
+| Item | Value |
+| --- | --- |
+| Request timeout | 2 minutes |
+| Tool input | 8 MiB |
+
+## Hooks
+
+See [`spotlight_hook`](/docs/reference/terraform/hook).
+
+| Item | Value |
+| --- | --- |
+| Request timeout | `timeoutSeconds`, default 10, 1 to 30 |
+| Callback token lifetime | 15 minutes |
+| Response body kept | 16 KiB |
+| Delivery attempts | 8 in all, 2 seconds to 1 hour apart |
+| Causal chain depth | 8 |
+| Firings for the same change | 3 within 10 minutes |
+
+## Tokens and trusts
+
+See [Workspace tokens](/docs/reference/api/workspace-token) and [`spotlight_workspace_token_trust`](/docs/reference/terraform/workspace-token-trust).
+
+| Item | Value |
+| --- | --- |
+| Workspace token lifetime | until `expiresAt`, or no expiry |
+| Token from a workspace token trust | `lifetimeMinutes`, default 15, 1 to 60 |
+
+## Resource API
+
+See [Resource API](/docs/reference/api/resource-api#headers).
+
+| Item | Value |
+| --- | --- |
+| `Idempotency-Key` kept | 24 hours |
+| `Idempotency-Key` length | at most 255 characters |
+
+## Other
+
+| Item | Value |
+| --- | --- |
+| Attachment size per file | 25 MiB; see [Attachments](/docs/reference/app/tasks-runs-and-the-inbox#attachments) |
+| Invite lifetime | 14 days; see [Invites](/docs/reference/roles-and-permissions#invites) |

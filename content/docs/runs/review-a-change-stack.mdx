@@ -1,0 +1,132 @@
+---
+type: how-to
+icon: SquarePen
+title: Review an agent's change stack
+description: Read a run's changes layer by layer, comment on lines, and post your review to the pull request.
+---
+
+A change stack is drafted only for runs at a station with `diffs` set, on a
+line that points at a repository. The built-in Review line's Review station
+has it. For a Delivery task, set `diffs = true` on the station whose
+work you want to review, such as Implementation, as in
+[Change a line's stations](/docs/lines/change-a-lines-stations).
+
+## Open the stack
+
+Open it in one of these ways:
+
+- On the task page, select **Changes** under **Properties**. It shows the lines
+  added and removed, and opens the newest stack for the task.
+- On the task's pull request, open the **Change stack** comment and follow
+  **open the change stack in Spotlight**.
+- On a run's page, add `/changes` to the end of the address. This opens the
+  stack of that run in particular.
+
+Right after a run, the page reads **Drafting the change stack** for a short
+while. If it reads **The change stack could not be drafted**, review the diff
+on the pull request instead; the message under it says why.
+
+When the run changed more than one repository, pills at the top name each one.
+Select a repository to switch to its stack.
+
+## Read it in order
+
+The left pane lists cohorts, each a group of changes that belong together, and
+under each cohort its layers, numbered in the order to read them. Point at a
+cohort's title to see what it is for and how much it changes. When that text
+starts with **Incidental**, the cohort holds changes set aside from the main
+work, such as formatting, and its files start collapsed.
+
+Select the first layer. The right pane shows its title, a summary, and the
+files it touches, each with Spotlight's note on what the layer does to that
+file. Files with more than 800 changed lines start collapsed; select a file's
+name to open or close it, or use **Collapse all** and **Expand all**. When you
+reach the end of a layer, the buttons at the bottom take you to the previous
+or next one.
+
+## Check results
+
+If the station also has a `check` command, the results are on the pull
+request's **Change stack** comment, not on this page. Each layer that failed
+the check is marked `does not build`, and layers still being checked are
+marked `checking`. A line under the list names the command, and says why if
+the layers could not be checked on their own. To set a check up, add `check`
+to the station as in
+[Change a line's stations](/docs/lines/change-a-lines-stations).
+
+## Comment on lines
+
+Point at a line in a file's diff and select the **+** beside its number, or
+drag across line numbers to comment on a range. Write in the box that opens,
+then select **Add to review** (or press Ctrl+Enter, or Cmd+Enter on a Mac). To comment on a whole file, select
+**Comment on this file** at the right of the file's name. To answer
+Spotlight's note on a file, select **Reply…** under it.
+
+A new comment is a **Draft**: only you see it until you finish the review.
+Your own comments carry **Edit** and **Delete**.
+
+## Finish the review
+
+<Steps>
+<Step>
+
+Select **Finish review** at the top right. The number beside it counts your
+drafts.
+
+</Step>
+<Step>
+
+Write a summary in **Leave a summary (optional)** if you want one.
+
+</Step>
+<Step>
+
+Choose **Comment**, **Approve** or **Request changes**. A comment or a request
+for changes needs a summary or at least one draft.
+
+</Step>
+<Step>
+
+Select **Submit review**.
+
+</Step>
+</Steps>
+
+The review goes to the task's pull request, with your line comments on their
+lines. Spotlight posts it as you when it can act for your GitHub account, and
+otherwise as the Spotlight App, signed with your name. GitHub does not let an
+account approve or request changes on a pull request it opened itself; in that
+case the review is posted as a comment that starts with your verdict.
+
+Each comment's label follows it: **On GitHub** once posted (select it to open
+the comment there), **Posts when the pull request opens** while the task has
+none yet, and **Not on GitHub** if posting failed. Point at **Not on GitHub**
+to see why.
+
+## Reply to a comment
+
+Under a comment that has been submitted, select **Reply…**, write, and select
+**Reply**. A reply is not a draft: it goes to the pull request straight away.
+
+## Question a decision
+
+If the station has `decisions` set, the agent's recorded decisions appear
+beside the files they concern, marked **Decision**, each with the reason the
+agent gave. **Detailed reasoning steps** opens the steps of the run the
+decision rests on.
+
+To dispute one, select **Reply…** under the decision, say why you disagree,
+and select **Reply**. Your objection appears under the decision on the pull
+request's decisions comment, and the next run on the task is told about it in
+its briefing.
+
+## Related
+
+- [Reviewing an agent's changes](/docs/runs/reviewing-an-agents-changes):
+  how stacks, checks and decisions are made.
+- [`spotlight_line`](/docs/reference/terraform/line#station-fields): the `diffs`, `decisions` and
+  `check` station fields.
+- [Change stacks and decisions](/docs/reference/app/change-stacks-and-decisions):
+  states, checks, decisions and their limits.
+- [Have Spotlight review pull requests](/docs/integrations/review-pull-requests):
+  have an agent review pull requests on the Review line.
