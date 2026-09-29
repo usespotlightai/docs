@@ -2,109 +2,111 @@
 type: get-started
 icon: GraduationCap
 title: Start guide
-description: Connect your own computer to Spotlight, give a station a task, and answer the question its agent asks you.
+description: Give Spotlight its first task, let an AI agent work on it on your own computer, and answer the question the agent asks you.
 ---
 
-In this tutorial we will set up a Spotlight workspace, connect our computer to
-it as a host, and hand a task to the Triage station of the Delivery line. We
-will watch an agent read the task, answer the question it puts to us, and then
-close the task ourselves.
+In this tutorial we will give Spotlight its first piece of work and watch an AI
+agent pick it up.
+
+In Spotlight, a piece of work is a task. A task moves through a series of
+steps, such as triage, then writing a spec, then building it. Spotlight calls
+the series a line and each step a station. At most stations an AI coding agent
+does the work, then passes the task on to the next station or stops to ask us a
+question.
+
+Spotlight keeps track of the work, and the agents run on a computer we
+provide. Here that will be our own computer, which Spotlight calls a host.
+
+By the end we will have:
+
+- created a workspace
+- set up our computer so agents can run on it
+- given a task to the first station of a line, and answered the question its
+  agent asks us
+
+We use Spotlight at `app.usespotlight.ai`. On a
+[self-hosted Spotlight](/docs/reference/glossary#spotlight-address), use the
+deployment's address wherever this tutorial shows `app.usespotlight.ai`.
 
 ## Before we start
 
 We need:
 
-- Our team's [Spotlight address](/docs/reference/glossary#spotlight-address).
-- A GitHub account. Spotlight signs you in with GitHub.
+- A GitHub account. Spotlight signs us in with GitHub.
 - A Mac or Linux computer with Docker Desktop, OrbStack, Colima or Podman
-  installed and running.
-- An Anthropic API key. The agents in this tutorial run Claude Code, and they
-  use this key to reach the model.
+  installed and running. Spotlight runs each agent inside a container, so the
+  agent can't reach the rest of the computer.
+- An Anthropic API key. The agents in this tutorial are Claude Code, and they
+  need the key to use Claude.
 
 ## Create a workspace
 
+A workspace holds everything Spotlight knows about our organisation: its
+people, its teams, and each team's lines and tasks.
+
 <Steps>
 <Step>
 
-Open Spotlight and click **Continue with GitHub**. Approve the sign-in on
-GitHub.
+Open [app.usespotlight.ai](https://app.usespotlight.ai) and click
+**Continue with GitHub**. Approve the sign-in on GitHub.
 
 </Step>
 <Step>
 
-Spotlight asks us to create a workspace. Enter `Tutorial` as the name. Notice
-that the URL field fills itself in from the name. Click **Continue**.
+Spotlight asks us to name the workspace. Notice that the URL field fills
+itself in from the name. Click **Continue**.
 
 </Step>
 <Step>
 
-Name the first team `Product` and click **Create workspace**.
+Spotlight asks for a first team, a group of people who share lines and an
+inbox. Name it and click **Create workspace**.
 
 </Step>
 </Steps>
 
-Spotlight opens the **Inbox**, and it already holds one item: **Set up your
+Spotlight opens the **Inbox**. This is where anything that needs a person
+lands, such as an agent's question. It already holds one item: **Set up your
 team**. Open it. It lists two steps, **Install the GitHub App** and **Run a
-harness**, and neither has a check mark yet. We will come back to it.
+harness**, and neither has a check mark yet. A harness is the AI coding tool an
+agent runs, Claude Code in this tutorial, and the second step is about giving
+it somewhere to run. We will come back to it.
 
-In the sidebar, under **Your teams**, expand **Product**, then **Lines**. The
-team already has two lines, **Delivery** and **Review**. We will use Delivery.
+In the sidebar, under **Your teams**, expand our team, then **Lines**. The
+team already has two lines. **Delivery** takes a request from Triage through to
+Code Review, and **Review** looks over pull requests. We will use Delivery.
 
-## Create a pool for your computer
+## Let our computer take work from Spotlight
 
-A host takes its work from a [pool](/docs/administration/ways-in-pools-trusts-and-tokens).
-We will create one from the browser's developer console, while signed in.
+Spotlight hands work to a
+[pool](/docs/administration/ways-in-pools-trusts-and-tokens), a group of
+computers that all prove who they are with the same secret token. We will
+create a pool with only our computer in it.
 
 <Steps>
 <Step>
 
-With the **Inbox** page open, open the developer console. In Chrome and Edge,
-press <kbd>Cmd</kbd>+<kbd>Option</kbd>+<kbd>J</kbd> on a Mac or
-<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>J</kbd> on Linux. In Firefox, press
-<kbd>Cmd</kbd>+<kbd>Option</kbd>+<kbd>K</kbd> on a Mac or
-<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>K</kbd> on Linux. If the browser asks you to allow
-pasting, type `allow pasting` and press Enter.
+In Spotlight, click **Runners** in the sidebar. This page lists the computers
+that run agents for the workspace. It has none yet.
 
 </Step>
 <Step>
 
-Paste this and press Enter. It reads the workspace from the address bar,
-creates a pool called `my-computer`, and prints its token:
-
-```js
-const slug = location.pathname.split('/')[2];
-const workspace = await (await fetch(`/api/workspaces/${slug}`)).json();
-const created = await fetch(`/api/resources/workspaces/${workspace.id}/runner-pools`, {
-  method: 'POST',
-  headers: { 'content-type': 'application/json', 'idempotency-key': crypto.randomUUID() },
-  body: JSON.stringify({ key: 'my-computer' }),
-});
-console.log(created.status, created.headers.get('spotlight-pool-token'));
-```
-
-The console prints `201` followed by a long token. Copy the token and keep it
-somewhere safe for the next few minutes. Spotlight shows it only this once.
-
-If the console prints `403` instead, the account is not an owner or admin of
-the workspace. The account that created the workspace is its owner.
-
-</Step>
-<Step>
-
-Go back to **Inbox** and open **Set up your team**. **Run a harness** now has a
-check mark, even though no host is running yet: the workspace now has a pool
-for runs to go to.
+Under **Pool name**, leave `my-computer` and click **Create pool**. The page
+now shows a command that installs Spotlight on a computer, with the pool's
+token already in it. Spotlight shows the token only this once, so keep the
+page open.
 
 </Step>
 </Steps>
 
-## Start a host
+## Start running agents on our computer
 
 <Steps>
 <Step>
 
-Open a terminal on our computer. Save the Anthropic key where the host will
-find it:
+Open a terminal. The agents use Claude, so they need our Anthropic key. Save it
+in the file Spotlight reads on our computer when it starts:
 
 ```bash
 mkdir -p ~/.spotlight
@@ -117,45 +119,54 @@ The commands print nothing.
 </Step>
 <Step>
 
-In Spotlight, click **Runners** in the sidebar. The page says no host is serving
-the workspace and shows an install command. Copy it, replace `<pool token>`
-with the token from the console, and run it in the terminal. It looks like
-this:
+On the **Runners** page, click **Copy command** and run it in the terminal. It
+looks like this, with the pool's token in place of `<pool token>`:
 
 ```bash
-curl -fsSL https://<your Spotlight address>/api/install.sh | SPOTLIGHT_TOKEN=<pool token> sh
+curl -fsSL https://app.usespotlight.ai/api/install.sh | SPOTLIGHT_TOKEN=<pool token> sh
 ```
 
-The script downloads the `spotlight` program and the runner image, then starts
-the host as a service. The image download takes a few minutes. The last line
-reads:
+The command downloads the `spotlight` program and the container image agents
+run in, then sets the program to keep running in the background. The image
+download takes a few minutes. The last line reads:
 
 ```text
-spotlight host: serving https://<your Spotlight address>: this machine shows on the workspace's Runners page once it reports
+spotlight host: serving https://app.usespotlight.ai: this machine shows on the workspace's Runners page once it reports
 ```
 
-If it stops with `no container runtime answered`, start your container runtime
-and run the command again.
+If it stops with `no container runtime answered`, Docker, or whichever of the
+tools above we use, isn't running. Start it and run the command again.
 
 </Step>
 <Step>
 
 Watch the **Runners** page. Within a minute our computer appears under
-**Hosts**, with **Pool my-computer** beneath its name. Under the runner image
-are pills for the harnesses it holds, **Claude Code** among them. Its status
-reads **Idle**.
+**Hosts**, with **Pool my-computer** beneath its name. Below the image name are
+the coding tools it can run, **Claude Code** among them. Its status reads
+**Idle**: it is connected and waiting for work.
+
+</Step>
+<Step>
+
+Go back to **Inbox** and open **Set up your team**. **Run a harness** now has a
+check mark: our computer is ready to take work.
 
 </Step>
 </Steps>
 
 ## Give Triage a task
 
+Triage is the first station of Delivery. Its agent reads a new task and decides
+what it needs next.
+
 <Steps>
 <Step>
 
-Open **Delivery**. The board shows the stations where agents work: Triage, Spec,
-Implementation and Code Review. Click **Backlog** at the top of the board. The
-board now shows only the backlog station.
+Open **Delivery**. The board lists the stations where agents work, one below
+the other: Triage, Spec, Implementation and Code Review. Each is a section with
+its tasks underneath. New tasks start in the backlog, where they wait until
+someone moves them on. Click **Backlog** at the top of the board to see only
+the backlog.
 
 </Step>
 <Step>
@@ -163,22 +174,27 @@ board now shows only the backlog station.
 Click **+** beside **Backlog**. In **Task title**, enter:
 
 ```text
-Make the settings page dark
+Write a welcome note for new teammates
 ```
 
 In **Add description…**, enter:
 
 ```text
-Give the settings page a dark theme, and keep it looking exactly as it does today.
-Ask me which of the two I want before doing anything else.
+Write a short welcome note for the people joining our team next week.
+Only I know who they are and what they'll work on.
 ```
 
 Click **Create task**.
 
+The task needs no code. It leaves out something only we know, and when a
+request leaves something open, Triage's instructions tell its agent to ask a
+person instead of guessing.
+
 </Step>
 <Step>
 
-The task waits in the backlog. Notice that nothing runs while it is there.
+The task waits in the backlog. Notice that nothing happens to it there: no
+agent picks up a task until it reaches a station where agents work.
 
 Point at the task and tick the box that appears beside it. A bar appears at
 the bottom of the board. Click **Move to Triage**.
@@ -186,57 +202,64 @@ the bottom of the board. Click **Move to Triage**.
 </Step>
 <Step>
 
-Click **Active**. The task now stands at **Triage**, marked **In progress**.
-On the **Runners** page, our host reads **Running 1 of 1**.
+Click **Active**. The task now stands at **Triage**, marked **In progress**: an
+agent is working on it. On the **Runners** page, our computer reads **Running 1
+of 1**, one agent running out of the one it has room for.
 
 </Step>
 </Steps>
 
-## Watch the run
+## Watch the agent work
 
 <Steps>
 <Step>
 
 Click the task's title to open it. Under **Activity** there is one row, for
-Triage. Click it.
+Triage. Each row is a run: one session in which an agent works on the task at
+a station. Click it.
 
 </Step>
 <Step>
 
-This is the run. At the top is what the agent was told: Triage's instructions
-and our task. Below that, steps appear as the agent works, each with a verb such
-as **Read** or **Thought**. Nothing arrives for the first moments while the
-sandbox starts.
+At the top is what the agent was told, folded to its first few lines. Click it
+to see all of Triage's instructions, followed by our task. Below that, the
+agent's steps appear as it works, each labelled with what it did, such as
+**Read** or **Thought**. For the first few moments nothing appears, while our
+computer starts a fresh container for the agent.
 
 </Step>
 <Step>
 
-When the agent finishes, its note appears under what Triage said. The note ends
-with a question to us about which of the two we want, because our task asked
-for a contradiction and told it to check with us.
+When the agent finishes, its note appears under what it was told. The note
+ends with a question for us, such as who the new teammates are and what they
+will work on, and the run now reads **Waiting for you**.
+
+If the agent passed the task on to Spec instead of asking, its note says why
+it thought nothing was left open. Open the task, choose **Backlog** in the
+station field under **Properties**, then choose **Triage** in the same field.
 
 </Step>
 </Steps>
 
-Go back to the board. The task still stands at Triage, now marked **Awaiting
-review**. It waits there until we answer.
+Go back to the board. The task is still at Triage, now marked **Awaiting
+review**. It stays there until we answer.
 
 ## Answer the agent
 
 <Steps>
 <Step>
 
-Open **Inbox**. There is a new item, **Make the settings page dark**, in bold
-because it is unread. Open it. It shows the same run, ending with Triage's
-question.
+Open **Inbox**. There is a new item, **Write a welcome note for new
+teammates**, in bold because we haven't read it. Open it. It shows the same
+run, ending with the agent's question.
 
 </Step>
 <Step>
 
-In the box at the bottom that reads **Reply…**, write:
+In the box at the bottom that reads **Reply…**, enter:
 
 ```text
-Keep the page as it is today. This task was only a test.
+Two designers, Sam and Priya, who will work on the mobile app. This task was only a test, so there's no need to pass it on.
 ```
 
 Press Enter.
@@ -244,49 +267,49 @@ Press Enter.
 </Step>
 <Step>
 
-Triage runs again, and the item shows its steps as they happen. Notice that it
-picks up where it left off, with our first request and its own question in front
-of it ([why this works](/docs/runs/how-a-conversation-survives-between-runs)).
-
-Wait until new steps stop appearing and the agent's note shows.
+The agent works again, and the item shows its steps as they happen. When they
+stop, its new note shows how it used our answer.
 
 </Step>
 </Steps>
 
 ## Close the task
 
-We have seen what we came to see, so we will close the task ourselves and keep
-it from travelling further down the line.
+We have seen what we came to see, so we will close the task ourselves before it
+goes any further down the line.
 
 <Steps>
 <Step>
 
 Open the task from the board. On the right, under **Properties**, the first
-field shows the station the task stands at.
+field shows which station the task is at. The panel shows only when the window
+is wide enough.
 
 </Step>
 <Step>
 
-Choose **Completed** from it. If a run was working the task, Spotlight stops
-it. The task moves to the completed station, and the **Runners** page shows the
-host **Idle** again.
+Choose **Completed** from it. If an agent is still working on the task,
+Spotlight stops it. The task moves to Completed, the end of the line, and the
+**Runners** page shows our computer **Idle** again.
 
 </Step>
 </Steps>
 
 ## What we built
 
-We have a workspace with a pool, and a host of our own serving it. Spotlight
-gave that host a task, the host started a sandbox for the run, and Claude Code
-worked the task inside it using our key. The agent asked us a question through the inbox, took our
-answer in the same conversation, and we closed the task by moving it.
+We created a workspace and set up our own computer to run its agents. We gave
+a task to Triage. Spotlight sent the work to our computer, which started a
+fresh container, and Claude Code worked on the task inside it using our
+Anthropic key. The agent asked us a question through the inbox, took our
+answer, and we closed the task by moving it to Completed.
 
 From here:
 
+- [Make the factory yours](/docs/getting-started/make-the-factory-yours) puts
+  the team's lines, which together make up its software factory, in a
+  repository as code, points Delivery at our code and changes how Triage works.
 - [Lines, stations and tasks](/docs/getting-started/lines-stations-and-tasks)
-  explains what happened between the runs.
-- [Point a line at your repositories](/docs/lines/point-a-line-at-your-repositories)
-  gives Delivery code to work on, so Implementation can push a branch and Code
-  Review can open a pull request.
-- [Install a host](/docs/hosts/run-a-host) covers
-  running the host as root, on a server, and with other harnesses.
+  explains how a task moves from station to station, and who decides where it
+  goes next.
+- [Install a host](/docs/hosts/run-a-host) covers running agents on a server,
+  and with coding tools other than Claude Code.

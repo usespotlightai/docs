@@ -109,9 +109,9 @@ run" ends the run with that message and exit code `-1`.
 | Ownership | `/workspace` is given to `agent`. Files `agent` already owns are left alone. | | Fails the run: `hand over workspace: <error>`. |
 | Setup | Each repository's `setup` runs in its checkout as `agent`, with `/bin/sh -c`. | 15 minutes per checkout | Recorded. The run continues. |
 | Harness start | The harness starts in `/workspace` as `agent`, over the Agent Client Protocol. The previous session is resumed, or a new session opens. A session the harness no longer holds opens a new one. | | Fails the run: `start agent: <error>`, `resume the session: <error>` or `open a session: <error>`. |
-| Prompt | The [briefing](#briefing) is sent. Each message a person sends during the turn cancels the turn and is sent next. When a turn ends, messages waiting are sent as the next prompt. With none, the harness stops. | | See below. |
+| Prompt | The [briefing](#briefing) is sent. Each message a person sends during the turn cancels the turn and is sent next. When a turn ends, messages waiting are sent as the next prompt. With none, the run completes, or waits for a person's answer with the harness kept open. | | See below. |
 | Change stacks | For a station with `diffs: true`, each checkout's changes are sent for a change stack. | | Skipped for that checkout. |
-| Archive | When the run carries a conversation, the workspace is packed and stored for the next run. | 2 GiB packed, 8 GiB unpacked; 30 minutes to upload | Skipped. |
+| Archive | When the run carries a conversation, the workspace is packed and stored at the end of every turn. | 2 GiB packed, 8 GiB unpacked; 30 minutes to upload | Skipped. |
 | Completion | The exit code, the handover and the session id are reported. | | |
 
 The host stops the whole sandbox, in any phase, once it has run for
@@ -123,8 +123,8 @@ that fails mid-turn gives `-1`. A person stopping the run ends it as stopped.
 
 When a [harness profile](/docs/reference/terraform/harness-profile) asks before a kind of
 action, the harness's permission request goes to Spotlight, which allows it,
-refuses it, or puts it to a person. A request put to a person cancels the turn
-and ends the run. Requests of other kinds are allowed.
+refuses it, or puts it to a person. A request put to a person cancels the turn,
+and the run waits for the answer. Requests of other kinds are allowed.
 
 | Profile kind | Harness permission kinds |
 | --- | --- |

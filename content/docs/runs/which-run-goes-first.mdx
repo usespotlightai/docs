@@ -2,7 +2,7 @@
 type: concept
 icon: Lightbulb
 title: Which run goes first
-description: How Spotlight orders the runs waiting in a workspace, why a station's place in the line's graph matters and its column position does not, and what else decides where and when a run starts.
+description: How Spotlight orders the runs waiting in a workspace, why a station's place in the line's graph matters and its position on the board does not, and what else decides where and when a run starts.
 ---
 
 At any moment a workspace can have more runs waiting than there are sandboxes
@@ -59,12 +59,12 @@ In a chat a person is typing and waiting for a reply, while a task run works
 while nobody watches. Putting the conversation first, as we see it, keeps the
 wait off the only run someone is sitting in front of.
 
-## Column order is only for people
+## Station order is only for people
 
-The board shows a line's stations as columns in a fixed order, and that order
+The board shows a line's stations as sections in a fixed order, and that order
 has no effect on which run goes first. Priority is worked out from the
-hand-on graph alone, so moving a column would change nothing about the queue.
-That is why the board does not let people reorder columns: the order is part of
+hand-on graph alone, so moving a section would change nothing about the queue.
+That is why the board does not let people reorder sections: the order is part of
 the line's definition, written alongside everything else about it (see the
 [`spotlight_line`](/docs/reference/terraform/line) reference).
 
@@ -89,7 +89,7 @@ runs are running at once. A pool that is full is offered nothing until a run
 ends.
 
 Push pools, which Spotlight calls to start a sandbox for each run, are served
-in the same priority order, less the runs that wear secrets; [The sandbox is
+in the same priority order, less the runs that use secrets; [The sandbox is
 the security boundary](/docs/security/the-sandbox-is-the-security-boundary)
 explains why those wait for a host.
 

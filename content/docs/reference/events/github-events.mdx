@@ -52,7 +52,7 @@ except `github.pull_request.opened`.
 
 ## Marks
 
-| Mark | Worn by | Value |
+| Mark | Held by | Value |
 | --- | --- | --- |
 | `git.pull-request` | The task that opened the pull request, from the moment it opens. | The pull request's URL. |
 | `github.review` | The task that reviews the pull request. | The pull request's URL. |
@@ -70,7 +70,7 @@ A happening names what it concerns: a branch, marks, or both.
 
 Every happening except `opened` and `mentioned` that names a pull request is
 also sent a second time, concerning the `github.review` mark of that pull
-request. The task that wears that mark hears it.
+request. The task that holds that mark hears it.
 
 A branch outside `spotlight/` finds no task by its name. A delivery that names
 neither a branch nor a pull request is refused.
@@ -86,7 +86,7 @@ review. Spotlight chooses a line that:
 
 Lines that name the repository come first, then lines in order of key.
 
-If an unfinished task already wears the pull request's `github.review` mark,
+If an unfinished task already holds the pull request's `github.review` mark,
 that task hears the happening. Otherwise a new task opens on the chosen line:
 
 | Property | Value |

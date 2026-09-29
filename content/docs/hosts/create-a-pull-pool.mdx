@@ -2,7 +2,7 @@
 type: how-to
 icon: SquarePen
 title: Create a pull pool and get its token
-description: Define a pull pool with Terraform or the resource API and keep the token its hosts claim work with.
+description: Define a pull pool from the web app, with Terraform or through the resource API, and keep the token its hosts claim work with.
 ---
 
 A host claims work with its pool's token. To create the pool you need to be an
@@ -16,7 +16,18 @@ you have it.
 Choose a key of lowercase words joined by dashes, such as `build-machines`. It
 can't be changed later.
 
-<Tabs items={['Terraform', 'Resource API']}>
+<Tabs items={['Web app', 'Terraform', 'Resource API']}>
+<Tab value="Web app">
+
+While no host serves the workspace, the **Runners** page offers to create a
+pool. Enter the key under **Pool name** and click **Create pool**. The page
+shows the install command with the token already in it, and **Copy command**
+copies it. The token is shown only this once.
+
+To add a pool once a host is serving, or to rotate a pool's token, use
+Terraform or the resource API.
+
+</Tab>
 <Tab value="Terraform">
 
 This needs Terraform 1.11 or later, because the token is a write-only

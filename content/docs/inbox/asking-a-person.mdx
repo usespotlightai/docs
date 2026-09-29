@@ -6,7 +6,7 @@ description: Why Spotlight's inbox holds conversations and not tasks, who sees a
 ---
 
 An agent in Spotlight works on its own until it needs someone. Then it asks,
-and the task waits. Failures, stopped runs and tool calls that need permission
+and its run pauses until the answer comes. Failures, stopped runs and tool calls that need permission
 end up in the same place, as questions put to a person. How those questions are
 grouped, who gets them, and what counts as an answer each follow from one idea
 about what a person is being asked for.
@@ -79,10 +79,10 @@ harness rules are guardrails; what actually limits an agent is described in
 [The sandbox is the security
 boundary](/docs/security/the-sandbox-is-the-security-boundary).
 
-When an agent reaches one of these, the task asks, the run lets go of it, and
-the approval appears in the assignee's inbox as a conversation with Approve and
-Reject on it. The agent hears from its own call that a person has been asked and
-that it should stop and hand over. The approval lives on the task's own trail
+When an agent reaches one of these, the task asks, and the approval appears in
+the assignee's inbox as a conversation with Approve and Reject on it. The agent
+hears from its own call that a person has been asked and that it should stop
+and hand over. Its run then pauses, and carries on once the person answers. The approval lives on the task's own trail
 rather than in a separate list of pending approvals, because an approval is
 never meaningful on its own: it is a conversation on a task. Keeping it there
 means asking, deciding and using the approval happen in one save of one task,
@@ -104,9 +104,11 @@ station asks afresh. And a decision is made once.
 
 ## A reply is not a decision
 
-A person can answer an approval with words and no decision. The run resumes
-with those words, and the approval stays undecided. Only the Approve or Reject
-action counts, and only when a person takes it.
+A person can answer an approval in the inbox with words and no decision. The
+run carries on with those words, and the approval stays undecided. Words said
+to the run from its page while it waits for a decision are only noted, and do
+not resume it. Only the Approve or Reject action counts, and only when a person
+takes it.
 
 Free text makes a poor record of consent, in the docs' view. "Sure, but not on
 main" is neither a yes nor a no, and a system that guessed would sometimes guess

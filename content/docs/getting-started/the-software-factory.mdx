@@ -1,0 +1,70 @@
+---
+type: concept
+icon: Lightbulb
+title: The software factory
+description: How a team's lines add up to its software factory, why Spotlight leaves the factory for each team to shape, and why a team keeps it as code.
+---
+
+A team's lines together make up its software factory. Each line is a route
+that work takes through stations, and each station says which agent works
+there, what it is told, what it may use and where the work goes next. Spotlight
+runs the factory. What happens at each station, and in what order, is for the
+team to decide.
+
+## Why each team shapes its own
+
+Teams build software in different ways. One triages every request before
+anyone plans it; another writes a failing test before any code. One lets agents
+run whatever they need in their container; another wants to approve each
+command. In the docs' view, a single fixed pipeline would suit one of them and
+get in the way of the rest.
+
+So the parts of the factory are configuration:
+
+- a line's stations, and where each passes its work
+- each station's prompt, the coding tool its agent runs (its harness, such as
+  Claude Code) and the model
+- the skills a station's agents can read, and the tools they can call to reach
+  a team's own APIs
+- the rules that move a task when a check fails or a pull request is merged
+- what agents are allowed to read, edit and run
+
+Most of these are set on a line, in
+[`spotlight_line`](/docs/reference/terraform/line). Permissions are set in a
+[harness profile](/docs/reference/terraform/harness-profile), and skills and
+tools are defined as [skills](/docs/reference/terraform/skill) and
+[integrations](/docs/reference/terraform/integration) that a station names.
+
+A new workspace starts with two lines, Delivery and Review. They are one
+arrangement of these parts, included so the factory works before the team has
+configured anything. A team changes them once it has seen them run, or
+replaces them.
+
+## Why the factory is code
+
+A station's prompt and permissions decide what an agent does in a team's
+repositories. A change to them is the kind a team wants reviewed before it
+happens and traceable afterwards, like a change to the code the agents work on.
+A Terraform configuration in a repository gives both: `terraform plan` shows
+what a pull request will change in Spotlight, and the repository's history is
+the history of the factory.
+
+That is also why the web app shows the factory but doesn't change it. [Why
+configuration lives in
+Terraform](/docs/configuration/why-configuration-lives-in-terraform) covers the
+choice in full, with the alternative that was turned down and what the choice
+costs.
+
+## How a factory improves
+
+A factory improves through the same kind of change. In the docs' view, the
+places where agents struggle show what to change. An agent that keeps asking
+the same question points at a prompt that leaves something open. Work that
+Code Review keeps sending back points at a station missing earlier in the
+line. A team makes the change, applies it, and the next runs show whether it
+helped.
+
+[Make the factory yours](/docs/getting-started/make-the-factory-yours) puts a
+workspace's factory into a repository and makes a first change to it.
+[Lines, stations and tasks](/docs/getting-started/lines-stations-and-tasks)
+explains how a task moves through a line once the factory is running.

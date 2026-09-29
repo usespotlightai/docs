@@ -1,0 +1,251 @@
+---
+type: get-started
+icon: GraduationCap
+title: Make the factory yours
+description: Put your team's software factory in a repository as Terraform, point the Delivery line at your code, change what Triage's agent is told, and watch the next task follow the change.
+---
+
+In this tutorial we will put the software factory of the workspace from the
+[Start guide](/docs/getting-started/start-guide), the lines its team works on,
+into a repository as Terraform, a tool that keeps settings as files of code.
+Then we will give the Delivery line our code, change what Triage's agent is
+told, and watch Triage follow the change on a new task.
+
+The web app only shows the factory; changes to it are made in Terraform
+([why](/docs/configuration/why-configuration-lives-in-terraform)).
+
+## Before we start
+
+We need:
+
+- The workspace from the Start guide, with our computer still connected to it.
+- Terraform 1.11 or later, and `git`.
+- A GitHub repository with a README, and Spotlight's GitHub App installed on
+  it. Once it is installed, **Install the GitHub App** in **Set up your team**
+  has a check mark. [Connect GitHub](/docs/integrations/connect-github) covers
+  the install.
+
+## Put the factory in a repository
+
+<Steps>
+<Step>
+
+In Spotlight, open the workspace menu at the top of the sidebar and choose
+**Download as Terraform**. The browser saves `<slug>-terraform.zip`, where
+`<slug>` is the workspace's short name from its URL.
+
+</Step>
+<Step>
+
+In a terminal, unzip it and make the folder a repository:
+
+```bash
+unzip <slug>-terraform.zip
+cd <slug>-terraform
+git init
+printf '.terraform/\n*.tfstate*\n*.tfvars\n' > .gitignore
+```
+
+Notice `main.tf`, with a `spotlight_line` resource for each line, and the
+`prompts/` folder, with one file for each station's prompt.
+
+</Step>
+<Step>
+
+Terraform needs a workspace token, a key that lets it change the workspace. In
+Spotlight, open the browser's developer console: in Chrome and Edge, press
+<kbd>Cmd</kbd>+<kbd>Option</kbd>+<kbd>J</kbd> on a Mac or
+<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>J</kbd> on Linux; in Firefox,
+<kbd>Cmd</kbd>+<kbd>Option</kbd>+<kbd>K</kbd> or
+<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>K</kbd>. If the browser asks us to
+allow pasting, type `allow pasting` and press Enter.
+
+</Step>
+<Step>
+
+Paste this and press Enter. It issues a token that may change the workspace's
+configuration:
+
+```js
+const slug = location.pathname.split('/')[2];
+const workspace = await (await fetch(`/api/workspaces/${slug}`)).json();
+const issued = await fetch(`/api/resources/workspaces/${workspace.id}/tokens`, {
+  method: 'POST',
+  headers: { 'content-type': 'application/json', 'idempotency-key': crypto.randomUUID() },
+  body: JSON.stringify({ name: 'terraform', scopes: ['configure'] }),
+});
+console.log(issued.status, issued.headers.get('spotlight-workspace-token'));
+```
+
+The console prints `201` followed by the token. Spotlight shows it only this
+once.
+
+</Step>
+<Step>
+
+In the terminal, give Terraform the token and Spotlight's address:
+
+```bash
+export SPOTLIGHT_URL=https://app.usespotlight.ai
+export SPOTLIGHT_API_TOKEN=<workspace token>
+```
+
+</Step>
+<Step>
+
+Run:
+
+```bash
+terraform init
+terraform apply
+```
+
+The plan imports what the workspace already has and changes nothing. Type
+`yes`. The apply ends with:
+
+```text
+Apply complete! Resources: <n> imported, 0 added, 0 changed, 0 destroyed.
+```
+
+</Step>
+<Step>
+
+Commit:
+
+```bash
+git add .
+git commit -m "Put the Spotlight factory under Terraform"
+```
+
+</Step>
+</Steps>
+
+## Give Delivery our code
+
+<Steps>
+<Step>
+
+In `main.tf`, find the `spotlight_line` resource with `key = "delivery"`, and
+add a `repository` block to it with our repository's owner and name:
+
+```hcl
+repository {
+  name = "<owner>/<repository>"
+}
+```
+
+</Step>
+<Step>
+
+Run `terraform apply`. The plan changes only the Delivery line:
+
+```text
+Plan: 0 to add, 1 to change, 0 to destroy.
+```
+
+Type `yes`.
+
+</Step>
+<Step>
+
+In Spotlight, open **Delivery** and click **Triage**. The **Repositories** pill
+on the Station page names our repository. Before the apply it read **No
+repositories**.
+
+</Step>
+</Steps>
+
+## Change what Triage's agent is told
+
+<Steps>
+<Step>
+
+Open `prompts/<team>/delivery/triage.md`, where `<team>` is the folder named
+after our team, and add this line at the end:
+
+```text
+Write your note as three short bullet points: what is being asked, what is still unclear, and which station should take it next.
+```
+
+</Step>
+<Step>
+
+Run `terraform apply`. Again the plan changes only the Delivery line:
+
+```text
+Plan: 0 to add, 1 to change, 0 to destroy.
+```
+
+Type `yes`.
+
+</Step>
+<Step>
+
+Reload the Station page. The prompt now ends with our line.
+
+</Step>
+<Step>
+
+Commit:
+
+```bash
+git commit -am "Ask Triage for a note in three points"
+```
+
+</Step>
+</Steps>
+
+## Watch Triage follow the change
+
+<Steps>
+<Step>
+
+On the Delivery board, click **Backlog**, then **+** beside it. In **Task
+title**, enter:
+
+```text
+Say what the project is for at the top of the README
+```
+
+Click **Create task**. Tick the task, and click **Move to Triage**.
+
+</Step>
+<Step>
+
+Open the task and click the Triage row under **Activity**. Click what the
+agent was told, at the top of the run, to unfold it: Triage's instructions now
+end with our line, just before our task. Notice the agent reading our
+repository as it works.
+
+</Step>
+<Step>
+
+When the agent finishes, its note is three bullet points: what is asked, what
+is unclear, and which station should take it next.
+
+</Step>
+<Step>
+
+Usually the agent passes the task on to Spec, where another agent starts on
+it. If it asks a question instead, answer it in the inbox. Then open the task
+and, under **Properties**, choose **Completed** to close it. Spotlight stops
+any agent still working on it.
+
+</Step>
+</Steps>
+
+## What we built
+
+Our team's factory is now a Terraform configuration in a repository, with a
+commit for each change. Delivery works on our code, and Triage writes the note
+we asked for.
+
+From here:
+
+- [Run Terraform from GitHub Actions without a stored
+  token](/docs/configuration/run-terraform-from-github-actions) plans every pull
+  request to the repository and applies what is merged.
+- [Change a line's stations](/docs/lines/change-a-lines-stations) changes,
+  adds and removes stations.
+- [The software factory](/docs/getting-started/the-software-factory) explains
+  why the factory is kept as code.
