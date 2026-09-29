@@ -53,9 +53,9 @@ trail, and a note's words never change.
 
 | Kind | Written when |
 | --- | --- |
-| `asked` | A station puts the task to a person: a `review` handover, a failed or stopped run, an approval to decide. |
+| `asked` | A station puts the task to a person: a `review` handover, a failed or stopped run, an approval to decide; or a happening stops the run (see [Moves](#moves)). |
 | `passed` | The task moves to another station or is finished. It closes the open conversation. |
-| `answered` | A person answers in the inbox, or a happening with words answers the open conversation. |
+| `answered` | A person answers in the inbox or on the run's page, or a happening with words answers the open conversation. |
 | `said` | A person says something to a running run, a happening arrives that leaves the task where it is, or a different failure arrives while the task awaits review. |
 
 Each note has a voice, `station`, `person` or `world` (a happening), and a
@@ -92,18 +92,25 @@ Any other ending is handled as `review`, with one of these notes:
 | The run was stopped | `Stopped from the console. It is back with you.` |
 | A hook on `handover.giving` refused it | The hook's reason, then `The run said: <note>`. See [`spotlight_hook`](/docs/reference/terraform/hook). |
 
+If a reaction was held back while the run held the task, every ending other
+than a station key moves the task to the latest held-back station instead of
+the ending above. So does a hook stopped for looping while a run holds the
+task: the run is let go, and the `passed` note carries the hook's failure. See
+[Moves](#moves).
+
 ## Moves
 
 | Mover | How | Placed | Effect |
 | --- | --- | --- | --- |
-| Person | Dragging on the board, the selection bar's "Move to", or the task's "Station" property. | Below the task it is dropped under (`afterTaskId`), or at the top. | A `passed` note `Moved to <Station>.` is written. |
-| Reaction | A happening that a line's reaction names. See [`spotlight_line`](/docs/reference/terraform/line). | At the top of the station. | A `passed` note in the world voice, carrying what the happening said. |
+| Person | Dragging on the board, the selection bar's "Move to", or the task's "Station" property. Only from the backlog to a work station, from a work station to the backlog, from anywhere to the completed station, or within one station. Any other move is refused with `422` and `The task cannot be moved from <from> to <to>: <reason>`, where `<reason>` is `a completed task stays completed` or `a person starts a task from the backlog, parks it back there or closes it, and its runs pass it between work stations`. | Below the task it is dropped under (`afterTaskId`), or at the top. | A `passed` note `Moved to <Station>.` is written. |
+| Reaction | A happening that a line's reaction names, when no run holds the task. See [`spotlight_line`](/docs/reference/terraform/line). | At the top of the station. | A `passed` note in the world voice, carrying what the happening said. |
+| Held-back reaction | The run that held the task when a reaction was held back ends other than by passing the task on. | At the top of the station. | A `passed` note in the station voice, `Moved to <Station> when the run ended, because of an event that arrived while it worked.`, followed by the run's note if it gave one; for a failure or a lost runner, that ending's note with its failure; for a missing outcome, that ending's note; for a console stop, `The run was stopped from the console.` |
 
-A move to another station, by either mover:
+A move to another station:
 
 - raises the task's revision;
-- ends the task's run: a queued run is withdrawn, a claimed run is asked to
-  stop;
+- ends the task's run, for a person's move: a queued run is withdrawn, a
+  claimed run is asked to stop, and a waiting or parked run is completed;
 - finishes the task if the station is completed, and unfinishes it otherwise;
 - starts a run if the task is idle at a station with a harness.
 
@@ -117,8 +124,11 @@ When a happening finds a task, the line decides one of these outcomes:
 | Outcome | Condition | Effect |
 | --- | --- | --- |
 | nothing | The task stands at the completed station, or none of the other outcomes applies. | None. |
-| moves | A reaction for the happening, from this station or from any, leads to another station. | The task moves there. |
-| answers | No reaction moves the task, the task awaits review, and the happening carries a person's words. | An `answered` note; a run starts at the same station. |
+| moves | A reaction for the happening, from this station or from any, leads to another station, and no run holds the task. | The task moves there. |
+| held back | As for moves, but a run holds the task, queued, claimed, waiting or parked, and the station is not the completed station. | A `said` note `Heard while a run held the task. It moves to <Station> when the run ends, unless the run passes it on:`, followed by what the happening said. The run is told, and keeps the task. A later `passed` note, or a later `asked` note other than an approval, drops held-back moves; a later `stays` outcome does not. |
+| interrupts | As for moves, but a run holds the task and the station is the completed station, and the task does not await a person's answer to a question (a pending approval does not count). | The run ends as for a person's move, and its later handover is ignored. The task is put to its assignee, or else the person who raised it, with an `asked` note in the world voice: `<What happened> while <Station> was working. Close the task, or reply to carry on.`, where `<What happened>` is the happening's text without its final full stop. |
+| notes while waiting | As for interrupts, but the task already awaits a person's answer to a question. | A `said` note in the world voice, `<What happened> while <Station> was waiting for an answer. Close the task, or reply to carry on.`, added to the open conversation. The run keeps the task, and earlier held-back moves are cancelled. |
+| answers | No reaction leads to another station, the task awaits review, and the happening carries a person's words. | An `answered` note; the run that asked carries on, or else a run starts at the same station. |
 | stays | A reaction applies and leads to the station the task stands at, and the happening does not answer. | A `said` note. |
 
 ## Runs
@@ -131,26 +141,41 @@ A run is one execution of a harness, for a task at a station or for a chat.
 | --- | --- | --- |
 | `queued` | Waiting for a runner. | no |
 | `claimed` | A runner holds it under a 60-second lease that the runner renews. | no |
+| `waiting` | The run asked a person and waits for the answer. Its runner still holds it and keeps the sandbox, for up to the host's `SPOTLIGHT_ANSWER_WAIT`. | no |
+| `parked` | The run asked a person, and its runner let the sandbox go; no runner holds it. An answer puts it back in the queue. | no |
 | `completed` | Ended without a failure. A stopped run ends here. | yes |
 | `failed` | Ended with a failure code. | yes |
 | `superseded` | Withdrawn before it started, or failed after its task had moved on. | yes |
 
-The web app labels a queued run "Queued" and a superseded run "Superseded".
+The web app labels a queued run "Queued", a superseded run "Superseded", and a
+waiting or parked run "Waiting for you".
 
 ### Transitions
 
 | From | To | When |
 | --- | --- | --- |
 | | `queued` | A task or chat is handed to a run. |
-| `queued` | `claimed` | A runner that meets the run's placement claims it. |
+| `queued` | `claimed` | A runner that meets the run's placement claims it, and no other run for the same task and station is claimed or waiting. |
 | `queued` | `failed` | The station gives what cannot be given: a catalog item that does not exist or that the plan does not include, or a harness profile the team does not hold (`refused`). A push pool could not provision a runner (`unprovisioned`). |
 | `queued` | `superseded` | The task moved to another station or was deleted. |
-| `claimed` | `queued` | The lease lapsed, and the run has had fewer than 3 attempts. Or its `run.starting` hooks could not be asked, and the run is handed back to wait. |
-| `claimed` | `completed` | The runner reports an outcome without a failure, or the run is stopped. |
-| `claimed` | `failed` | The harness failed (`exited`). A hook on `run.starting` refused it (`refused`). Its hooks could not be asked after the last hand-back (`hooks-unanswered`). Its lease lapsed on the last attempt (`runner-lost`). |
+| `claimed` | `queued` | The lease lapsed, no stop was asked for, and the run has had fewer than 3 attempts. Or its `run.starting` hooks could not be asked, and the run is handed back to wait. |
+| `claimed` | `waiting` | The turn ended cleanly with the task put to a person, and the runner reports the workspace stored for the turn. Only a task's run waits; a chat run never does. |
+| `waiting` | `claimed` | The person answers while the sandbox is kept, in the inbox, in the task's Slack thread or on the run's page. The answer goes to the same session, in the same attempt. A run asked to stop is not taken up. |
+| `waiting` | `parked` | `SPOTLIGHT_ANSWER_WAIT` passes without an answer, at once when no host started the runner, or the lease lapses. |
+| `claimed` | `queued` | An answer arrives while the runner is setting the run aside after its harness has closed. The run is queued as its next attempt. |
+| `parked` | `queued` | The person answers. The run is queued as its next attempt, and restores the stored workspace wherever it is claimed. |
+| `waiting`, `parked` | `completed` | The task is moved or deleted, or the run is stopped. |
+| `claimed` | `completed` | The runner reports an outcome without a failure, or the run is stopped, or its lease lapses after it was asked to stop. |
+| `claimed` | `failed` | The harness failed (`exited`). A hook on `run.starting` refused it (`refused`). Its hooks could not be asked after the last hand-back (`hooks-unanswered`). Its lease lapsed on the last attempt, and no stop was asked for (`runner-lost`). |
 | `failed` | `superseded` | The run's task has moved on. |
 
-Only a claimed run can be stopped. Only the task's assignee may stop a run or say
+Words said to a run at the station where its task stands idle, when that
+station has a harness, start a new run there that resumes the station's
+session. Words said to a run whose task has left its station are refused with
+`409`, and words from anyone but the task's assignee with `404`.
+Only a claimed, waiting or parked run can be stopped. The web app offers Stop
+only while a run is claimed. Attempts a run spent parked do not count toward
+the 3. Only the task's assignee may stop a run or say
 something to it. See [Steer or stop a run](/docs/runs/steer-or-stop-a-run).
 
 ### Failure codes
@@ -214,14 +239,14 @@ newest first, in the sections "Open" and "Resolved".
 | Flag | Set when |
 | --- | --- |
 | resolved | A `passed` note has closed the conversation. |
-| working | The conversation is open and a run holds the task. |
+| working | The conversation is open, a run holds the task, and the task does not await a person. |
 | unread | An `asked` note in the conversation has not been read. Opening the item reads it. |
 | failure | The conversation holds a failure. Shown as `×N` once it has occurred N times, N being 2 or more. |
 
 Only the task's assignee can answer an item, and only an open conversation can
-be answered. An answer writes an `answered` note, and, where the station has a
-harness, a run starts there, taking up the harness session where the last run
-left it.
+be answered. An answer writes an `answered` note. The run that asked carries
+on; if no run holds the task and the station has a harness, a run starts there,
+taking up the harness session where the last run left it.
 
 ## Approvals
 
@@ -244,7 +269,7 @@ harness permission.
 | --- | --- |
 | `refused` | The call fails with the recorded reason. Nothing is asked. |
 | `granted`, not spent | The call goes ahead, and the grant is spent. |
-| none, or spent | The task is put to a person with an approval. A tool call fails with `<tool> needs a person's approval before it runs, and they have been asked in their inbox.`, followed by an instruction to hand over. A harness permission request cancels the turn and ends the run. |
+| none, or spent | The task is put to a person with an approval. A tool call fails with `<tool> needs a person's approval before it runs, and they have been asked in their inbox.`, followed by an instruction to hand over. A harness permission request cancels the turn, and the run waits for the decision. |
 
 - A grant is spent by one call. The next call asks again.
 - An approval asked at one station does not count at another.

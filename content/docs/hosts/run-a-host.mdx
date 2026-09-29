@@ -18,18 +18,17 @@ claims. Before you install one, have ready:
 
 ## Install the host
 
-Run the install script with the pool's token. Put your
-[Spotlight address](/docs/reference/glossary#spotlight-address) in place of
-`<your Spotlight address>`, as the command on the Runners page does:
+Run the install script with the pool's token, as the command on the Runners
+page does. On a [self-hosted Spotlight](/docs/reference/glossary#spotlight-address), use your deployment's address in place of `app.usespotlight.ai`.
 
 ```bash
-curl -fsSL https://<your Spotlight address>/api/install.sh | SPOTLIGHT_TOKEN=<pool token> sh
+curl -fsSL https://app.usespotlight.ai/api/install.sh | SPOTLIGHT_TOKEN=<pool token> sh
 ```
 
 To run more than one sandbox at a time, set the capacity in the same command:
 
 ```bash
-curl -fsSL https://<your Spotlight address>/api/install.sh | SPOTLIGHT_TOKEN=<pool token> SPOTLIGHT_CAPACITY=4 sh
+curl -fsSL https://app.usespotlight.ai/api/install.sh | SPOTLIGHT_TOKEN=<pool token> SPOTLIGHT_CAPACITY=4 sh
 ```
 
 On Linux, run it as root to install a system service with its configuration
@@ -41,7 +40,7 @@ Colima.
 The script ends with:
 
 ```text
-spotlight host: serving https://<your Spotlight address>: this machine shows on the workspace's Runners page once it reports
+spotlight host: serving https://app.usespotlight.ai: this machine shows on the workspace's Runners page once it reports
 ```
 
 If you install as yourself on Linux and the machine should keep serving after

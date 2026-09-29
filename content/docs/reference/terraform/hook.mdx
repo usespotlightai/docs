@@ -128,6 +128,8 @@ body, parsed as JSON when it is JSON, cut at 16 KiB.
 
 ## Request headers
 
+On a [self-hosted Spotlight](/docs/reference/glossary#spotlight-address), use your deployment's address in place of `app.usespotlight.ai`.
+
 | Header | Value |
 | --- | --- |
 | `content-type` | `application/json` |
@@ -137,7 +139,7 @@ body, parsed as JSON when it is JSON, cut at 16 KiB.
 | `webhook-signature` | With HMAC signing. |
 | `authorization` | `Bearer <token>`, with OIDC signing. |
 | `spotlight-hook` | The hook's key. |
-| `spotlight-callback-url` | `https://<your Spotlight address>/api/hook-callbacks` |
+| `spotlight-callback-url` | `https://app.usespotlight.ai/api/hook-callbacks` |
 | `spotlight-callback-token` | A token for the [callbacks](#callbacks). |
 | `spotlight-cause` | The firing that caused this one, when it has a cause. |
 
@@ -167,7 +169,7 @@ The request carries `Authorization: Bearer <token>`, an ES256 JWT:
 
 | Claim | Value |
 | --- | --- |
-| `iss` | `https://<your Spotlight address>/api` |
+| `iss` | `https://app.usespotlight.ai/api` |
 | `aud` | `signing.oidc.audience` |
 | `sub` | `hook:<workspace id>/<team id>/<hook key>` |
 | `iat`, `exp` | The token lives 5 minutes. |
@@ -178,8 +180,8 @@ The request carries `Authorization: Bearer <token>`, an ES256 JWT:
 
 | Discovery | Address |
 | --- | --- |
-| OpenID configuration | `https://<your Spotlight address>/api/.well-known/openid-configuration` |
-| Keys | `https://<your Spotlight address>/api/.well-known/jwks.json` |
+| OpenID configuration | `https://app.usespotlight.ai/api/.well-known/openid-configuration` |
+| Keys | `https://app.usespotlight.ai/api/.well-known/jwks.json` |
 
 A hook with `oidc` is refused when the deployment has no key to sign hook
 tokens with: `asks for OIDC tokens, but this Spotlight has no key to sign them with; sign with a secret instead, or set HOOK_SIGNING_KEY`.

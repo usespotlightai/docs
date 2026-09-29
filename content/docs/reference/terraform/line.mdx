@@ -213,7 +213,7 @@ repositories sorted by name.
 | --- | --- | --- | --- |
 | `happening` | string | required | What happens, source first, as in `github.checks.failed`. Matches `^[a-z0-9]+(\.[a-z0-9][a-z0-9_-]*)+$`. |
 | `from` | string | none | The key of the station the task must stand at for the reaction to apply. Without it, the reaction applies at any station. |
-| `to` | string | required | The key of the station the task moves to. |
+| `to` | string | required | The key of the station the task moves to. While a run holds the task, the move waits until the run ends, and is dropped if the run passes the task on. A move to the completed station instead stops the run and asks a person, or, if the task awaits an answer to the run's question, adds a note to it. See [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves). |
 
 See [GitHub events](/docs/reference/events/github-events) for the happenings GitHub
 raises. An [integration](/docs/reference/terraform/integration) raises its own.

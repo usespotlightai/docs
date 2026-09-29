@@ -27,7 +27,7 @@ The [install script](/docs/reference/cli/install-script) writes this file with m
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `SPOTLIGHT_URL` | required | The Spotlight address. A trailing `/` is removed. |
+| `SPOTLIGHT_URL` | required | The [Spotlight address](/docs/reference/glossary#spotlight-address): `https://app.usespotlight.ai`, or a self-hosted deployment's address. A trailing `/` is removed. |
 | `SPOTLIGHT_TOKEN` | none | A pull pool's token. |
 | `SPOTLIGHT_TRUST` | none | The id of a runner trust. |
 | `SPOTLIGHT_OIDC_TOKEN_FILE` | none | Path to the workload's OIDC token. Required with `SPOTLIGHT_TRUST`. Read again on every request. |
@@ -41,6 +41,7 @@ Exactly one of `SPOTLIGHT_TOKEN`, or `SPOTLIGHT_TRUST` with
 | Variable | Default | Description |
 | --- | --- | --- |
 | `SPOTLIGHT_CAPACITY` | `1` | Sandboxes the host runs at once. At least `1`. |
+| `SPOTLIGHT_ANSWER_WAIT` | `5m` | A Go duration. How long a sandbox whose run asked a person stays up for the answer, still using its place in `SPOTLIGHT_CAPACITY`, before the run is parked. `0` parks at once. Counts toward `SPOTLIGHT_RUN_TIMEOUT`. |
 | `SPOTLIGHT_RUNNER_IMAGE` | `ghcr.io/usespotlightai/spotlight-runner:<release>`, or `:latest` for a binary built without a release | Comma-separated images the host serves. Each entry is an exact image reference, or a prefix ending in `*` such as `ghcr.io/acme/*`. The first exact entry is the default image, used by every line that names none. If no entry is exact, the built-in default is added. |
 | `SPOTLIGHT_REGISTRY_CONFIG` | `$DOCKER_CONFIG/config.json`, else `~/.docker/config.json` | A Docker config file whose `auths` the host pulls with. Read on every pull. See [registry credentials](#registry-credentials). |
 | `SPOTLIGHT_RUN_TIMEOUT` | `6h` | A Go duration. A sandbox running longer is stopped and destroyed. |
@@ -59,7 +60,8 @@ With `DOCKER_HOST` unset, the host tries these sockets in order:
 
 The sandbox environment, from `SPOTLIGHT_SANDBOX_ENV` and
 `SPOTLIGHT_SANDBOX_PASS`, may not set `SPOTLIGHT_URL`, `SPOTLIGHT_TOKEN`,
-`SPOTLIGHT_TRUST`, `SPOTLIGHT_OIDC_TOKEN_FILE` or `SPOTLIGHT_HANDED`, and may
+`SPOTLIGHT_TRUST`, `SPOTLIGHT_OIDC_TOKEN_FILE`, `SPOTLIGHT_HANDED` or
+`SPOTLIGHT_ANSWER_WAIT`, and may
 not carry the pool token in any variable. The same holds for the egress
 environment.
 
@@ -103,7 +105,7 @@ These variables, when `SPOTLIGHT_SANDBOX_ENV` or `SPOTLIGHT_SANDBOX_PASS`
 gives them a value, are held by egress. The sandbox gets the stand-in
 `spotlight-egress:<NAME>`.
 
-| Variable | Worn toward | Header |
+| Variable | Sent to | Header |
 | --- | --- | --- |
 | `ANTHROPIC_API_KEY` | `api.anthropic.com` | `x-api-key` |
 | `CLAUDE_CODE_OAUTH_TOKEN` | `api.anthropic.com` | `authorization: Bearer` |
@@ -155,9 +157,10 @@ together. Messages include:
 | `SPOTLIGHT_OIDC_TOKEN_FILE names the workload token file, and is required with SPOTLIGHT_TRUST` | Trust without a token file. |
 | `SPOTLIGHT_CAPACITY: "<x>" is not a count of at least 1` | Bad capacity. |
 | `SPOTLIGHT_RUN_TIMEOUT: "<x>" is not a duration such as 6h` | Bad timeout. |
+| `SPOTLIGHT_ANSWER_WAIT: "<x>" is not a duration such as 5m, or 0 to park at once` | Bad answer wait. |
 | `SPOTLIGHT_RUNNER_IMAGE: "<x>" is not an image reference such as ghcr.io/acme/runner:main` | Bad image entry. |
 | `SPOTLIGHT_EGRESS_ALLOW: "*" allows everything; leave the list empty for that` | `SPOTLIGHT_EGRESS_ALLOW=*`. |
-| `the sandbox environment sets <NAME>, which only the host holds` | A sandbox variable names a host credential. |
+| `the sandbox environment sets <NAME>, which only the host holds` | A sandbox variable names a variable only the host sets. |
 | `the sandbox environment carries the pool token in <NAME>` | A sandbox variable holds the pool token. |
 
 The same two problems in the egress environment are prefixed `egress: `.

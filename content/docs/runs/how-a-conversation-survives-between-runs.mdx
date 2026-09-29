@@ -6,6 +6,7 @@ description: Why Spotlight keeps a task's whole workspace between runs, why the 
 ---
 
 Every run gets a fresh sandbox, and the sandbox is destroyed when the run ends
+or is set aside to wait for a person
 (see [Why every run gets a fresh
 sandbox](/docs/hosts/why-every-run-gets-a-fresh-sandbox)). Yet an agent
 that asked a person a question can pick up its conversation once the answer
@@ -33,12 +34,19 @@ Spotlight builds on that. It points each harness's state directory into the
 workspace itself, under `.spotlight/state`, so a run's workspace holds both the
 checkout the agent worked in and the harness's record of the conversation.
 
-At the end of a run, the runner packs that workspace into an archive and
-stores it. The archive belongs to the task at that station (or to a chat, for
-the agent's planning chats). When a later run of the same task at the same
-station starts, for example after a person answers its question or approves a
-tool call, the runner restores the archive into its fresh sandbox before the
-harness starts, and asks the harness to resume the conversation it left.
+When an agent asks a person something, or needs a tool call approved, its run
+pauses instead of ending. Before it waits, the runner packs the workspace into
+an archive and stores it. The host then keeps the sandbox for a few minutes, so
+an answer that comes quickly reaches the agent in the same session. If no
+answer comes in that time, the runner lets the sandbox go and the run is set
+aside. The archive belongs to the task at that station (or to a chat, for the
+agent's planning chats). When the answer arrives, the same run carries on as
+its next attempt: any runner that meets the run's placement restores the
+archive into a fresh sandbox before the harness starts, and asks the harness to
+resume the conversation it left.
+
+The runner also archives the workspace when a run ends, so a later run at the
+same station, while the task is still there, picks up the same way.
 
 The archive holds the whole workspace, checkout included, and the two belong
 together. A conversation refers to files: what the agent read, what it changed,
@@ -68,13 +76,14 @@ cold](/docs/hosts/why-every-run-gets-a-fresh-sandbox#fresh-not-cold)).
 
 Put together, this means a conversation does not belong to a host. The host
 that ran the first turn may be busy, stopped or gone by the time a person
-answers. The next run can go to any host that is able to take it, restores the
-workspace and carries on.
+answers. The run's next attempt, or a later run, can go to any host that is
+able to take it, restores the workspace and carries on.
 
 The alternative would be to send every follow-up run back to the machine that
 started the conversation. That would make an answered question wait for one
 particular machine, and it would lose the conversation whenever that machine
-was replaced. Keeping the workspace in an archive avoids both.
+was replaced. Spotlight keeps the machine only for the few minutes a quick
+answer takes, and past that relies on the archive, which avoids both.
 
 ## When a session is lost
 

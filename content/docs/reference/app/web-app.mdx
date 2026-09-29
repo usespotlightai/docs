@@ -5,14 +5,17 @@ title: Web app
 description: The pages of the Spotlight web app by route, what each shows, and what can be changed there rather than only through the resource API.
 ---
 
-The web app is served at the Spotlight address. Every page except `/login` and
+The web app is served at `https://app.usespotlight.ai`, or at the
+deployment's address on a [self-hosted Spotlight](/docs/reference/glossary#spotlight-address). Every page except `/login` and
 `/invites/<token>` is behind sign-in. Routes below are relative to the
 Spotlight address; `<slug>` is the workspace's slug and `<teamId>` a team's id.
 
 The web app shows configuration read-only. Lines, stations, skills,
 integrations, hooks, harness profiles, secrets, pools, trusts and tokens are
 written through the [resource API](/docs/reference/api/resource-api) or the
-[Terraform provider](/docs/reference/terraform/terraform-provider).
+[Terraform provider](/docs/reference/terraform/terraform-provider). The one
+exception is the first pull pool: the Runners page creates one while no host
+serves the workspace.
 
 ## Navigation
 
@@ -44,7 +47,7 @@ module.
 | --- | --- | --- | --- |
 | `/w/<slug>/inbox` | Inbox | The person's conversations, newest first, under "Open" and "Resolved". | Nothing on the list itself. |
 | `/w/<slug>/inbox/<itemId>` | Inbox item | The task's conversation: notes, the runs that worked it and their steps. | Answer the conversation, with attachments. "Approve" or "Reject" an approval. "Stop" a run still working the task. |
-| `/w/<slug>/runners` | Runners | Each host serving the workspace: its name, standing ("Idle", "Running N of M" or "Not answering"), the pool or trust it came through, and the images it serves (the "Default" marked) with the harnesses installed in each. Runners a push pool provisioned, as "Starting" or "Running". | Nothing. With no host, it shows the install command for a pull pool's token. |
+| `/w/<slug>/runners` | Runners | Each host serving the workspace: its name, standing ("Idle", "Running N of M" or "Not answering"), the pool or trust it came through, and the images it serves (the "Default" marked) with the harnesses installed in each. Runners a push pool provisioned, as "Starting" or "Running". | With no host, an owner or admin can create a pull pool under "Pool name" and "Create pool"; the page then shows the install command with the pool's token in it, once, with "Copy command". It also shows the install command for a token someone already has. A member is told an owner or admin can add a computer. |
 
 See [The inbox](/docs/reference/app/tasks-runs-and-the-inbox#the-inbox) for what
 an inbox item holds and who may answer it.
@@ -58,11 +61,11 @@ opens its first line, or "Runs" when it has none.
 | --- | --- | --- | --- |
 | `…/agent` | Agent | The person's chats with the team's agent. | Start a chat under "Plan with the agent". |
 | `…/agent/<chatId>` | Chat | The chat's messages and the tasks the agent proposed. | Say something, with attachments and shared traces. "Create task" or "Dismiss" a proposal. |
-| `…/lines/<lineId>` | Board | The line's stations as sections, with the tasks standing at each. The views "Backlog" (the backlog station), "Active" (work stations, the default) and "Completed" (the completed station). A task shows "Awaiting review" or that it is in progress. | Create a task under "New task" (title, description, attachments, "Create more", "Create task"). Move tasks by dragging, or select several and use "Move to". |
+| `…/lines/<lineId>` | Board | The line's stations as sections, with the tasks standing at each. The views "Backlog" (the backlog station), "Active" (work stations, the default) and "Completed" (the completed station). A task shows "Awaiting review" or that it is in progress. | Create a task under "New task" (title, description, attachments, "Create more", "Create task"). Reorder tasks within a station by dragging. Start selected backlog tasks, or park selected tasks, with "Move to". |
 | `…/lines/<lineId>/stations/<stationId>` | Station | The station's name and description. For a work station: its harness, model and effort, the line's repositories, the "Agent prompt" and the "Skills". | Nothing. |
-| `…/tasks/<taskId>` | Task | Title, description, attachments, and "Activity": every run of the task. Under "Properties": the station, the assignee, "Changes" and "Pull request". | Move the task with the station property. Assign it. "Delete task" from "Task options". |
+| `…/tasks/<taskId>` | Task | Title, description, attachments, and "Activity": every run of the task. Under "Properties": the station, the assignee, "Changes" and "Pull request". | Start, park or close the task with the station property. Assign it. "Delete task" from "Task options". |
 | `…/runs` | Runs | The team's runs, grouped by age, filtered by "All" or "Awaiting Review". | Nothing. |
-| `…/runs/<runId>` | Run | The briefing, the run's steps as they happen, and the files it changed. | Say something to the run, with attachments. "Stop" a run a runner holds. |
+| `…/runs/<runId>` | Run | The briefing, the run's steps as they happen, and the files it changed. | Say something to the run, with attachments, or send a finished station's work back to it. "Stop" a run a runner holds. |
 | `…/runs/<runId>/changes` | Change stack | The run's change stack: cohorts, layers, each file's changes and notes, and the decisions on each file. | Comment on files and lines, then "Finish review" with a summary and "Comment", "Approve" or "Request changes". The review posts to the task's pull request, or once the task opens one. Dispute a decision by replying to it. |
 | `…/observability` | Observability | The team's task traces in a time range, from "Past 30 min" to "Past 90 days". | Select traces and "Discuss with the agent". |
 | `…/observability/tasks/<taskId>` | Task trace | One task's trace: its runs and their steps on a time scale. | Nothing. |

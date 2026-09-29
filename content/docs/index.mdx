@@ -1,13 +1,13 @@
 ---
 type: overview
 title: Spotlight Docs
-description: Spotlight gives a team's work to coding agents that run on machines the team controls. Guides, concepts and reference for using it.
+description: Spotlight runs your team's software factory, lines of coding agents on machines you control, configured as code. Guides, concepts and reference for building and running it.
 ---
 
 import {
-  BookOpen, Bot, Boxes, CircleAlert, CircleStop, FileCode, FileDiff, GitBranch, GitMerge,
-  GitPullRequest, Inbox, KeyRound, LifeBuoy, Lock, MessageSquare, Network, Plug,
-  Rocket, Server, ServerCog, Shield, ShieldCheck, Signpost, SquareTerminal, Timer,
+  BookOpen, Bot, Boxes, CircleAlert, CircleStop, Factory, FileCode, FileDiff, GitBranch, GitMerge,
+  GitPullRequest, GitPullRequestArrow, Inbox, KeyRound, LifeBuoy, Lock, MessageSquare, Network, Plug,
+  Rocket, Server, ServerCog, Shield, ShieldCheck, Signpost, Sparkles, SquareTerminal, Timer,
   UserPlus, Workflow, Wrench,
 } from 'lucide-react';
 
@@ -15,14 +15,41 @@ import {
   <HomeCard href="/docs/getting-started/start-guide" icon={<Rocket />} title="Start guide">
     Connect your computer, give a station a task, and answer its agent
   </HomeCard>
+  <HomeCard href="/docs/getting-started/make-the-factory-yours" icon={<Factory />} title="Make the factory yours">
+    Keep your factory in a repository, and change how its agents work
+  </HomeCard>
   <HomeCard href="/docs/hosts/run-a-host" icon={<Server />} title="Install a host">
     Set up a machine to start a sandbox for each run it claims
   </HomeCard>
   <HomeCard href="/docs/integrations/connect-github" icon={<GitMerge />} title="Connect GitHub">
     Install the GitHub App that agents clone, push and open pull requests through
   </HomeCard>
-  <HomeCard href="/docs/tasks/plan-work-with-the-agent" icon={<MessageSquare />} title="Plan with the agent">
-    Talk a piece of work through and turn it into tasks
+</HomeSection>
+
+<HomeSection title="Configure your factory">
+  <HomeCard href="/docs/getting-started/the-software-factory" icon={<Factory />} title="The software factory">
+    Why each team shapes its own factory, and keeps it as code
+  </HomeCard>
+  <HomeCard href="/docs/configuration/manage-spotlight-with-terraform" icon={<FileCode />} title="Terraform">
+    Take a workspace over as code, then change it with the provider
+  </HomeCard>
+  <HomeCard href="/docs/configuration/run-terraform-from-github-actions" icon={<GitPullRequestArrow />} title="Terraform in CI">
+    Plan every pull request and apply what is merged, without a stored token
+  </HomeCard>
+  <HomeCard href="/docs/lines/change-a-lines-stations" icon={<Wrench />} title="Stations">
+    Change a station's agent and prompt, or add and remove stations
+  </HomeCard>
+  <HomeCard href="/docs/lines/point-a-line-at-your-repositories" icon={<Boxes />} title="Repositories">
+    The GitHub repositories a line's runs check out
+  </HomeCard>
+  <HomeCard href="/docs/lines/give-stations-a-skill" icon={<Sparkles />} title="Skills">
+    Instructions and files a station's agents can read
+  </HomeCard>
+  <HomeCard href="/docs/integrations/give-stations-a-tool-from-an-http-api" icon={<Plug />} title="Tools">
+    A command agents run to call an HTTP API, without seeing its key
+  </HomeCard>
+  <HomeCard href="/docs/agents/limit-what-agents-may-do" icon={<Bot />} title="Agent permissions">
+    Allow, ask about or deny an agent's reads, edits and commands
   </HomeCard>
 </HomeSection>
 
@@ -53,30 +80,18 @@ import {
   </HomeCard>
 </HomeSection>
 
-<HomeSection title="Set up your team">
-  <HomeCard href="/docs/configuration/manage-spotlight-with-terraform" icon={<FileCode />} title="Terraform">
-    Manage lines, integrations and secrets as code
-  </HomeCard>
-  <HomeCard href="/docs/lines/point-a-line-at-your-repositories" icon={<Boxes />} title="Repositories">
-    The GitHub repositories a line's runs check out
-  </HomeCard>
-  <HomeCard href="/docs/lines/change-a-lines-stations" icon={<Wrench />} title="Stations">
-    Edit, add or remove the stations on a line
-  </HomeCard>
-  <HomeCard href="/docs/integrations/review-pull-requests" icon={<GitPullRequest />} title="Pull request reviews">
-    Review a pull request when someone mentions Spotlight, or as it opens
-  </HomeCard>
-  <HomeCard href="/docs/integrations/give-stations-a-tool-from-an-http-api" icon={<Plug />} title="Tools">
-    A command agents run to call an HTTP API, without seeing its key
-  </HomeCard>
-  <HomeCard href="/docs/agents/limit-what-agents-may-do" icon={<Bot />} title="Agent permissions">
-    Allow, ask about or deny an agent's reads, edits and commands
-  </HomeCard>
+<HomeSection title="Your team">
   <HomeCard href="/docs/administration/invite-people-and-change-roles" icon={<UserPlus />} title="People and roles">
     Invite people and change what they may do
   </HomeCard>
   <HomeCard href="/docs/administration/issue-a-workspace-token" icon={<KeyRound />} title="Workspace tokens">
     Issue a token for Terraform, scripts and CI
+  </HomeCard>
+  <HomeCard href="/docs/integrations/review-pull-requests" icon={<GitPullRequest />} title="Pull request reviews">
+    Review a pull request when someone mentions Spotlight, or as it opens
+  </HomeCard>
+  <HomeCard href="/docs/tasks/plan-work-with-the-agent" icon={<MessageSquare />} title="Plan with the agent">
+    Talk a piece of work through and turn it into tasks
   </HomeCard>
 </HomeSection>
 

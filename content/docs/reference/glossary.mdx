@@ -103,7 +103,7 @@ Spotlight draws from what an agent said during a run at a station with
 
 A proxy container a host starts beside each sandbox. The sandbox reaches the
 network only through it. Egress admits or refuses each connection and
-[wears](#wear) secrets toward the hosts they are bound to. See
+adds secrets to requests to the hosts they are bound to. See
 [Egress](/docs/reference/hosts/egress).
 
 ## Handover
@@ -193,8 +193,8 @@ built in. Only a line with role `review` may carry a review policy
 A handle a task is known by outside Spotlight: a kind and a value, such as
 `git.pull-request` and a pull request's URL. A mark belongs to at most one task
 in a workspace. A finding mark is used to find the task a happening concerns.
-An ambient mark (`find: false`) is [worn](#wear) by the task but never used to
-find it. See [Marks](/docs/reference/events/github-events#marks) and
+An ambient mark (`find: false`) is kept on the task but never used to find
+it. See [Marks](/docs/reference/events/github-events#marks) and
 [`spotlight_integration`](/docs/reference/terraform/integration).
 
 ## Memory
@@ -311,8 +311,8 @@ See [Inside a sandbox](/docs/reference/hosts/sandbox).
 
 ## Secret
 
-A named value a workspace keeps. Spotlight [wears](#wear) it in a request
-header toward the hosts it is bound to; the value never enters a sandbox. See
+A named value a workspace keeps. Spotlight puts it in a request header on
+requests to the hosts it is bound to; the value never enters a sandbox. See
 [`spotlight_secret`](/docs/reference/terraform/secret).
 
 ## Skill
@@ -322,15 +322,19 @@ runs. See [`spotlight_skill`](/docs/reference/terraform/skill).
 
 ## Spotlight address
 
-The URL a team's people, hosts and the Terraform provider reach Spotlight at,
-such as `https://acme.example.com`. Hosts and the provider read it from
-`SPOTLIGHT_URL`. See [Host settings](/docs/reference/hosts/host-configuration#connection).
+The URL a team's people, hosts and the Terraform provider reach Spotlight at.
+Spotlight is offered as a hosted service at `https://app.usespotlight.ai`, and
+these docs use that address throughout. Spotlight can also be self-hosted; on a
+self-hosted Spotlight, use the address your deployment is served at, such as
+`https://spotlight.acme.example`, wherever the docs show `app.usespotlight.ai`.
+Hosts and the provider read it from `SPOTLIGHT_URL`. See
+[Host settings](/docs/reference/hosts/host-configuration#connection).
 
 ## Stand-in
 
 The value `spotlight-egress:<NAME>` a sandbox holds in place of a harness key
 or a run secret. Egress replaces it with the real value in the request header.
-See [What egress wears](/docs/reference/hosts/egress#what-egress-wears).
+See [What egress adds to requests](/docs/reference/hosts/egress#what-egress-adds-to-requests).
 
 ## Station
 
@@ -365,12 +369,6 @@ The record of a task's runs and their steps, with their timings and faults.
 The web app shows it under Observability, `spotlight trace` writes it to a
 file, and a chat message can share up to 20. See
 [spotlight trace](/docs/reference/cli/agent-commands#spotlight-trace).
-
-## Wear
-
-A task wears a mark when it carries it. A request wears a secret when Spotlight
-or egress puts the secret's value in the bound header of a request to a host
-the secret is bound to. See [Bindings](/docs/reference/terraform/secret#bindings).
 
 ## Workspace
 

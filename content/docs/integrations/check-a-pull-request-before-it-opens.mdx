@@ -72,9 +72,10 @@ Every request step must be signed. Pick one:
 
 Keep the `oidc` block above. Each request carries
 `authorization: Bearer <token>`, a short-lived token whose issuer is
-`https://<your Spotlight address>/api`, whose audience is the one you set, and whose
+`https://app.usespotlight.ai/api`, whose audience is the one you set, and whose
 subject is `hook:<workspace id>/<team id>/migrations-need-a-dba`. Check it
-against the keys at `https://<your Spotlight address>/api/.well-known/jwks.json`.
+against the keys at `https://app.usespotlight.ai/api/.well-known/jwks.json`.
+On a [self-hosted Spotlight](/docs/reference/glossary#spotlight-address), use your deployment's address in place of `app.usespotlight.ai`.
 
 If the apply answers that this Spotlight has no key to sign OIDC tokens with,
 use a shared secret, or ask whoever runs Spotlight to set `HOOK_SIGNING_KEY`.

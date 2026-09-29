@@ -66,7 +66,7 @@ The server's request works, and the agent never had the value to leak.
 Without the binding to a host, this would be unsafe. A proxy that swapped in
 a secret on any request would turn into a credential oracle: the agent could
 send the stand-in to a server it controls and receive the real value there.
-Egress wears a secret only toward the hosts it is bound to, only for the run
+Egress adds a secret only to requests to the hosts it is bound to, only for the run
 that was granted it, and a request to anywhere else carries nothing egress
 added.
 
@@ -84,13 +84,13 @@ credential is never near the agent at all.
 
 Harness keys, such as an Anthropic or OpenAI key, belong to whoever runs the
 host. The host keeps them out of the sandbox the same way, as stand-ins, and
-egress wears each one toward its model provider's API.
+egress adds each one to requests to its model provider's API.
 
 Which key may go to which host is the host's own table, and the control plane
 has no say in it. An earlier design let the control plane declare it. An audit
 showed the flaw: a compromised control plane could then aim an operator's key
-at any host it liked. The field was removed, and a host now wears its keys
-only toward the destinations it knows, and only in place of the exact
+at any host it liked. The field was removed, and a host now adds its keys
+only to requests to the destinations it knows, and only in place of the exact
 stand-in. [Give hosts your harness keys](/docs/hosts/give-sandboxes-your-harness-keys) covers setting them.
 
 ## Two users inside the sandbox
@@ -114,12 +114,12 @@ leaves a credential or a route outside what egress controls.
 Cursor's API key still enters the sandbox. The host has no destination for it in
 its table, so it passes into the sandbox as it is. Logins that refresh their own
 tokens, such as Codex signed in with ChatGPT or Claude signed in through a
-browser, are not worn by egress; an API key, or a token from `claude
+browser, are not added by egress; an API key, or a token from `claude
 setup-token`, is. Egress cannot itself sit behind a corporate proxy.
 
 A runner that a push pool provisions has no egress at all. With no egress there
-is nothing to wear a secret, so a run that wears secrets is never offered to a
-push pool, and waits for a host.
+is nothing to add a secret to requests, so a run that uses secrets is never
+offered to a push pool, and waits for a host.
 
 ## What enters a sandbox can be read
 
@@ -127,5 +127,5 @@ Whatever enters a sandbox can be read by the agent in it, which rules out
 [skills](/docs/reference/terraform/skill), prompts, attachments and files baked into an
 image as places for anything secret. A skill, for instance, is text laid into
 the sandbox for the agent to read. If a station needs something the agent
-must not see, it belongs in a secret that egress wears or in a tool that
+must not see, it belongs in a secret that egress adds to requests, or in a tool that
 Spotlight calls.

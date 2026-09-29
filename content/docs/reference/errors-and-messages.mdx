@@ -27,6 +27,12 @@ pages for each command.
 | `The run failed: <message>` | The run failed. The message is one of the [run failure messages](#run-failure-messages). | [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-failed-with-a-message) |
 | `The run was given up on after <n> attempts without finishing.` | The runner was lost on the last attempt. Failure `runner-lost`. | [Failure codes](/docs/reference/app/tasks-runs-and-the-inbox#failure-codes), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-was-given-up-on) |
 | `Stopped from the console. It is back with you.` | A person stopped the run. | [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover), [Steer or stop a run](/docs/runs/steer-or-stop-a-run#stop-the-run) |
+| `The run was stopped from the console.` | A person stopped a run whose task then moved to a held-back station. | [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves) |
+| `Heard while a run held the task. It moves to <Station> when the run ends, unless the run passes it on:` | A reaction's happening arrived while a run held the task. | [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves) |
+| `Moved to <Station> when the run ended, because of an event that arrived while it worked.` | A held-back reaction applied when the run ended without passing the task on, or when a hook was stopped for looping. | [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves) |
+| `<What happened> while <Station> was waiting for an answer. Close the task, or reply to carry on.` | A happening that moves the task to the completed station arrived while the task's run waited on a person's answer to its question (not an approval); earlier held-back moves were cancelled. | [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves) |
+| `<What happened> while <Station> was working. Close the task, or reply to carry on.` | A happening that moves the task to the completed station arrived while a run held it and the task awaited no answer to the run's own question; the run was stopped and the task put to a person. | [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves) |
+| `The task cannot be moved from <from> to <to>: <reason>` | `422`. A person's move other than starting, parking or closing a task. | [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves), [Add a task and move it along a line](/docs/tasks/add-and-move-tasks#move-the-task) |
 | `The run said: <note>` | Follows the hook's reason when a hook on `handover.giving` refused the handover. | [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover), [Refusing an event](/docs/reference/terraform/hook#refusing-an-event) |
 | `This moved on. There is nobody left to tell here.` | Shown on a run page in place of the message box once the task has left the run's station. | [Steer or stop a run](/docs/runs/steer-or-stop-a-run#say-something-to-the-agent) |
 | `<name> needs your approval` | An approval item, from a tool that requires approval or a harness permission a profile sets to ask. | [Approvals](/docs/reference/app/tasks-runs-and-the-inbox#approvals), [Answer the inbox](/docs/inbox/answer-the-inbox#approve-or-reject-a-request) |
@@ -130,15 +136,15 @@ environment, are prefixed `egress: `.
 ### Egress log
 
 Egress logs these. A harness key or run secret it gives a reason for is not
-worn, and requests go without it.
+added, and requests go without it.
 
 | Message | Cause | See |
 | --- | --- | --- |
-| `the host's allow-list does not admit <host>` | The host's egress allow-list does not admit the host the key or secret is worn toward. | [What egress wears](/docs/reference/hosts/egress#what-egress-wears), [Limit where sandboxes can connect](/docs/security/limit-where-sandboxes-connect) |
+| `the host's allow-list does not admit <host>` | The host's egress allow-list does not admit the host the key or secret would be sent to. | [What egress adds to requests](/docs/reference/hosts/egress#what-egress-adds-to-requests), [Limit where sandboxes can connect](/docs/security/limit-where-sandboxes-connect) |
 | `it is empty or more than one line` | A harness key is empty or more than one line. | [Harness keys](/docs/reference/hosts/egress#harness-keys) |
 | `the host holds a key of its own for <host>` | A run secret is bound to a host a harness key already goes to. | [Run secrets](/docs/reference/hosts/egress#run-secrets) |
 | `the host does not let egress read <secret id>` | `SPOTLIGHT_EGRESS_READS` does not admit the AWS Secrets Manager secret. | [Run secrets](/docs/reference/hosts/egress#run-secrets), [Give an MCP server a secret](/docs/security/give-an-mcp-server-a-secret) |
-| `another secret is already worn in <Header> toward <host>` | Another secret is already worn in that header toward the host. | [Run secrets](/docs/reference/hosts/egress#run-secrets) |
+| `another secret is already worn in <Header> toward <host>` | Another secret already goes in that header to the host. | [Run secrets](/docs/reference/hosts/egress#run-secrets) |
 | `it holds more than one line, so it cannot be worn in a header` | A run secret's value is more than one line. | [Run secrets](/docs/reference/hosts/egress#run-secrets) |
 | `find the host's AWS identity: <error>` | No AWS identity. | [Run secrets](/docs/reference/hosts/egress#run-secrets) |
 | `AWS Secrets Manager answered <code>` | An AWS error. | [Run secrets](/docs/reference/hosts/egress#run-secrets) |
@@ -146,7 +152,7 @@ worn, and requests go without it.
 | `AWS Secrets Manager holds no text for it` | The secret has no text value. | [Run secrets](/docs/reference/hosts/egress#run-secrets) |
 | `its value in AWS Secrets Manager is not JSON, so it has no <field> field` | `field` is set, and the value is not JSON. | [Run secrets](/docs/reference/hosts/egress#run-secrets) |
 | `its value in AWS Secrets Manager holds no text at <field>` | The value has no text at `field`. | [Run secrets](/docs/reference/hosts/egress#run-secrets) |
-| `the control plane gave egress nothing to wear` | Spotlight refused to redeem the run's secrets. Egress starts wearing none. | [Egress start failures](/docs/reference/hosts/egress#egress-start-failures) |
+| `the control plane gave egress nothing to wear` | Spotlight refused to redeem the run's secrets. Egress starts with none to add. | [Egress start failures](/docs/reference/hosts/egress#egress-start-failures) |
 | `gave up redeeming the run's secrets; the sandbox goes out wearing none` | Egress could not reach Spotlight within 1 minute. | [Egress start failures](/docs/reference/hosts/egress#egress-start-failures) |
 
 ### Install script
@@ -212,7 +218,7 @@ Each command exits `1` and prints its message on standard error.
 | `The hook <key> failed at <step> (<reason>), and it blocks on failure` | A step of a hook on a before event failed, and its `failure` is `block`. | [Refusing an event](/docs/reference/terraform/hook#refusing-an-event) |
 | `<host>: is not among the hosts this deployment allows outbound calls to` | An integration request, hook request or OAuth token exchange to a host not on the deployment's outbound allow-list. | [Requests](/docs/reference/terraform/integration#requests) |
 | `The workspace holds no secret named <NAME>; define it before anything uses it` | A secret is named but not defined. It fails where it is used. | [Where a secret is named](/docs/reference/terraform/secret#where-a-secret-is-named) |
-| `The <NAME> secret could not be read: this deployment does not read from AWS Secrets Manager` | An integration request made by Spotlight wears a secret from AWS Secrets Manager, and the deployment does not read from it. | [Sources](/docs/reference/terraform/secret#sources) |
+| `The <NAME> secret could not be read: this deployment does not read from AWS Secrets Manager` | An integration request made by Spotlight uses a secret from AWS Secrets Manager, and the deployment does not read from it. | [Sources](/docs/reference/terraform/secret#sources) |
 | `The <NAME> secret holds more than one line, so it cannot be worn in a request header` | The secret's value is more than one line. | [Bindings](/docs/reference/terraform/secret#bindings) |
 
 ### Egress responses

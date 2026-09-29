@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Egress
-description: The proxy beside each sandbox, what it admits and refuses, which secrets it wears toward which hosts, and the responses it returns.
+description: The proxy beside each sandbox, what it admits and refuses, which secrets it adds to requests to which hosts, and the responses it returns.
 ---
 
 Egress is `spotlight egress`, a container a host starts beside each sandbox
@@ -58,18 +58,18 @@ Egress checks the address it connects to, after resolving the host name.
 | --- | --- |
 | Certificate authority | One per run, ECDSA P-256, made by egress. The key stays in egress's memory. |
 | Lifetime | 48 hours |
-| Name constraints | The hosts egress wears something toward. With none, `spotlight.invalid`. |
-| Intercepted | `CONNECT` to port `443` of a host egress wears something toward. HTTP/1.1, TLS 1.2 or later. |
+| Name constraints | The hosts egress adds something to requests to. With none, `spotlight.invalid`. |
+| Intercepted | `CONNECT` to port `443` of a host egress adds something to requests to. HTTP/1.1, TLS 1.2 or later. |
 | Not intercepted | Every other `CONNECT`, tunnelled to the host named in it. |
 | Upstream trust | The egress image's system certificates, plus `SPOTLIGHT_EGRESS_TRUST`. |
 
 A client that pins certificates fails against an intercepted host. Egress
 removes `Proxy-Authorization` from every request it passes on.
 
-## What egress wears
+## What egress adds to requests
 
-Egress [wears](/docs/reference/glossary#wear) a secret: on requests to the host
-the secret is bound to, it replaces a request header with the secret's value.
+On requests to the host a secret is bound to, egress replaces a request header
+with the secret's value.
 
 ### Harness keys
 
@@ -86,7 +86,7 @@ key:
 
 ### Run secrets
 
-A secret an MCP server's environment names, as `secret.<NAME>`, is worn for
+A secret an MCP server's environment names, as `secret.<NAME>`, is added for
 the run. The MCP server gets `spotlight-egress:<NAME>`. Egress replaces the
 bound header on every request to the bound host. See
 [`spotlight_secret`](/docs/reference/terraform/secret) and
@@ -144,8 +144,8 @@ These fail the run with `The sandbox's egress did not start: <error>`:
 | `egress was not ready within 1m30s` | Egress did not publish its authority in time. |
 | `pull the egress image <image>: <error>` | The egress image could not be pulled. |
 
-If Spotlight refuses to redeem the run's secrets, egress starts wearing none
-and logs `the control plane gave egress nothing to wear`. If it cannot reach
+If Spotlight refuses to redeem the run's secrets, egress starts with none to
+add and logs `the control plane gave egress nothing to wear`. If it cannot reach
 Spotlight within 1 minute, it logs
 `gave up redeeming the run's secrets; the sandbox goes out wearing none`.
 
@@ -159,9 +159,9 @@ followed.
 ## Limitations
 
 - Egress cannot itself send through another proxy.
-- A runner a push pool provisions has no egress. A run that wears secrets is
+- A runner a push pool provisions has no egress. A run that uses secrets is
   never reserved for one; it waits for a host.
 - `CURSOR_API_KEY` and any other variable not listed under
   [Harness keys](/docs/reference/hosts/host-configuration#harness-keys) enter the
   sandbox as they are.
-- Logins that refresh their own tokens are not worn.
+- Logins that refresh their own tokens are not added.

@@ -2,131 +2,145 @@
 type: concept
 icon: Lightbulb
 title: What runs where
-description: How Spotlight's work is divided between Spotlight itself and the machines a team runs, why the host only connects outwards, why one binary plays every role, and which credentials each side holds.
+description: What Spotlight does and what runs on a team's own computers, why those computers only ever connect out to Spotlight, and which side holds which credentials.
 ---
 
-Spotlight is a hosted service, and a team uses it at its Spotlight address. The
-agents do not run there. They run on machines the team provides, called hosts,
-each of which starts a fresh sandbox for every run. The line between the two
-sides is drawn around one question: which side needs to hold what, and which
-side can do without it.
+The work is split between two sides. The hosted service at
+`https://app.usespotlight.ai` keeps track of it, and the AI agents that do it
+run on computers the team provides, which Spotlight calls hosts. A self-hosted
+Spotlight is split the same way, at its own
+[address](/docs/reference/glossary#spotlight-address).
+
+A run is one agent's session on one task. For each run, the host starts a
+fresh, isolated container called a sandbox, and deletes it afterwards.
+
+What goes on which side comes down to one question: which side needs to hold
+what, and which side can do without it.
 
 ## Spotlight's side
 
-Spotlight keeps the state that people and machines share. It holds the
-workspace's configuration: lines, stations, profiles, integrations, hooks,
-pools and trusts. It holds the work: tasks, runs and their journals, the inbox,
-chats. It decides which run goes to which host, receives webhooks from GitHub
-and other integrations, and calls the tools that teams define on
-integrations. It keeps the values of secrets stored with it, sealed.
+Spotlight keeps everything that people and computers share:
 
-It also holds the workspace's connection to GitHub. The GitHub App installation
-that can clone and push is Spotlight's, and it is never sent to a runner (more
-on that below).
+- The workspace's configuration: its lines and stations, and the settings
+  around them, such as the agent setups stations use (harness profiles), the
+  connections to other services (integrations), the rules that call a team's
+  own services (hooks), and the ways hosts are allowed to take work (pools and
+  trusts).
+- The work itself: tasks, runs and the record of what each agent did, the
+  inbox, and chats.
 
-What Spotlight does not do is run agents. It starts no sandbox and executes no
-agent's command. Everything an agent does happens on the team's side.
+Spotlight decides which run goes to which host, receives events from GitHub and
+other services, and makes the calls behind the tools a team defines. It also
+keeps the secrets a team stores with it, encrypted.
+
+It holds the workspace's connection to GitHub, too. The GitHub App that can
+clone and push to the team's repositories is installed for Spotlight, and its
+access is never handed to a host ([Where each credential
+stays](#where-each-credential-stays) explains how runs reach GitHub without it).
+
+Every sandbox, and every command an agent runs, is on the team's hosts.
 
 ## The team's side
 
-A host is a machine running `spotlight host`, set up once with a pull pool's
-token or admitted through a runner trust. It asks Spotlight for work, and for
-each run it claims, it starts two containers on a network of their own. One is
-the sandbox, where the runner prepares the checkout and the harness does the
-work. The other is that run's egress, the sandbox's only way out. When the run
-ends, both are destroyed. [Why every run gets a fresh
-sandbox](/docs/hosts/why-every-run-gets-a-fresh-sandbox) is about that
-choice.
+A host is any computer running `spotlight host`. It joins a pool, a group of
+hosts that take a team's runs, either with the pool's token or, on a cloud
+platform, by proving its identity through a runner trust. The host asks
+Spotlight for work, and for each run it takes, it starts two containers on a
+private network of their own:
 
-The host is also where the team's own decisions about its machines live. It
-decides which runner images it will run, which hosts sandboxes may reach, which
-secrets in the team's AWS account egress may read, and where each of its harness
-keys may be sent. None of these is Spotlight's to set; they are the host's
-configuration, on the host ([Host settings](/docs/reference/hosts/host-configuration)).
+- The sandbox, where the code is checked out and the agent does its work.
+- The run's egress, a gatekeeper container that is the sandbox's only way out
+  to the network.
 
-## The host only dials out
+When the run ends, both are deleted. [Why every run gets a fresh
+sandbox](/docs/hosts/why-every-run-gets-a-fresh-sandbox) explains that choice.
+A run that asks a person keeps its sandbox, and its place on the host, for a
+few minutes in case the answer comes quickly. After that it is set aside, and
+any of the team's hosts that can take the run picks it up again when the
+answer arrives.
 
-A host never listens for Spotlight. Every exchange starts with the host:
-it asks for work, reports what it is doing, and asks again. Hook requests
-meant for the team's private network reach it the same way, as calls it claims
-([Hooks and reactions](/docs/integrations/hooks)).
+The host is also where the team's decisions about its own machines live. It
+decides which container images it will run, which servers sandboxes may reach,
+which secrets in the team's AWS account egress may read, and which of the
+team's model API keys it holds. None of these is Spotlight's to set. They are
+settings on the host ([Host settings](/docs/reference/hosts/host-configuration)).
 
-The reason is where hosts have to run. A host that only makes outbound
-connections works behind NAT and on a home network, so a laptop turned server can
-take work as well as a cloud instance can.
+## The host only connects out
 
-Push pools are the one arrangement that goes the other way: Spotlight calls
-the team's provisioning endpoint for each run. [Ways in: pools, trusts and
-tokens](/docs/administration/ways-in-pools-trusts-and-tokens) sets them beside
-hosts.
+Spotlight never connects to a host. Every exchange starts with the host: it
+asks for work, reports what it is doing, and asks again. Calls meant for the
+team's private network, such as a hook to an internal service, reach the host
+the same way: the host collects them ([Hooks and
+reactions](/docs/integrations/hooks)).
 
-## One binary, several roles
+The reason is where hosts need to run. A computer that only makes outgoing
+connections works behind a home router or a company firewall with nothing
+opened up, so a laptop can take work as well as a cloud server can.
 
-Everything Spotlight ships for the team's side is one program, `spotlight`. On
-a host it runs as `spotlight host`. In a sandbox the runner is `spotlight
-runner`, and the agent uses the same program for the commands it reports back
-with, such as `spotlight handover`. Egress is `spotlight egress`, running from
-Spotlight's own image.
+The one exception is a push pool, where Spotlight calls one of the team's
+endpoints to start a machine for each run. [Ways in: pools, trusts and
+tokens](/docs/administration/ways-in-pools-trusts-and-tokens) compares push
+pools with hosts.
 
-Earlier there were separately named programs for these roles. They were merged
-because the names had stopped meaning much, and because keeping the agent away
-from the host program gained nothing. An agent in a sandbox can type `spotlight
-host` or `spotlight runner`. It gets nowhere, because what a role can do
-depends on the credentials it holds, and the agent holds none of them:
+## One program, several roles
 
-- The runner's one-run credential arrives in a file that the runner reads
-  and deletes before the agent starts.
-- The agent runs as a separate user from the runner, and inherits none of the
-  runner's `SPOTLIGHT_` variables.
-- The only thing a host mounts into a sandbox is its read-only git mirrors.
-  There is no container engine socket inside, so nothing in the sandbox can
-  start a container or talk to the host's engine.
-
-A binary is easy to copy. A credential is not, and so the design puts the power
-in the credentials.
+Everything Spotlight ships for the team's side is a single program,
+`spotlight`. On a host it runs as `spotlight host`, inside a sandbox as
+`spotlight runner`, the part that prepares the run and reports back to
+Spotlight, and in the run's egress as `spotlight egress`. The agent uses it for
+the commands it reports with, such as `spotlight handover`.
 
 ## Where each credential stays
 
-The host's own credential, its pool token or its workload identity, stays on
-the host. When it claims a run, Spotlight hands it a credential for that run
-alone, and that is all the sandbox gets. A sandbox that is taken over can act
-as its own run, while the run lasts, and as nothing else. The ways in, and what
-each one costs if it leaks, are in [Ways in: pools, trusts and
-tokens](/docs/administration/ways-in-pools-trusts-and-tokens).
+The host's own credential, its pool token or its cloud identity, stays on the
+host. When the host takes a run, Spotlight gives it a credential for that run
+alone, and that is all the sandbox gets. If someone took over a sandbox, that
+credential would let them do only what the run itself may do, such as report
+on it and reach its line's repositories, and only until the run ends. They
+could not take other runs or act as the host. [Ways in: pools, trusts and
+tokens](/docs/administration/ways-in-pools-trusts-and-tokens) lists each kind
+of access and what it costs if it leaks.
 
-Git goes through Spotlight. The runner serves a git remote on the sandbox's
-loopback address and forwards each request to Spotlight with the run's
-credential, and Spotlight carries it to GitHub with the workspace's own
-installation. Spotlight answers only while the run still holds its task, and
-only for the repositories the run's line names; a change stack check may fetch
-but not push. So the credential that can push to a team's repositories never
-leaves Spotlight, and a run's reach into GitHub ends when the run does.
+Git goes through Spotlight. Every clone, fetch and push from a sandbox goes to
+Spotlight with the run's credential, and Spotlight carries it to GitHub with
+the workspace's own GitHub App. Spotlight answers only while the run still
+holds its task or chat, and only for the repositories the run's line names. So
+the credential that can push to the team's repositories never leaves
+Spotlight, and a run's access to GitHub ends when the run does.
 
-[Harness keys](/docs/reference/glossary#harness-key), the model providers'
-API keys, go the opposite way: they stay with the host and never reach
-Spotlight. A harness key the host knows is held back from the sandbox, which sees
-a stand-in, and the run's egress puts the real key on requests to the model
-provider. The host's own table decides which key may go to which provider. The
-reasons, and the one harness key that still enters the sandbox, are in [The
-sandbox is the security
+Model API keys, such as an Anthropic key, go the other way. Spotlight calls
+them [harness keys](/docs/reference/glossary#harness-key). They stay on the
+host and never reach Spotlight. The sandbox never sees the Anthropic or OpenAI
+keys the host holds: it holds a placeholder, and the run's egress swaps in the
+real key on requests to the model provider. The `spotlight` program fixes which
+provider each of those keys may go to, and the host's list of servers
+sandboxes may reach can still refuse it. The reasons, and the harness keys that
+still enter the sandbox, are in [The sandbox is the security
 boundary](/docs/security/the-sandbox-is-the-security-boundary).
 
-Secrets that an MCP server needs are split between the two sides. A value
-stored with Spotlight is sealed to a key that the run's egress made, so only
-that egress can open it. A value in the team's AWS Secrets Manager is read by
-egress itself, as the host, and Spotlight never sees it at all.
+Secrets needed by an MCP server, a tool server the agent connects to, are split
+between the two sides. A secret stored with Spotlight is encrypted to a key
+that the run's egress created, so only that egress can open it. A secret in the
+team's AWS Secrets Manager is read by egress directly, as the host, and
+Spotlight never sees it.
 
 ## What still passes through Spotlight
 
-The division is about execution and credentials. It does not keep a team's
-code away from Spotlight. Repository contents reach the sandbox through
-Spotlight's git proxy. At the end of a run, the runner stores the task's
-workspace, its checkout and the harness's conversation, in Spotlight's
-storage, so that the next run can restore it on any host ([How a conversation
-survives between runs](/docs/runs/how-a-conversation-survives-between-runs)).
-The run's journal, what the agent said and did, is sent to Spotlight as it
-happens, which is how the run page shows it live.
+The split is about where agents run and who holds which credentials. It
+doesn't keep a team's code away from Spotlight:
 
-A team that weighs where its code may go should count these alongside the
-sandbox. What stays entirely on the team's side is the running of the agent,
-the network the agent can reach, and the harness keys it works with.
+- The code passes through Spotlight on its way to and from GitHub, as above. A
+  host also keeps a copy of each repository it has worked on, refreshed
+  through Spotlight, and lends it to its sandboxes read-only.
+- When a run stops to wait for a person, and when it ends, the runner saves
+  the task's working files (its checked-out code and the agent's conversation)
+  to Spotlight's storage. When the run carries on after the answer, or a later
+  run at that station follows on while the task is still there, it restores
+  them on whichever host takes it up and picks up where it left off ([How a conversation survives between
+  runs](/docs/runs/how-a-conversation-survives-between-runs)).
+- The record of what the agent said and did is sent to Spotlight as it
+  happens, which is how the run page shows it live.
+
+A team weighing where its code may go should count these too. What stays
+entirely on the team's side is where the agent runs, what network it can
+reach, and the model keys it uses.

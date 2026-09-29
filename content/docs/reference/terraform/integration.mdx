@@ -139,7 +139,7 @@ name.
 | Callback | `GET /api/integrations/oauth/callback` | Needs the same signed-in person, still an owner or admin, and the cookie. Exchanges the code and keeps the grant sealed. Redirects to `/w/<slug>/team/<teamId>/settings/integrations?connected=<source>`, or to `/?integration=failed`. |
 
 The `state` expires after 10 minutes. Access tokens are refreshed with the
-grant's refresh token. A request with `auth.oauth2` wears the access token as
+grant's refresh token. A request with `auth.oauth2` sends the access token as
 `Authorization: Bearer`.
 
 ## Webhook
@@ -157,8 +157,10 @@ grant's refresh token. A request with `auth.oauth2` wears the access token as
 
 ### Delivery address
 
+On a [self-hosted Spotlight](/docs/reference/glossary#spotlight-address), use your deployment's address in place of `app.usespotlight.ai`.
+
 ```text
-POST https://<your Spotlight address>/api/webhooks/w/<workspace slug>/t/<team key>/<integration>
+POST https://app.usespotlight.ai/api/webhooks/w/<workspace slug>/t/<team key>/<integration>
 ```
 
 | Status | When |
@@ -242,7 +244,7 @@ its `when` holds.
 | `say` | string | none | An expression. The words carried. |
 | `opens` | object | none | Opens a task when no task is found. See below. |
 | `branch` | string | none | An expression. A branch name that finds a task. |
-| `marks` | array of objects | `[]` | Marks that find a task, or are worn by the task this opens. |
+| `marks` | array of objects | `[]` | Marks that find a task, or are kept on the task this opens. |
 | `attaches` | object | none | Files attached to the task. See below. |
 
 A raise must name a `branch` or at least one mark with `find: true`; otherwise
@@ -254,8 +256,8 @@ Mark:
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `kind` | string | required | The mark kind, source first. |
-| `value` | string | required | An expression. The mark's value. A mark whose value is empty is not worn. |
-| `find` | boolean | `true` | `true`: the mark finds the task the happening is about. `false`: the task this opens wears it, and it never finds a task. |
+| `value` | string | required | An expression. The mark's value. A mark whose value is empty is not kept. |
+| `find` | boolean | `true` | `true`: the mark finds the task the happening is about. `false`: the task this opens keeps it, and it never finds a task. |
 
 `opens`:
 
@@ -268,7 +270,7 @@ Mark:
 | `assignBy.email` | string | none | An expression. The email of the person to assign. |
 
 A task opens only on a line of the team whose role is `onto`, and only when
-the raise wears at least one mark.
+the raise carries at least one mark.
 
 `attaches`:
 
@@ -331,8 +333,8 @@ before it is sent.
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `oauth2.connection` | boolean | `true` | Must be `true`. Wears the team's OAuth access token as `Authorization: Bearer`. |
-| `secrets` | array of strings | none | Secret references, `secret.<NAME>`, at least one when set. Each secret is worn in its bound header toward the hosts it is bound to. A request to any other host goes without it. Redirects are not followed. |
+| `oauth2.connection` | boolean | `true` | Must be `true`. Sends the team's OAuth access token as `Authorization: Bearer`. |
+| `secrets` | array of strings | none | Secret references, `secret.<NAME>`, at least one when set. Each secret is put in its bound header on requests to the hosts it is bound to. A request to any other host goes without it. Redirects are not followed. |
 
 `auth` accepts no other way, and is refused with `authenticates a request by its oauth2 connection, or by the secrets it wears toward the hosts they are bound to`. See [Bindings](/docs/reference/terraform/secret#bindings).
 
@@ -384,7 +386,7 @@ Binding:
 | `do` | string | required | The action to run. It must be defined in `actions`. |
 | `to` | map of name to string | `{}` | Values the action sees in `target`. Sees `task` and `ask`. Each value is an expression. |
 | `routes` | map of name to string | `{}` | Keyed by line key. When `to` gives no `channel`, the value for the task's line is used as `target.channel`. |
-| `mark` | array of objects | `[]` | Marks the task wears after the action succeeds. Sees `response` and `capture`. `find` is not read here. |
+| `mark` | array of objects | `[]` | Marks kept on the task after the action succeeds. Sees `response` and `capture`. `find` is not read here. |
 
 A binding runs only when `target` holds a `channel` or a `thread`. Otherwise
 nothing is sent.
@@ -395,7 +397,7 @@ No expression may read a secret. An expression containing `secret.` or
 `secret[` is refused with `reads a secret's value, which nothing may; name the secret in auth.secrets and Spotlight wears it toward the hosts it is bound to`.
 
 Secret references are not checked against the workspace's secrets when the
-definition is written. A request that wears a missing secret fails with
+definition is written. A request that uses a missing secret fails with
 `The workspace holds no secret named <NAME>; define it before anything uses it`.
 
 ## Errors and warnings
