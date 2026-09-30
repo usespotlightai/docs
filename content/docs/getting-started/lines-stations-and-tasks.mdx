@@ -78,18 +78,20 @@ did. That record is long, and by the third station the part that matters would
 be buried. A note is the previous agent's own summary of what the next one
 needs to know.
 
-Code travels on the task's own branch. Each station's agent starts from a fresh
-copy of the line's repositories with that branch checked out, so it has what
-earlier stations committed and pushed, and nothing they changed without
-pushing. On Delivery, Implementation pushes the branch before it hands on, and
-Code Review works from what was pushed. On Review, the agent starts from the
-pull request under review instead.
+Code travels with the task too. A task keeps one set of working files from its
+first station to its last: the line's repositories with the task's own branch
+checked out. Each station's agent finds them as the last agent left them,
+including changes that were never committed. The branch is how the code reaches
+GitHub. On Delivery, Implementation pushes the branch before it hands on. On
+Review, the files are the pull request under review, not a branch of the task's
+own.
 
-It is different when a station takes a task up again while the task is still
-there, for example after a person answers its question. Then the agent carries
-on its own earlier conversation, with its files as it left them. [How a
+The conversation stays behind. A station's agent carries on its own earlier
+conversation only when the station takes the task up again while the task is
+still there, for example after a person answers its question. [How a
 conversation survives between
-runs](/docs/runs/how-a-conversation-survives-between-runs) covers that.
+runs](/docs/runs/how-a-conversation-survives-between-runs) covers the files and
+the conversation.
 
 ## People and events move tasks too
 

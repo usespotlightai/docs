@@ -2,7 +2,7 @@
 type: concept
 icon: Lightbulb
 title: How a conversation survives between runs
-description: Why Spotlight keeps a task's whole workspace between runs, why the workspace is always /workspace, and why the work survives losing a conversation.
+description: Why Spotlight keeps a task's whole workspace between runs and stations, why the workspace is always /workspace, and why the work survives losing a conversation.
 ---
 
 Every run gets a fresh sandbox, and the sandbox is destroyed when the run ends
@@ -39,19 +39,48 @@ pauses instead of ending. Before it waits, the runner packs the workspace into
 an archive and stores it. The host then keeps the sandbox for a few minutes, so
 an answer that comes quickly reaches the agent in the same session. If no
 answer comes in that time, the runner lets the sandbox go and the run is set
-aside. The archive belongs to the task at that station (or to a chat, for the
-agent's planning chats). When the answer arrives, the same run carries on as
-its next attempt: any runner that meets the run's placement restores the
-archive into a fresh sandbox before the harness starts, and asks the harness to
-resume the conversation it left.
+aside. The archive belongs to the task (or to a chat, for the agent's planning
+chats). When the answer arrives, the same run carries on as its next attempt:
+any runner that meets the run's placement restores the archive into a fresh
+sandbox before the harness starts, and asks the harness to resume the
+conversation it left.
 
-The runner also archives the workspace when a run ends, so a later run at the
-same station, while the task is still there, picks up the same way.
+The runner also archives the workspace when a run ends, so every later run of
+the task starts from it.
 
 The archive holds the whole workspace, checkout included, and the two belong
 together. A conversation refers to files: what the agent read, what it changed,
 what it meant to run next. Restoring the conversation without the checkout it
 was about would hand the agent a memory of work that is no longer there.
+
+## One workspace for the task, one conversation for each station
+
+A task keeps one workspace for as long as it lives. When a station hands the
+task on, the next station's run restores the same archive. Its agent finds the
+checkout as the last agent left it, with changes that were never committed and
+any files written beside the checkout.
+
+The conversation does not cross stations. Each station has its own prompt, and
+may have its own harness and model, so the next station's agent opens a new
+conversation and learns what was done from the notes on the task. A run resumes
+a conversation only at the station that started it, while the task is still
+there. The earlier station's conversation files stay in the workspace, under
+`.spotlight/state`, and nothing resumes them.
+
+The alternative is to give each station a fresh clone of the task's branch.
+Then only what an agent pushed reaches the next station, and work it left
+uncommitted is lost at every handover. Sharing the workspace has a cost of its
+own: a station meant to judge the work independently, such as a review, sees
+whatever the earlier agent left lying there.
+
+A shared workspace could also hand a station things meant for another, so the
+runner clears them at the start of every run: the skills an earlier station was
+given, the files a harness profile laid, and an outcome file an earlier agent
+left. It also brings the checkout's branch up to date with what was pushed to
+it since, for example a fix a person committed on the pull request. If the
+branch has moved both in the workspace and on GitHub, or uncommitted changes
+stand in the way, the runner leaves the workspace as it is and says so in the run's `prepare` step. [Inside a
+sandbox](/docs/reference/hosts/sandbox#run-phases) lists each phase.
 
 ## Why the workspace is always /workspace
 
@@ -87,8 +116,8 @@ answer takes, and past that relies on the archive, which avoids both.
 
 ## When a session is lost
 
-Resume can fail. The archive may have expired, or the harness may not
-recognise the session it is asked for. When the harness says the session is
+Resume can fail. The archive may be gone or fail to restore, or the harness may
+not recognise the session it is asked for. When the harness says the session is
 gone, the runner logs it and starts a new conversation instead of failing the
 run.
 
@@ -116,8 +145,10 @@ beats a loss.
 
 ## What an archive keeps, and for how long
 
-Archives expire once no later run will restore them, and go at once when their
-task or chat is deleted. Past that, the next run at the station starts a new
+A task's archive is kept for as long as the task is unfinished. It expires some
+days after the task finishes, and a chat's some days after the chat leaves its
+conversation. Both go at once when their task or chat is deleted. A run that
+finds no archive starts from a fresh checkout of the task's branch and a new
 conversation, and the notes carry the work as above. How long each kind of
 archive is kept, and how large one may be, is in [Limits and
 timeouts](/docs/reference/limits-and-timeouts#workspace-archives).
