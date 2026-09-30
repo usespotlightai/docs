@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Tasks, runs and the inbox
-description: Task fields and states, notes, handovers and moves, run states and failure codes, the inbox, approvals, chats and attachments.
+description: Task fields and states, notes, handovers and moves, run states, failure codes, configs and station outcomes, the inbox, approvals, chats and attachments.
 ---
 
 A task stands at one station of a line. Runs work it; people answer it from the
@@ -231,6 +231,102 @@ A run whose runner is lost on its last attempt is noted
 `runner-lost`. See [Inside a sandbox](/docs/reference/hosts/sandbox#run-phases) for
 the phase each runner message comes from.
 
+### Config
+
+When a task's run is queued at a station with a harness, it records the
+station's config as it stands then. A chat's run records none.
+
+| Part | Holds |
+| --- | --- |
+| Prompt | The station's prompt. |
+| Harness, model, effort | As the run was given them. |
+| Profile | The harness profile's key, rules, MCP servers and native settings. Each MCP server's environment values are kept as SHA-256 digests. |
+| Image | The line's runner image. |
+| Repositories | Each repository of the line, with its `setup` command. |
+| Skills | Each team and catalog skill given, with a SHA-256 of its files. Built-in skills are left out. |
+| Tools | The tools given. |
+| Decisions, memories | Whether the station drafts them. |
+
+The run's [config fingerprint](/docs/reference/glossary#config-fingerprint) is
+a SHA-256 of these parts. The task's title, description and marks are not part
+of it.
+
+The Run page shows `Config` and the fingerprint's first 8 characters under the
+briefing. When the station's previous run with a recorded config ran another
+config, it adds `Changed since the station's previous run`, linked to that run,
+and one phrase for each change:
+
+| Change | Phrase |
+| --- | --- |
+| Prompt | `Prompt changed`, `Prompt added`, `Prompt removed` |
+| Harness, model, effort, image, profile | `<Part> <was> → <now>`, `<Part> set to <now>`, `<Part> <was> removed` |
+| Profile settings | `Profile <key> settings changed` |
+| Repository | `Repository <name> added`, `Repository <name> removed`, `Repository <name> setup changed` |
+| Skill | `Skill <key> added`, `Skill <key> removed`, `Skill <key> changed` |
+| Tool | `Tool <name> added`, `Tool <name> removed` |
+| Decisions, memories | `Decisions on`, `Decisions off`, `Memories on`, `Memories off` |
+
+For example: `Prompt changed · Effort high → xhigh · Skill reviewing added`.
+
+### Station outcomes
+
+A work station's page lists how its latest 50 ended task runs turned out, under
+"How its runs turned out". Outcomes are recorded as runs end and as people act;
+a run that ended before recording began is not listed.
+
+Only people on the team, the workspace's owners and admins, and workspace
+tokens with the `read` scope can read a station's outcomes. Anyone else is
+answered `404`. See [Team outcomes](/docs/reference/roles-and-permissions#team-outcomes).
+
+Runs are grouped by config: each group holds runs that ran one after another
+with the same fingerprint, and the newest group comes first. A config that
+returns after another starts a new group. Runs without a recorded config are
+grouped as "Before configs were recorded". Each group shows `Config` and the
+short fingerprint, the [changes](#config) from the group before it, a tally,
+and one row per run. With no ended runs, the section reads "No runs yet".
+
+A run's outcome:
+
+| Part | Values | Meaning |
+| --- | --- | --- |
+| Ending | Completed, Failed, Stopped, Abandoned, Withdrawn, Superseded | How the run ended. Stopped: ended after it was asked to stop. Abandoned: given up after its runner was lost on the last attempt. Withdrawn: ended before it started. Superseded: failed after its task had moved on. |
+| Failure | A [failure code](#failure-codes) | Shown beside a Failed or Superseded ending. |
+| Round | Round 1, Round 2, … | 1 plus the number of the task's earlier runs at the station that completed or failed. |
+| Checks | Checks passed, Checks failed, Checks skipped | The station's check on the run's change. See [Checks](/docs/reference/app/change-stacks-and-decisions#checks). |
+| Next | Started, Parked, Closed, Answered, Approved, Refused, Sent back | The first thing a person did with the task in answer to the run, or after it. See the table below. |
+| Delivery | PR open, Merged, PR closed | The state of the task's pull request. |
+| Time, cost | | How long the run took and what it cost, worked out from the run's journal when the page is read. They are not kept with the outcome. |
+
+| Next | The person |
+| --- | --- |
+| Started | Moved the task to a work station. |
+| Parked | Moved the task to the backlog. |
+| Closed | Moved the task to the completed station. |
+| Answered | Answered the conversation without a decision. |
+| Approved | Approved an approval. |
+| Refused | Rejected an approval. |
+| Sent back | Said something to a run of the task while no run held it, other than an answer to an open question that asks for no approval. |
+
+A group's tally:
+
+| Figure | Counts |
+| --- | --- |
+| Runs | The group's runs, less those withdrawn. |
+| Failed | Runs that ended Failed. |
+| Stopped | Runs that ended Stopped. |
+| Checks passed, Checks failed | Runs whose check passed or failed. |
+| Accepted | Runs whose next act was Closed or Approved. |
+| Sent back | Runs whose next act was Sent back or Refused. |
+| Merged | Tasks the group's runs worked whose pull request merged. |
+| Withdrawn | Runs withdrawn before they started. |
+| Cost | The runs' cost together, when all are in one currency. |
+| Median | The median time the runs took. |
+
+A figure other than Runs (Run for one) is shown only when it is above zero, or known for
+Cost and Median. Each row shows the ending, linked to the run, then the
+failure, round, checks, next act, delivery, time, cost and when the run ended.
+A part with no value shows `–`.
+
 ## The inbox
 
 A person's inbox holds every conversation, open or resolved, on every task in
@@ -284,8 +380,17 @@ harness permission.
 
 A chat belongs to a team and to the person who started it. Only that person can
 list or read it. Each chat names its harness, and optionally a model, an
-effort and repositories. A chat message holds up to 20,000 characters and at
-most 20 traces.
+effort, repositories and a work station it is improving. A chat message holds
+up to 20,000 characters and at most 20 traces.
+
+A chat started from a station's "Improve this station" names that station. Its
+agent is briefed to write the station's runs with
+[`spotlight history`](/docs/reference/cli/agent-commands#spotlight-history) and
+to propose one change at a time, as a unified diff of the station's block in
+the line's `spotlight_line` resource and of its prompt file,
+`prompts/<team>/<line>/<station>.md`. The chat reads
+`Improving <station> on <line>`. If the station has left the team's lines,
+the agent is told so.
 
 Chat runs have priority over task runs.
 [Which run goes first](/docs/runs/which-run-goes-first) gives the

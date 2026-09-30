@@ -1,0 +1,68 @@
+---
+type: concept
+icon: Lightbulb
+title: Why each run records its station's config
+description: Why every task run keeps the config its station gave it, what the config fingerprint leaves out, and why the agent proposes changes instead of making them.
+---
+
+A station's config is everything it gives a run: the prompt, the harness,
+model and effort, the harness profile, the line's image, repositories and setup commands,
+skills, tools, and whether decisions and memories are drafted. Changing any of
+it is how a team makes a station better. Whether a change helped only shows in
+the runs after it, and only if each run says which config it ran. So every
+task run records its station's config as it is queued, and a SHA-256 of it,
+the [config fingerprint](/docs/reference/glossary#config-fingerprint).
+
+## Measure before improving
+
+Without that record, a run that went badly after a prompt edit might be down
+to a harder task rather than the edit, and nothing would tell the two apart.
+With it,
+the Station page can set the runs of one config beside the runs of the config
+before it, and a person or an agent can read the difference in how they turned
+out. The agent that improves a station starts from the same record, through
+`spotlight history`, and is told to check what changed between configs before
+it blames the model.
+
+Spotlight has no loop that changes a station with no person in it. In the
+docs' view, such a loop needs this record to measure each change against, so
+the record comes first, and a person still judges each change.
+
+## What the fingerprint leaves out
+
+The fingerprint describes the station alone. A task's title, description and
+marks do not affect it, so runs on different tasks at an
+unchanged station share one fingerprint and can be compared.
+
+Spotlight's built-in skills are left out too. They change with Spotlight
+releases, and counting them would start a new group with every release although
+nothing about the station changed.
+
+Values in a harness profile's MCP server environment are kept only as SHA-256
+digests. A changed value still changes the fingerprint, and the value itself is
+never kept in the recorded config.
+
+## Groups follow changes
+
+The Station page groups runs that ran one after another with the same config.
+A config that comes back after another starts a new group, because the page
+answers what happened after each change.
+
+Outcomes are recorded as they happen: when a run ends or is superseded, when
+its change is checked, when a person acts on the task, and when its pull
+request opens, merges or closes. Nothing is reconstructed afterwards, so a run that ended before
+recording began has no outcome.
+
+## The agent proposes, a person applies
+
+The agent working on a station proposes one change at a time, as a diff of the
+station's Terraform. With one change per config, the next group's tally speaks
+to that change alone. The agent cannot apply it, because a station's
+configuration is written only through Terraform or the resource API.
+[Why configuration lives in Terraform](/docs/configuration/why-configuration-lives-in-terraform)
+gives the reasons.
+
+## Related
+
+- [Improve a station from its runs](/docs/lines/improve-a-station-from-its-runs)
+- [Station outcomes](/docs/reference/app/tasks-runs-and-the-inbox#station-outcomes)

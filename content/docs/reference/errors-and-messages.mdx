@@ -184,6 +184,7 @@ Each command exits `1` and prints its message on standard error.
 | `no run to hand over: spotlight runs inside a Spotlight workspace` | `spotlight handover` without the run's handover variables. | [Environment](/docs/reference/cli/agent-commands#environment) |
 | `no run to answer for: spotlight runs inside a Spotlight workspace` | `spotlight reply` without the run's handover variables. | [Environment](/docs/reference/cli/agent-commands#environment) |
 | `no run to read a trace from: spotlight runs inside a Spotlight workspace` | `spotlight trace` without the run's handover variables. | [Environment](/docs/reference/cli/agent-commands#environment) |
+| `no run to read history from: spotlight runs inside a Spotlight workspace` | `spotlight history` without the run's handover variables. | [Environment](/docs/reference/cli/agent-commands#environment) |
 | `no run to reach for tools in: spotlight runs inside a Spotlight workspace` | `spotlight tools` without the run's handover variables. | [Environment](/docs/reference/cli/agent-commands#environment) |
 | `not this run's token` | The token does not match. | [Common behaviour](/docs/reference/cli/agent-commands#common-behaviour) |
 | `reach Spotlight: <error>` | Spotlight is unreachable. | [Common behaviour](/docs/reference/cli/agent-commands#common-behaviour) |
@@ -200,6 +201,12 @@ Each command exits `1` and prints its message on standard error.
 | `--task is required` | `spotlight trace` without `--task`. | [spotlight trace](/docs/reference/cli/agent-commands#spotlight-trace) |
 | `say which task` | The task id is blank. | [spotlight trace](/docs/reference/cli/agent-commands#spotlight-trace) |
 | `open <path>: <error>` | `--out` could not be created. | [spotlight trace](/docs/reference/cli/agent-commands#spotlight-trace) |
+| `--station is required` | `spotlight history` without `--station`. | [spotlight history](/docs/reference/cli/agent-commands#spotlight-history) |
+| `"<key>" is not a station key` | `--station` holds `/` or `\`, or is `.` or `..`. | [spotlight history](/docs/reference/cli/agent-commands#spotlight-history) |
+| `--last counts runs, so it cannot be <n>` | `--last` is negative. | [spotlight history](/docs/reference/cli/agent-commands#spotlight-history) |
+| `no line in this team has a station "<key>"` | No line of the run's team has the station. | [spotlight history](/docs/reference/cli/agent-commands#spotlight-history) |
+| `line "<line>" has no station "<key>" in this team` | The named line has no such station, or is not the team's. | [spotlight history](/docs/reference/cli/agent-commands#spotlight-history) |
+| `Several lines have a station by that key; name one with --line: <lines>` | More than one of the team's lines has the station. | [spotlight history](/docs/reference/cli/agent-commands#spotlight-history) |
 | `This run was given no tools.` | `spotlight tools` in a run given no tools. | [spotlight tools](/docs/reference/cli/agent-commands#spotlight-tools) |
 | `no such command "<name>"` | No granted tool has that name. | [Agent commands](/docs/reference/cli/agent-commands) |
 | `--<input> is required` | A required input without a default was not given. | [Agent commands](/docs/reference/cli/agent-commands) |

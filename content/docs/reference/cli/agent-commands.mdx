@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Agent commands
-description: The spotlight commands an agent runs inside its sandbox to hand a task over, answer a remark, read a trace, recall and propose team memories, and use tools.
+description: The spotlight commands an agent runs inside its sandbox to hand a task over, answer a remark, read a trace or a station's history, recall and propose team memories, and use tools.
 ---
 
 An agent runs these commands from anywhere in its sandbox. Each one talks to
@@ -13,6 +13,7 @@ only inside a Spotlight run.
 spotlight handover --next <where> [--note <text>]
 spotlight reply --to <handle> [--body <text>] [--resolve]
 spotlight trace --task <id> [--out <path>]
+spotlight history --station <key> [--line <key>] [--fingerprint <fp>] [--outcome <word>] [--since <date>] [--last <n>] [--out <dir>]
 spotlight recall "<words>" | <handle>
 spotlight remember --kind <kind> --body <text> [--path <path>]... [--reach <reach>] [--supersedes <handle>]
 spotlight tools
@@ -43,6 +44,7 @@ fails:
 | `handover` | `no run to hand over: spotlight runs inside a Spotlight workspace` |
 | `reply` | `no run to answer for: spotlight runs inside a Spotlight workspace` |
 | `trace` | `no run to read a trace from: spotlight runs inside a Spotlight workspace` |
+| `history` | `no run to read history from: spotlight runs inside a Spotlight workspace` |
 | `recall` | `no run to recall from: spotlight runs inside a Spotlight workspace` |
 | `remember` | `no run to remember from: spotlight runs inside a Spotlight workspace` |
 | `tools` | `no run to reach for tools in: spotlight runs inside a Spotlight workspace` |
@@ -170,6 +172,77 @@ the file rather than load it whole.
 | `--task is required` | No `--task`. |
 | `say which task` | The task id is blank. |
 | `open <path>: <error>` | `--out` could not be created. |
+
+## spotlight history
+
+```text
+spotlight history --station <key> [--line <key>] [--fingerprint <fp>] [--outcome <word>] [--since <date>] [--last <n>] [--out <dir>]
+```
+
+Writes a station's recent runs to files: the config each ran with, its
+journal, its outcome and its file changes. Only stations on the lines of the
+run's own team are read. Runs are the station's ended task runs, newest first.
+
+| Flag | Required | Description |
+| --- | --- | --- |
+| `--station` | yes | The station's key, matched exactly. |
+| `--line` | no | The line's key. Needed when more than one of the team's lines has a station with that key. |
+| `--fingerprint` | no | Only runs of this config: its full [config fingerprint](/docs/reference/glossary#config-fingerprint). |
+| `--outcome` | no | Only runs whose outcome holds this word. See [Outcome words](#outcome-words). |
+| `--since` | no | Only runs queued at or after this date or time, such as `2026-09-01`. A value that is not a date is ignored. |
+| `--last` | no | How many runs. Default: 30. At most 50; a larger number counts as 50, and `0` as the default. |
+| `--out` | no | The folder to write into. Default: `.spotlight/history` in the current directory. |
+
+The runs are written to `<out>/<station>/`. Anything already in that folder is
+removed first.
+
+| File | Holds |
+| --- | --- |
+| `index.md` | A table of the runs: each run, linked to its journal, then its task's title, config, ending, checks, the next person act, delivery, round, cost, steps, duration and start. A run with no recorded outcome shows its state as its ending. Then each config, oldest first: its fingerprint, its file, how many of the runs used it, what changed since the config before it, and the prompt's change as a diff. |
+| `configs/<fingerprint>.yml` | One config, as YAML: `fingerprint`, `harness`, `model`, `effort`, `image`, `profile`, `repositories`, `skills`, `tools`, `decisions`, `memories` and `prompt`. |
+| `runs/<run>/journal.md` | The run's steps and spans: each step's text, what a tool was given and returned, and each file change as a diff. |
+| `runs/<run>/outcome.json` | `runId`, `taskId`, `fingerprint` and `outcome`, which is `null` for a run with no recorded outcome. |
+| `runs/<run>/diff.patch` | The run's file changes as a unified diff. Written only for a run that changed files. Files are taken in the order they were first changed. A file whose text before and after is over 256,000 characters together, or does not fit in what is left of the run's 1,000,000 characters of changed-file text, is listed as `Omitted <path>: too large to send whole`. |
+
+`index.md` shows a fingerprint by its first 12 characters, and `none` for a run
+with no recorded config.
+
+On success it prints three lines: `Wrote the history to <folder>`, the number
+of runs and configs, and a `grep -r` command to search the folder.
+
+### Outcome words
+
+`--outcome` keeps a run when the word is one of these parts of its outcome. A
+run with no recorded outcome never matches. With `--outcome`, the latest 500
+ended runs are searched, and `--last` of the matches are kept.
+
+| Part | Words |
+| --- | --- |
+| Ending | `completed`, `failed`, `stopped`, `abandoned`, `withdrawn`, `superseded` |
+| Failure code | A failed or superseded run's code, such as `exited`. See [Failure codes](/docs/reference/app/tasks-runs-and-the-inbox#failure-codes). |
+| Next person act | `started`, `parked`, `closed`, `answered`, `approved`, `refused`, `sent-back` |
+| Delivery | `open`, `merged`, `closed` |
+| Checks | `checks-passed`, `checks-failed`, `checks-skipped` |
+
+[Station outcomes](/docs/reference/app/tasks-runs-and-the-inbox#station-outcomes)
+says what each part means.
+
+| Message | Cause |
+| --- | --- |
+| `--station is required` | No `--station`. The usage follows. |
+| `"<key>" is not a station key` | `--station` holds `/` or `\`, or is `.` or `..`. |
+| `--last counts runs, so it cannot be <n>` | `--last` is negative. |
+| `no line in this team has a station "<key>"` | No line of the run's team has the station. |
+| `line "<line>" has no station "<key>" in this team` | The named line has no such station, or is not the team's. |
+| `Several lines have a station by that key; name one with --line: <lines>` | More than one of the team's lines has the station, and no `--line`. |
+| `clear <folder>: <error>` | The earlier history could not be removed. |
+| `make <folder>: <error>` | A folder could not be made. |
+| `write <path>: <error>` | A file could not be written. |
+
+```bash
+spotlight history --station implementation
+spotlight history --line delivery --station implementation --outcome sent-back --last 10
+```
 
 ## spotlight recall
 
