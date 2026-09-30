@@ -53,32 +53,18 @@ Notice `main.tf`, with a `spotlight_line` resource for each line, and the
 <Step>
 
 Terraform needs a workspace token, a key that lets it change the workspace. In
-Spotlight, open the browser's developer console: in Chrome and Edge, press
-<kbd>Cmd</kbd>+<kbd>Option</kbd>+<kbd>J</kbd> on a Mac or
-<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>J</kbd> on Linux; in Firefox,
-<kbd>Cmd</kbd>+<kbd>Option</kbd>+<kbd>K</kbd> or
-<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>K</kbd>. If the browser asks us to
-allow pasting, type `allow pasting` and press Enter.
+Spotlight, open **Tokens** in the sidebar and click **Create a token**. A form
+titled "Create a token" opens.
 
 </Step>
 <Step>
 
-Paste this and press Enter. It issues a token that may change the workspace's
-configuration:
+Under **Name**, type `terraform`. Leave **Configure** selected, which lets the
+token change the workspace's configuration. Notice **Expires after** says
+**90 days**: the token stops working then. Click **Create token**.
 
-```js
-const slug = location.pathname.split('/')[2];
-const workspace = await (await fetch(`/api/workspaces/${slug}`)).json();
-const issued = await fetch(`/api/resources/workspaces/${workspace.id}/tokens`, {
-  method: 'POST',
-  headers: { 'content-type': 'application/json', 'idempotency-key': crypto.randomUUID() },
-  body: JSON.stringify({ name: 'terraform', scopes: ['configure'] }),
-});
-console.log(issued.status, issued.headers.get('spotlight-workspace-token'));
-```
-
-The console prints `201` followed by the token. Spotlight shows it only this
-once.
+The page shows the token under "Copy the terraform token now". Click **Copy
+token**. Spotlight shows it only this once.
 
 </Step>
 <Step>
