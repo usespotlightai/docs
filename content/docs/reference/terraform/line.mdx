@@ -263,7 +263,7 @@ Each is returned with `422` at the path `stations[<n>].judge.<field>`.
 | `fallsBy` | number | none | The measure over the last `over` runs is this much lower than over the `over` runs before. |
 | `above` | number | none | The measure across the last `over` runs is higher than this. |
 | `below` | number | none | The measure across the last `over` runs is lower than this. |
-| `over` | number | required | How many runs are compared. A whole number, at least 1. |
+| `over` | number | required | How many runs are compared, and how many further settled runs an alert that went off must stay within its threshold to recover. A whole number, at least 1. |
 
 In Terraform, `risesBy` and `fallsBy` are `rises_by` and `falls_by`. An alert
 sets exactly one of `risesBy`, `fallsBy`, `above` and `below`; a read returns
@@ -279,8 +279,9 @@ the same kind of threshold: of two alerts that both set `risesBy` on
 `sent_back_rate`, the later one is refused.
 Alerts are not part of the station's config, so changing them does not change
 the [config fingerprint](/docs/reference/glossary#config-fingerprint). Alerts
-are kept with the line, exported, and listed on the Station page. Spotlight
-does not evaluate them.
+are kept with the line, exported, listed on the Station page, and checked as
+the station's runs end and settle. See
+[Station alerts](/docs/reference/app/tasks-runs-and-the-inbox#station-alerts).
 
 | Message | Cause |
 | --- | --- |

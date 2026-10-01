@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Tasks, runs and the inbox
-description: Task fields and states, notes, handovers and moves, run states, failure codes, configs, spend, a station's judge and alerts, station outcomes, the inbox, approvals, chats and attachments.
+description: Task fields and states, notes, handovers and moves, run states, failure codes, configs, spend, a station's judge and alerts, station outcomes, the inbox, grades, station alerts, approvals, chats and attachments.
 ---
 
 A task stands at one station of a line. Runs work it; people answer it from the
@@ -396,7 +396,7 @@ to two decimals. The agreement is Cohen's kappa or Spearman's ρ; see
 With no judged runs, the section reads "No judged runs yet".
 
 Under "Alerts", each alert is one line, in the order written: the measure, then
-its threshold.
+its threshold. See [Station alerts](#station-alerts) for when one goes off.
 
 | Measure | Label |
 | --- | --- |
@@ -415,7 +415,8 @@ its threshold.
 | `below` | `<Measure> below <amount> across the last <over> runs` |
 
 A change in a rate is shown in points, and an amount of a rate as a
-percentage. Cost is shown in dollars. With `over` set to 1, the line reads
+percentage. Cost is shown as a number with no currency, to two decimals, or
+four under 0.01. With `over` set to 1, the line reads
 `the last run` and `the one before`. For example:
 `Sent-back rate up 20 points in the last 20 runs, against the 20 before`.
 
@@ -534,6 +535,70 @@ shown on it.
 - A run is graded on its judge's scale, else on the scale of its station's
   rubric, else yes or no.
 - Nothing waits on a grade. The task moves on as it would without one.
+
+### Station alerts
+
+Spotlight checks a work station's [alerts](/docs/reference/terraform/line#alert-fields)
+when one of its task runs ends or settles, when the pull request of a task it
+worked closes, and when its line is changed or retired. A run counts toward a measure once it has settled for that
+measure:
+
+| Measure | A run has settled when |
+| --- | --- |
+| `sent_back_rate`, `accepted_rate` | Its [next act](#station-outcomes) is known. |
+| `checks_failed_rate` | Its check passed or failed. |
+| `failed_rate` | It ended. |
+| `merged_rate` | Its task's pull request merged or closed unmerged. |
+| `cost_per_run` | Its cost was worked out. |
+
+Only runs that ran count, ordered by when they ended. An alert reads its
+measure over the latest `over` settled runs and, for `risesBy` and `fallsBy`,
+over the `over` settled runs before those. Settled runs are looked for among the
+station's latest runs, 4 times as many as its alerts need at most. Until enough
+runs have settled, or while the measure cannot be worked out, as for cost with
+no priced runs, the alert is not checked.
+
+| Threshold | Goes off when |
+| --- | --- |
+| `risesBy` | The measure over the latest runs, less the measure over the runs before, is at least `risesBy`. |
+| `fallsBy` | The measure over the runs before, less the measure over the latest runs, is at least `fallsBy`. |
+| `above` | The measure is higher than `above`. |
+| `below` | The measure is lower than `below`. |
+
+An alert goes off once per crossing. While it is open, later checks do not
+raise it again. It recovers once it has stayed within its threshold for `over`
+further settled runs: each check whose newest settled run is a new one, and
+finds the alert no longer crossed, counts one, and a check that finds it
+crossed again starts the count over. For `over` settled runs after it
+recovers, a crossing reopens the same alert, and its inbox item, instead of
+raising a new one. After that, a crossing raises a new alert.
+
+If an open alert's amount or `over` is changed, the next check judges it by
+the new values: crossed, it stays open with the new reading; otherwise the
+check counts toward its recovery. An open alert whose measure or threshold is
+removed from the station recovers at once, at the station's next check, and a
+crossing after that raises a new alert. Changing or retiring a line checks
+each of its stations, those it had and those it has. Deleting a task forgets
+the alerts raised on it.
+
+When an alert goes off, the task of the run that set off the check gets an
+inbox item: the run that ended or settled, or, when a pull request closed, the
+task's latest run at the station. The item reads
+`A station crossed one of its alert thresholds.` and, once the alert recovers,
+`The station is back within its alert.` A reopened alert opens its item again. It reaches the task's assignee, or
+everyone on the team when the task has no assignee. It never reaches a person
+who is neither on the team nor an owner or admin of the workspace, and to
+anyone else it is not found. Nothing waits on it.
+
+The item shows:
+
+| Part | Shows |
+| --- | --- |
+| Heading | `An alert went off at <station> on <day>`, then the alert as on the Station page, with cost in the currency of the station's runs. |
+| Reading | `It was <value> across the last <over> runs.`, or for `risesBy` and `fallsBy`, `It was <value> in the last <over> runs, against <value> in the <over> before.` |
+| Recovery | `Back within it since <day>.`, once the alert has recovered. |
+| Chart | "Run by run, over the last `<over>` runs each time": the measure over the `over` settled runs up to each run, from 2 × `over` runs before the run that crossed it to `over` runs after. It marks that run, and the threshold for `above` and `below` or the measure over the runs before for `risesBy` and `fallsBy`. It is drawn from the station's latest 500 runs; without that run among them, it reads `The runs around it are no longer kept, so there is nothing to chart.` |
+| Links | "Open the station"; "See it on Insights", which opens the [Stations tab](/docs/reference/app/insights#stations) at the station, over the shortest period that covers the day it went off; and "Improve this station". |
 
 ## Approvals
 

@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Insights
-description: The team's Insights page, its period and tabs, what each figure counts, how pull requests are recorded and typed, which skills and MCP servers runs use, the Runs filters, and the 20,000-run limit.
+description: The team's Insights page, its period and tabs, what each figure counts, how pull requests are recorded and typed, config changes and setups compared, which skills and MCP servers runs use, how memories are used, the Runs filters, and the 20,000-run limit.
 ---
 
 The Insights page sums up how a team's runs, tasks and pull requests went over
@@ -75,6 +75,9 @@ diamond under a day marks a station's first run with a config it had not run
 before, when the station had run with another config earlier. Runs are taken in
 the order they started, and the diamond is dated from when that run started, or
 when it ended where it never started. A station's first config is not marked.
+Hovering over a diamond names each station, with "Before and after" (see
+[Before and after](#before-and-after)) and the station's runs with the new
+config.
 
 "Stations worth improving" lists stations with at least 3 runs in the period
 where a signal is worse than the station's own in the period before, or worse
@@ -285,6 +288,128 @@ code, as `<source> · <code> × <count>`, with `· <n> in a row` when one task
 raised it more than once; and its failed runs by reason, as `<reason> × <n>`.
 A hook the loop guard stopped shows only among task failures.
 
+## Changes
+
+"Config changes" lists the times a station started a new config in the period,
+the latest first, by the same rule as the diamonds under "Output against cost".
+Each row shows the day, the station, the [changes](/docs/reference/app/tasks-runs-and-the-inbox#config)
+from the config of the station's last run before it, or
+`No earlier config to compare with`, how many runs came before and after it as
+`<n> runs before · <n> runs after`, and "Before and after". With none, the card
+reads `No station changed its config in this period.`
+
+### Before and after
+
+"Before and after", on a row of "Config changes" or a diamond on Overview,
+opens a panel beside the page, titled `<station>: before and after`. It stays
+open across tabs.
+
+The panel counts the station's runs that ended in the period and the period
+before, or the last 30 days where that reaches further, by when each started,
+or ended where it never started:
+
+| Window | Runs that started |
+| --- | --- |
+| Before | From the station's previous config change, or its earliest counted run, up to this change, with the config the station ran last before it. |
+| After | From this change up to the station's next config change, with the new config. |
+
+| Part | Shows |
+| --- | --- |
+| What changed | The changes, or `There is no earlier config to compare it with.`, and `Config <fingerprint>, first run on <day>`. |
+| Runs before and after | "Before", "After" and "Change" for the rows below. |
+| Judge | Only when the station has a judge. While it is trusted, "Before" and "After" each read `<score> over <n> judged`, or `Not judged`. Otherwise `Its scores stay hidden until it agrees with people often enough.` "How often the judge agrees with people" opens the Station page at its judge. |
+
+| Row | Counts |
+| --- | --- |
+| Runs | Runs that ran. The other rows count only these. |
+| Sent-back rate | Runs whose next act was Sent back or Refused, of the runs whose next act is known. |
+| Accepted rate | Runs whose next act was Closed or Approved, of the runs whose next act is known. |
+| Checks-failed rate | Failed checks, of passed and failed checks. |
+| Failed rate | Runs that ended Failed, of runs. |
+| Merged rate | Tasks whose pull request merged, of the tasks of the runs whose pull request merged or closed unmerged. |
+| Cost per run | The cost of the priced runs, per priced run. |
+
+Each row but "Runs" counts, on each side, the runs settled for it, as for
+[station alerts](/docs/reference/app/tasks-runs-and-the-inbox#station-alerts).
+"Change" gives each row's verdict: the change as a whole percent, green when
+it is better and red when it is worse, or `No change`. It reads `Too few runs`
+when either side has fewer than 5 settled runs, and for cost per run when the
+two sides are priced in different currencies.
+
+A judge score is the mean of the judge's scores on the station's current
+rubric, as a share of its scale: Yes is 100% and No 0%; on 1 to 5, 1 is 0% and
+5 is 100%. See [Agreement](/docs/reference/app/tasks-runs-and-the-inbox#agreement)
+for when a judge is trusted.
+
+The panel ends with "Open the station" and "Improve this station". A change
+no longer in the period reads `This change is not in the period any
+more.`
+
+### Harness, model, effort and profile
+
+This card sets how runs turned out against what they cost, for each setup: a
+harness, model, effort and [harness profile](/docs/reference/glossary#harness-profile)
+together, as each run recorded them. It counts the runs that ran and ended in
+the period; a run with no recorded setup is left out.
+
+| Filter | Narrows to |
+| --- | --- |
+| Outcome | The outcome charted: "Accepted", the default, "Sent back", "Handed on", "Checks passed", "Merged", or "Judge score" when any setup has judged runs. |
+| Station | "Every station", or the runs at one work station. |
+| Task size | "Every size", or the runs of one size. |
+
+| Outcome | Of a setup's runs |
+| --- | --- |
+| Accepted | Runs whose next act was Closed or Approved, of runs. |
+| Sent back | Runs whose next act was Sent back or Refused, of runs. Lower is better. |
+| Handed on | Runs that passed their task to another station, of runs. |
+| Checks passed | Passed checks, of passed and failed checks. |
+| Merged | Tasks whose pull request merged, of the tasks the runs worked. |
+| Judge score | The mean judge score, as in [Before and after](#before-and-after). |
+
+Judge scores are counted only with a station picked, and only while that
+station's judge is trusted. With "Every station", the card reads
+`Pick a station to compare judge scores.` With a station picked that has a
+judge and runs in the period, the card adds
+`Judge scores count only where a station's judge agrees with people often enough.`
+and names the station, linked to its judge, as `trusted` or `hidden`.
+
+A setup's cost per run is the cost of its priced runs, per priced run, when
+they are all in one currency. The setups are compared in the currency most of
+them are priced in, or the first in alphabetical order on a tie.
+
+For each outcome, a setup is on the frontier when it has at least 3 runs, a
+cost per run in that currency and a value, and no other such setup costs no
+more and does as well or better, with either a lower cost or a better value.
+
+The chart plots each setup priced in that currency, cost per run across, the
+outcome up and its size by runs, and joins "On the frontier" with a dashed
+line. Hovering over a setup shows `<outcome> <value> · <cost> a run` and its
+runs. With no runs, the card reads
+`No runs match these filters in this period.`, and with none priced,
+`No priced runs to set against their cost. Show the table for the outcomes alone.`
+The table lists every setup, most runs first, with "Runs", "Cost per run" and
+each outcome; a setup on the frontier of the charted outcome is marked
+`frontier`. A setup reads as harness, model, `<effort> effort` and
+`<profile> profile`, as far as each is set.
+
+A run's size is told by the lines it changed: the lines taken out and put in
+across its file changes, each file compared from before its first change to
+after its last. A run that changed no lines is told by its steps, over the
+attempts it kept.
+
+| Size | Lines changed | Steps, for a run that changed none |
+| --- | --- | --- |
+| Small | Up to 50 | Up to 20 |
+| Medium | Up to 400 | Up to 80 |
+| Large | More | More |
+
+A run whose cost was never worked out has no size and is left out when a size
+is picked.
+
+With no config changes and no setups in the period, the tab reads
+`Once stations run tasks, their config changes and how each harness, model and effort did show here.`
+
 ## People
 
 "What the work asks of people", over the tasks the period's runs worked:
@@ -391,6 +516,31 @@ output says does not make a call refused.
 period in which a person refused to approve it. A tool is named by its
 own name, as in `linear.comment`, or for a harness permission that names no
 tool, as `<harness> <kind>`.
+
+## Memory
+
+| Figure | Counts |
+| --- | --- |
+| Standing memories | The [memories](/docs/reference/glossary#memory) the team keeps now, whatever the period. |
+| Briefed | Memories briefed to the runs that ended in the period, each counted once, with how many of those runs they were briefed to. |
+| Read | Memories the runs that ended in the period read with [`spotlight recall`](/docs/reference/cli/agent-commands#spotlight-recall), each counted once, with how many of those runs read them. |
+| Flagged wrong | Memories a person retired in the period. A memory replaced by a correction is not counted. |
+
+"Runs with memories and without" sets the period's runs that were briefed or
+read a memory against its other runs, under "Without", "With" and "Change",
+with the rows of [Before and after](#before-and-after). Only runs that ran are
+counted.
+
+"Flagged wrong" lists each memory flagged wrong, the latest first: its handle,
+linked to the memory, its text, the reason in quotes or `No reason given`, who
+retired it, or "A former member", and the day. With none, it reads
+`Nobody flagged a memory wrong in this period.`
+
+"Memory benchmark" reads `No benchmark yet.` Spotlight does not run a memory
+benchmark yet.
+
+With no standing memories, and none briefed, read or flagged wrong in the
+period, the tab reads "No memories yet", with "Open the team's memory".
 
 ## Runs
 
