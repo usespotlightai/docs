@@ -1,0 +1,87 @@
+---
+type: concept
+icon: Lightbulb
+title: Why a judge must agree with people before its scores show
+description: Why a station's judge stays hidden until its scores match people's, how that agreement is measured, and why grading never holds up work.
+---
+
+A station's [judge](/docs/reference/glossary#judge) is a model that reads a
+share of the station's runs and scores each one against a rubric the team
+wrote. It can read every sampled run, which no person has time to do, and so
+it can say how a station is doing between the runs people look at closely. A
+model can also misread a rubric, or read it more strictly or loosely than the
+team meant. A score that disagrees with what people would have said is worse
+than no score, because it looks like a measurement.
+
+So a judge starts out hidden. Its scores and its reasons show only once
+Spotlight has measured their agreement with people's, and the agreement
+has reached the `trust` the station sets.
+
+## Where people's scores come from
+
+Agreement needs runs that both the judge and people scored. People score runs
+in two ways.
+
+The first is a grade. One in five judged runs is put in the inbox to be graded,
+with the run's last words and its changes. The item does not show the judge's
+score. Anyone on the team, or an owner or admin of the workspace, can grade
+it.
+
+The second needs no extra work. On a yes-or-no rubric, what people already do
+with a run says whether it was good: closing the task or approving after it is
+a yes, sending it back or refusing is a no, and failing those, a merged pull
+request is a yes and one closed unmerged is a no. A 1 to 5 rubric has no such
+signal, because closing a task says nothing about whether the run was a 3 or a
+4, so it relies on grades alone.
+
+In the docs' view, the second source is what makes a judge usable on a busy
+station: its agreement can be measured from the work people do anyway, and
+grades fill the gaps.
+
+## How agreement is measured
+
+For a yes-or-no rubric, Spotlight uses Cohen's kappa rather than the share of
+runs where both said the same. If most of a station's runs are good, a judge
+that says yes to everything agrees with people most of the time while telling
+them nothing. Kappa counts only the agreement beyond what chance would give,
+so such a judge scores near zero.
+
+For a 1 to 5 rubric, Spotlight uses Spearman's rank correlation: whether the
+runs the judge ranks higher are the ones people rank higher. A judge that
+scores every run one point lower than people do still ranks them the same way,
+and its scores still tell good runs from bad. The mean error, shown beside it,
+says how far apart the two scores sit.
+
+At least 10 runs need both scores before any measure counts. In the docs'
+view, with fewer, one or two runs would decide the result.
+
+## Each rubric starts again
+
+Agreement is kept per rubric version. Changing the rubric's text changes what
+the judge is asked, so the agreement measured under the old text says nothing
+about the new one, and the judge is hidden again until it has agreed with
+people under the new text. A changed rubric is also a changed station config,
+so its runs start a new group on the Station page, like any other change. See
+[Why each run records its station's config](/docs/lines/why-each-run-records-its-stations-config).
+
+## Reasons a person can check
+
+Each of the judge's reasons cites the steps of the run or the hunks of its
+changes it rests on, and a reason that cites something the judge did not read
+is dropped. A person looking at a score can follow each reason to what the
+judge saw, and judge it for themselves. While the judge is hidden, its reasons
+are hidden with its score. In the docs' view, a reason from an untrusted judge
+would carry the same weight to a reader as the score it explains.
+
+## A judge never decides
+
+The judge is told that its verdict is an early signal for the team, never a
+decision. Nothing is approved, moved or held back by a score, and nothing
+waits on a grade: a task moves on as it would without either. Whether a run
+was good enough is still decided by the people who answer the inbox.
+
+## Related
+
+- [Check a station's judge against people](/docs/lines/check-a-stations-judge-against-people)
+- [Set a station's judge and alerts](/docs/lines/set-a-stations-judge-and-alerts)
+- [Judging](/docs/reference/app/tasks-runs-and-the-inbox#judging)

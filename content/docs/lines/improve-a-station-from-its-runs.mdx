@@ -1,0 +1,111 @@
+---
+type: how-to
+icon: SquarePen
+title: Improve a station from its runs
+description: Compare how a station's runs turned out under each config, have the agent propose a change from them, and apply it with Terraform.
+---
+
+Use this when a station's runs keep failing, get sent back or cost more than
+they should. You need:
+
+- To be on the team, or an owner or admin of the workspace. Only they can see
+  how the station's runs turned out.
+- A host serving the workspace with the harness you want to plan with. The
+  chat runs there like any other run. See
+  [Install a host](/docs/hosts/run-a-host).
+- The team's configuration in Terraform, to apply the change. See
+  [Manage Spotlight with Terraform](/docs/configuration/manage-spotlight-with-terraform).
+
+## Read how its runs turned out
+
+Open the line's board and select the name of a work station. Under **How its
+runs turned out**, the station's recent runs are grouped by the config they ran
+with, newest first. Each group shows its short
+[config fingerprint](/docs/reference/glossary#config-fingerprint), what changed
+from the group below it, a tally, and one row per run.
+
+Compare the tallies of neighbouring groups, and select a run's ending to open
+it. [Station outcomes](/docs/reference/app/tasks-runs-and-the-inbox#station-outcomes)
+says what each figure counts.
+
+## Ask the agent for a change
+
+<Steps>
+<Step>
+
+Select **Improve this station**. The Agent page opens with the station attached
+to a new chat, and the composer reads **What should it do better?**.
+
+</Step>
+<Step>
+
+Choose the harness, and the model and effort if you want something other than
+**Default model**.
+
+</Step>
+<Step>
+
+If the team's Terraform is in a GitHub repository the GitHub App can see, tick
+it under **Repositories**. The agent then writes its proposal against the files
+as they are.
+
+</Step>
+<Step>
+
+Write what the station should do better, such as the runs you saw sent back,
+and press Enter.
+
+</Step>
+</Steps>
+
+The chat reads **Improving** followed by the station and line. The agent writes
+the station's recent runs into its workspace with
+[`spotlight history`](/docs/reference/cli/agent-commands#spotlight-history) and
+reads them. It proposes one change at a time, as a diff of the station's block
+in the line's `spotlight_line` resource and of its prompt file,
+`prompts/<team>/<line>/<station>.md`, and says which outcome should show that
+the change worked.
+
+The agent cannot change the station itself. Reply in the chat to question the
+proposal or ask for another one.
+
+## Apply the change
+
+<Steps>
+<Step>
+
+Make the proposed change in the team's Terraform: the station's block, its
+prompt file, or both. See
+[Change a line's stations](/docs/lines/change-a-lines-stations).
+
+</Step>
+<Step>
+
+Run `terraform apply`.
+
+</Step>
+</Steps>
+
+## Check whether it helped
+
+Once runs at the station have ended with the new config, open the station
+again. Their group is at the top of **How its runs turned out**, and its list
+of changes names what you changed. Compare its tally with the group below it.
+
+The Run page of the first run with the new config says the same: its
+**Config** line, under the briefing, reads **Changed since the station's
+previous run** and lists the changes.
+
+On the team's **Insights** page, open **Changes**, find the station's change
+under **Config changes** and select **Before and after** to set the runs
+before it against the runs after it.
+
+If the change did not help, say so in the same chat and ask for the next
+change.
+
+## Related
+
+- [Station outcomes](/docs/reference/app/tasks-runs-and-the-inbox#station-outcomes)
+- [`spotlight history`](/docs/reference/cli/agent-commands#spotlight-history)
+- [Why each run records its station's config](/docs/lines/why-each-run-records-its-stations-config)
+- [Plan work with the agent](/docs/tasks/plan-work-with-the-agent)

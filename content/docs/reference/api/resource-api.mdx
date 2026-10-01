@@ -210,13 +210,14 @@ The export's files are ordered by path and are the same on every export:
 | `main.tf` | Every resource, each with an `import` block beside it, referring to one another. |
 | `variables.tf` | A sensitive variable for each value Spotlight never returns, such as secret values and runner pool tokens. |
 | `prompts/<team>/<line>/<station>.md` | Each station prompt, read by `main.tf` with `file()`. |
+| `judges/<team>/<line>/<station>.md` | Each station judge's rubric, read by `main.tf` with `file()`. |
 | `skills/<team>/<key>/<path>` | Each skill file, read by `main.tf` with `file()`. |
 
 Workspace tokens are not exported.
 
 The `hcl` string holds, in order, any variable the resource reads, an `import`
-block that adopts it, and the resource. `files` holds the prompt and skill files
-it reads. `collection` is one of `workspaces`, `teams`, `lines`, `skills`,
+block that adopts it, and the resource. `files` holds the prompt, rubric and skill
+files it reads. `collection` is one of `workspaces`, `teams`, `lines`, `skills`,
 `harness-profiles`, `integrations`, `hooks`, `secrets`, `token-trusts`,
 `runner-trusts`, `runner-pools` or `workspace-runners`.
 

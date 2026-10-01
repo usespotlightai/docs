@@ -21,7 +21,8 @@ for the first team of a workspace created in the web app.
 
 In Terraform, each element of `repositories`, `stations` and `reactions` is a
 `repository`, `station` or `reaction` block, and `reviews` is a `reviews`
-block.
+block. Within a `station` block, `judge` is a `judge` block and each element of
+`alerts` is an `alert` block.
 
 ## Example
 
@@ -60,6 +61,18 @@ resource "spotlight_line" "core_delivery" {
     skills    = [spotlight_skill.core_grafana.key]
     runners   = ["gpu"]
     passes_to = ["code-review"]
+
+    judge {
+      rubric = file("${path.module}/judges/core/delivery/implementation.md")
+      sample = 0.2
+      trust  = 0.6
+    }
+
+    alert {
+      measure  = "sent_back_rate"
+      rises_by = 0.2
+      over     = 20
+    }
   }
 
   station {
@@ -110,7 +123,9 @@ The same line as a request body:
       "tools": ["acme.comment", "pull-request"],
       "skills": ["grafana"],
       "runners": ["gpu"],
-      "passesTo": ["code-review"]
+      "passesTo": ["code-review"],
+      "judge": { "rubric": "Did the run meet the task?", "sample": 0.2, "trust": 0.6 },
+      "alerts": [{ "measure": "sent_back_rate", "risesBy": 0.2, "over": 20 }]
     },
     {
       "key": "code-review",
@@ -178,6 +193,8 @@ reviews {
 | `skills` | array of strings | `[]` | The skills given to the agent: a team [skill](/docs/reference/terraform/skill) key, or a catalog skill as `catalog.<name>@<x.y.z>`. Each skill once. A key starting `spotlight-` is refused. |
 | `passesTo` | array of strings | `[]` | The keys of the stations a run here may hand a task on to. |
 | `ends` | boolean | `false` | Whether a run here may finish the task by handing over with `done`. From any other station, `done` goes to a person instead. |
+| `judge` | object | none | Scores the station's runs against a rubric. Only on a `work` station. See [judge fields](#judge-fields). A read leaves it out when none is set. |
+| `alerts` | array of objects | `[]` | Thresholds on a measure of the station's runs, kept in the order written. Only on a `work` station. See [alert fields](#alert-fields). |
 
 Spotlight checks catalog tools and skills against what the workspace's plan
 includes when the line is written. It does not check at write time that a
@@ -195,6 +212,95 @@ there.
 See [Built-in tools and skills](/docs/reference/built-ins/built-in-tools-and-skills) for
 the built-in and catalog tools, and
 [Agent commands](/docs/reference/cli/agent-commands) for how an agent calls a tool.
+
+## Judge fields
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `rubric` | string | required | What a good run looks like, in Markdown. Not empty, at most 20,000 characters. In Terraform, usually read with `file()`. |
+| `sample` | number | required | The share of runs judged, from 0 to 1. |
+| `trust` | number | required | The agreement with people the judge needs before its scores show, from 0 to 1: Cohen's kappa on a yes-or-no rubric, Spearman's ρ on a 1 to 5 rubric. See [Agreement](/docs/reference/app/tasks-runs-and-the-inbox#agreement). |
+
+The three fields are required together. See
+[Judging](/docs/reference/app/tasks-runs-and-the-inbox#judging) for which runs
+are judged and when scores show.
+
+The rubric names its scale on its first line that is not blank, or on a line
+of a front matter block that opens the rubric between two `---` lines:
+
+| Line | Scale |
+| --- | --- |
+| `scores: yes-no` | Yes or no. |
+| `scores: 1-5` | A whole number from 1 to 5. |
+| none | Yes or no. |
+
+`scores` is matched without regard to case, with any spaces around the colon.
+A `scores:` line further down is not read.
+
+An export writes each rubric to
+`judges/<team>/<line>/<station>.md` and reads it with `file()`.
+
+The judge is part of the station's config: a run records its rubric's SHA-256,
+`sample` and `trust`, and a change to any of them changes the
+[config fingerprint](/docs/reference/glossary#config-fingerprint).
+
+| Message | Cause |
+| --- | --- |
+| `A judge's rubric must not be empty` | `rubric` is empty or only whitespace. |
+| `A judge's rubric must be at most 20000 characters` | `rubric` is longer. |
+| `A judge's sample is the share of runs judged, from 0 to 1` | `sample` is outside 0 to 1. |
+| `A judge's trust is how often the judge must agree with people, from 0 to 1` | `trust` is outside 0 to 1. |
+| `A judge's rubric names its scale as "scores: yes-no" or "scores: 1-5" on its first line` | The `scores:` line names another scale, or the rubric opens a front matter block with `---` and never closes it. |
+
+Each is returned with `422` at the path `stations[<n>].judge.<field>`.
+
+## Alert fields
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `measure` | string | required | `sent_back_rate`, `accepted_rate`, `checks_failed_rate`, `failed_rate`, `merged_rate` or `cost_per_run`. |
+| `risesBy` | number | none | The measure over the last `over` runs is this much higher than over the `over` runs before. |
+| `fallsBy` | number | none | The measure over the last `over` runs is this much lower than over the `over` runs before. |
+| `above` | number | none | The measure across the last `over` runs is higher than this. |
+| `below` | number | none | The measure across the last `over` runs is lower than this. |
+| `over` | number | required | How many runs are compared, and how many further settled runs an alert that went off must stay within its threshold to recover. A whole number, at least 1. |
+
+In Terraform, `risesBy` and `fallsBy` are `rises_by` and `falls_by`. An alert
+sets exactly one of `risesBy`, `fallsBy`, `above` and `below`; a read returns
+the others as `null`.
+
+| Measure | Unit | `risesBy`, `fallsBy` | `above`, `below` |
+| --- | --- | --- | --- |
+| The five `_rate` measures | A share from 0 to 1, so `0.2` is 20 percentage points. | Above 0, at most 1. | 0 to 1. |
+| `cost_per_run` | An amount in the workspace's currency. | Above 0. | 0 or more. |
+
+A station may have any number of alerts, but not two on the same measure with
+the same kind of threshold: of two alerts that both set `risesBy` on
+`sent_back_rate`, the later one is refused.
+Alerts are not part of the station's config, so changing them does not change
+the [config fingerprint](/docs/reference/glossary#config-fingerprint). Alerts
+are kept with the line, exported, listed on the Station page, and checked as
+the station's runs end and settle. See
+[Station alerts](/docs/reference/app/tasks-runs-and-the-inbox#station-alerts).
+
+| Message | Cause |
+| --- | --- |
+| `An alert watches one of sent_back_rate, accepted_rate, checks_failed_rate, failed_rate, merged_rate, cost_per_run` | `measure` is another value. |
+| `An alert sets exactly one of risesBy, above, fallsBy, below, to say when it goes off` | None, or more than one, is set. Returned at the path of the alert. |
+| `An alert rises by a share above 0 and at most 1` | `risesBy` on a rate is out of bounds. |
+| `An alert falls by a share above 0 and at most 1` | `fallsBy` on a rate is out of bounds. |
+| `An alert is above a share from 0 to 1` | `above` on a rate is out of bounds. |
+| `An alert is below a share from 0 to 1` | `below` on a rate is out of bounds. |
+| `An alert rises by an amount above 0` | `risesBy` on `cost_per_run` is 0 or less. |
+| `An alert falls by an amount above 0` | `fallsBy` on `cost_per_run` is 0 or less. |
+| `An alert is above an amount of 0 or more` | `above` on `cost_per_run` is below 0. |
+| `An alert is below an amount of 0 or more` | `below` on `cost_per_run` is below 0. |
+| `An alert compares a whole number of runs, at least 1` | `over` is not a whole number of at least 1. |
+| `An alert watches whether <measure> <rises by, is above, falls by or is below> an amount, which an alert before it at this station already watches` | An earlier alert at the station has the same `measure` and sets the same one of `risesBy`, `above`, `fallsBy` and `below`. Returned at the path of the later alert. |
+
+Each is returned with `422` at the path `stations[<n>].alerts[<n>]`, followed
+by `.<field>` where the message names one. Paths and messages use the API's
+field names, as in `risesBy`, also for a line written in Terraform.
 
 ## Repository fields
 
@@ -265,6 +371,11 @@ A line's stations are refused unless they follow every rule below.
 - If any station has both `check` and `diffs: true`, every repository must have
   `setup`.
 - A line must name `reviews` only if its `role` is `review`.
+- Only a `work` station may have a `judge` or `alerts`. On a backlog the
+  reason given is `is a backlog, where nothing runs, so it has no runs to judge`,
+  and on the completed station
+  `is where the line ends, where nothing runs, so it has no runs to judge`;
+  for alerts both end `so it has no runs to alert on`.
 
 ## Reserved station keys
 

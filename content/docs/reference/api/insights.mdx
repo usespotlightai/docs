@@ -1,0 +1,112 @@
+---
+type: reference
+icon: BookText
+title: Insights API
+description: The read-only endpoints behind a team's Insights page and its station alerts, their parameters, who may read them, and their errors.
+---
+
+Every figure on the [Insights page](/docs/reference/app/insights) is read
+through these endpoints. All are `GET`, under
+`/api/teams/{teamId}/insights`, and answer JSON.
+
+## Endpoints
+
+| Endpoint | Returns |
+| --- | --- |
+| `/overview` | The headline figures against the period before, spend and merged pull requests per day, config changes, and the stations worth improving. |
+| `/flow` | Where tasks wait at each station, queued, running or in the inbox, and the time to pull request, first review and merge. |
+| `/pull-requests` | Spotlight's share of merged pull requests by week and repository, Spotlight's against people's, types, and review depth. |
+| `/pull-requests/list` | Every pull request opened or closed in the period, or still open, the latest first, a page at a time. |
+| `/stations` | Each station's tally, per day and against the period before, with its task failures apart from its run failures. |
+| `/changes` | Every station config change in the period, with the station's runs before and after it, and the judge's scores where its judge is trusted. |
+| `/setups` | How runs went against what they cost on each harness, model, effort and harness profile, with the frontier marked for each outcome. |
+| `/people` | What the team's work asks of people, and who is active: new, weekly and monthly. |
+| `/cost` | Spend by harness, model, station and repository, from model to station to repository. |
+| `/tools` | Which skills the runs were given and read, week by week, and how each MCP server they called behaved. |
+| `/memory` | The team's standing memories, how many runs were briefed or read them, which were flagged wrong, and runs with memories against runs without. |
+| `/runs` | Every run that ended in the period, newest first, a page at a time. |
+| `/alerts/{alertId}` | A station alert that went off: the threshold it crossed, the run that crossed it, and the measure run by run around it. |
+
+## Parameters
+
+Every endpoint but `/alerts/{alertId}` takes `period`: `7d`, `30d` or `90d`, whole UTC days up to and
+including today. Default: `30d`. Every answer also covers the period before,
+as long.
+
+`/runs` also takes:
+
+| Parameter | Narrows to runs |
+| --- | --- |
+| `lineId` | On this line. |
+| `stationId` | At this station. |
+| `outcome` | That ended this way: `completed`, `failed`, `stopped`, `abandoned`, `withdrawn` or `superseded`. |
+| `harness` | On this harness. |
+| `model` | With this model; `~default` for runs that named none. |
+| `repository` | That worked this repository; `none` for runs that worked none. |
+| `fingerprint` | With this [config fingerprint](/docs/reference/glossary#config-fingerprint). |
+| `taskId` | Of this task. |
+| `taskIds` | Of these tasks, comma-separated, at most 200. |
+| `personId` | Of tasks this person opened. |
+| `day` | That ended on this UTC day, as `YYYY-MM-DD`. |
+| `delivery` | Of tasks whose pull request is now `merged`, `closed` or `open`. |
+| `next` | Whose next person act was `started`, `parked`, `closed`, `answered`, `approved`, `refused` or `sent-back`. |
+| `asked` | `true`: of tasks that asked a person in the inbox during the period. `false` narrows nothing. |
+| `week` | That ended in the week starting this UTC Monday, as `YYYY-MM-DD`. |
+| `skillGiven` | Whose station config gave this skill. |
+| `skillUsed` | That read this skill. |
+| `server` | That called this MCP server. |
+| `serverFailed` | With a call to this MCP server that failed. |
+| `failedAfter` | That failed where the run's last call to this MCP server failed. |
+| `refusedTool` | Where a person refused this tool. |
+| `refusedServer` | Where a person refused a tool of this MCP server; `none` for refusals of a tool with no server. |
+| `page` | Which page, from 1 to the last page with runs, at most 10,000. A value that is not a whole number above 0 is read as 1. |
+| `size` | Runs per page. Default: 50. At most 200; a larger number is read as 200. |
+
+`/setups` also takes:
+
+| Parameter | Narrows to runs |
+| --- | --- |
+| `stationId` | At this station. Judge scores are given only with it. |
+| `size` | Of this size: `small`, `medium` or `large`. See [Harness, model, effort and profile](/docs/reference/app/insights#harness-model-effort-and-profile). |
+
+`/pull-requests/list` also takes:
+
+| Parameter | Narrows to pull requests |
+| --- | --- |
+| `repository` | In these repositories, comma-separated or repeated, at most 50. |
+| `author` | Written by `spotlight`, `touched`, `people` or `bots`. |
+| `type` | Of type `feature`, `fix`, `refactor`, `tests`, `chore` or `other`. |
+| `state` | `merged` or `closed` in the period, or still `open`. |
+| `week` | Closed in the week starting this UTC day, as `YYYY-MM-DD`. |
+| `reverted` | `true`: reverted by another merged pull request. |
+| `compared` | `true`: in the repositories Spotlight merged into in the period. |
+| `rounds` | That took `0`, `1`, `2` or `3+` review rounds. |
+| `page` | Which page, from 1. A value that is not a whole number above 0 is read as 1. A page past the last is empty. |
+| `size` | As for `/runs`. |
+
+With both `taskId` and `taskIds`, only that task's runs are listed, and only if
+it is among `taskIds`.
+
+Every endpoint but `/runs`, the two pull request endpoints and
+`/alerts/{alertId}` counts at most the team's latest 20,000 runs over the
+period and the one before, and at most 20,000 each of its task pull requests,
+tasks people acted on, tasks with failures and agent chats. It answers
+`truncated: true` when any of them was more. The pull request endpoints count
+at most the newest 20,000 pull requests in the period. `/alerts/{alertId}`
+reads the station's latest 500 runs.
+
+## Who may read
+
+A person on the team or an owner or admin of its workspace, signed in, or a
+[workspace token](/docs/reference/api/workspace-token) of the team's workspace
+with the `read` scope, sent as `Authorization: Bearer <token>`. Anyone else
+is answered `404`. See
+[Team outcomes](/docs/reference/roles-and-permissions#team-outcomes).
+
+## Errors
+
+| Status | Cause |
+| --- | --- |
+| `401` | No session or token, or an unknown token. |
+| `404` | The team is not in the caller's workspace, or the caller is a person neither on the team nor an owner or admin of the workspace. For `/alerts/{alertId}`, also an alert of another team or none: `There is no alert <alertId> for this caller`. |
+| `422` | `period` is not `7d`, `30d` or `90d`, or is given twice: `Insights look back 7d, 30d or 90d`. `taskIds` names more than 200 tasks: `Runs are filtered by at most 200 tasks at once`. `outcome`, `delivery` or `next` on `/runs` names a value it does not take: `Runs are filtered by one <filter> of <values>, not <value>`, as in `Runs are filtered by one outcome of completed, failed, stopped, abandoned, withdrawn, superseded, not done`. A `/runs` filter that takes one value is given more than once: `Runs are filtered by one <filter> at a time, not <count>`. `day` is not a day of the period written `YYYY-MM-DD`: `Runs are filtered by a day of the period written YYYY-MM-DD, not <value>`. `asked` is not `true` or `false`: `Runs are filtered by one answer to whether the task asked of true, false, not <value>`. `page` is past the last page with runs, or above 10,000: `Runs are paged up to page <last>, not <page>`. A `/runs` filter value is longer than 200 characters: `Runs are filtered by a <filter> of at most 200 characters`. `week` on `/runs` is not a Monday written `YYYY-MM-DD`: a message ending `by a week that starts on a Monday written YYYY-MM-DD, not <value>`. A filter of `/pull-requests/list` names more than 50 repositories or a value it does not take: a message starting `Pull requests are filtered`, as in `Pull requests are filtered by at most 50 repositories at once`. `size` on `/setups` is another value: `Setups are compared by a size of small, medium, large, not <value>`. |

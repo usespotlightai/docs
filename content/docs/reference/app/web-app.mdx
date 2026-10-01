@@ -27,7 +27,7 @@ The sidebar holds, from the top:
 | "Inbox" | The inbox, with the number of unread items. |
 | "Runners" | The runners page, with the number of hosts answering. |
 | "Tokens" | The tokens page. Shown only to an owner or admin of the workspace. |
-| "Your teams" | Each team the person can see. A team opens to "Agent", "Lines" (one entry per line), "Runs", "Observability" and "Settings" ("General", "Integrations", "Skills"). |
+| "Your teams" | Each team the person can see. A team opens to "Agent", "Lines" (one entry per line), "Runs", "Observability", "Insights" and "Settings" ("General", "Integrations", "Skills"). |
 
 "Download as Terraform" saves the workspace's
 [export](/docs/reference/api/resource-api#export) as a zip file of a Terraform
@@ -47,7 +47,7 @@ module.
 | Route | Page | Shows | Can change |
 | --- | --- | --- | --- |
 | `/w/<slug>/inbox` | Inbox | The person's conversations, newest first, under "Open" and "Resolved". | Nothing on the list itself. |
-| `/w/<slug>/inbox/<itemId>` | Inbox item | The task's conversation: notes, the runs that worked it and their steps. | Answer the conversation, with attachments. "Approve" or "Reject" an approval. "Stop" a run still working the task. |
+| `/w/<slug>/inbox/<itemId>` | Inbox item | The task's conversation: notes, the runs that worked it and their steps. | Answer the conversation, with attachments. "Approve" or "Reject" an approval. "Stop" a run still working the task. Grade a judged run (see [Grades](/docs/reference/app/tasks-runs-and-the-inbox#grades)). Read a station alert that went off (see [Station alerts](/docs/reference/app/tasks-runs-and-the-inbox#station-alerts)). |
 | `/w/<slug>/runners` | Runners | Each host serving the workspace: its name, standing ("Idle", "Running N of M" or "Not answering"), the pool or trust it came through, and the images it serves (the "Default" marked) with the harnesses installed in each. Runners a push pool provisioned, as "Starting" or "Running". | With no host, an owner or admin can create a pull pool under "Pool name" and "Create pool"; the page then shows the install command with the pool's token in it, once, with "Copy command". It also shows the install command for a token someone already has. A member is told an owner or admin can add a computer. |
 | `/w/<slug>/tokens` | Tokens | Each [workspace token](/docs/reference/api/workspace-token) a person issued: its name, description, scopes, when it was created, and "Never expires", "Expires" with the date, or "Expired". Never the token itself. A member who opens the route is sent to the workspace's own route. | An owner or admin can "Create a token" with "Name", "What it is for", "What it may do" and "Expires after". "What it may do" is one of "Read", "Plan" or "Configure" (the default), with "Secrets", "Runners" and "Token trusts" beside it; "Expires after" is "30 days", "90 days" (the default), "1 year" or "Never". The page then shows the token, once, with "Copy token"; "I've copied it" dismisses it. "Revoke", then "Revoke token", revokes one. |
 
@@ -61,16 +61,17 @@ opens its first line, or "Runs" when it has none.
 
 | Route | Page | Shows | Can change |
 | --- | --- | --- | --- |
-| `…/agent` | Agent | The person's chats with the team's agent. | Start a chat under "Plan with the agent". |
+| `…/agent` | Agent | The person's chats with the team's agent. | Start a chat under "Plan with the agent", with traces or a station to improve attached. |
 | `…/agent/<chatId>` | Chat | The chat's messages and the tasks the agent proposed. | Say something, with attachments and shared traces. "Create task" or "Dismiss" a proposal. |
 | `…/lines/<lineId>` | Board | The line's stations as sections, with the tasks standing at each. The views "Backlog" (the backlog station), "Active" (work stations, the default) and "Completed" (the completed station). A task shows "Awaiting review" or that it is in progress. | Create a task under "New task" (title, description, attachments, "Create more", "Create task"). Reorder tasks within a station by dragging. Start selected backlog tasks, or park selected tasks, with "Move to". |
-| `…/lines/<lineId>/stations/<stationId>` | Station | The station's name and description. For a work station: its harness, model and effort, the line's repositories, the "Agent prompt" and the "Skills". | Nothing. |
+| `…/lines/<lineId>/stations/<stationId>` | Station | The station's name and description. For a work station: its harness, model and effort, the line's repositories, the "Agent prompt", the "Skills", the "Judge", with its agreement with people, and the "Alerts" when it has them (see [Judge and alerts](/docs/reference/app/tasks-runs-and-the-inbox#judge-and-alerts)), and "How its runs turned out": its latest ended runs grouped by config, with a tally for each group. See [Station outcomes](/docs/reference/app/tasks-runs-and-the-inbox#station-outcomes). | For a work station, "Improve this station" opens the Agent page with the station attached to a new chat. |
 | `…/tasks/<taskId>` | Task | Title, description, attachments, and "Activity": every run of the task. Under "Properties": the station, the assignee, "Changes" and "Pull request". | Start, park or close the task with the station property. Assign it. "Delete task" from "Task options". |
 | `…/runs` | Runs | The team's runs, grouped by age, filtered by "All" or "Awaiting Review". | Nothing. |
-| `…/runs/<runId>` | Run | The briefing, the run's steps as they happen, and the files it changed. | Say something to the run, with attachments, or send a finished station's work back to it. "Stop" a run a runner holds. |
+| `…/runs/<runId>` | Run | The briefing, the run's config and what changed since the station's previous run (see [Config](/docs/reference/app/tasks-runs-and-the-inbox#config)), what an ended run spent in cost and tokens (see [Spend](/docs/reference/app/tasks-runs-and-the-inbox#spend)), the judge's score and people's grades (see [Judge score](/docs/reference/app/tasks-runs-and-the-inbox#judge-score)), the run's steps as they happen, and the files it changed. | Say something to the run, with attachments, or send a finished station's work back to it. "Stop" a run a runner holds. |
 | `…/runs/<runId>/changes` | Change stack | The run's change stack: cohorts, layers, each file's changes and notes, and the decisions on each file. | Comment on files and lines, then "Finish review" with a summary and "Comment", "Approve" or "Request changes". The review posts to the task's pull request, or once the task opens one. Dispute a decision by replying to it. |
 | `…/observability` | Observability | The team's task traces in a time range, from "Past 30 min" to "Past 90 days". | Select traces and "Discuss with the agent". |
 | `…/observability/tasks/<taskId>` | Task trace | One task's trace: its runs and their steps on a time scale. | Nothing. |
+| `…/insights` | Insights | How the team's runs, tasks and pull requests went over a period, against the period before, under "Overview", "Flow", "Pull requests", "Stations", "Changes", "People", "Cost", "Tools", "Memory" and "Runs". See [Insights](/docs/reference/app/insights). | The period. "Improve this station" on a station worth improving. "Before and after" on a config change opens a side panel. |
 | `…/settings/general` | General | "Team name", "Members" with their roles, and "Invited". | "Add a member" by email. Change a member's role. Unsend an invitation. |
 | `…/settings/integrations` | Integrations | "GitHub", and under "Hosts" each integration the team defines. | "Install it on GitHub" or "Manage on GitHub". "Connect to" or "Reconnect to" an integration that links over OAuth. |
 | `…/settings/skills` | Skills | The team's skills. | Nothing. |

@@ -5,6 +5,14 @@ title: Glossary
 description: The terms Spotlight uses, in alphabetical order, with a link to each term's reference page.
 ---
 
+## Alert
+
+A threshold on a measure of a work station's runs, such as its sent-back rate
+or its cost per run, set in the station's `alert` blocks. The Station page lists
+a station's alerts. When one goes off, the task of the run that crossed it gets
+an inbox item. See [Alert fields](/docs/reference/terraform/line#alert-fields)
+and [Station alerts](/docs/reference/app/tasks-runs-and-the-inbox#station-alerts).
+
 ## Approval
 
 A person's decision on one tool call, or one harness permission, that a run
@@ -79,6 +87,15 @@ title and an intent. See
 The last station of every line, of kind `completed`. Nothing runs there. A task
 moved to it is finished. See [`spotlight_line`](/docs/reference/terraform/line).
 
+## Config fingerprint
+
+A SHA-256 of the config a task's run was given at its station: the prompt,
+harness, model, effort, harness profile, the line's image, repositories and
+their setup commands, skills, tools, the decisions and memories switches, and
+the judge. Runs with the same
+fingerprint ran the same config. The web app shows its first 8 characters. See
+[Config](/docs/reference/app/tasks-runs-and-the-inbox#config).
+
 ## Configuration change
 
 A record of one create, update or delete of a workspace's configuration: who
@@ -105,6 +122,12 @@ A proxy container a host starts beside each sandbox. The sandbox reaches the
 network only through it. Egress admits or refuses each connection and
 adds secrets to requests to the hosts they are bound to. See
 [Egress](/docs/reference/hosts/egress).
+
+## Grade
+
+A person's score of a judged run, on the judge's scale, given from the inbox.
+The judge's agreement with people is measured against grades. See
+[Grades](/docs/reference/app/tasks-runs-and-the-inbox#grades).
 
 ## Handover
 
@@ -157,11 +180,25 @@ A person's list of conversations on the tasks assigned to them, across every
 team in a workspace. See
 [The inbox](/docs/reference/app/tasks-runs-and-the-inbox#the-inbox).
 
+## Insights
+
+A team's page that sums up how its runs, tasks and pull requests went over the
+past 7, 30 or 90 days, against the period before. See
+[Insights](/docs/reference/app/insights).
+
 ## Integration
 
 A team's definition of an outside service: the webhooks it sends and the
 happenings they raise, the tools agents may call on it, and how Spotlight
 connects to it. See [`spotlight_integration`](/docs/reference/terraform/integration).
+
+## Judge
+
+A model that scores a share of a work station's runs against the station's
+[rubric](#rubric), citing the steps and changes behind each reason. Its scores
+show only once they agree often enough with people's. A station sets one in
+its `judge` block. See [Judging](/docs/reference/app/tasks-runs-and-the-inbox#judging)
+and [Judge fields](/docs/reference/terraform/line#judge-fields).
 
 ## Label
 
@@ -278,6 +315,13 @@ out. It may name a runner `image` and a `setup` command. See
 A counter on a task. It goes up each time the task moves to another station
 and when it is finished. A person's move must name the current revision. See
 [Tasks](/docs/reference/app/tasks-runs-and-the-inbox#tasks).
+
+## Rubric
+
+What a good run at a station looks like, in Markdown, written by the team for
+the station's [judge](#judge). Its first line can name its scale,
+`scores: yes-no` or `scores: 1-5`. See
+[Judge fields](/docs/reference/terraform/line#judge-fields).
 
 ## Run
 

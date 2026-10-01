@@ -7,7 +7,8 @@ description: Workspace roles, the permissions they and workspace token scopes gr
 
 A person's authority comes from their role in a workspace. A workspace token's
 authority comes from its scopes. Teams have no roles of their own: a
-workspace's members may work in every team of that workspace.
+workspace's members may work in every team of that workspace. Reading how a
+team's work turned out is narrower; see [Team outcomes](#team-outcomes).
 
 ## Roles
 
@@ -67,6 +68,24 @@ scope once; see [Scopes](/docs/reference/api/workspace-token#scopes) for the
 messages. A token acts only in its own workspace. See
 [`spotlight_workspace_token_trust`](/docs/reference/terraform/workspace-token-trust) for tokens a
 trust mints.
+
+## Team outcomes
+
+How a team's work turned out can be read only by:
+
+- people on the team;
+- the workspace's owners and admins;
+- workspace tokens of the workspace with the `read` scope.
+
+Anyone else is answered `404`, as for something that does not exist.
+
+| Outcome | Where |
+| --- | --- |
+| Station outcomes | "How its runs turned out" on a work station's page. See [Station outcomes](/docs/reference/app/tasks-runs-and-the-inbox#station-outcomes). |
+| Judge | "Judge" on a work station's page, a run's judge score and people's grades, and grading a run. See [Judge and alerts](/docs/reference/app/tasks-runs-and-the-inbox#judge-and-alerts) and [Grades](/docs/reference/app/tasks-runs-and-the-inbox#grades). |
+| Grade items | Inbox items asking to grade a run. They reach no one else. |
+| Station alert items | Inbox items saying a station crossed one of its alert thresholds. They reach no one else. |
+| Insights | Every tab of a team's Insights page, and the [Insights API](/docs/reference/api/insights). |
 
 ## Changing roles
 

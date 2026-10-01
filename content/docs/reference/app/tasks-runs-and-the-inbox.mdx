@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Tasks, runs and the inbox
-description: Task fields and states, notes, handovers and moves, run states and failure codes, the inbox, approvals, chats and attachments.
+description: Task fields and states, notes, handovers and moves, run states, failure codes, configs, spend, a station's judge and alerts, station outcomes, the inbox, grades, station alerts, approvals, chats and attachments.
 ---
 
 A task stands at one station of a line. Runs work it; people answer it from the
@@ -231,6 +231,271 @@ A run whose runner is lost on its last attempt is noted
 `runner-lost`. See [Inside a sandbox](/docs/reference/hosts/sandbox#run-phases) for
 the phase each runner message comes from.
 
+### Config
+
+When a task's run is queued at a station with a harness, it records the
+station's config as it stands then. A chat's run records none.
+
+| Part | Holds |
+| --- | --- |
+| Prompt | The station's prompt. |
+| Harness, model, effort | As the run was given them. |
+| Profile | The harness profile's key, rules, MCP servers and native settings. Each MCP server's environment values are kept as SHA-256 digests. |
+| Image | The line's runner image. |
+| Repositories | Each repository of the line, with its `setup` command. |
+| Skills | Each team and catalog skill given, with a SHA-256 of its files. Built-in skills are left out. |
+| Tools | The tools given. |
+| Decisions, memories | Whether the station drafts them. |
+| Judge | The SHA-256 of the judge's rubric, its `sample` and its `trust`, when the station has a [judge](/docs/reference/terraform/line#judge-fields). The station's alerts are not part of the config. |
+
+The run's [config fingerprint](/docs/reference/glossary#config-fingerprint) is
+a SHA-256 of these parts. The task's title, description and marks are not part
+of it.
+
+The Run page shows `Config` and the fingerprint's first 8 characters under the
+briefing. When the station's previous run with a recorded config ran another
+config, it adds `Changed since the station's previous run`, linked to that run,
+and one phrase for each change:
+
+| Change | Phrase |
+| --- | --- |
+| Prompt | `Prompt changed`, `Prompt added`, `Prompt removed` |
+| Harness, model, effort, image, profile | `<Part> <was> → <now>`, `<Part> set to <now>`, `<Part> <was> removed` |
+| Profile settings | `Profile <key> settings changed` |
+| Repository | `Repository <name> added`, `Repository <name> removed`, `Repository <name> setup changed` |
+| Skill | `Skill <key> added`, `Skill <key> removed`, `Skill <key> changed` |
+| Tool | `Tool <name> added`, `Tool <name> removed` |
+| Decisions, memories | `Decisions on`, `Decisions off`, `Memories on`, `Memories off` |
+| Judge | `Judge added`, `Judge removed`, `Judge rubric changed`, `Judge sample <was> → <now>`, `Judge trust <was> → <now>`, with sample and trust as percentages |
+
+For example: `Prompt changed · Effort high → xhigh · Skill reviewing added`.
+
+### Spend
+
+Once a run has ended and its journal has been digested, the Run page shows
+`Spent`, the run's cost, and four token counts:
+
+| Label | Counts |
+| --- | --- |
+| Input | Fresh input tokens. |
+| Output | Output tokens. |
+| Cache read | Input tokens read from the prompt cache. |
+| Cache write | Input tokens written to the prompt cache. |
+
+Each count is added up over every turn of the attempts the run kept. A count
+the harness did not report is unknown, not zero, and reads `not reported`; so
+does a cost that was not reported. A count under 1,000 is shown whole, a larger
+one in thousands (`3.1k`) or millions (`2.4M`) to one decimal. A cost in US
+dollars is shown as `$1.87`, or to four decimals under `$0.01`; a cost in
+another currency is shown with its currency code.
+
+What each harness reports:
+
+| Harness | Reports |
+| --- | --- |
+| `claude-code` | All four counts. |
+| `codex` | Input, output and cache read, from the last request of each turn only, so its counts are lower than what the turn used. Cache write is not reported. |
+| `cursor` | Not confirmed. |
+
+### Judging
+
+When a task's run ends at a station with a
+[judge](/docs/reference/terraform/line#judge-fields), the run is judged if all
+of these hold:
+
+- It ended Completed or Stopped. Failed, abandoned, withdrawn and superseded
+  runs are not judged.
+- Its task still exists.
+- It falls in the judge's `sample`. Whether a run falls in it is worked out
+  from the run's id, so it never changes. A `sample` of 1 judges every run, and
+  0 none.
+- The rubric's scale can be read.
+- It has not been judged before. A run is judged once.
+
+At most 4 runs are judged at once. The judge reads the task's title (up to 300
+characters) and description (up to 4,000), the run's steps from every attempt,
+and the hunks of its file changes, each file compared from before its first
+change to after its last, with 3 lines of context.
+
+| Evidence | Kept |
+| --- | --- |
+| Steps | The latest, up to 80,000 characters together. A step's text is cut at 4,000 characters, and what a tool was given and returned at 2,000 each. |
+| Hunks | The first that fit in 60,000 characters together. A hunk is cut to its first 200 lines, followed by `… <n> more lines`, and each line at 500 characters. A hunk that does not fit is skipped, and the ones after it are still tried. A hunk is named `<path>#<n>`, counting from 1. |
+
+The judge is told how many steps and hunks were left out.
+
+The judge answers with a score on the rubric's scale and 1 to 5 reasons. Each
+reason is up to 1,000 characters and cites 1 to 10 steps, by their place in the
+run's journal, or hunks, by name. A reason citing a step or hunk the judge did
+not read is dropped. A score is recorded against the rubric's version, the
+SHA-256 of its text.
+
+| Failure | When | Tried again |
+| --- | --- | --- |
+| `no-evidence` | The run left no steps and no hunks. | no |
+| `refused` | The model refused to answer. | up to 4 attempts, from 30 seconds to 10 minutes apart |
+| `unreadable` | The answer could not be read, gave more than 5 reasons, or a score off the scale. | up to 3 attempts, from 30 seconds to 5 minutes apart |
+| `ungrounded` | Half the reasons or fewer cited what the judge read. | up to 3 attempts, from 30 seconds to 5 minutes apart |
+| `errored` | Another error. | up to 4 attempts, from 30 seconds to 10 minutes apart |
+
+A run whose judging failed shows no score.
+
+### Agreement
+
+A judged run's people's score is the latest grade a person gave it on the
+judge's scale. A grade counts only for the rubric version it was given under:
+the version of the run's judge score, or else the station's rubric at the time.
+On a yes-or-no scale, a run no one graded takes its people's score from what
+happened next: Yes when a person next closed the task or approved, No when a
+person next sent it back or refused; failing those, Yes when its pull request
+merged and No when it closed unmerged. A 1 to 5 scale uses grades only.
+
+Agreement is measured for each rubric version, over its latest 500 judged runs,
+from the runs with both scores:
+
+| Scale | Measure | Also shown |
+| --- | --- | --- |
+| Yes or no | Cohen's kappa | Agreed: the share of runs where both scores are the same. |
+| 1 to 5 | Spearman's ρ, with tied ranks averaged | Mean error: the mean absolute difference between the two scores. |
+
+The judge's scores show only when the station's current rubric is trusted:
+
+| Standing | When |
+| --- | --- |
+| Trusted | At least 10 runs have both scores, and the measure is at least the judge's `trust`. |
+| Hidden: too few runs | Fewer than 10 runs have both scores. |
+| Hidden: no agreement | The measure cannot be worked out, as when every score so far is the same. |
+| Hidden: below trust | The measure is below `trust`. |
+| Hidden: unreadable rubric | The rubric's scale cannot be read. |
+
+While the judge is not trusted, a run's score and its reasons are both hidden.
+A score given under an earlier rubric version stays hidden, whatever the
+standing. A new rubric version starts with no runs that have both scores.
+
+### Judge and alerts
+
+A work station's page shows its [judge](/docs/reference/terraform/line#judge-fields)
+and its [alerts](/docs/reference/terraform/line#alert-fields), when it has
+them, read-only.
+
+Only people on the team, the workspace's owners and admins, and workspace
+tokens with the `read` scope can read the "Judge" section. Anyone else is
+answered `404`. See [Team outcomes](/docs/reference/roles-and-permissions#team-outcomes).
+
+Under "Judge", "Judges" reads `<sample> of runs`, as a percentage, and
+"Trusted from" reads `agreement with people of <trust> or more`, with `trust`
+to two decimals. The agreement is Cohen's kappa or Spearman's ρ; see
+[Agreement](#agreement). "Rubric" opens the rubric. Then:
+
+| Part | Shows |
+| --- | --- |
+| Standing | Whether the judge is trusted, as `Trusted: <measure> is <value> over <n> runs, at least the <trust> it needs.`, or why its scores are hidden, as `Hidden until more runs have both a judge score and people's: <n> so far.` The measure and `trust` are shown to two decimals. |
+| Coverage | `Of the station's last <n> runs`, over its latest 200 runs that ran: "Both scores", "Judge only", "People only" and "Neither". |
+| Agreement by rubric | One card per rubric version, newest judged first, marked "Current" or "Earlier": the first 7 characters of its version, `<n> judged · <n> with people's scores`, the measure and what is also shown, a matrix of the judge's scores down and people's across, and a chart of the judge's and people's scores by day. The chart shows the judge's daily mean only on the current rubric's card while it is trusted; otherwise its legend reads "Judge hidden". |
+
+With no judged runs, the section reads "No judged runs yet".
+
+Under "Alerts", each alert is one line, in the order written: the measure, then
+its threshold. See [Station alerts](#station-alerts) for when one goes off.
+
+| Measure | Label |
+| --- | --- |
+| `sent_back_rate` | Sent-back rate |
+| `accepted_rate` | Accepted rate |
+| `checks_failed_rate` | Checks-failed rate |
+| `failed_rate` | Failed rate |
+| `merged_rate` | Merged rate |
+| `cost_per_run` | Cost per run |
+
+| Threshold | Reads |
+| --- | --- |
+| `risesBy` | `<Measure> up <change> in the last <over> runs, against the <over> before` |
+| `fallsBy` | `<Measure> down <change> in the last <over> runs, against the <over> before` |
+| `above` | `<Measure> above <amount> across the last <over> runs` |
+| `below` | `<Measure> below <amount> across the last <over> runs` |
+
+A change in a rate is shown in points, and an amount of a rate as a
+percentage. Cost is shown as a number with no currency, to two decimals, or
+four under 0.01. With `over` set to 1, the line reads
+`the last run` and `the one before`. For example:
+`Sent-back rate up 20 points in the last 20 runs, against the 20 before`.
+
+### Judge score
+
+The Run page of a judged run shows "Judged" and the judge's score, `Yes`, `No`
+or `<n> of 5`, when the station's current rubric is trusted and the score was
+given under it. Otherwise it shows `score hidden`. People's
+grades follow as `People said <grades>`, with `(you)` beside the reader's own.
+While the judge is not trusted, its standing is shown beneath. A shown score
+lists its reasons under it, each with the steps and hunks it cites, as
+`Step <n>` or the file's name and hunk header. Selecting a hunk opens the file
+at that hunk; selecting a step shows it.
+
+A run's judge score and people's grades can be read only by people on the
+team, the workspace's owners and admins, and workspace tokens with the `read`
+scope. Anyone else is answered `404`.
+
+A run that was not judged shows none of this.
+
+### Station outcomes
+
+A work station's page lists how its latest 50 ended task runs turned out, under
+"How its runs turned out". Outcomes are recorded as runs end and as people act;
+a run that ended before recording began is not listed.
+
+Only people on the team, the workspace's owners and admins, and workspace
+tokens with the `read` scope can read a station's outcomes. Anyone else is
+answered `404`. See [Team outcomes](/docs/reference/roles-and-permissions#team-outcomes).
+
+Runs are grouped by config: each group holds runs that ran one after another
+with the same fingerprint, and the newest group comes first. A config that
+returns after another starts a new group. Runs without a recorded config are
+grouped as "Before configs were recorded". Each group shows `Config` and the
+short fingerprint, the [changes](#config) from the group before it, a tally,
+and one row per run. With no ended runs, the section reads "No runs yet".
+
+A run's outcome:
+
+| Part | Values | Meaning |
+| --- | --- | --- |
+| Ending | Completed, Failed, Stopped, Abandoned, Withdrawn, Superseded | How the run ended. Stopped: ended after it was asked to stop. Abandoned: given up after its runner was lost on the last attempt. Withdrawn: ended before it started. Superseded: failed after its task had moved on. |
+| Failure | A [failure code](#failure-codes) | Shown beside a Failed or Superseded ending. |
+| Round | Round 1, Round 2, … | 1 plus the number of the task's earlier runs at the station that completed or failed. |
+| Checks | Checks passed, Checks failed, Checks skipped | The station's check on the run's change. See [Checks](/docs/reference/app/change-stacks-and-decisions#checks). |
+| Next | Started, Parked, Closed, Answered, Approved, Refused, Sent back | The first thing a person did with the task in answer to the run, or after it. See the table below. |
+| Delivery | PR open, Merged, PR closed | The state of the task's pull request. |
+| Time, cost | | How long the run took and what it cost, worked out from the run's journal when the page is read. They are not kept with the outcome. |
+
+| Next | The person |
+| --- | --- |
+| Started | Moved the task to a work station. |
+| Parked | Moved the task to the backlog. |
+| Closed | Moved the task to the completed station. |
+| Answered | Answered the conversation without a decision. |
+| Approved | Approved an approval. |
+| Refused | Rejected an approval. |
+| Sent back | Said something to a run of the task while no run held it, other than an answer to an open question that asks for no approval. |
+
+A group's tally:
+
+| Figure | Counts |
+| --- | --- |
+| Runs | The group's runs, less those withdrawn. |
+| Failed | Runs that ended Failed. |
+| Stopped | Runs that ended Stopped. |
+| Checks passed, Checks failed | Runs whose check passed or failed. |
+| Accepted | Runs whose next act was Closed or Approved. |
+| Sent back | Runs whose next act was Sent back or Refused. |
+| Merged | Tasks the group's runs worked whose pull request merged. |
+| Withdrawn | Runs withdrawn before they started. |
+| Cost | The runs' cost together, when all are in one currency. |
+| Median | The median time the runs took. |
+
+A figure other than Runs (Run for one) is shown only when it is above zero, or known for
+Cost and Median. Each row shows the ending, linked to the run, then the
+failure, round, checks, next act, delivery, time, cost and when the run ended.
+A part with no value shows `–`.
+
 ## The inbox
 
 A person's inbox holds every conversation, open or resolved, on every task in
@@ -248,6 +513,92 @@ Only the task's assignee can answer an item, and only an open conversation can
 be answered. An answer writes an `answered` note. The run that asked carries
 on; if no run holds the task and the station has a harness, a run starts there,
 taking up the harness session where the last run left it.
+
+### Grades
+
+When a judge score is recorded, 1 in 5 judged runs is also put to people to
+grade, chosen from the run's id. The item reads
+`Grade a judged run, so the team can check its judge.` and, once graded,
+`This run is graded.`
+
+It reaches the inbox of the task's assignee, or of everyone on the team when the
+task has no assignee. It never reaches a person who is neither on the team nor
+an owner or admin of the workspace. The item shows "Grade this run", the task, "What the run
+said last", "Its changes", and "Is this a good run?" with Yes and No, or
+"How good is this run, from 1 to 5?" with 1 to 5. The judge's score is not
+shown on it.
+
+- Any person on the team, and any owner or admin of the workspace, can grade
+  a run. Anyone else is answered `404`. One grade settles the item for
+  everyone.
+- A person's later grade of the same run replaces their earlier one.
+- A run is graded on its judge's scale, else on the scale of its station's
+  rubric, else yes or no.
+- Nothing waits on a grade. The task moves on as it would without one.
+
+### Station alerts
+
+Spotlight checks a work station's [alerts](/docs/reference/terraform/line#alert-fields)
+when one of its task runs ends or settles, when the pull request of a task it
+worked closes, and when its line is changed or retired. A run counts toward a measure once it has settled for that
+measure:
+
+| Measure | A run has settled when |
+| --- | --- |
+| `sent_back_rate`, `accepted_rate` | Its [next act](#station-outcomes) is known. |
+| `checks_failed_rate` | Its check passed or failed. |
+| `failed_rate` | It ended. |
+| `merged_rate` | Its task's pull request merged or closed unmerged. |
+| `cost_per_run` | Its cost was worked out. |
+
+Only runs that ran count, ordered by when they ended. An alert reads its
+measure over the latest `over` settled runs and, for `risesBy` and `fallsBy`,
+over the `over` settled runs before those. Settled runs are looked for among the
+station's latest runs, 4 times as many as its alerts need at most. Until enough
+runs have settled, or while the measure cannot be worked out, as for cost with
+no priced runs, the alert is not checked.
+
+| Threshold | Goes off when |
+| --- | --- |
+| `risesBy` | The measure over the latest runs, less the measure over the runs before, is at least `risesBy`. |
+| `fallsBy` | The measure over the runs before, less the measure over the latest runs, is at least `fallsBy`. |
+| `above` | The measure is higher than `above`. |
+| `below` | The measure is lower than `below`. |
+
+An alert goes off once per crossing. While it is open, later checks do not
+raise it again. It recovers once it has stayed within its threshold for `over`
+further settled runs: each check whose newest settled run is a new one, and
+finds the alert no longer crossed, counts one, and a check that finds it
+crossed again starts the count over. For `over` settled runs after it
+recovers, a crossing reopens the same alert, and its inbox item, instead of
+raising a new one. After that, a crossing raises a new alert.
+
+If an open alert's amount or `over` is changed, the next check judges it by
+the new values: crossed, it stays open with the new reading; otherwise the
+check counts toward its recovery. An open alert whose measure or threshold is
+removed from the station recovers at once, at the station's next check, and a
+crossing after that raises a new alert. Changing or retiring a line checks
+each of its stations, those it had and those it has. Deleting a task forgets
+the alerts raised on it.
+
+When an alert goes off, the task of the run that set off the check gets an
+inbox item: the run that ended or settled, or, when a pull request closed, the
+task's latest run at the station. The item reads
+`A station crossed one of its alert thresholds.` and, once the alert recovers,
+`The station is back within its alert.` A reopened alert opens its item again. It reaches the task's assignee, or
+everyone on the team when the task has no assignee. It never reaches a person
+who is neither on the team nor an owner or admin of the workspace, and to
+anyone else it is not found. Nothing waits on it.
+
+The item shows:
+
+| Part | Shows |
+| --- | --- |
+| Heading | `An alert went off at <station> on <day>`, then the alert as on the Station page, with cost in the currency of the station's runs. |
+| Reading | `It was <value> across the last <over> runs.`, or for `risesBy` and `fallsBy`, `It was <value> in the last <over> runs, against <value> in the <over> before.` |
+| Recovery | `Back within it since <day>.`, once the alert has recovered. |
+| Chart | "Run by run, over the last `<over>` runs each time": the measure over the `over` settled runs up to each run, from 2 × `over` runs before the run that crossed it to `over` runs after. It marks that run, and the threshold for `above` and `below` or the measure over the runs before for `risesBy` and `fallsBy`. It is drawn from the station's latest 500 runs; without that run among them, it reads `The runs around it are no longer kept, so there is nothing to chart.` |
+| Links | "Open the station"; "See it on Insights", which opens the [Stations tab](/docs/reference/app/insights#stations) at the station, over the shortest period that covers the day it went off; and "Improve this station". |
 
 ## Approvals
 
@@ -284,8 +635,17 @@ harness permission.
 
 A chat belongs to a team and to the person who started it. Only that person can
 list or read it. Each chat names its harness, and optionally a model, an
-effort and repositories. A chat message holds up to 20,000 characters and at
-most 20 traces.
+effort, repositories and a work station it is improving. A chat message holds
+up to 20,000 characters and at most 20 traces.
+
+A chat started from a station's "Improve this station" names that station. Its
+agent is briefed to write the station's runs with
+[`spotlight history`](/docs/reference/cli/agent-commands#spotlight-history) and
+to propose one change at a time, as a unified diff of the station's block in
+the line's `spotlight_line` resource and of its prompt file,
+`prompts/<team>/<line>/<station>.md`. The chat reads
+`Improving <station> on <line>`. If the station has left the team's lines,
+the agent is told so.
 
 Chat runs have priority over task runs.
 [Which run goes first](/docs/runs/which-run-goes-first) gives the
