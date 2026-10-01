@@ -1,0 +1,215 @@
+---
+type: reference
+icon: BookText
+title: Insights
+description: The team's Insights page, its period and tabs, what each figure counts, the Runs filters, and the 20,000-run limit.
+---
+
+The Insights page sums up how a team's runs, tasks and pull requests went over
+a period, against the period before it. It is "Insights" in the team's
+sidebar, at `/w/<slug>/team/<teamId>/insights`. The same figures are read
+through the [Insights API](/docs/reference/api/insights).
+
+Only people on the team, the workspace's owners and admins, and workspace
+tokens with the `read` scope can read Insights, on every tab. Anyone else is
+answered `404`. See [Team outcomes](/docs/reference/roles-and-permissions#team-outcomes).
+
+## Period
+
+The period picker offers "Past 7 days", "Past 30 days" and "Past 90 days", and
+starts at 30 days. A period is whole UTC days, up to and including today. The
+period before is as long and ends where the period starts. The period and the
+tab are kept in the page's address, as `?tab=<tab>&period=<7d|30d|90d>`.
+
+A figure with a change shows it as a whole percent with `vs last period`, or
+`No change`, or `Up from 0`. The change is green when it is good and red when
+it is bad. A change in "Spend", in a station's runs and in a station's tasks is
+neither.
+
+## What is counted
+
+A run is counted in a period when it ended in it. Except on the Runs tab, only
+runs that ran are counted: every run except those withdrawn before they
+started. Only task runs at a station are recorded; chat runs are not.
+
+| Term | Meaning |
+| --- | --- |
+| p50 | The median. With an even count, the rounded mean of the two middle values. |
+| p90 | The nearest-rank 90th percentile. |
+| Next act | The first thing a person did with the task after the run: the act names the run, or else it follows the task's last run at that station. |
+| Person act | A person moving a task, answering, approving, refusing or sending a run back. |
+| Activity | A person opening a task, acting on one, or starting an agent chat on the team. |
+
+Outcomes are recorded as runs end and as people act. Nothing that happened
+before recording began is counted. A deleted task's runs, pull request and acts
+are removed.
+
+The figures on every tab except Runs are worked out from the team's latest
+20,000 runs that ended in the period and the period before, or the last 30
+days where that reaches further. The team's task pull requests, tasks people
+acted on, tasks with failures and agent chats over that time are each counted
+up to 20,000 too. When any of them was more, the page shows
+`Only the latest 20,000 runs over this period and the one before are counted.`
+
+A station that no longer exists shows as "A removed station", a person without
+an account as "A former member", and a task no person opened as "No one".
+
+## Overview
+
+| Figure | Counts | A rise is |
+| --- | --- | --- |
+| Spend | The cost of the runs, when every priced run is in one currency. Otherwise it reads `Nothing was priced` or `Prices came in more than one currency`. | neither |
+| PRs merged | Task pull requests merged in the period, with how many closed unmerged. | good |
+| Merge rate | Merged, of the task pull requests merged or closed unmerged in the period. | good |
+| Cost per merged PR | Spend divided by PRs merged. | bad |
+| Task to merge | For pull requests merged in the period, the p50 time from the task opening to the merge, and the p90. | bad |
+| Human touches per task | Person acts in the period on the tasks the period's runs worked, per task. | bad |
+| Active people | People with an activity in the period. | good |
+
+"Output against cost" charts spend and merged pull requests per UTC day. Spend
+is charted only when every priced run in the period is in one currency;
+otherwise the card reads
+`Merged pull requests per day. <reason>, so spend is left out.`, with the
+reason `Nothing was priced` or `Prices came in more than one currency`. A
+diamond under a day marks a station's first run with a config it had not run
+before, when the station had run with another config earlier. Runs are taken in
+the order they started, and the diamond is dated from when that run started, or
+when it ended where it never started. A station's first config is not marked.
+
+"Stations worth improving" lists stations with at least 3 runs in the period
+where a signal is worse than the station's own in the period before, or worse
+than the whole team's in the period:
+
+| Signal | Rate |
+| --- | --- |
+| Sent back | Runs whose next act was Sent back or Refused, of runs. |
+| Checks failed | Failed checks, of passed and failed checks. |
+| Run failures | Failed runs, of runs. |
+| Task failures per run | Task failures raised at the station, per run. |
+| Cost per run | Spend, per run. Not compared across currencies. |
+
+A signal is worse when it is more than 1.25 times the value it is compared
+with and, for every signal but cost, also at least 5 percentage points higher.
+Stations are ordered by how many signals are worse, then by how far the worst
+exceeds its comparison, then by runs. Each row shows each worse signal as
+`<signal> <now> (was <before>, team <team>)` and "Improve this station", which
+opens the Agent page with the station attached. With none, the card reads
+`Nothing stands out this period.`
+
+## Flow
+
+"Where tasks wait" shows, for each station in the order its first run ended,
+the p50 and p90 of:
+
+| Wait | From | To |
+| --- | --- | --- |
+| Queued | A run is queued. | The run starts in its image on a runner. |
+| Running | The run starts in its image on a runner. | The run ends. |
+| In the inbox | The station asks a person. | The first person act on the task after the ask, at any station, before the task's next ask. |
+
+Its table adds "Tasks", "Runs", "Asks" (times the station asked a person) and
+"Unanswered".
+
+"Past the last station" follows each task's pull request:
+
+| Figure | Counts | Time shown |
+| --- | --- | --- |
+| PRs opened | Pull requests opened in the period. | Task to PR: from the task opening to the pull request opening. |
+| First reviews | First reviews by a person in the period. Reviews by bots are not counted. | PR to review: from the pull request opening to its first review. |
+| PRs merged | Pull requests merged in the period. | Review to merge: from the first review, or from the opening where no person reviewed it, to the merge. |
+
+A task tracks one pull request at a time. A task that opens another pull
+request is tracked on the new one.
+
+## Stations
+
+"The whole team" and "By station" show each station's tally, counted as on the
+Station page, with runs and failed runs per day. Rows are in the order each
+station's first run in the period ended. A station with task failures and no
+runs is listed too.
+
+| Figure | Counts |
+| --- | --- |
+| Runs | Runs that ran. The other figures count only these. |
+| Failed | Runs that ended Failed. |
+| Stopped | Runs a person stopped. |
+| Checks passed, Checks failed | Runs whose check passed or failed. |
+| Accepted | Runs whose next act was Closed or Approved. |
+| Sent back | Runs whose next act was Sent back or Refused. |
+| Handed on | Runs that passed their task to another station. |
+| Merged | Tasks among the runs whose pull request merged, at any time. |
+| Withdrawn | Runs withdrawn before they ran. |
+| Cost | The runs' cost, when all are in one currency. |
+| Median, p90 | The time the runs took. |
+
+Each row also lists its task failures, by source (`run` or `hook:<key>`) and
+code, as `<source> · <code> × <count>`, with `· <n> in a row` when one task
+raised it more than once; and its failed runs by reason, as `<reason> × <n>`.
+A hook the loop guard stopped shows only among task failures.
+
+## People
+
+"What the work asks of people", over the tasks the period's runs worked:
+
+| Figure | Counts | A rise is |
+| --- | --- | --- |
+| Inbox asks per task | Times a station asked a person in the period, per task. | bad |
+| Time to answer | The p50 time from an ask to its answer, with the p90 and how many asks are unanswered. | bad |
+| Sent-back rate | Runs whose next act was Sent back or Refused, of runs. | bad |
+| Refused approvals | Approvals a person refused in the period. | bad |
+
+"Who is using Spotlight":
+
+| Figure | Counts |
+| --- | --- |
+| Active people | People with an activity in the period. |
+| New adopters | Active people whose first activity on the team falls in the period. |
+| Weekly active | People with an activity in the last 7 days, whatever the period. |
+| Monthly active | People with an activity in the last 30 days, whatever the period, and the share of them active weekly. |
+
+"What each person did" lists each active person's "Tasks opened", "Acts",
+"Chats" (agent chats they started), "First seen" and "Last active". A new
+adopter is marked "New".
+
+## Cost
+
+| Figure | Counts |
+| --- | --- |
+| Spend | The cost of the runs, when every priced run is in one currency. |
+| Runs with no price | Runs whose harness reported no cost. |
+| Cache share | Cache-read tokens, of input, cache-read and cache-write tokens together, over the runs whose harness reported input and cache-read tokens. Otherwise `not reported`. |
+
+"By harness", "By model", "By station" and "By repository" split the spend,
+highest first. A run on several repositories splits its cost evenly among them.
+"Where the spend goes" follows the spend from model to station to repository.
+"Read from cache" gives each station's "Cache share", "Cache read", "Cache
+write" and "Input" tokens. When priced runs came in more than one currency, nothing is added up.
+See [Spend](/docs/reference/app/tasks-runs-and-the-inbox#spend) for which
+harnesses report tokens.
+
+## Runs
+
+The Runs tab lists every run that ended in the period, withdrawn runs included,
+newest first, 50 to a page. Each row shows the outcome, linked to the run, the
+failure, station, the person who opened the task, harness, model, how long the
+run took, cost and when it ended.
+
+"Station" (work stations only) and "Outcome" (Completed, Failed, Stopped,
+Abandoned, Withdrawn, Superseded) narrow the list. Following a figure on
+another tab narrows it further, shown as a pill:
+
+| Pill | Narrows to runs |
+| --- | --- |
+| Line | On the line. |
+| Pull request | Whose task's pull request is now Merged, Closed unmerged or Open. |
+| Then | Whose next act was the one named. |
+| Asked a person | Of tasks that asked a person in the period. |
+| Harness | Run by the harness. |
+| Model | Run with the model. "Harness default" is a run with no model set. |
+| Repository | On the repository. "No repository" is a run on none. |
+| Config | With the [config fingerprint](/docs/reference/glossary#config-fingerprint). |
+| Task, Tasks | Of the task, or of up to 200 tasks. |
+| Person | Of tasks the person opened. |
+| Day | That ended on the UTC day. |
+
+Every filter narrows the others.

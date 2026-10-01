@@ -1,0 +1,72 @@
+---
+type: reference
+icon: BookText
+title: Insights API
+description: The read-only endpoints behind a team's Insights page, their parameters, who may read them, and their errors.
+---
+
+Every figure on the [Insights page](/docs/reference/app/insights) is read
+through these endpoints. All are `GET`, under
+`/api/teams/{teamId}/insights`, and answer JSON.
+
+## Endpoints
+
+| Endpoint | Returns |
+| --- | --- |
+| `/overview` | The headline figures against the period before, spend and merged pull requests per day, config changes, and the stations worth improving. |
+| `/flow` | Where tasks wait at each station, queued, running or in the inbox, and the time to pull request, first review and merge. |
+| `/stations` | Each station's tally, per day and against the period before, with its task failures apart from its run failures. |
+| `/people` | What the team's work asks of people, and who is active: new, weekly and monthly. |
+| `/cost` | Spend by harness, model, station and repository, from model to station to repository. |
+| `/runs` | Every run that ended in the period, newest first, a page at a time. |
+
+## Parameters
+
+Every endpoint takes `period`: `7d`, `30d` or `90d`, whole UTC days up to and
+including today. Default: `30d`. Every answer also covers the period before,
+as long.
+
+`/runs` also takes:
+
+| Parameter | Narrows to runs |
+| --- | --- |
+| `lineId` | On this line. |
+| `stationId` | At this station. |
+| `outcome` | That ended this way: `completed`, `failed`, `stopped`, `abandoned`, `withdrawn` or `superseded`. |
+| `harness` | On this harness. |
+| `model` | With this model; `~default` for runs that named none. |
+| `repository` | That worked this repository; `none` for runs that worked none. |
+| `fingerprint` | With this [config fingerprint](/docs/reference/glossary#config-fingerprint). |
+| `taskId` | Of this task. |
+| `taskIds` | Of these tasks, comma-separated, at most 200. |
+| `personId` | Of tasks this person opened. |
+| `day` | That ended on this UTC day, as `YYYY-MM-DD`. |
+| `delivery` | Of tasks whose pull request is now `merged`, `closed` or `open`. |
+| `next` | Whose next person act was `started`, `parked`, `closed`, `answered`, `approved`, `refused` or `sent-back`. |
+| `asked` | `true`: of tasks that asked a person in the inbox during the period. `false` narrows nothing. |
+| `page` | Which page, from 1 to the last page with runs, at most 10,000. A value that is not a whole number above 0 is read as 1. |
+| `size` | Runs per page. Default: 50. At most 200; a larger number is read as 200. |
+
+With both `taskId` and `taskIds`, only that task's runs are listed, and only if
+it is among `taskIds`.
+
+Every endpoint but `/runs` counts at most the team's latest 20,000 runs over
+the period and the one before, and at most 20,000 each of its task pull
+requests, tasks people acted on, tasks with failures and agent chats. It
+answers `truncated: true` when any of them was more.
+
+## Who may read
+
+A person on the team or an owner or admin of its workspace, signed in, or a
+[workspace token](/docs/reference/api/workspace-token) of the team's workspace
+with the `read` scope, sent as `Authorization: Bearer <token>`. Anyone else
+is answered `404`. See
+[Team outcomes](/docs/reference/roles-and-permissions#team-outcomes).
+
+## Errors
+
+| Status | Title | Cause |
+| --- | --- | --- |
+| `401` | `No valid session or token` | No session or token, or an unknown token. |
+| `404` | `No such team for this caller` | The team is not in the caller's workspace, or the caller is a person neither on the team nor an owner or admin of the workspace. |
+| `422` | `No such period, or a filter it does not take: more tasks than it takes, an unknown value, a value repeated where it takes one, a day outside the period, or a page past the last` | `period` is not `7d`, `30d` or `90d`, or is given twice (`Insights look back 7d, 30d or 90d`). `taskIds` names more than 200 tasks (`Runs are filtered by at most 200 tasks at once`). `outcome`, `delivery` or `next` names a value it does not take (`Runs are filtered by one <filter> of <values>, not <value>`, as in `Runs are filtered by one outcome of completed, failed, stopped, abandoned, withdrawn, superseded, not done`). A filter that takes one value is given more than once (`Runs are filtered by one <filter> at a time, not <count>`). `day` is not a day of the period written `YYYY-MM-DD` (`Runs are filtered by a day of the period written YYYY-MM-DD, not <value>`). `asked` is not `true` or `false` (`Runs are filtered by one answer to whether the task asked of true, false, not <value>`). `page` is past the last page with runs, or above 10,000 (`Runs are paged up to page <last>, not <page>`). |
