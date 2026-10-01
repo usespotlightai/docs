@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Tasks, runs and the inbox
-description: Task fields and states, notes, handovers and moves, run states, failure codes, configs and station outcomes, the inbox, approvals, chats and attachments.
+description: Task fields and states, notes, handovers and moves, run states, failure codes, configs, spend and station outcomes, the inbox, approvals, chats and attachments.
 ---
 
 A task stands at one station of a line. Runs work it; people answer it from the
@@ -267,6 +267,33 @@ and one phrase for each change:
 | Decisions, memories | `Decisions on`, `Decisions off`, `Memories on`, `Memories off` |
 
 For example: `Prompt changed · Effort high → xhigh · Skill reviewing added`.
+
+### Spend
+
+Once a run has ended and its journal has been digested, the Run page shows
+`Spent`, the run's cost, and four token counts:
+
+| Label | Counts |
+| --- | --- |
+| Input | Fresh input tokens. |
+| Output | Output tokens. |
+| Cache read | Input tokens read from the prompt cache. |
+| Cache write | Input tokens written to the prompt cache. |
+
+Each count is added up over every turn of the attempts the run kept. A count
+the harness did not report is unknown, not zero, and reads `not reported`; so
+does a cost that was not reported. A count under 1,000 is shown whole, a larger
+one in thousands (`3.1k`) or millions (`2.4M`) to one decimal. A cost in US
+dollars is shown as `$1.87`, or to four decimals under `$0.01`; a cost in
+another currency is shown with its currency code.
+
+What each harness reports:
+
+| Harness | Reports |
+| --- | --- |
+| `claude-code` | All four counts. |
+| `codex` | Input, output and cache read, from the last request of each turn only, so its counts are lower than what the turn used. Cache write is not reported. |
+| `cursor` | Not confirmed. |
 
 ### Station outcomes
 
