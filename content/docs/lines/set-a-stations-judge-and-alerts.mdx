@@ -16,8 +16,17 @@ measures. You need the line in Terraform. See
 <Step>
 
 Write the rubric, what a good run at the station looks like, in a Markdown file
-beside the station's prompt, such as
-`judges/core/delivery/implementation.md`. Keep it under 20,000 characters.
+such as `judges/core/delivery/implementation.md`. Keep it under 20,000
+characters. On its first line, name the scale the judge scores on:
+
+```markdown
+scores: yes-no
+
+The run does what the task asks, and its tests cover the change.
+```
+
+Write `scores: 1-5` for a score from 1 to 5. Without the line, the judge
+answers yes or no.
 
 </Step>
 <Step>
@@ -39,8 +48,10 @@ station {
 }
 ```
 
-Set `sample` to the share of runs to judge, and `trust` to how often the judge
-must agree with people before its scores show, both from 0 to 1.
+Set `sample` to the share of runs to judge, and `trust` to the agreement with
+people the judge needs before its scores show, both from 0 to 1. Agreement is
+Cohen's kappa on a yes-or-no rubric and Spearman's ρ on a 1 to 5 rubric, so
+`0.6` is not 60% of runs.
 
 </Step>
 <Step>
@@ -82,13 +93,17 @@ most one alert of each kind of threshold, such as one `rises_by` and one
 
 Open the line's board and select the station's name. The Station page shows
 **Judge**, with the share judged and the agreement it needs, and **Alerts**,
-with one line per alert.
+with one line per alert. Only people on the team and the workspace's owners
+and admins can see **Judge**.
 
 If Terraform refuses the line, the message names the field.
 [Judge fields](/docs/reference/terraform/line#judge-fields) and
 [Alert fields](/docs/reference/terraform/line#alert-fields) list each message.
 A judge or alert on the backlog or the completed station is refused, because
 nothing runs there.
+
+Once the judge has scored runs, check its agreement with people. See
+[Check a station's judge against people](/docs/lines/check-a-stations-judge-against-people).
 
 ## Related
 

@@ -121,6 +121,12 @@ network only through it. Egress admits or refuses each connection and
 adds secrets to requests to the hosts they are bound to. See
 [Egress](/docs/reference/hosts/egress).
 
+## Grade
+
+A person's score of a judged run, on the judge's scale, given from the inbox.
+The judge's agreement with people is measured against grades. See
+[Grades](/docs/reference/app/tasks-runs-and-the-inbox#grades).
+
 ## Handover
 
 What a task's run declares when it ends: pass the task to another station, put
@@ -180,9 +186,11 @@ connects to it. See [`spotlight_integration`](/docs/reference/terraform/integrat
 
 ## Judge
 
-A model that scores a share of a work station's runs against a rubric the team
-writes. A station sets one in its `judge` block. See
-[Judge fields](/docs/reference/terraform/line#judge-fields).
+A model that scores a share of a work station's runs against the station's
+[rubric](#rubric), citing the steps and changes behind each reason. Its scores
+show only once they agree often enough with people's. A station sets one in
+its `judge` block. See [Judging](/docs/reference/app/tasks-runs-and-the-inbox#judging)
+and [Judge fields](/docs/reference/terraform/line#judge-fields).
 
 ## Label
 
@@ -299,6 +307,13 @@ out. It may name a runner `image` and a `setup` command. See
 A counter on a task. It goes up each time the task moves to another station
 and when it is finished. A person's move must name the current revision. See
 [Tasks](/docs/reference/app/tasks-runs-and-the-inbox#tasks).
+
+## Rubric
+
+What a good run at a station looks like, in Markdown, written by the team for
+the station's [judge](#judge). Its first line can name its scale,
+`scores: yes-no` or `scores: 1-5`. See
+[Judge fields](/docs/reference/terraform/line#judge-fields).
 
 ## Run
 

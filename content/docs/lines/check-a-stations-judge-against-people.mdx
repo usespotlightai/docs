@@ -1,0 +1,65 @@
+---
+type: how-to
+icon: SquarePen
+title: Check a station's judge against people
+description: Grade judged runs from the inbox, read the judge's agreement with people on the Station page, and change the rubric or trust when its scores stay hidden.
+---
+
+Use this once a work station has a judge, to get its scores shown or to find
+out why they are not. To give a station a judge, see
+[Set a station's judge and alerts](/docs/lines/set-a-stations-judge-and-alerts).
+
+Only people on the team and the workspace's owners and admins can grade runs
+and see the judge's agreement.
+
+## Grade judged runs
+
+Some judged runs reach the inbox as **Grade a judged run, so the team can check
+its judge.** They reach the task's assignee, or everyone on the team when the
+task has no assignee. Open one. It shows the task, **What the run said last** and **Its
+changes**.
+
+Under **Is this a good run?**, select **Yes** or **No**. On a 1 to 5 rubric,
+the question reads **How good is this run, from 1 to 5?**: select a number.
+To change your grade, select another answer.
+
+Nothing waits on your grade.
+
+## Read the judge's agreement with people
+
+Open the line's board and select the station's name. Under **Judge**, the
+first line says whether the judge is trusted:
+
+- If it reads **Hidden until more runs have both a judge score and people's**,
+  grade more of the station's runs. At least 10 need both scores.
+- If it reads **Hidden: every score so far is the same**, grade more runs until
+  both scores vary.
+- If it reads **Hidden:** followed by the measure and **below the** trust it
+  needs, compare the judge's scores with people's in the matrix on the
+  **Current** rubric card, and follow the next section.
+- If it reads **Hidden: the station's rubric names a scale that cannot be
+  read**, correct the rubric's first line to `scores: yes-no` or
+  `scores: 1-5`.
+
+**Both scores**, **Judge only**, **People only** and **Neither** count the
+station's recent runs by which scores they have.
+
+## Change the rubric or the trust
+
+The matrix on the **Current** rubric card sets the judge's scores, down,
+against people's, across. If its counts off the diagonal lean one way, the
+judge is stricter or looser than people:
+
+- To make the judge read the station as people do, edit the rubric file, such
+  as `judges/core/delivery/implementation.md`, and run `terraform apply`. The
+  new rubric gets a card of its own and starts with no runs that have both
+  scores.
+- To show the scores at a lower agreement, lower `trust` in the station's
+  `judge` block and run `terraform apply`.
+
+## Related
+
+- [Why a judge must agree with people before its scores show](/docs/lines/why-a-judge-must-agree-with-people)
+- [Judging](/docs/reference/app/tasks-runs-and-the-inbox#judging) and
+  [Agreement](/docs/reference/app/tasks-runs-and-the-inbox#agreement)
+- [Grades](/docs/reference/app/tasks-runs-and-the-inbox#grades)

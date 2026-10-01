@@ -297,15 +297,103 @@ What each harness reports:
 | `codex` | Input, output and cache read, from the last request of each turn only, so its counts are lower than what the turn used. Cache write is not reported. |
 | `cursor` | Not confirmed. |
 
+### Judging
+
+When a task's run ends at a station with a
+[judge](/docs/reference/terraform/line#judge-fields), the run is judged if all
+of these hold:
+
+- It ended Completed or Stopped. Failed, abandoned, withdrawn and superseded
+  runs are not judged.
+- Its task still exists.
+- It falls in the judge's `sample`. Whether a run falls in it is worked out
+  from the run's id, so it never changes. A `sample` of 1 judges every run, and
+  0 none.
+- The rubric's scale can be read.
+- It has not been judged before. A run is judged once.
+
+At most 4 runs are judged at once. The judge reads the task's title (up to 300
+characters) and description (up to 4,000), the run's steps from every attempt,
+and the hunks of its file changes, each file compared from before its first
+change to after its last, with 3 lines of context.
+
+| Evidence | Kept |
+| --- | --- |
+| Steps | The latest, up to 80,000 characters together. A step's text is cut at 4,000 characters, and what a tool was given and returned at 2,000 each. |
+| Hunks | The first that fit in 60,000 characters together. A hunk is cut to its first 200 lines, followed by `… <n> more lines`, and each line at 500 characters. A hunk that does not fit is skipped, and the ones after it are still tried. A hunk is named `<path>#<n>`, counting from 1. |
+
+The judge is told how many steps and hunks were left out.
+
+The judge answers with a score on the rubric's scale and 1 to 5 reasons. Each
+reason is up to 1,000 characters and cites 1 to 10 steps, by their place in the
+run's journal, or hunks, by name. A reason citing a step or hunk the judge did
+not read is dropped. A score is recorded against the rubric's version, the
+SHA-256 of its text.
+
+| Failure | When | Tried again |
+| --- | --- | --- |
+| `no-evidence` | The run left no steps and no hunks. | no |
+| `refused` | The model refused to answer. | up to 4 attempts, from 30 seconds to 10 minutes apart |
+| `unreadable` | The answer could not be read, gave more than 5 reasons, or a score off the scale. | up to 3 attempts, from 30 seconds to 5 minutes apart |
+| `ungrounded` | Half the reasons or fewer cited what the judge read. | up to 3 attempts, from 30 seconds to 5 minutes apart |
+| `errored` | Another error. | up to 4 attempts, from 30 seconds to 10 minutes apart |
+
+A run whose judging failed shows no score.
+
+### Agreement
+
+A judged run's people's score is the latest grade a person gave it on the
+judge's scale. A grade counts only for the rubric version it was given under:
+the version of the run's judge score, or else the station's rubric at the time.
+On a yes-or-no scale, a run no one graded takes its people's score from what
+happened next: Yes when a person next closed the task or approved, No when a
+person next sent it back or refused; failing those, Yes when its pull request
+merged and No when it closed unmerged. A 1 to 5 scale uses grades only.
+
+Agreement is measured for each rubric version, over its latest 500 judged runs,
+from the runs with both scores:
+
+| Scale | Measure | Also shown |
+| --- | --- | --- |
+| Yes or no | Cohen's kappa | Agreed: the share of runs where both scores are the same. |
+| 1 to 5 | Spearman's ρ, with tied ranks averaged | Mean error: the mean absolute difference between the two scores. |
+
+The judge's scores show only when the station's current rubric is trusted:
+
+| Standing | When |
+| --- | --- |
+| Trusted | At least 10 runs have both scores, and the measure is at least the judge's `trust`. |
+| Hidden: too few runs | Fewer than 10 runs have both scores. |
+| Hidden: no agreement | The measure cannot be worked out, as when every score so far is the same. |
+| Hidden: below trust | The measure is below `trust`. |
+| Hidden: unreadable rubric | The rubric's scale cannot be read. |
+
+While the judge is not trusted, a run's score and its reasons are both hidden.
+A score given under an earlier rubric version stays hidden, whatever the
+standing. A new rubric version starts with no runs that have both scores.
+
 ### Judge and alerts
 
 A work station's page shows its [judge](/docs/reference/terraform/line#judge-fields)
 and its [alerts](/docs/reference/terraform/line#alert-fields), when it has
 them, read-only.
 
-Under "Judge", "Judges" reads `<sample> of runs` and "Trusted after" reads
-`agreeing with people <trust> of the time`, both as percentages. "Rubric" opens
-the rubric.
+Only people on the team, the workspace's owners and admins, and workspace
+tokens with the `read` scope can read the "Judge" section. Anyone else is
+answered `404`. See [Team outcomes](/docs/reference/roles-and-permissions#team-outcomes).
+
+Under "Judge", "Judges" reads `<sample> of runs`, as a percentage, and
+"Trusted from" reads `agreement with people of <trust> or more`, with `trust`
+to two decimals. The agreement is Cohen's kappa or Spearman's ρ; see
+[Agreement](#agreement). "Rubric" opens the rubric. Then:
+
+| Part | Shows |
+| --- | --- |
+| Standing | Whether the judge is trusted, as `Trusted: <measure> is <value> over <n> runs, at least the <trust> it needs.`, or why its scores are hidden, as `Hidden until more runs have both a judge score and people's: <n> so far.` The measure and `trust` are shown to two decimals. |
+| Coverage | `Of the station's last <n> runs`, over its latest 200 runs that ran: "Both scores", "Judge only", "People only" and "Neither". |
+| Agreement by rubric | One card per rubric version, newest judged first, marked "Current" or "Earlier": the first 7 characters of its version, `<n> judged · <n> with people's scores`, the measure and what is also shown, a matrix of the judge's scores down and people's across, and a chart of the judge's and people's scores by day. The chart shows the judge's daily mean only on the current rubric's card while it is trusted; otherwise its legend reads "Judge hidden". |
+
+With no judged runs, the section reads "No judged runs yet".
 
 Under "Alerts", each alert is one line, in the order written: the measure, then
 its threshold.
@@ -330,6 +418,23 @@ A change in a rate is shown in points, and an amount of a rate as a
 percentage. Cost is shown in dollars. With `over` set to 1, the line reads
 `the last run` and `the one before`. For example:
 `Sent-back rate up 20 points in the last 20 runs, against the 20 before`.
+
+### Judge score
+
+The Run page of a judged run shows "Judged" and the judge's score, `Yes`, `No`
+or `<n> of 5`, when the station's current rubric is trusted and the score was
+given under it. Otherwise it shows `score hidden`. People's
+grades follow as `People said <grades>`, with `(you)` beside the reader's own.
+While the judge is not trusted, its standing is shown beneath. A shown score
+lists its reasons under it, each with the steps and hunks it cites, as
+`Step <n>` or the file's name and hunk header. Selecting a hunk opens the file
+at that hunk; selecting a step shows it.
+
+A run's judge score and people's grades can be read only by people on the
+team, the workspace's owners and admins, and workspace tokens with the `read`
+scope. Anyone else is answered `404`.
+
+A run that was not judged shows none of this.
 
 ### Station outcomes
 
@@ -407,6 +512,28 @@ Only the task's assignee can answer an item, and only an open conversation can
 be answered. An answer writes an `answered` note. The run that asked carries
 on; if no run holds the task and the station has a harness, a run starts there,
 taking up the harness session where the last run left it.
+
+### Grades
+
+When a judge score is recorded, 1 in 5 judged runs is also put to people to
+grade, chosen from the run's id. The item reads
+`Grade a judged run, so the team can check its judge.` and, once graded,
+`This run is graded.`
+
+It reaches the inbox of the task's assignee, or of everyone on the team when the
+task has no assignee. It never reaches a person who is neither on the team nor
+an owner or admin of the workspace. The item shows "Grade this run", the task, "What the run
+said last", "Its changes", and "Is this a good run?" with Yes and No, or
+"How good is this run, from 1 to 5?" with 1 to 5. The judge's score is not
+shown on it.
+
+- Any person on the team, and any owner or admin of the workspace, can grade
+  a run. Anyone else is answered `404`. One grade settles the item for
+  everyone.
+- A person's later grade of the same run replaces their earlier one.
+- A run is graded on its judge's scale, else on the scale of its station's
+  rubric, else yes or no.
+- Nothing waits on a grade. The task moves on as it would without one.
 
 ## Approvals
 

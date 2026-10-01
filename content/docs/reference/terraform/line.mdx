@@ -219,9 +219,25 @@ the built-in and catalog tools, and
 | --- | --- | --- | --- |
 | `rubric` | string | required | What a good run looks like, in Markdown. Not empty, at most 20,000 characters. In Terraform, usually read with `file()`. |
 | `sample` | number | required | The share of runs judged, from 0 to 1. |
-| `trust` | number | required | How often the judge must agree with people before its scores show, from 0 to 1. |
+| `trust` | number | required | The agreement with people the judge needs before its scores show, from 0 to 1: Cohen's kappa on a yes-or-no rubric, Spearman's ρ on a 1 to 5 rubric. See [Agreement](/docs/reference/app/tasks-runs-and-the-inbox#agreement). |
 
-The three fields are required together. An export writes each rubric to
+The three fields are required together. See
+[Judging](/docs/reference/app/tasks-runs-and-the-inbox#judging) for which runs
+are judged and when scores show.
+
+The rubric names its scale on its first line that is not blank, or on a line
+of a front matter block that opens the rubric between two `---` lines:
+
+| Line | Scale |
+| --- | --- |
+| `scores: yes-no` | Yes or no. |
+| `scores: 1-5` | A whole number from 1 to 5. |
+| none | Yes or no. |
+
+`scores` is matched without regard to case, with any spaces around the colon.
+A `scores:` line further down is not read.
+
+An export writes each rubric to
 `judges/<team>/<line>/<station>.md` and reads it with `file()`.
 
 The judge is part of the station's config: a run records its rubric's SHA-256,
@@ -234,6 +250,7 @@ The judge is part of the station's config: a run records its rubric's SHA-256,
 | `A judge's rubric must be at most 20000 characters` | `rubric` is longer. |
 | `A judge's sample is the share of runs judged, from 0 to 1` | `sample` is outside 0 to 1. |
 | `A judge's trust is how often the judge must agree with people, from 0 to 1` | `trust` is outside 0 to 1. |
+| `A judge's rubric names its scale as "scores: yes-no" or "scores: 1-5" on its first line` | The `scores:` line names another scale, or the rubric opens a front matter block with `---` and never closes it. |
 
 Each is returned with `422` at the path `stations[<n>].judge.<field>`.
 
