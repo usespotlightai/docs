@@ -1,0 +1,97 @@
+---
+type: how-to
+icon: SquarePen
+title: Set a station's judge and alerts
+description: Give a work station a rubric its runs are judged against, and thresholds on how its runs turn out, in the line's Terraform.
+---
+
+Use this to have a share of a work station's runs scored against what a good
+run looks like, or to set thresholds on its sent-back rate, cost and the other
+measures. You need the line in Terraform. See
+[Manage Spotlight with Terraform](/docs/configuration/manage-spotlight-with-terraform).
+
+## Set a judge
+
+<Steps>
+<Step>
+
+Write the rubric, what a good run at the station looks like, in a Markdown file
+beside the station's prompt, such as
+`judges/core/delivery/implementation.md`. Keep it under 20,000 characters.
+
+</Step>
+<Step>
+
+Add a `judge` block to the station's block in the `spotlight_line` resource:
+
+```hcl
+station {
+  key     = "implementation"
+  name    = "Implementation"
+  harness = "claude-code"
+  # ...
+
+  judge {
+    rubric = file("${path.module}/judges/core/delivery/implementation.md")
+    sample = 0.2
+    trust  = 0.6
+  }
+}
+```
+
+Set `sample` to the share of runs to judge, and `trust` to how often the judge
+must agree with people before its scores show, both from 0 to 1.
+
+</Step>
+<Step>
+
+Run `terraform apply`.
+
+</Step>
+</Steps>
+
+A judge is part of the station's config, so the next run starts a new group
+under **How its runs turned out**, and its Run page lists `Judge added`.
+
+## Set alerts
+
+Add one `alert` block per threshold to the station's block. Each names a
+`measure`, how many runs it compares in `over`, and exactly one of `rises_by`,
+`falls_by`, `above` and `below`:
+
+```hcl
+alert {
+  measure  = "sent_back_rate"
+  rises_by = 0.2
+  over     = 20
+}
+
+alert {
+  measure = "cost_per_run"
+  above   = 5
+  over    = 10
+}
+```
+
+For a rate, write shares from 0 to 1, so `0.2` is 20 percentage points. For
+`cost_per_run`, write an amount in the workspace's currency. Give a measure at
+most one alert of each kind of threshold, such as one `rises_by` and one
+`above`; a second of the same kind is refused. Run `terraform apply`.
+
+## Check the station
+
+Open the line's board and select the station's name. The Station page shows
+**Judge**, with the share judged and the agreement it needs, and **Alerts**,
+with one line per alert.
+
+If Terraform refuses the line, the message names the field.
+[Judge fields](/docs/reference/terraform/line#judge-fields) and
+[Alert fields](/docs/reference/terraform/line#alert-fields) list each message.
+A judge or alert on the backlog or the completed station is refused, because
+nothing runs there.
+
+## Related
+
+- [`spotlight_line`](/docs/reference/terraform/line#judge-fields)
+- [Judge and alerts on the Station page](/docs/reference/app/tasks-runs-and-the-inbox#judge-and-alerts)
+- [Improve a station from its runs](/docs/lines/improve-a-station-from-its-runs)

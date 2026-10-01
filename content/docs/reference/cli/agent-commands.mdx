@@ -199,7 +199,7 @@ removed first.
 | File | Holds |
 | --- | --- |
 | `index.md` | A table of the runs: each run, linked to its journal, then its task's title, config, ending, checks, the next person act, delivery, round, cost, steps, duration and start. A run with no recorded outcome shows its state as its ending. Then each config, oldest first: its fingerprint, its file, how many of the runs used it, what changed since the config before it, and the prompt's change as a diff. |
-| `configs/<fingerprint>.yml` | One config, as YAML: `fingerprint`, `harness`, `model`, `effort`, `image`, `profile`, `repositories`, `skills`, `tools`, `decisions`, `memories` and `prompt`. |
+| `configs/<fingerprint>.yml` | One config, as YAML: `fingerprint`, `harness`, `model`, `effort`, `image`, `profile`, `repositories`, `skills`, `tools`, `decisions`, `memories`, `judge` and `prompt`. `judge` holds `rubricDigest`, `sample` and `trust`, or is `null`. |
 | `runs/<run>/journal.md` | The run's steps and spans: each step's text, what a tool was given and returned, and each file change as a diff. |
 | `runs/<run>/outcome.json` | `runId`, `taskId`, `fingerprint` and `outcome`, which is `null` for a run with no recorded outcome. |
 | `runs/<run>/diff.patch` | The run's file changes as a unified diff. Written only for a run that changed files. Files are taken in the order they were first changed. A file whose text before and after is over 256,000 characters together, or does not fit in what is left of the run's 1,000,000 characters of changed-file text, is listed as `Omitted <path>: too large to send whole`. |

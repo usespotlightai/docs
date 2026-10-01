@@ -5,6 +5,12 @@ title: Glossary
 description: The terms Spotlight uses, in alphabetical order, with a link to each term's reference page.
 ---
 
+## Alert
+
+A threshold on a measure of a work station's runs, such as its sent-back rate
+or its cost per run, set in the station's `alert` blocks. The Station page lists
+a station's alerts. See [Alert fields](/docs/reference/terraform/line#alert-fields).
+
 ## Approval
 
 A person's decision on one tool call, or one harness permission, that a run
@@ -83,7 +89,8 @@ moved to it is finished. See [`spotlight_line`](/docs/reference/terraform/line).
 
 A SHA-256 of the config a task's run was given at its station: the prompt,
 harness, model, effort, harness profile, the line's image, repositories and
-their setup commands, skills, tools, and the decisions and memories switches. Runs with the same
+their setup commands, skills, tools, the decisions and memories switches, and
+the judge. Runs with the same
 fingerprint ran the same config. The web app shows its first 8 characters. See
 [Config](/docs/reference/app/tasks-runs-and-the-inbox#config).
 
@@ -170,6 +177,12 @@ team in a workspace. See
 A team's definition of an outside service: the webhooks it sends and the
 happenings they raise, the tools agents may call on it, and how Spotlight
 connects to it. See [`spotlight_integration`](/docs/reference/terraform/integration).
+
+## Judge
+
+A model that scores a share of a work station's runs against a rubric the team
+writes. A station sets one in its `judge` block. See
+[Judge fields](/docs/reference/terraform/line#judge-fields).
 
 ## Label
 

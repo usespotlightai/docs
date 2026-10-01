@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Tasks, runs and the inbox
-description: Task fields and states, notes, handovers and moves, run states, failure codes, configs, spend and station outcomes, the inbox, approvals, chats and attachments.
+description: Task fields and states, notes, handovers and moves, run states, failure codes, configs, spend, a station's judge and alerts, station outcomes, the inbox, approvals, chats and attachments.
 ---
 
 A task stands at one station of a line. Runs work it; people answer it from the
@@ -246,6 +246,7 @@ station's config as it stands then. A chat's run records none.
 | Skills | Each team and catalog skill given, with a SHA-256 of its files. Built-in skills are left out. |
 | Tools | The tools given. |
 | Decisions, memories | Whether the station drafts them. |
+| Judge | The SHA-256 of the judge's rubric, its `sample` and its `trust`, when the station has a [judge](/docs/reference/terraform/line#judge-fields). The station's alerts are not part of the config. |
 
 The run's [config fingerprint](/docs/reference/glossary#config-fingerprint) is
 a SHA-256 of these parts. The task's title, description and marks are not part
@@ -265,6 +266,7 @@ and one phrase for each change:
 | Skill | `Skill <key> added`, `Skill <key> removed`, `Skill <key> changed` |
 | Tool | `Tool <name> added`, `Tool <name> removed` |
 | Decisions, memories | `Decisions on`, `Decisions off`, `Memories on`, `Memories off` |
+| Judge | `Judge added`, `Judge removed`, `Judge rubric changed`, `Judge sample <was> → <now>`, `Judge trust <was> → <now>`, with sample and trust as percentages |
 
 For example: `Prompt changed · Effort high → xhigh · Skill reviewing added`.
 
@@ -294,6 +296,40 @@ What each harness reports:
 | `claude-code` | All four counts. |
 | `codex` | Input, output and cache read, from the last request of each turn only, so its counts are lower than what the turn used. Cache write is not reported. |
 | `cursor` | Not confirmed. |
+
+### Judge and alerts
+
+A work station's page shows its [judge](/docs/reference/terraform/line#judge-fields)
+and its [alerts](/docs/reference/terraform/line#alert-fields), when it has
+them, read-only.
+
+Under "Judge", "Judges" reads `<sample> of runs` and "Trusted after" reads
+`agreeing with people <trust> of the time`, both as percentages. "Rubric" opens
+the rubric.
+
+Under "Alerts", each alert is one line, in the order written: the measure, then
+its threshold.
+
+| Measure | Label |
+| --- | --- |
+| `sent_back_rate` | Sent-back rate |
+| `accepted_rate` | Accepted rate |
+| `checks_failed_rate` | Checks-failed rate |
+| `failed_rate` | Failed rate |
+| `merged_rate` | Merged rate |
+| `cost_per_run` | Cost per run |
+
+| Threshold | Reads |
+| --- | --- |
+| `risesBy` | `<Measure> up <change> in the last <over> runs, against the <over> before` |
+| `fallsBy` | `<Measure> down <change> in the last <over> runs, against the <over> before` |
+| `above` | `<Measure> above <amount> across the last <over> runs` |
+| `below` | `<Measure> below <amount> across the last <over> runs` |
+
+A change in a rate is shown in points, and an amount of a rate as a
+percentage. Cost is shown in dollars. With `over` set to 1, the line reads
+`the last run` and `the one before`. For example:
+`Sent-back rate up 20 points in the last 20 runs, against the 20 before`.
 
 ### Station outcomes
 
