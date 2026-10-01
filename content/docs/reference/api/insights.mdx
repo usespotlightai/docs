@@ -15,6 +15,8 @@ through these endpoints. All are `GET`, under
 | --- | --- |
 | `/overview` | The headline figures against the period before, spend and merged pull requests per day, config changes, and the stations worth improving. |
 | `/flow` | Where tasks wait at each station, queued, running or in the inbox, and the time to pull request, first review and merge. |
+| `/pull-requests` | Spotlight's share of merged pull requests by week and repository, Spotlight's against people's, types, and review depth. |
+| `/pull-requests/list` | Every pull request opened or closed in the period, or still open, the latest first, a page at a time. |
 | `/stations` | Each station's tally, per day and against the period before, with its task failures apart from its run failures. |
 | `/people` | What the team's work asks of people, and who is active: new, weekly and monthly. |
 | `/cost` | Spend by harness, model, station and repository, from model to station to repository. |
@@ -47,13 +49,30 @@ as long.
 | `page` | Which page, from 1 to the last page with runs, at most 10,000. A value that is not a whole number above 0 is read as 1. |
 | `size` | Runs per page. Default: 50. At most 200; a larger number is read as 200. |
 
+`/pull-requests/list` also takes:
+
+| Parameter | Narrows to pull requests |
+| --- | --- |
+| `repository` | In these repositories, comma-separated or repeated, at most 50. |
+| `author` | Written by `spotlight`, `touched`, `people` or `bots`. |
+| `type` | Of type `feature`, `fix`, `refactor`, `tests`, `chore` or `other`. |
+| `state` | `merged` or `closed` in the period, or still `open`. |
+| `week` | Closed in the week starting this UTC day, as `YYYY-MM-DD`. |
+| `reverted` | `true`: reverted by another merged pull request. |
+| `compared` | `true`: in the repositories Spotlight merged into in the period. |
+| `rounds` | That took `0`, `1`, `2` or `3+` review rounds. |
+| `page` | Which page, from 1. A value that is not a whole number above 0 is read as 1. A page past the last is empty. |
+| `size` | As for `/runs`. |
+
 With both `taskId` and `taskIds`, only that task's runs are listed, and only if
 it is among `taskIds`.
 
-Every endpoint but `/runs` counts at most the team's latest 20,000 runs over
-the period and the one before, and at most 20,000 each of its task pull
-requests, tasks people acted on, tasks with failures and agent chats. It
-answers `truncated: true` when any of them was more.
+Every endpoint but `/runs` and the two pull request endpoints counts at most
+the team's latest 20,000 runs over the period and the one before, and at most
+20,000 each of its task pull requests, tasks people acted on, tasks with
+failures and agent chats. It answers `truncated: true` when any of them was
+more. The pull request endpoints count at most the newest 20,000 pull requests
+in the period.
 
 ## Who may read
 
@@ -65,8 +84,8 @@ is answered `404`. See
 
 ## Errors
 
-| Status | Title | Cause |
-| --- | --- | --- |
-| `401` | `No valid session or token` | No session or token, or an unknown token. |
-| `404` | `No such team for this caller` | The team is not in the caller's workspace, or the caller is a person neither on the team nor an owner or admin of the workspace. |
-| `422` | `No such period, or a filter it does not take: more tasks than it takes, an unknown value, a value repeated where it takes one, a day outside the period, or a page past the last` | `period` is not `7d`, `30d` or `90d`, or is given twice (`Insights look back 7d, 30d or 90d`). `taskIds` names more than 200 tasks (`Runs are filtered by at most 200 tasks at once`). `outcome`, `delivery` or `next` names a value it does not take (`Runs are filtered by one <filter> of <values>, not <value>`, as in `Runs are filtered by one outcome of completed, failed, stopped, abandoned, withdrawn, superseded, not done`). A filter that takes one value is given more than once (`Runs are filtered by one <filter> at a time, not <count>`). `day` is not a day of the period written `YYYY-MM-DD` (`Runs are filtered by a day of the period written YYYY-MM-DD, not <value>`). `asked` is not `true` or `false` (`Runs are filtered by one answer to whether the task asked of true, false, not <value>`). `page` is past the last page with runs, or above 10,000 (`Runs are paged up to page <last>, not <page>`). |
+| Status | Cause |
+| --- | --- |
+| `401` | No session or token, or an unknown token. |
+| `404` | The team is not in the caller's workspace, or the caller is a person neither on the team nor an owner or admin of the workspace. |
+| `422` | `period` is not `7d`, `30d` or `90d`, or is given twice: `Insights look back 7d, 30d or 90d`. `taskIds` names more than 200 tasks: `Runs are filtered by at most 200 tasks at once`. `outcome`, `delivery` or `next` on `/runs` names a value it does not take: `Runs are filtered by one <filter> of <values>, not <value>`, as in `Runs are filtered by one outcome of completed, failed, stopped, abandoned, withdrawn, superseded, not done`. A `/runs` filter that takes one value is given more than once: `Runs are filtered by one <filter> at a time, not <count>`. `day` is not a day of the period written `YYYY-MM-DD`: `Runs are filtered by a day of the period written YYYY-MM-DD, not <value>`. `asked` is not `true` or `false`: `Runs are filtered by one answer to whether the task asked of true, false, not <value>`. `page` is past the last page with runs, or above 10,000: `Runs are paged up to page <last>, not <page>`. A filter of `/pull-requests/list` names more than 50 repositories or a value it does not take: a message starting `Pull requests are filtered`, as in `Pull requests are filtered by at most 50 repositories at once`. |
