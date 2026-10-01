@@ -5,9 +5,8 @@ title: Issue a workspace token
 description: Issue a token that lets Terraform, a script or CI act in one workspace within the scopes you choose, and revoke it when it is no longer needed.
 ---
 
-Spotlight has no page for tokens, so you issue and revoke them from the
-browser's developer console while signed in. Only an owner or admin of the
-workspace can do either.
+Only an owner or admin of the workspace can issue or revoke a token, on the
+**Tokens** page of the web app or through the resource API while signed in.
 
 ## Choose the scopes
 
@@ -27,13 +26,60 @@ create trusts that mint tokens with any scope it holds, so give it only to a
 token with a short expiry. [Workspace tokens](/docs/reference/api/workspace-token)
 lists what each scope allows.
 
+On the **Tokens** page, the `trusts` scope is the checkbox **Token trusts**.
+
 ## Issue the token
+
+<Tabs items={['Web app', 'Resource API']}>
+<Tab value="Web app">
 
 <Steps>
 <Step>
 
-Open Spotlight in the workspace, then open the developer console. In Chrome
-and Edge, press <kbd>Cmd</kbd>+<kbd>Option</kbd>+<kbd>J</kbd> on a Mac or
+Open **Tokens** in the sidebar and click **Create a token**.
+
+</Step>
+<Step>
+
+Under **Name**, enter a name of lowercase words joined by dashes, such as
+`terraform`. To record what uses the token, fill in **What it is for**.
+
+</Step>
+<Step>
+
+Under **What it may do**, select **Read**, **Plan** or **Configure**, and tick
+**Secrets**, **Runners** or **Token trusts** for each further scope the token
+needs.
+
+</Step>
+<Step>
+
+**Expires after** starts at **90 days**. If the token needs another expiry,
+choose it there. For one the list lacks, use the resource API.
+
+</Step>
+<Step>
+
+Click **Create token**. The page shows the token under a heading that names
+it, such as "Copy the terraform token now". Click **Copy token** and put it in
+your secret store now: Spotlight shows it this once and keeps only a hash. Then
+click **I've copied it**.
+
+</Step>
+</Steps>
+
+If the form says "A token named terraform already exists. Choose another
+name.", a token in the workspace already has that name.
+
+</Tab>
+<Tab value="Resource API">
+
+<Steps>
+<Step>
+
+Signed in to Spotlight as an owner or admin, open any page of the workspace,
+then open the browser's developer console. In Chrome and Edge, press
+<kbd>Cmd</kbd>+<kbd>Option</kbd>+<kbd>J</kbd> on a Mac or
 <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>J</kbd> on Linux and Windows. In Firefox,
 press <kbd>Cmd</kbd>+<kbd>Option</kbd>+<kbd>K</kbd> on a Mac or
 <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>K</kbd> on Linux and Windows. If the browser asks you to allow
@@ -81,16 +127,28 @@ prints `422`, read the response body for the field it refuses:
 console.log(await issued.json());
 ```
 
+</Tab>
+</Tabs>
+
 The name, scopes and expiry are fixed once the token is issued. To change them,
 issue a new token and revoke the old one.
 
 ## Revoke a token
 
+<Tabs items={['Web app', 'Resource API']}>
+<Tab value="Web app">
+
+On the **Tokens** page, click **Revoke** beside the token, then **Revoke
+token**. The token stops working at once.
+
+</Tab>
+<Tab value="Resource API">
+
 <Steps>
 <Step>
 
-In the console, list the workspace's tokens and find the one to revoke by its
-name:
+In the developer console, opened as in [Issue the token](#issue-the-token),
+list the workspace's tokens and find the one to revoke by its name:
 
 ```js
 const slug = location.pathname.split('/')[2];
@@ -121,9 +179,14 @@ The console prints `204`, and the token stops working at once.
 If it prints `409`, the token changed since you listed it. List again and
 repeat.
 
+</Tab>
+</Tabs>
+
 ## Related
 
 - [Workspace tokens](/docs/reference/api/workspace-token): the fields, scopes and
   errors.
+- [Web app](/docs/reference/app/web-app#workspace-pages): what the Tokens page
+  shows.
 - [Run Terraform from GitHub Actions without a stored token](/docs/configuration/run-terraform-from-github-actions)
 - [Ways in: pools, trusts and tokens](/docs/administration/ways-in-pools-trusts-and-tokens)
