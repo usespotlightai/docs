@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Insights
-description: The team's Insights page, its period and tabs, what each figure counts, how pull requests are recorded and typed, the Runs filters, and the 20,000-run limit.
+description: The team's Insights page, its period and tabs, what each figure counts, how pull requests are recorded and typed, which skills and MCP servers runs use, the Runs filters, and the 20,000-run limit.
 ---
 
 The Insights page sums up how a team's runs, tasks and pull requests went over
@@ -44,7 +44,7 @@ Outcomes are recorded as runs end and as people act. Nothing that happened
 before recording began is counted. A deleted task's runs, pull request and acts
 are removed.
 
-The figures on every tab except Runs are worked out from the team's latest
+The figures on every tab except Pull requests and Runs are worked out from the team's latest
 20,000 runs that ended in the period and the period before, or the last 30
 days where that reaches further. The team's task pull requests, tasks people
 acted on, tasks with failures and agent chats over that time are each counted
@@ -325,6 +325,73 @@ write" and "Input" tokens. When priced runs came in more than one currency, noth
 See [Spend](/docs/reference/app/tasks-runs-and-the-inbox#spend) for which
 harnesses report tokens.
 
+## Tools
+
+The Tools tab counts the runs that ran and ended in the period.
+
+### Skills
+
+A run is given a skill when its station's config gave it. A run reads a skill
+when one of its tool calls does either of these:
+
+- Reads, searches or runs a command on a path to a file inside the skill's
+  folder, `.claude/skills/<key>/` or `.spotlight/skills/<key>/`, whatever the
+  run's harness. Listing a skills folder, writing or editing a skill's file,
+  and MCP calls do not count.
+- Asks Claude Code's `Skill` tool for the skill by its key.
+
+Spotlight's built-in skills are not counted. A key the team does not define is
+counted, and shown without a link.
+
+"Skills" shows, for each skill, most read first, the runs that read it out of
+all runs, week by week from Monday, UTC, with how many runs read it and how
+many were given it, in all and at each station. A skill's trend compares the
+share of all runs that read it in the last 2 weeks with the weeks before:
+
+| Trend | When |
+| --- | --- |
+| Spreading | The share rose by 20 points or more. |
+| Fading | The share fell by 20 points or more. |
+| Steady | Neither. |
+
+A skill has no trend when the period touches 2 weeks or fewer, or when either
+side has fewer than 5 runs. A station's trend is worked out the same way from
+its own runs.
+
+"Unused skills" lists the skills the team defines that no run read in the
+period. Each links to the skill on the team's Skills page.
+
+### MCP servers
+
+A tool call belongs to an MCP server when Claude Code names the tool
+`mcp__<server>__<tool>`, or, for a harness that does not name its tools, when
+the call's title is `Tool: <server>/<tool>` or `mcp__<server>__<tool>`. The
+title of a call that runs a shell command is not read for a server. The tools
+Claude Code names `mcp__acp__Read`, `mcp__acp__Write`, `mcp__acp__Edit`,
+`mcp__acp__MultiEdit`, `mcp__acp__Bash`, `mcp__acp__BashOutput` and
+`mcp__acp__KillShell` belong to no server.
+
+| Figure | Counts |
+| --- | --- |
+| Runs | Runs that called the server. |
+| Calls per run | Calls to it, per run that called it. Refused calls are left out. |
+| p50, p95 | How long a finished call took, from when it started working until it completed or failed, so a wait for approval is left out, and so is any time the run was paused. Approximate: each call is counted in one of fixed time ranges, from under 10 ms to over 10,000 seconds, and the percentile is given as the geometric middle of its range. |
+| Error rate | Failed calls, of calls. A call that never finished counts as failed. |
+| Failing runs | Runs that failed where the run's last call to the server failed or never finished. |
+| Refused | Runs in which a person refused to approve one of its tools. |
+
+A call is refused when the harness asked permission for it and Spotlight's
+answer was anything but allow: a refusal, the call being put to a person, or
+no answer because the control plane could not be reached. What the tool's
+output says does not make a call refused.
+
+### Refused approvals
+
+"Refused approvals" counts, for each tool and server, the runs that ran in the
+period in which a person refused to approve it. A tool is named by its
+own name, as in `linear.comment`, or for a harness permission that names no
+tool, as `<harness> <kind>`.
+
 ## Runs
 
 The Runs tab lists every run that ended in the period, withdrawn runs included,
@@ -349,5 +416,12 @@ another tab narrows it further, shown as a pill:
 | Task, Tasks | Of the task, or of up to 200 tasks. |
 | Person | Of tasks the person opened. |
 | Day | That ended on the UTC day. |
+| Week of | That ended in the week starting that Monday, UTC. |
+| Given skill, Read skill | Whose station gave the skill, or that read it. |
+| Called | That called the MCP server. |
+| A call failed on | With a failed call to the MCP server. |
+| Last call failed on | That failed where their last call to the MCP server failed. |
+| Refused, Refused on | Where a person refused the tool, or a tool of the MCP server. |
 
-Every filter narrows the others.
+Every filter narrows the others. The skill, MCP server and refusal filters
+leave out withdrawn runs.
