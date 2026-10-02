@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Agent commands
-description: The spotlight commands an agent runs inside its sandbox to hand a task over, answer a remark, read a trace or a station's history, recall and propose team memories, and use tools.
+description: The spotlight commands an agent runs inside its sandbox to hand a task over, answer a remark, read a trace or a station's history, recall and propose team memories, propose a search candidate, and use tools.
 ---
 
 An agent runs these commands from anywhere in its sandbox. Each one talks to
@@ -16,9 +16,14 @@ spotlight trace --task <id> [--out <path>]
 spotlight history --station <key> [--line <key>] [--fingerprint <fp>] [--outcome <word>] [--since <date>] [--last <n>] [--out <dir>]
 spotlight recall "<words>" | <handle>
 spotlight remember --kind <kind> --body <text> [--path <path>]... [--reach <reach>] [--supersedes <handle>]
+spotlight candidate --name <name> --hypothesis <text | @file> <station.json | ->
 spotlight tools
 spotlight <tool> [--<input> <value>...]
 ```
+
+In a [search's](/docs/reference/app/searches#the-searchs-agent-run) agent run,
+`reply`, `recall` and `remember` are refused with
+`a search may not <answer a remark, recall what the team remembers or propose a memory>: it studies the station's history and proposes station configs, nothing more`.
 
 The tools Spotlight itself gives are listed in
 [Built-in tools and skills](/docs/reference/built-ins/built-in-tools-and-skills).
@@ -47,6 +52,7 @@ fails:
 | `history` | `no run to read history from: spotlight runs inside a Spotlight workspace` |
 | `recall` | `no run to recall from: spotlight runs inside a Spotlight workspace` |
 | `remember` | `no run to remember from: spotlight runs inside a Spotlight workspace` |
+| `candidate` | `no run to propose a candidate from: spotlight runs inside a Spotlight workspace` |
 | `tools` | `no run to reach for tools in: spotlight runs inside a Spotlight workspace` |
 | `<tool>` | `could not read this run's tools to find "<name>": no run to reach for tools in: spotlight runs inside a Spotlight workspace` |
 
@@ -208,7 +214,32 @@ removed first.
 with no recorded config.
 
 On success it prints three lines: `Wrote the history to <folder>`, the number
-of runs and configs, and a `grep -r` command to search the folder.
+of runs and configs, and a `grep -r` command to search the folder. In a
+search's run, a line before the last reads
+`<n> candidates proposed so far, under <folder>/candidates`.
+
+### In a search's run
+
+In a [search's](/docs/reference/app/searches) agent run, only the searched
+station is read; any other is answered as a station no line has. The runs of
+the search's held-out tasks are left out, and every run of the searched tasks
+is written, beyond `--last` if need be. The folder also holds:
+
+| File | Holds |
+| --- | --- |
+| `current.json` | The station block the search started from, the live config when it began. |
+| `index.md` | After the runs and configs, a "Candidates" table: each candidate, linked to its `score.json`, its config, how many of its replay runs succeeded and were scored, and its hypothesis. |
+| `candidates/<name>/block.json` | The candidate's station block. |
+| `candidates/<name>/changes.diff` | How `block.json` differs from `current.json`, as a unified diff. Left out when they are the same. |
+| `candidates/<name>/hypothesis.md` | What the agent that proposed it expected it to improve. |
+| `candidates/<name>/score.json` | `succeeded`, `scored`, `failed` (the tasks it failed), `verdicts` (how many runs the judge passed and failed, as `pass` and `fail`), `spent` (per currency) and `unpriced` (runs with no cost). |
+| `candidates/<name>/runs/<original run>/journal.md` | The replay run's steps, as for a run. |
+| `candidates/<name>/runs/<original run>/result.json` | `runId`, `original`, `taskId`, `fingerprint`, `state`, `cost`, `succeeded`, `reasons` and `verdict` (`pass`, `fail` or `null`). |
+| `candidates/<name>/runs/<original run>/diff.patch` | The replay run's file changes, when it changed files. |
+
+The candidate named `seed` is the live config the search started from,
+replayed on the searched tasks. A candidate's runs are its replay's runs on the
+searched tasks, one per task run of the set.
 
 ### Outcome words
 
@@ -329,6 +360,65 @@ memory waits for a person's approval.
 ```bash
 spotlight remember --kind rationale --body "Uploads retry in the request, not from a queue." --path src/uploads
 spotlight remember --kind correction --supersedes M-7 < correction.md
+```
+
+## spotlight candidate
+
+```text
+spotlight candidate --name <name> --hypothesis <text | @file> <station.json | ->
+```
+
+Proposes a station config from a [search's](/docs/reference/app/searches)
+agent run. The file holds the station block as JSON, in the shape of one entry
+of a line's `stations`; `-` reads it from standard input. Spotlight checks it,
+then replays it on the search's searched tasks. Only a search's runs may
+propose a candidate.
+
+| Flag | Required | Description |
+| --- | --- | --- |
+| `--name` | yes | A slug unique in the search: lowercase letters, digits and hyphens, starting with a letter or digit, at most 63 characters. Not `seed`. |
+| `--hypothesis` | yes | What the change should improve, and why, in 1 to 4,000 characters. `@<file>` reads it from a file. |
+
+The block may change only the station's `prompt`, `harness`, `model`,
+`effort`, `profile`, `skills`, `tools`, `decisions`, `memories` and
+`description`, from the block the search started from. Proposing the same name
+again from the same run answers with the candidate it proposed.
+
+On success it prints:
+
+```text
+Proposed <name> as candidate <id>.
+Spotlight replays it as <replay id>; its results show in spotlight history once the replay ends.
+```
+
+A refused block prints `Spotlight refused the candidate:`, one line per
+problem as `<path>: <message>`, a warning marked `(<severity>, not why it was
+refused)`, and `Fix the station block and propose it again.` A refused
+proposal does not count toward the iteration's candidates, but an iteration may
+try at most three times as many as it may propose.
+
+| Message | Cause |
+| --- | --- |
+| `--name is required` | No `--name`. The usage follows. |
+| `"<name>" cannot name a candidate: a name is a slug of lowercase letters, digits and hyphens, starting with a letter or digit, at most 63 characters` | `--name` is no slug. |
+| `--hypothesis is required` | No `--hypothesis`. |
+| `name one file holding the station block, or - to read it from stdin` | No file, or more than one. |
+| `<path> is HCL; give the station block as JSON, as the line resource holds a station` | The file ends in `.tf` or `.hcl`. |
+| `<path> holds no JSON object; it holds the station block, as the line resource holds a station` | The file is not a JSON object. |
+| `<file> holds no hypothesis; say what you expect the change to do` | `@<file>` is empty. |
+| `this run cannot propose a candidate: only a search's runs do` | The run is not a search's. |
+| `A search may change only the station's prompt, harness, model, effort, profile, skills, tools, decisions, memories, description; keep <field> as the search's starting config has it` | At `station.<field>`: the block changes another field. |
+| `found by a search is named other than seed, which names the live config the search started from` | At `name`: the name is `seed`. |
+| `This search has a candidate named <name> already; name it otherwise` | Another iteration took the name. |
+| `This search iteration has proposed its <n> candidates, or tried to too often; end the run` | The iteration may propose no more. |
+| `The search no longer holds this run` | The search stopped, or moved on from this iteration. |
+
+Other problems with the block are those of a
+[replay candidate](/docs/reference/api/replay-candidate#checks), at their path
+under `station`.
+
+```bash
+spotlight candidate --name terse-prompt --hypothesis @why.md station.json
 ```
 
 ## spotlight tools

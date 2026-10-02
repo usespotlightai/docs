@@ -1,0 +1,363 @@
+---
+type: reference
+icon: BookText
+title: Searches
+description: The Searches section of a Station page, the Start a search dialog, the search page, search and iteration states, scores and the frontier, the pull request a picked candidate opens and why one is refused, and a replay set that guards a station's changes.
+---
+
+A [search](/docs/reference/glossary#search) has an agent propose changed
+configs for a work station, called candidates, and
+[replays](/docs/reference/app/replays) each on a replay set's searched tasks.
+The best are then replayed on the set's [held-out tasks](/docs/reference/glossary#held-out-task).
+Picking a candidate opens a pull request in the line's Terraform repository.
+The same data is read and written through the
+[Searches API](/docs/reference/api/searches).
+
+Only people on the team, the workspace's owners and admins, and workspace
+tokens with the `read` scope can read a team's searches. Anyone else is
+answered `404`, and the web app reads "Only the team's members can see its
+searches". Starting and stopping a search and picking a candidate also need
+`plan`. See [Team outcomes](/docs/reference/roles-and-permissions#team-outcomes).
+
+## Station page
+
+A work station's page has a "Searches" section, after "Replays", headed
+"Searches of this station".
+
+| Part | Shows |
+| --- | --- |
+| Searches | One row per search of the station, newest first: `Search <n>`, numbered from the station's first search and linked to its page, its [state](#search-states) (hover for its [ending](#search-endings)), `on <set> · started <when>`, and its best candidate as `Best: <name> · <score> held out` or `· <score> searched`, or "No best candidate yet". Under it, `<n> of <m> iterations`, `<spent> of <ceiling>`, and the ending once it has one. With none, the part reads "No searches yet", with "Open a replay set first" when the station has no set, else "Start a search". |
+| Start a search | Opens the [Start a search](#start-a-search) dialog. Not offered, with the reason under it, while a search of the station is under way ("A search of this station is under way."), when the station has no set ("Open a replay set first."), or when no set covers runs of 5 different tasks ("No replay set covers 5 different tasks yet."). |
+| Source | `A picked candidate opens a pull request against <repository> at <path>`, from the line's [`source`](/docs/reference/terraform/line#source-fields), or "The line does not say where its Terraform lives, so a picked candidate cannot open a pull request. Give the line a source in Terraform." |
+
+## Start a search
+
+| Field | Values |
+| --- | --- |
+| Search on | One of the station's replay sets, with how many different tasks it covers. A set whose station has left its line reads "Its station is gone from its line.", and a set of fewer than 5 tasks `It covers <n> tasks; a search needs runs of at least 5 different tasks, to hold some out.`; neither can be chosen. The first set that can be is chosen at first. |
+| Iterations | How many times its agent runs, 1 to 10. `3` at first. |
+| Candidates per iteration | How many each agent run may propose, 1 to 5. `2` at first. |
+| At once | Replay runs it runs together, 1 to 10. `4` at first. |
+| Ceiling | The most the whole search may spend, its replays and its agent's runs, above 0 and at most 1,000, and a three-letter currency, `USD` at first. |
+| Its agent | The harness the search's agent runs on, and its model and effort. Without a model or effort, the harness's own defaults. |
+
+A count out of bounds reads `Give a whole number from <least> to <most>.`
+
+Once a set and a budget are given, the dialog shows an estimate, read from
+the [estimate endpoint](/docs/reference/api/searches#estimate-a-search):
+
+| Label | Shows |
+| --- | --- |
+| Tasks | `<n> searched · <n> held out`. |
+| At most | The most runs it may start, then how many of the live config, of candidates, held out, and of the agent. |
+| Spends at most | The ceiling, then what the live config's replay, each candidate's replay, each held-out replay and each agent run may spend. |
+| Takes | `About <duration>`, from how long the set's runs took, or `Unknown, as none of the set's runs was timed`. |
+
+The estimate always holds out as many tasks as the search will, and assumes
+the choice of tasks whose runs cost most, so the search's own split costs as
+much or less. Under it: "An agent run may go a little over
+what it is given, so the search may end slightly over its ceiling." "Start
+search" opens the new search's page. A refusal is shown at its field, such as
+a ceiling too low to give each replay run at least 0.01 of its currency.
+
+## Search page
+
+`/w/<slug>/team/<teamId>/lines/<lineId>/stations/<stationId>/searches/<searchId>`
+
+To someone who may read the team's searches, an unknown search, or one of
+another station, reads "Search not found".
+
+The header shows `Search <n>`, its [state](#search-states), `Searches on <set>
+· started <when>`, `· ended <when>` once it has ended, and its
+[ending](#search-endings) once it has one. While the search is under way,
+"Stop", then "Stop search", stops it.
+
+| Label | Shows |
+| --- | --- |
+| Budget | `<n> iterations · <n> candidates each · up to <ceiling> · <n> at once`. |
+| Agent | The harness, model and effort its agent runs with. |
+| Progress | `<n> of <m> iterations · <n> candidates proposed`. |
+| Spent | `<spent> of <ceiling>`, with a bar that fills as the ceiling is spent. |
+| Best | The [best candidate](#best-candidate) and its score, `held out` or `searched`. |
+
+### Tasks
+
+`Searched <n>` and `Held out <n>`, counted in tasks, and "The held-out tasks",
+which opens the list of held-out runs, each linked to its Run page. The search's
+agent never sees those tasks or their results.
+
+### Success against cost
+
+A chart of each candidate with a priced search score: its
+[search score](#scores) up the side, its cost per run along the bottom. Points
+on the [frontier](#frontier) are joined by a line, and the live config is
+drawn as a diamond. Candidates scored but not priced are listed under the
+chart as `Not priced, so not shown: <name> (<score>)`. "Show table" lists every
+candidate instead:
+
+| Column | Shows |
+| --- | --- |
+| Candidate | Its name, or "Live config", and `frontier` for a frontier point. |
+| Iteration | The iteration that proposed it, or `–` for the live config. |
+| Searched | Its search score, `of <n>` scored tasks. |
+| Held out | Its held-out score, "Replaying" while its held-out replay is queued or running, "Not held out" for a candidate that was not replayed there, or `–`. |
+| Cost per run | What it spent per scored searched run, or "Unpriced". |
+
+### Candidates
+
+"Started from" holds the live config: "The station as it was configured when
+the search started." Under it, one group per iteration: `Iteration <n>`, its
+[state](#iteration-states), `<n> of <m> proposals taken` (refused proposals
+count among the second), what its agent spent once known, and "Its agent's
+run", linked to the agent run's Run page. An iteration with
+no candidates reads "Its agent has not proposed anything yet." while it runs,
+and "Its agent proposed nothing that could be replayed." after.
+
+Each candidate shows:
+
+- its name, "On the frontier" for a frontier point, and its replay's
+  [state](/docs/reference/app/replays#replay-states) until that replay has
+  finished;
+- its agent's hypothesis: what the candidate should improve, and why;
+- `Changed from live:` with one phrase per change, as the Run page's
+  [Config](/docs/reference/app/tasks-runs-and-the-inbox#config) words them, or
+  "The same as the live config.";
+- `Searched <score> of <n> scored`, or "Not scored yet", `Held out`, and `Cost
+  per run`;
+- "Its replay", linked to its replay on the searched tasks ("Its replay of the
+  set" for the live config), and "Its held-out replay" when it has one;
+- what picking it does: see [Picking a candidate](#picking-a-candidate).
+
+## Search states
+
+| State | Shown | Final |
+| --- | --- | --- |
+| `seeding` | Replaying the live config | no |
+| `searching` | Searching | no |
+| `holding-out` | Checking on held-out tasks | no |
+| `finished` | Finished | yes |
+| `stopped` | Stopped | yes |
+
+A search starts `seeding`: the station's live config is replayed on every run
+of the set, and this replay becomes the set's
+[baseline](/docs/reference/glossary#baseline). Once it finishes, the search is
+`searching`, and wants its first iteration. Each iteration runs its agent once;
+the agent proposes up to "Candidates per iteration" candidates, each replayed on
+the searched runs. An iteration closes once its agent run has ended, its spend
+is known, and its candidates' replays have ended. Then the next iteration
+starts, unless the search has run its iterations, stalled, or cannot afford
+one more. It then holds out: `holding-out` while the best candidates are
+replayed on the held-out runs, then `finished`. A search with no candidate
+whose replay finished goes straight to `finished`.
+
+## Search endings
+
+| Ending | Shown | State |
+| --- | --- | --- |
+| `iterations-spent` | It ran every iteration it was given | `finished` |
+| `ceiling-reached` | It reached its ceiling | `finished` |
+| `stalled` | Two iterations in a row found nothing, so it stopped | `finished` |
+| `stopped` | A person stopped it | `stopped` |
+| `station-gone` | Its station is gone from its line | `stopped` |
+| `set-gone` | Its replay set was deleted | `stopped` |
+| `seed-failed` | The live config could not be replayed | `stopped` |
+
+`ceiling-reached` also ends a search whose replay of the live config ran over
+its ceiling. An iteration found nothing when its agent run failed, or none of
+its candidates' replays finished. A stopped search withdraws its agent's run
+and stops its replays.
+
+## Iteration states
+
+| State | Shown | Meaning |
+| --- | --- | --- |
+| `wanted` | Waiting for a runner | Its agent run is not yet queued, or no runner has taken it. |
+| `running` | Running | Its agent run is queued or running, and may propose candidates. |
+| `ended` | Ended | Its agent run ended. |
+| `failed` | Failed | Its agent run failed, asked a person, or could not start. |
+
+An agent run no runner takes within 60 minutes is withdrawn, and its iteration
+fails. An agent run whose spend is not known 15 minutes after it ended is
+counted as [unpriced](#spend-and-ceiling).
+
+## The search's agent run
+
+Each iteration's agent run is a run of its own kind:
+
+| | Search agent run |
+| --- | --- |
+| Task | Holds no task. |
+| Placement | Where the station's runs go: the station's `runners`, else the line's. Its priority is below every task run and chat run. |
+| Workspace | No repository is checked out, and no skills, settings files or team memories are laid out. |
+| Briefing | The station's live config as the search started, the budget left, how many candidates it may propose, how many tasks are held out, what a candidate may change, and how to propose one. |
+| `spotlight history` | Only the searched station. The held-out tasks' runs are left out; the searched runs are always written. A `candidates/` folder holds each candidate so far. See [`spotlight history`](/docs/reference/cli/agent-commands#spotlight-history). |
+| `spotlight candidate` | Proposes a candidate. See [`spotlight candidate`](/docs/reference/cli/agent-commands#spotlight-candidate). |
+| Refused | Messages from people, git, tools, `spotlight reply`, `spotlight recall` and `spotlight remember`. `spotlight trace` finds no held-out task. |
+| Asking a person | Ends the run, and its iteration fails. |
+
+## Scores
+
+| Score | Meaning |
+| --- | --- |
+| Search score | The share of the searched tasks the candidate succeeded on, of those scored. For the live config, from its replay's searched runs only. |
+| Held-out score | The share of the held-out tasks it succeeded on, of those scored, once its held-out replay has finished. For the live config, from its replay's held-out runs. |
+| Cost per run | What its replay on the searched tasks spent per scored run, in the ceiling's currency. Unknown, "Unpriced", while any of that spend was not priced or was in another currency. |
+
+Results and their reasons are a replay's: see
+[Results](/docs/reference/app/replays#results).
+
+### Frontier
+
+The frontier is every candidate with a finished searched replay and a search
+score that no other candidate beats on both counts: succeeding at least as
+often for no more cost per run, and better on one. An unpriced cost counts as
+the highest. The live config is always on the frontier.
+
+When a search stops searching, the frontier's candidates, the live config
+aside, are replayed on the held-out runs, as many as "Candidates per
+iteration", highest search score first, then cheapest.
+
+### Best candidate
+
+The frontier point that succeeds most: by held-out score once any candidate has
+one, else by search score, then the cheaper. When the live config succeeds most,
+the best reads "Live config".
+
+## Spend and ceiling
+
+A search's spend is what its replays and its agent's runs spent, in the
+ceiling's currency. A tenth of the ceiling is for the agent's runs; the rest
+gives each replay its own ceiling. A replay run whose cost was not reported or
+is in another currency counts as the full share a replay run is given, and an
+agent run whose spend is unpriced as the full share an agent run is given. A
+new iteration starts only while what was spent, what the held-out replays need
+and one more iteration fit under the ceiling. An agent run may go over its
+share, so a search can end a little over its ceiling.
+
+A search's replays run up to "At once" at a time, apart from the team's own
+limit of 2 replay runs. See
+[Limits and timeouts](/docs/reference/limits-and-timeouts#searches).
+
+## Picking a candidate
+
+A candidate can be picked once its replay on the searched tasks has finished,
+while the search runs or after. The live config cannot be picked: "The live
+config is what the station runs already." A candidate not yet ready reads "It
+can be picked once its replay on the searched tasks finishes."
+
+| State | Shown | Can change |
+| --- | --- | --- |
+| not picked | "Pick", with "Opens a pull request that changes the station to this config." | "Pick" |
+| `opening` | Opening a pull request… | |
+| `opened` | Pull request opened, linked to it | |
+| `refused` | No pull request opened, the [reason](#config-pull-request-reasons) in words, Spotlight's message, and, for an attribute, `At <attribute>, computed by <expression>; set it to <value> by hand` | "Retry" |
+
+Picking a candidate that has a pull request opening or opened shows that one.
+"Retry" tries again, reading the line's `source` afresh.
+
+### The pull request
+
+Spotlight reads the file named by the line's
+[`source`](/docs/reference/terraform/line#source-fields) on the repository's
+default branch, edits the station's block, commits to its own branch and opens
+the pull request against the default branch.
+
+| | Value |
+| --- | --- |
+| Branch | `spotlight/search-<first 8 characters of the search id>-<candidate name>` |
+| Title | `<station key>: <candidate name>` |
+| Commit message | The title, then `Picked from a Spotlight search of the <station key> station.` |
+| Body | What the search found and what the candidate changes, the agent's hypothesis, a table of its and the live config's success on the searched and held-out tasks and cost per run, how many tasks it regressed on against the live config, any attribute Spotlight could not check, and a link to the search. |
+
+The edit finds exactly one `resource "spotlight_line"` whose `key` is the
+line's, written as a plain string, preferring the one whose `team_id` refers to
+the team's `spotlight_team`, and in it exactly one `station` block whose `key`
+is the station's. It changes only the attributes the candidate changes:
+
+| Attribute written as | Edit |
+| --- | --- |
+| A plain value or heredoc | Replaced in place. |
+| `file("${path.module}/<path>")`, for `prompt`, `description`, `harness`, `model`, `effort` or `profile` | The new value is written to the station's own file beside the `.tf` file: `prompts/<team>/<line>/<station>.md` for `prompt`, the file the export writes, and `prompts/<team>/<line>/<station>.<attribute>.md` for the others. If the attribute was already read from that file, and nothing else reads it, the file is changed in place. Otherwise a new file is written, with `-2`, `-3` and on added to its name when one is taken, and `file()` is pointed at it. |
+| A reference to a resource in the same file, as for `profile`, `skills` and `tools` | Followed to its value. A new value is written as a reference when a resource in the file holds it. |
+| Not written | Added after the block's last attribute. |
+| Anything else, such as a variable or a local | Refused, `computed-attribute`. |
+
+Before it writes, the edit checks that every attribute the candidate may change,
+the station's `check` and `passes_to`, and its `judge` block hold the values the
+search started from, and refuses with `drifted` otherwise. An attribute it
+cannot read and the candidate does not change is listed in the pull request
+as not checked. An attribute read through `file()` with a path not built on
+`${path.module}` cannot be followed, so changing it is refused with
+`computed-attribute`. A `file()` path outside the repository is refused with
+`file-missing`. The edited
+file is read back, and refused with `edit-failed` if it does not parse or does
+not hold the candidate's values.
+
+GitHub refusing a request with a `4xx` status, other than for a rate limit,
+refuses the pull request at once with `github-refused`. An attempt that fails
+for another reason, such as GitHub not answering or a rate limit, is tried
+again after 30 seconds, 2 minutes, 8 minutes and 32 minutes, and then refused
+with `github-refused`.
+
+### Config pull request reasons
+
+| Code | Shown |
+| --- | --- |
+| `no-source` | The line does not say which repository holds its Terraform |
+| `repository-unreachable` | Spotlight's GitHub App cannot reach the line's repository |
+| `file-missing` | The line's Terraform file is not in its repository |
+| `file-unparsable` | The line's Terraform file could not be read |
+| `block-not-found` | The station's block was not found in the file |
+| `blocks-ambiguous` | The station's block was found more than once |
+| `computed-attribute` | An attribute it would change is computed in Terraform, so it must be set by hand |
+| `drifted` | The file changed since the search began |
+| `edit-failed` | Spotlight's change to the file would not read back as Terraform, so it must be made by hand |
+| `branch-taken` | The branch for the pull request is taken already |
+| `file-unwritable` | The file could not be written in its repository |
+| `github-refused` | GitHub refused the change |
+
+Each comes with Spotlight's message, such as
+`` `prompt` is computed in Terraform (`local.build_prompt`); change it by hand``.
+`block-not-found` also covers a station no longer on its line, and
+`file-missing` a file a `file()` reads that the repository does not hold.
+`file-unwritable` is a file that is a symbolic link in the repository.
+`branch-taken` means the branch holds commits Spotlight did not write.
+
+## Guarding a station's changes
+
+A replay set's page has a "Guards config changes" switch. When it is on,
+[`spotlight replay check`](/docs/reference/cli/replay-command#spotlight-replay-check)
+replays a planned change of the station on this set. A station has at most one
+such set: turning it on while another set guards the station reads "Another
+replay set at this station guards its changes already. Turn it off there
+first." The switch cannot be changed once the set's station has left its
+line. Turning it off leaves checks already started running.
+
+Under the switch, the set's page shows the line's
+[`replay_check`](/docs/reference/terraform/line#replay-check-fields), read-only:
+`Pull requests fail spotlight replay check past <n> regressions; each check may
+spend up to <ceiling>.`, or, for a line without one, "The line sets no
+replay_check, so spotlight replay check refuses to check its pull requests."
+
+Under "Checks", the set's page lists the checks replayed on the set, newest
+first: the pull request (`Pull request #<n>`) or commit (`Commit <sha>`) that
+planned the change, or "A planned change", its
+[verdict](/docs/reference/api/replay-checks#verdicts) in words, such as
+`Undecided: its replay reached its ceiling`, when it started, `<n>
+regressions`, `attempt <n>` from the second attempt on, and "Its replay". With
+none, it reads "No checks yet". "Show older checks" loads more.
+
+## Search replays
+
+A search's replays are replays of its set, and each replay page and replay run
+reads as any other replay. A candidate's replay covers only the searched runs,
+and a held-out replay only the held-out runs. The replay page's header, and
+the Run page of each of its replay runs, read `candidate <name> in its search`,
+or `the live config it started from in its search`, linked to the search.
+
+While a search is under way, its set takes no runs, gives none up, and cannot
+be deleted. The set's page disables "Add runs" and the X beside each run, with
+"A search of this set is under way, so its runs stay as they are until the
+search ends or is stopped.", and "Delete", with "A replay or search of this set
+is running, so it can't be deleted until that ends or is stopped."
+

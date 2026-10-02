@@ -1,0 +1,205 @@
+---
+type: how-to
+icon: SquarePen
+title: Check Terraform pull requests for station regressions
+description: Make a pull request that changes a work station fail its CI check when the change does worse than the live config on the station's past tasks.
+---
+
+Use this when your team changes its lines through pull requests to a Terraform
+repository, and you want each pull request that changes a work station to be
+tried on the station's past tasks before it merges. A CI job runs
+`spotlight replay check` on the saved plan. For each work station the plan
+changes, Spotlight [replays](/docs/improvement/why-changes-are-replayed-on-past-tasks)
+a set of the station's past tasks under the planned change, compares the
+results with the station as it is now, and the job fails if the change did
+worse on more tasks than the line allows. You need:
+
+- The line's Terraform planned in GitHub Actions. The workflow below builds on
+  [Run Terraform from GitHub Actions without a stored token](/docs/configuration/run-terraform-from-github-actions).
+- For each station to check, a [replay set](/docs/improvement/replay-past-tasks-against-a-station-change#pick-the-tasks-to-replay)
+  of its past runs.
+- A host serving the workspace with the station's harness. Checks run on the
+  team's runners, after task runs.
+- A way for the job to call Spotlight with the `plan` scope: a
+  [workspace token trust](/docs/reference/terraform/workspace-token-trust) the
+  job's OIDC token is exchanged through, or a
+  [workspace token](/docs/administration/issue-a-workspace-token).
+
+<Callout type="warn">
+
+A check replays the change as the pull request plans it, including the line's
+repositories, their runner `image` and `setup` command. Anyone whose pull
+request runs the check can have the team's runners pull an image and run a
+command of their choosing. Admit only jobs you trust: scope the trust's
+`subject` to your own repository's pull requests or branches, never run the
+check on `pull_request_target` or on pull requests from forks, and limit the
+images your hosts run with `SPOTLIGHT_RUNNER_IMAGE`. See
+[Host settings](/docs/reference/hosts/host-configuration#sandboxes).
+
+</Callout>
+
+## Choose the tasks each check replays
+
+Each station has at most one replay set that guards its changes. A check of the
+station replays that set.
+
+<Steps>
+<Step>
+
+Open the station's page, and under **Replays** select the set. Make sure it
+holds runs the station did well as well as runs it did badly.
+
+</Step>
+<Step>
+
+Turn on **Guards config changes**. If another set at the station guards its
+changes already, turn it off there first.
+
+</Step>
+</Steps>
+
+While a check is running, it keeps replaying the set as it was when the check
+started. A later change to the set makes the next check start afresh.
+
+## Set the threshold on the line
+
+Add a `replay_check` block to the line's `spotlight_line` resource, and apply
+it:
+
+```hcl
+resource "spotlight_line" "core_delivery" {
+  # ...
+
+  replay_check {
+    most_regressions = 0
+    ceiling          = 10
+    currency         = "USD"
+  }
+}
+```
+
+- `most_regressions`: how many tasks a change may regress on and still pass.
+  A task regresses when the live config succeeded on it and the change did
+  not, or the station's judge scored the change lower.
+- `ceiling` and `currency`: the most each replay a check starts may spend.
+  A check always replays the change, and also replays the live config when the
+  set has no baseline for it yet, so one check spends at most twice the
+  ceiling, and a little over if runs are still going when it is reached. A
+  check that reaches its ceiling before it fails is undecided. See
+  [Ceiling](/docs/reference/api/replay-checks#ceiling).
+
+A line without `replay_check` is not checked: the job fails for its stations
+and says so. The set's page shows the line's threshold under **Guards config changes**
+once it is applied. The threshold always comes from the line as it is applied, never
+from the plan, so a pull request cannot loosen its own check. In the same way,
+a change to a station's `check`, `judge`, `diffs` or `runners` is replayed with
+the live station's, and the output says which it kept. See
+[`replay_check`](/docs/reference/terraform/line#replay-check-fields).
+
+## Let the job call Spotlight
+
+<Tabs items={['OIDC trust', 'Workspace token']}>
+<Tab value="OIDC trust">
+
+Use a trust that admits the job and grants `plan`, such as the
+`github-pull-requests` trust from
+[Define the trusts](/docs/configuration/run-terraform-from-github-actions#define-the-trusts).
+Give the job its id as `SPOTLIGHT_OIDC_TRUST`, and `permissions: id-token:
+write`. The command exchanges the job's OIDC token for a short-lived workspace
+token, and exchanges it again before it expires.
+
+</Tab>
+<Tab value="Workspace token">
+
+[Issue a workspace token](/docs/administration/issue-a-workspace-token) with
+the `plan` scope, store it as an Actions secret, and give it to the job as
+`SPOTLIGHT_API_TOKEN`. A token takes the place of a trust when both are set.
+
+</Tab>
+</Tabs>
+
+Give the job `SPOTLIGHT_URL` as well: `https://app.usespotlight.ai`, or your
+deployment's address on a
+[self-hosted Spotlight](/docs/reference/glossary#spotlight-address).
+
+## Add the check to the workflow
+
+`spotlight replay check` reads a saved plan as `terraform show -json` prints
+it. It has no install of its own apart from a host, so the job downloads the
+release binary.
+
+Replace the `plan` job of `.github/workflows/terraform.yml` with:
+
+```yaml
+  plan:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    env:
+      SPOTLIGHT_OIDC_TRUST: ${{ vars.SPOTLIGHT_PLAN_TRUST }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+      - run: terraform init -input=false
+      - run: terraform plan -input=false -out=tfplan
+      - run: terraform show -json tfplan > plan.json
+      - name: Download spotlight
+        run: |
+          base=https://github.com/usespotlightai/cli/releases/latest/download
+          curl -fsSL -o spotlight "$base/spotlight-linux-amd64"
+          curl -fsSL -o spotlight.sha256 "$base/spotlight-linux-amd64.sha256"
+          echo "$(cut -d' ' -f1 spotlight.sha256)  spotlight" | sha256sum -c -
+          chmod +x spotlight
+      - run: >-
+          ./spotlight replay check
+          --pull-request ${{ github.event.pull_request.number }}
+          --commit ${{ github.event.pull_request.head.sha }}
+          plan.json
+```
+
+`terraform_wrapper: false` keeps the JSON free of the wrapper's own output.
+Give the plan from `terraform show -json`: the log that `terraform plan -json`
+streams holds no station blocks, and the command refuses it. To pin a release,
+replace `latest/download` with `download/<version>`. See
+[Install](/docs/reference/cli/replay-command#install).
+
+The command waits for the checks, up to 60 minutes unless you pass
+`--timeout`. A check still running then keeps running in Spotlight, and the
+job ends with exit code `3` and the check's link.
+
+## Read the result
+
+| Exit code | Meaning |
+| --- | --- |
+| `0` | Every changed station passed, or the plan changes nothing a check replays. |
+| `1` | A check was refused or could not run, such as for a line with no `replay_check` or a station whose changes no set guards. |
+| `2` | A change regressed on more tasks than its line allows. |
+| `3` | A check is undecided, or still running at the timeout. |
+
+The job's summary gets a table with one row per station: its verdict, how many
+tasks regressed, how the change and the live config did, what the check spent,
+and a link to its replay in Spotlight. Each regressed task is listed under it,
+with why. The log prints the same.
+
+Some changes are not checked, and the output notes why: a new line, a line
+that is removed, a station that is added or removed, or a station where
+nothing runs. A station is undecided, exit code `3`, when its line is
+replaced, when the plan removes a work station and adds another (which may be
+a renamed station), when Terraform knows part of it only after apply, or when
+the plan also changes a skill, harness profile, integration, hook or secret
+it depends on. A changed secret makes every work station undecided.
+
+Running the check again on the same change, against the same live config,
+the same runs of the set, the same threshold and the same scoring, answers
+with the earlier check while it is running, passed or failed. Each check also
+shows on the guarding set's page, under **Checks**. [Verdicts](/docs/reference/cli/replay-command#verdicts) lists every
+verdict and why a check can be undecided.
+
+## Related
+
+- [`spotlight replay check`](/docs/reference/cli/replay-command#spotlight-replay-check)
+- [Replay checks API](/docs/reference/api/replay-checks)
+- [`replay_check`](/docs/reference/terraform/line#replay-check-fields)
+- [Replay past tasks against a change to a station](/docs/improvement/replay-past-tasks-against-a-station-change)
+- [Search for a better station config](/docs/improvement/search-for-a-better-station-config)

@@ -20,8 +20,8 @@ The request body is the line definition. A read returns `teamId`, `key` and
 for the first team of a workspace created in the web app.
 
 In Terraform, each element of `repositories`, `stations` and `reactions` is a
-`repository`, `station` or `reaction` block, and `reviews` is a `reviews`
-block. Within a `station` block, `judge` is a `judge` block and each element of
+`repository`, `station` or `reaction` block, and `reviews`, `replayCheck` and
+`source` are `reviews`, `replay_check` and `source` blocks. Within a `station` block, `judge` is a `judge` block and each element of
 `alerts` is an `alert` block.
 
 ## Example
@@ -94,6 +94,17 @@ resource "spotlight_line" "core_delivery" {
     from      = "implementation"
     to        = "implementation"
   }
+
+  replay_check {
+    most_regressions = 0
+    ceiling          = 10
+    currency         = "USD"
+  }
+
+  source {
+    repository = "acme/platform"
+    path       = "teams/core/delivery.tf"
+  }
 }
 ```
 
@@ -138,7 +149,9 @@ The same line as a request body:
   ],
   "reactions": [
     { "happening": "github.checks.failed", "from": "implementation", "to": "implementation" }
-  ]
+  ],
+  "replayCheck": { "mostRegressions": 0, "ceiling": 10, "currency": "USD" },
+  "source": { "repository": "acme/platform", "path": "teams/core/delivery.tf" }
 }
 ```
 
@@ -169,6 +182,8 @@ reviews {
 | `reactions` | array of objects | `[]` | Moves a task when something happens. See [reactions](#reaction-fields). |
 | `reviews` | object | none | The review policy: which pull requests the line reviews. Only on a line whose `role` is `review`. See [review policy fields](#reviews-fields). |
 | `runners` | array of strings | `[]` | Runner labels the line's work is placed on. Empty: any runner of the workspace qualifies. See [placement](#placement). |
+| `replayCheck` | object | none | How a planned change of a station on this line must do to pass [`spotlight replay check`](/docs/reference/cli/replay-command#spotlight-replay-check). Without it, no planned change of the line is checked. See [replay check fields](#replay-check-fields). |
+| `source` | object | none | Where the line's Terraform lives, which Spotlight opens a pull request against when a person picks a [search](/docs/reference/app/searches) candidate. See [source fields](#source-fields). |
 
 ## Station fields
 
@@ -337,6 +352,56 @@ is chosen and the task it opens.
 | `skip.spotlight` | boolean | `true` | Skip pull requests Spotlight opened: a head branch under `spotlight/`, or a pull request a task opened. |
 | `skip.drafts` | boolean | `true` | Skip draft pull requests when they open. A mention on a draft is still taken. |
 | `skip.authors` | array of strings | `[]` | GitHub logins whose pull requests are skipped, as in `dependabot[bot]`. Compared, stored and sorted in lower case, each once. |
+
+## Replay check fields [#replay-check-fields]
+
+The replay check (`replayCheck`, in Terraform `replay_check`) sets the threshold
+a planned change of one of the line's work stations is held to by
+[`spotlight replay check`](/docs/reference/cli/replay-command#spotlight-replay-check).
+A check reads it from the line as it is applied, never from the plan. A line
+read through the team's `GET /api/teams/{teamId}/lines` carries it as
+`replayCheck`, and a replay set's page shows it under "Guards config changes".
+See [Replay checks API](/docs/reference/api/replay-checks).
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `mostRegressions` | number | `0` | How many tasks a planned change may regress on and still pass. A whole number, 0 or more. In Terraform, `most_regressions`. |
+| `ceiling` | number | `10` | The most each replay a check starts may spend, above 0 and at most 1,000: the planned change's replay, and the baseline replay when the guarding set has none for the live config. See [Ceiling](/docs/reference/api/replay-checks#ceiling). |
+| `currency` | string | `USD` | The three-letter currency `ceiling` is counted in. Stored in upper case. |
+
+| Message | Path |
+| --- | --- |
+| `is how many tasks a planned change may regress on and still pass, a whole number from 0` | `replayCheck.mostRegressions` |
+| `is the most one check's replay may spend, above 0 and at most 1,000` | `replayCheck.ceiling` |
+| `is the three-letter currency the ceiling is counted in, as in USD` | `replayCheck.currency` |
+
+## Source fields
+
+The source (`source`) names the file that holds this `spotlight_line`
+resource. A picked [search](/docs/reference/app/searches#the-pull-request)
+candidate is opened as a pull request against it. The Station page shows it
+under "Searches".
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `repository` | string | required | The GitHub repository, `owner/name`. Spotlight's GitHub App must be installed on it. |
+| `path` | string | required | The `.tf` file, from the repository's root, with forward slashes and no leading slash, as in `teams/core/delivery.tf`. 1 to 1,024 characters, with no empty, `.` or `..` part. |
+
+For Spotlight to edit the station, the file must hold exactly one
+`resource "spotlight_line"` with the line's `key` written as a plain string,
+and in it exactly one `station` block with the station's `key` written the same
+way. An attribute a search may change that is read from a file must be read
+as `file("${path.module}/<path>")`; a plain `file("<path>")` cannot be
+followed.
+See [The pull request](/docs/reference/app/searches#the-pull-request).
+
+| Message | Path |
+| --- | --- |
+| `is the GitHub repository that holds the line's Terraform, as owner/name: <reason>` | `source.repository` |
+| `is the Terraform file that holds the line, of 1 to 1,024 characters` | `source.path` |
+| `is a path from the root of the repository, with forward slashes and no leading slash, as in teams/core/delivery.tf` | `source.path` |
+| `names each directory on the way to the file, with no empty, . or .. parts` | `source.path` |
+| `is a Terraform file, ending in .tf` | `source.path` |
 
 ## Placement
 

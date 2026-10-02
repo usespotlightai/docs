@@ -63,13 +63,13 @@ of the kind `replay-candidate`.
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `name` | string | required | Tells the candidate from the station's other candidates. 1 to 100 characters, with no space at either end and no `/`. A name starting `Live config`, in any case, is refused: it names the snapshots Spotlight takes to replay as a baseline. Used once per station. |
+| `name` | string | required | Tells the candidate from the station's other candidates. 1 to 100 characters, with no space at either end and no `/`. A name starting `Live config` or `Planned change`, in any case, is refused: they name the snapshots Spotlight takes to replay as a baseline and the changes [replay checks](/docs/reference/api/replay-checks) replay. Used once per station. |
 | `station` | object | required | The station block to replay under, in the shape of one entry of a line's `stations`. See [Station fields](/docs/reference/terraform/line#station-fields). Its `key` must be the station's key. |
 | `teamId` | string | read-only | The station's team. |
 | `lineId` | string | read-only | The station's line. |
 | `stationId` | string | read-only | The station, as the [Replays API](/docs/reference/api/replays) names it. |
 | `stationAddress` | string | read-only | The station as `<team key>/<line key>/<station key>`. |
-| `kind` | string | read-only | `proposed`. `live` marks a snapshot of the station's config Spotlight takes to replay as a baseline; the list and import never return one. |
+| `kind` | string | read-only | `proposed`. `live` marks a snapshot of the station's config Spotlight takes to replay as a baseline; the list and import never return one. Candidates a [search](/docs/reference/api/searches) proposes and planned changes a [replay check](/docs/reference/api/replay-checks) replays are not this resource: reading them is answered `404`. |
 | `fingerprint` | string | read-only | The [config fingerprint](/docs/reference/glossary#config-fingerprint) a replay under the candidate runs with. |
 | `changedFrom` | object | read-only | `fingerprint`: the station's live config fingerprint when the candidate was proposed. `changes`: what the candidate changes from it, each `{ part, name, kind, was, now }`, as the Run page's [Config](/docs/reference/app/tasks-runs-and-the-inbox#config) words changes. Fixed at proposal. |
 | `createdAt` | string | read-only | When it was proposed, as an RFC 3339 time. |
@@ -95,6 +95,7 @@ path `station.<field>`, as in `station.judge.rubric`.
 | `is named without spaces before or after` | `name` | `name` starts or ends with a space. |
 | `is named without /, since its name ends its address` | `name` | `name` holds `/`. |
 | `is named other than Live config, which names the snapshots Spotlight takes to replay as a baseline` | `name` | `name` starts with `Live config`. |
+| `is named other than Planned change, which names the changes Spotlight replays to check them` | `name` | `name` starts with `Planned change`. |
 
 ## Errors
 
@@ -102,6 +103,6 @@ path `station.<field>`, as in `station.judge.rubric`.
 | --- | --- | --- |
 | `404` | `not-found` | No such line, station or candidate the caller may see. |
 | `409` | `already-exists` | The station already has a candidate by that name. Import it instead. |
-| `409` | `in-use` | Withdrawing a candidate while a replay of it is under way: `The candidate <id> is being replayed; stop its replays first`. Withdrawing a live snapshot: `The candidate <id> is the live config Spotlight replays as a baseline; it goes with its replay set`. |
+| `409` | `in-use` | Withdrawing a candidate while a replay of it is under way: `The candidate <id> is being replayed; stop its replays first`. Withdrawing a live snapshot: `The candidate <id> is the live config Spotlight replays as a baseline; it goes with its replay set`. Withdrawing a candidate a search or a replay check made: `The candidate <id> was made by Spotlight for a search or a change check; it goes with them`. |
 | `409` | `moved-on` | `If-Match` names a version that is no longer current. |
 | `422` | `invalid` | A field is wrong. An import `address` not in its form: `A candidate is addressed by its team, line and station keys, then its name, as in core/delivery/build/Shorter prompt`. A list `station` not in its form: `A station is named by its team, line and station keys, as in core/delivery/build, not <value>`. |

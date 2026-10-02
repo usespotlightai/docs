@@ -9,7 +9,8 @@ description: The subcommands of the spotlight binary, what each reads, prints an
 `spotlight runner` and `spotlight egress` from the runner image. An agent runs
 the [agent commands](/docs/reference/cli/agent-commands) inside its sandbox.
 A person or a CI job runs [`spotlight replay`](/docs/reference/cli/replay-command)
-from anywhere to replay a station's past tasks.
+from anywhere to replay a station's past tasks, or to check the station
+changes in a Terraform plan.
 
 ## Synopsis
 
@@ -243,5 +244,7 @@ spotlight replay <subcommand>
 ```
 
 Proposes replay candidates and starts, follows and stops replays, reading
-`SPOTLIGHT_URL` and `SPOTLIGHT_API_TOKEN`. Its subcommands, flags, output and
+`SPOTLIGHT_URL` and `SPOTLIGHT_API_TOKEN`. `spotlight replay check` checks a
+saved Terraform plan's station changes, and may exchange a CI job's OIDC token
+through `SPOTLIGHT_OIDC_TRUST` instead. Its subcommands, flags, output and
 exit codes are on [`spotlight replay`](/docs/reference/cli/replay-command).
