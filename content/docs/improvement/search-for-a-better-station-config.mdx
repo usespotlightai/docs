@@ -1,0 +1,225 @@
+---
+type: how-to
+icon: SquarePen
+title: Search for a better station config
+description: Have an agent propose changed configs for a work station, replay each on the station's past tasks, and open a pull request for the one you pick.
+---
+
+Use this when you want Spotlight to look for a better config for a work
+station, instead of writing each change yourself. A search is a series of
+rounds. In each round an agent studies how the station's past runs went and
+proposes a few changed configs, called candidates, and Spotlight
+[replays](/docs/improvement/replay-past-tasks-against-a-station-change) each
+one on most of a replay set's tasks. Nothing is applied: when you pick a
+candidate, Spotlight opens a pull request in the repository that holds the
+line's Terraform. You need:
+
+- To be on the team, or an owner or admin of the workspace.
+- A replay set at the station with runs of at least 5 different tasks. See
+  [Pick the tasks to replay](/docs/improvement/replay-past-tasks-against-a-station-change#pick-the-tasks-to-replay).
+- A host serving the workspace with the station's harness, and the harness you
+  want the search's agent to run on. See [Install a host](/docs/hosts/run-a-host).
+- To open pull requests from it: the line's Terraform in a GitHub repository
+  that Spotlight's GitHub App is installed on, and a `source` block on the
+  line that names the file. See
+  [Name the file that holds the line](#name-the-file-that-holds-the-line).
+
+## Name the file that holds the line
+
+Do this once per line, before you pick a candidate.
+
+<Steps>
+<Step>
+
+Add a `source` block to the line's `spotlight_line` resource, naming the
+repository and the `.tf` file, from the repository's root, that holds the
+resource:
+
+```hcl
+resource "spotlight_line" "core_delivery" {
+  # ...
+
+  source {
+    repository = "acme/platform"
+    path       = "teams/core/delivery.tf"
+  }
+}
+```
+
+</Step>
+<Step>
+
+Run `terraform apply`. On the Station page, under **Searches**, the last line
+now reads **A picked candidate opens a pull request against** the repository
+and file.
+
+</Step>
+</Steps>
+
+If the station's `prompt`, or another attribute a search may change, is read
+from a file, write it as `file("${path.module}/<path>")`, so Spotlight can
+follow it.
+See [`source`](/docs/reference/terraform/line#source-fields) for the rules.
+
+## Start a search
+
+<Steps>
+<Step>
+
+Open the line's board and select the station's name. Under **Searches**,
+select **Start a search**.
+
+If the button is greyed out, the line under it says why, such as **No replay
+set covers 5 different tasks yet.** Add runs of more tasks to a set, or wait
+for the station's search under way to end.
+
+</Step>
+<Step>
+
+Under **Search on**, choose the replay set. A set with runs of fewer than 5
+different tasks can't be chosen: a search keeps about 30% of the tasks back to
+check its results on, and needs some left to search on. See
+[Why a search holds tasks back](/docs/improvement/why-a-search-holds-tasks-back).
+
+</Step>
+<Step>
+
+Set the budget:
+
+- **Iterations**: how many rounds, so how many times the agent runs, from 1
+  to 10.
+- **Candidates per iteration**: how many candidates each round may propose,
+  from 1 to 5.
+- **At once**: how many of the search's replay runs run together, from 1 to
+  10. They run beside the team's other replays, below every task run.
+- **Ceiling**: the most the whole search may spend, its replays and its
+  agent's runs, and its currency, as in `20.00` and `USD`.
+
+</Step>
+<Step>
+
+Under **Its agent**, choose the harness, and the model and effort if you want
+other than the harness's own defaults. This is the agent that proposes
+candidates, not the station's own.
+
+</Step>
+<Step>
+
+Read the estimate under the fields. It gives how many tasks are searched and
+held out, the most runs the search may start, what each replay may spend, and
+roughly how long it takes, from how long the set's runs took. If the estimate
+says the ceiling is too low to give each replay run at least 0.01, raise the
+ceiling or lower the iterations or candidates.
+
+</Step>
+<Step>
+
+Select **Start search**. The search's page opens.
+
+</Step>
+</Steps>
+
+While the search runs, its replay set can't change: runs can't be added or
+taken out, and the set can't be deleted. A station has one search at a time.
+
+## Follow the search
+
+The search's page shows its state beside its name:
+
+1. **Replaying the live config**: the station as it is now is replayed on
+   every task of the set. The agent waits for this to finish.
+2. **Searching**: the agent runs once per iteration and proposes candidates.
+   Each candidate is replayed on the searched tasks, and the next iteration
+   starts once those replays have ended, so the agent sees how they did.
+3. **Checking on held-out tasks**: once it stops searching, the best
+   candidates are replayed on the tasks the agent never saw.
+4. **Finished**, or **Stopped**, with the reason under the name, such as **It
+   ran every iteration it was given**.
+
+**Progress** counts the iterations run and candidates proposed, and **Spent**
+what the search has spent against its ceiling. Under **Candidates**, each
+iteration lists what its agent proposed, with the agent's hypothesis, what the
+candidate changes from the live config, and how it scored. Select **Its
+agent's run** to see what the agent read and did.
+
+To stop a search, select **Stop**, then **Stop search**. The agent's run
+stops and nothing more is replayed. Candidates whose replays finished keep
+their scores and can still be picked.
+
+## Read the results
+
+**Success against cost** plots each candidate's success on the searched tasks
+against what it spent a run. The candidates joined by the line are the
+frontier: for each, no other candidate succeeded as often for less. The live
+config is always on it. Select **Show table** to read the same as a table.
+
+**Best**, in the header, is the frontier candidate that succeeded most: by its
+score on the held-out tasks once it has one, else by its score on the searched
+tasks. It reads **Live config** when nothing beat the station as it is.
+
+Give the held-out score the most weight. A candidate that does well on the
+searched tasks and worse on the held-out ones has likely fitted the tasks the
+agent saw. A candidate not on the frontier when the search stopped reads **Not
+held out**. Select **Its replay** or **Its held-out replay** beside a
+candidate to see its result task by task. See
+[Replays](/docs/reference/app/replays#replay-page).
+
+## Pick a candidate
+
+<Steps>
+<Step>
+
+Beside the candidate, select **Pick**. You can pick any candidate whose replay
+on the searched tasks has finished, while the search runs or after, and more
+than one.
+
+</Step>
+<Step>
+
+The candidate reads **Opening a pull request…**, then **Pull request opened**.
+Select it to open the pull request on GitHub.
+
+</Step>
+<Step>
+
+Review the pull request. Its description has the agent's hypothesis and the
+candidate's scores beside the live config's. The plan of the change runs in
+your Terraform workflow as for any other pull request; if the line
+[checks pull requests](/docs/configuration/check-terraform-pull-requests-for-station-regressions),
+that check runs too.
+
+</Step>
+<Step>
+
+Merge it and apply it as you would any change to the line.
+
+</Step>
+</Steps>
+
+Picking a candidate again opens no second pull request; it shows the same one.
+
+## If no pull request opens
+
+The candidate reads **No pull request opened**, the reason, and what
+Spotlight found. Fix the cause, then select **Retry**.
+
+| Reason | What to do |
+| --- | --- |
+| The line does not say which repository holds its Terraform | Give the line a `source` block. See [Name the file that holds the line](#name-the-file-that-holds-the-line). |
+| Spotlight's GitHub App cannot reach the line's repository | Install the GitHub App on that repository, or correct `source.repository`. |
+| The line's Terraform file is not in its repository | Correct `source.path`. Spotlight reads the file on the repository's default branch. |
+| The station's block was not found in the file, or was found more than once | Spotlight looks for exactly one `spotlight_line` resource whose `key` is the line's, and in it exactly one `station` block whose `key` is the station's, both written as plain text. Write them that way, or make the change by hand. |
+| An attribute it would change is computed in Terraform, so it must be set by hand | The attribute is built from a variable, a local or another expression. The reason names the attribute, the expression and the value to set: make the change by hand. |
+| The file changed since the search began | The station's block in the repository no longer matches the config the search started from, such as after another change was applied. Make the change by hand, or start a new search. |
+| The branch for the pull request is taken already | The branch `spotlight/search-<id>-<name>` holds commits Spotlight did not write. Delete the branch, then retry. |
+
+[Config pull request reasons](/docs/reference/app/searches#config-pull-request-reasons)
+lists every reason.
+
+## Related
+
+- [Why a search holds tasks back](/docs/improvement/why-a-search-holds-tasks-back)
+- [Searches](/docs/reference/app/searches)
+- [Searches API](/docs/reference/api/searches)
+- [Replay past tasks against a change to a station](/docs/improvement/replay-past-tasks-against-a-station-change)
+- [Check Terraform pull requests for station regressions](/docs/configuration/check-terraform-pull-requests-for-station-regressions)

@@ -115,8 +115,8 @@ than the ceiling's, and costs never reported, do not count toward it. The
 replay page shows them apart from the spend the ceiling counts.
 
 Replays take runners the team's real work needs. At most 2 of a team's replay
-runs run at once, and replay runs wait behind every waiting task run and chat
-run. In the docs' view, a replay answers a question about the future, and
+runs run at once, apart from a search's, which keep to a limit the search
+sets, and replay runs wait behind every waiting task run and chat run. In the docs' view, a replay answers a question about the future, and
 should never hold up work that people are waiting on now.
 
 ## What a replay can start from
@@ -137,7 +137,11 @@ lists each reason.
 
 A replay never changes the station, however well its candidate does. A person
 reads the result and makes the change in Terraform, the same way as any other
-change to a line. [Why configuration lives in Terraform](/docs/configuration/why-configuration-lives-in-terraform)
+change to a line. A [search](/docs/improvement/why-a-search-holds-tasks-back),
+which replays many candidates an agent proposes, goes no further: picking one
+of its candidates opens a pull request, which the team reviews and applies. A
+line can also have its CI [replay each pull request's station changes](/docs/configuration/check-terraform-pull-requests-for-station-regressions)
+before they merge. [Why configuration lives in Terraform](/docs/configuration/why-configuration-lives-in-terraform)
 gives the reasons. Once applied, the change's own runs are recorded under its
 new config, and [the record of each run's config](/docs/improvement/why-each-run-records-its-stations-config)
 shows whether it held up on the team's real work.
@@ -147,3 +151,4 @@ shows whether it held up on the team's real work.
 - [Replay past tasks against a change to a station](/docs/improvement/replay-past-tasks-against-a-station-change)
 - [Replays](/docs/reference/app/replays)
 - [Why a judge must agree with people before its scores show](/docs/improvement/why-a-judge-must-agree-with-people)
+- [Why a search holds tasks back](/docs/improvement/why-a-search-holds-tasks-back)

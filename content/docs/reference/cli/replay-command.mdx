@@ -2,12 +2,14 @@
 type: reference
 icon: BookText
 title: spotlight replay
-description: The spotlight replay subcommands that propose candidates, list sets, and start, follow and stop replays, with their flags, environment, output and exit codes.
+description: The spotlight replay subcommands that propose candidates, list sets, start, follow and stop replays, and check a Terraform plan's station changes, with their flags, environment, output and exit codes.
 ---
 
 `spotlight replay` proposes [replay candidates](/docs/reference/api/replay-candidate)
 and starts, follows and stops [replays](/docs/reference/app/replays) from any
 computer, through the resource API and the [Replays API](/docs/reference/api/replays).
+`spotlight replay check` checks the station changes in a Terraform plan,
+through the [Replay checks API](/docs/reference/api/replay-checks).
 It is part of the `spotlight` binary; see
 [The spotlight command](/docs/reference/cli/spotlight-command).
 
@@ -22,6 +24,7 @@ spotlight replay start --station <team/line/station> --set <name or id> --candid
 spotlight replay status --team <key> <replay id>
 spotlight replay watch --team <key> <replay id> [--every 15s]
 spotlight replay stop --team <key> <replay id>
+spotlight replay check [--json] [--timeout 60m] [--every 15s] [--commit <sha>] [--pull-request <n>] <plan.json | ->
 ```
 
 Every subcommand also takes `--json`. Flags may come before or after the
@@ -53,8 +56,9 @@ with `chmod +x spotlight`. For a given release, replace `latest/download` with
 | `SPOTLIGHT_URL` | Required. The [Spotlight address](/docs/reference/glossary#spotlight-address), as `https://app.usespotlight.ai`. |
 | `SPOTLIGHT_API_TOKEN` | Required. A [workspace token](/docs/reference/api/workspace-token). `read` is enough for `candidates`, `show`, `sets`, `status` and `watch`; `propose`, `start` and `stop` need `plan`. |
 
-Without either, every subcommand fails with
+Without either, every subcommand but `check` fails with
 `set SPOTLIGHT_URL and SPOTLIGHT_API_TOKEN to replay`, followed by the usage.
+`check` reads more; see [Environment for check](#environment-for-check).
 The token must see exactly one workspace; otherwise the command fails with
 `the token sees <n> workspaces; use a workspace token, which acts in exactly one`.
 
@@ -85,6 +89,9 @@ has with `<station> has <n> of <kind> named "<name>"; name one by its id: <ids>`
 | `0` | Done. For `status` and `watch`, the candidate regressed on no task. |
 | `1` | A usage error, a refusal, or Spotlight could not be reached. |
 | `2` | `status` or `watch` only: the candidate regressed against its baseline on at least one task. The message reads `the candidate regressed against its baseline on <n> of <m> tasks`. |
+
+`check` has exit codes of its own; see
+[`spotlight replay check`](#spotlight-replay-check).
 
 ## spotlight replay propose
 
@@ -251,3 +258,149 @@ stopped. It then reads the replay and prints
 With `--json`, it prints the replay as read after stopping, as the
 [Replays API](/docs/reference/api/replays) reads one. A replay that has already
 ended is refused with `409`.
+
+## spotlight replay check
+
+```text
+spotlight replay check [--json] [--timeout 60m] [--every 15s] [--commit <sha>] [--pull-request <n>] <plan.json | ->
+```
+
+Checks each work station a saved Terraform plan changes against the replay set
+that guards the station's changes, under the live line's
+[`replay_check`](/docs/reference/terraform/line#replay-check-fields), and waits
+for the verdicts. Give it the output of `terraform show -json <planfile>`, or
+`-` to read it from standard input. Spotlight never runs Terraform. See
+[Check Terraform pull requests for station regressions](/docs/configuration/check-terraform-pull-requests-for-station-regressions).
+
+| Flag | Default | Description |
+| --- | --- | --- |
+| `--json` | | Prints the report as JSON in place of the text. |
+| `--timeout` | `60m` | How long to wait for the checks, as a Go duration, above 0. A check still running then keeps running in Spotlight. |
+| `--every` | `15s` | How often to read the checks, as a Go duration, at least `1s`. |
+| `--commit` | none | The commit that plans the change, recorded on each check. |
+| `--pull-request` | none | The pull request that plans the change, recorded on each check and used to name its candidate. |
+
+### Environment for check
+
+| Variable | Description |
+| --- | --- |
+| `SPOTLIGHT_URL` | Required. The [Spotlight address](/docs/reference/glossary#spotlight-address). |
+| `SPOTLIGHT_API_TOKEN` | A [workspace token](/docs/reference/api/workspace-token) with `plan`. Used in place of a trust when both are set. |
+| `SPOTLIGHT_OIDC_TRUST` | The id of a [workspace token trust](/docs/reference/terraform/workspace-token-trust) that grants `plan`. The command exchanges the job's OIDC token through it for a short-lived workspace token, exchanges again before that token expires, and once more on a `401`. |
+| `SPOTLIGHT_OIDC_TOKEN` | The OIDC token to exchange. Without it, the command asks GitHub Actions for one, through `ACTIONS_ID_TOKEN_REQUEST_URL` and `ACTIONS_ID_TOKEN_REQUEST_TOKEN`, which need `permissions: id-token: write`. |
+| `SPOTLIGHT_OIDC_AUDIENCE` | The audience to ask the OIDC token for. Default `spotlight`. Must equal the trust's `audience`. |
+| `GITHUB_STEP_SUMMARY` | When set, a Markdown summary is appended to the file it names. |
+
+Credentials are read only when the plan has a station to check.
+
+### What it checks
+
+The command reads every managed `spotlight_line` of the provider
+`usespotlightai/spotlight` that the plan updates, and compares each station's
+block before and after. A work station whose block changes, or whose line's
+repositories change, is checked: its planned block, and the planned
+repositories with their `image` and `setup`, are sent to Spotlight. Each is
+named by the line's address and the station's key, as in
+`core/delivery/build`.
+
+Some changes are not checked, and are printed as notes:
+
+| Note | Cause |
+| --- | --- |
+| `<resource> is a new line, with no live stations to check a change against` | The plan creates the line. |
+| `<resource> is replaced, so its stations start anew, with no live config to check a change against` | The plan replaces the line. Each of its work stations is also reported `UNDECIDED`. |
+| `<resource> is removed, so there is nothing of it to check` | The plan deletes the line. |
+| `<resource> has stations known only after apply, so none is checked` | The line's stations are unknown until apply. |
+| `<resource> removes station <key>, which leaves nothing to replay` | A station is removed. |
+| `<resource> adds station <key>, with no live config to check it against` | A station is added. If the plan also removes a work station of the line, an added work station is also reported `UNDECIDED`. |
+| `<resource> has a station whose key is known only after apply, so it is not checked` | A station's key is unknown until apply. |
+| `<resource> changes station <key>, where nothing runs, so there is nothing to replay` | A backlog or completed station changes. |
+
+A station is reported `UNDECIDED` without being checked when:
+
+| Message | Cause |
+| --- | --- |
+| `not checked, since the plan replaces its line, so it starts with no live config to check it against` | The plan replaces its line. |
+| `not checked, since the plan removes <keys> and adds this station, which may be a station renamed; a renamed station starts with no live config to check it against` | The plan removes a work station of the line and adds this one. A changed station key is planned this way. |
+| `not checked, since Terraform knows its <attributes> only after apply` | Part of the station, or the line's repositories, is known only after apply. |
+| `not checked, since the plan also changes the <resources> its runs depend on, which a check cannot replay before apply` | The plan also changes a `spotlight_skill` it names, the `spotlight_harness_profile` it names, a `spotlight_integration` whose tools it uses, a `spotlight_hook` that matches it, or any `spotlight_secret`. A changed secret makes every work station of the lines in the plan undecided. |
+
+Each check is started with an `Idempotency-Key` made from the line, the
+station, its planned block, the planned repositories, `--commit` and
+`--pull-request`, so running the job again on the same plan answers the same
+check. Starting and reading are tried again when Spotlight cannot be reached or
+answers with a `5xx` status, waiting twice `--every` after the first failure
+and doubling, at most 2 minutes, and given up after 5 failures in a row.
+
+### Verdicts
+
+Each station ends with one status:
+
+| Status | Meaning |
+| --- | --- |
+| `PASSED` | The change regressed on no more tasks than the line allows, and enough tasks were scored. |
+| `FAILED` | It regressed on more tasks than the line allows. |
+| `UNDECIDED` | The check could not decide, or the station was not checked. |
+| `RUNNING` | The check was still running at `--timeout`: `still running after <timeout>; it keeps running, so follow it at its link`. |
+| `UNCHANGED` | The plan changes nothing that changes how the station's runs go, so there is nothing to replay. |
+| `REFUSED` | Spotlight refused the check, or reading it failed. The message says why. See [Errors](/docs/reference/api/replay-checks#errors). |
+
+An undecided check prints why:
+
+| `undecidedBecause` | Printed after `undecided:` |
+| --- | --- |
+| `stopped` | the replay was stopped |
+| `over-ceiling` | the replay reached its ceiling before every task ran |
+| `baseline-unfinished` | the baseline replay of the live config did not finish |
+| `too-few-scored` | fewer than half the tasks were scored on both sides |
+| `replay-gone` | the replay is gone |
+| `no-baseline` | no baseline replay of the live config the check started against is left, and none can come, since the live config or its set moved on |
+
+### Output
+
+```text
+note: <note>
+
+core/delivery/build: FAILED
+  1 of 6 tasks regressed (at most 0 may), replaying set "Queue fixes": 6 tasks, 6 scored on both sides
+  candidate 4 of 6 succeeded (67%), baseline 5 of 6 succeeded (83%)
+  spent 3.2 USD of a 10 USD ceiling
+  scored with the live check, judge, which the plan also changes
+  REGRESSED <task id> "<title>": failed where the baseline succeeded, check-failed: npm test
+  <link to the check's replay>
+```
+
+A plan that changes no live station prints
+`The plan changes no live station of a line, so there is nothing to check.`
+With `--json`, it prints `{ "stations", "notes", "exitCode" }`, each station as
+`{ station, resource, status, message, url, check }`, `check` being the
+[check](/docs/reference/api/replay-checks#check) as Spotlight read it last.
+
+The step summary is headed `Spotlight replay check`, with any notes, then a
+table with the columns Station, Verdict, Regressed, Candidate, Baseline, Spent
+and Replay, then, for each station with a message or regressions, the message
+and each regressed task.
+
+### Exit codes for check
+
+| Code | Meaning |
+| --- | --- |
+| `0` | Every station `PASSED` or `UNCHANGED`, or there was nothing to check. |
+| `1` | A usage error, a plan it cannot read, missing credentials, or any station `REFUSED`. |
+| `2` | No station `REFUSED`, and at least one `FAILED`. |
+| `3` | No station `REFUSED` or `FAILED`, and at least one `UNDECIDED` or `RUNNING`. |
+
+| Message | Cause |
+| --- | --- |
+| ``name the plan, the output of `terraform show -json <planfile>`, or - to read it from stdin`` | No plan, or more than one. The usage follows. |
+| ``this is the log `terraform plan -json` streams, which holds no station blocks; save the plan with `terraform plan -out=<planfile>`, then give this the output of `terraform show -json <planfile>` `` | The file is the streamed log of `terraform plan -json`. |
+| ``the plan is not JSON; give this the output of `terraform show -json <planfile>` `` | The file is not JSON. |
+| ``this is not a saved plan shown as JSON; give this the output of `terraform show -json <planfile>` `` | The JSON has no `format_version`. |
+| `set SPOTLIGHT_URL, and SPOTLIGHT_API_TOKEN or SPOTLIGHT_OIDC_TRUST, to check a plan` | No `SPOTLIGHT_URL`. The usage follows. |
+| `set SPOTLIGHT_API_TOKEN, a workspace token that may plan, or SPOTLIGHT_OIDC_TRUST, a workspace token trust to exchange the job's OIDC token through` | Neither credential. The usage follows. |
+| `SPOTLIGHT_OIDC_TRUST needs an OIDC token: set SPOTLIGHT_OIDC_TOKEN, or run in GitHub Actions with permissions: id-token: write` | A trust, but no OIDC token to exchange. |
+| `the workspace token trust <trust> did not admit the OIDC token: <refusal>` | The trust refused the exchange. |
+| `--timeout is how long to wait, above 0, not <value>` | `--timeout` is 0 or less. |
+| `--every is at least 1s, not <value>` | `--every` is under `1s`. |
+
+Each is printed after `spotlight replay check: ` on standard error.

@@ -1,0 +1,170 @@
+---
+type: reference
+icon: BookText
+title: Replay checks API
+description: The team endpoints that mark the replay set guarding a station's changes and check a planned change of a station against it, with the request body, the check's fields, verdicts, permissions and errors.
+---
+
+A replay check replays a planned change of a work station on the replay set
+that guards the station's changes, compares it with the live config, and
+gives a verdict under the line's [`replay_check`](/docs/reference/terraform/line#replay-check-fields).
+[`spotlight replay check`](/docs/reference/cli/replay-command#spotlight-replay-check)
+calls these endpoints from CI. They sit under `/api/teams/{teamId}`, answer
+JSON, and answer errors as `application/problem+json`, as on the
+[resource API](/docs/reference/api/resource-api#errors).
+
+## Endpoints
+
+| Method and path | Returns |
+| --- | --- |
+| `POST /replay-sets/{setId}/guards-changes` | `204`: the set guards its station's changes. |
+| `DELETE /replay-sets/{setId}/guards-changes` | `204`: the set no longer guards them. Checks already started keep running. |
+| `POST /replay-checks` | `201` and a [check](#check), or `200` and the check this change already has. See [Start a check](#start-a-check). Requires `Idempotency-Key`. |
+| `GET /replay-checks/{checkId}` | A [check](#check) and its verdict. |
+| `GET /replay-sets/{setId}/replay-checks` | The checks replayed over a set, newest first, a page at a time: each check's `id`, `stationId`, `stationKey`, `verdict`, `undecidedBecause`, `regressions` (how many tasks it regressed on), `attempt`, `reference`, `createdAt` and `replayUrl`. Takes `limit` (default 50, at most 200) and `before`, a check's id; a check the set does not hold answers an empty page. |
+
+A replay set's reads in the [Replays API](/docs/reference/api/replays) carry
+`guardsChanges`, `true` for the set that guards its station's changes. A
+station has at most one.
+
+## Start a check
+
+```json
+{
+  "lineId": "<line id>",
+  "stationKey": "build",
+  "station": {
+    "key": "build",
+    "name": "Build",
+    "kind": "work",
+    "harness": "claude-code",
+    "prompt": "Build it, then drain the queue.",
+    "passesTo": ["ship"]
+  },
+  "line": {
+    "repositories": [{ "name": "acme/api", "setup": "npm ci" }]
+  },
+  "reference": { "commit": "4f7c2a9e1b3d", "pullRequest": 42 }
+}
+```
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `lineId` | string | required | The line the station is on. |
+| `stationKey` | string | required | The station the change plans, by its key. |
+| `station` | object | required | The station block as the plan would apply it, in the shape of one entry of a line's `stations`. |
+| `line` | object | none | The line's repositories as the plan would apply them, each with its `image` and `setup`, as `{ "repositories": [...] }`. At most 64,000 characters. Without it, the live line's. |
+| `reference.commit` | string | none | The commit that plans the change, a hex sha of 7 to 64 characters. |
+| `reference.pullRequest` | number | none | The pull request that plans the change. |
+
+The check:
+
+1. Reads `replay_check` from the line as it is applied, never from the plan.
+2. Replaces the planned block's `check`, `judge`, `diffs` and `runners` with
+   the live station's, and records in `keptLive` each one the plan changed.
+3. Checks the block as the line would be with the station replaced, as a
+   [replay candidate](/docs/reference/api/replay-candidate#checks) is checked.
+4. Replays it, under the planned repositories, images and setup commands, on
+   every run of the guarding set, on the team's runners. When the set has no
+   baseline of the current live config, it also starts a baseline replay of
+   the live config. See [Ceiling](#ceiling).
+
+A change that changes nothing about how the station's runs go is refused with
+`409` and the type `urn:spotlight:problem:nothing-to-replay`.
+
+A change already checked is answered with that check, `200` and `reused:
+true`, while the earlier check is running, passed or failed, and only if it
+replayed the same runs of the set against the same live config, the same
+threshold and the same scoring. Otherwise a new check starts, with the next
+`attempt`. A request sent again with the same `Idempotency-Key` answers `201`
+with the check it started and the header `Idempotent-Replayed: true`.
+
+## Ceiling
+
+The line's `replay_check.ceiling` caps each replay a check starts, each on its
+own:
+
+- the replay of the planned change, which every check starts;
+- the baseline replay of the live config, only when the guarding set has no
+  baseline for the current live config. A baseline already there costs the
+  check nothing.
+
+So one check spends at most twice the ceiling, plus what runs already running
+spend after a replay reaches it. A run whose cost is not reported, or is in
+another currency, counts as the ceiling divided by the number of runs in the
+set: `threshold.unpricedRun`. When a replay reaches its ceiling, no more of its
+runs start, and runs already running finish, so it can end a little over. A
+check whose replay reached its ceiling is `undecided`, `over-ceiling`, unless
+it has already `failed`.
+
+The check replays a candidate Spotlight names `Planned change, PR #<n>`, or
+after the commit's first 7 characters, or the date. It is not a
+[replay candidate](/docs/reference/api/replay-candidate) resource. A proposed
+replay candidate may not be named starting `Planned change`.
+
+## Check
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `id`, `teamId`, `lineId`, `stationId`, `stationKey` | string | |
+| `setId`, `setName` | string, string or null | The guarding set. |
+| `setVersion` | number | The version of the set the check replayed. |
+| `candidateId`, `replayId` | string | The planned candidate and its replay. |
+| `baselineReplayId` | string or null | The replay of the live config it is compared with. Null while it is being started. |
+| `attempt` | number | Counts checks of the same change against the same live config, from 1. |
+| `reference` | object | `{ commit, pullRequest }`. |
+| `liveFingerprint`, `candidateFingerprint` | string | The [config fingerprints](/docs/reference/glossary#config-fingerprint) of the live and planned station. |
+| `keptLive` | array of strings | What the plan changed of `check`, `judge`, `diffs` and `runners`, which the check kept as the live station has them. |
+| `threshold` | object | `{ mostRegressions, ceiling, unpricedRun }`, from the live line when the check started. `ceiling` caps each replay of the check; `unpricedRun` is what an unpriced run counts against it, or null once the replay is gone. |
+| `verdict` | string | See [Verdicts](#verdicts). |
+| `undecidedBecause` | string or null | See [Verdicts](#verdicts). |
+| `tasks` | number | How many tasks the set replays. |
+| `compared` | number | How many were scored on both sides. |
+| `candidate`, `baseline` | object | Each `{ state, entries, scored, succeeded, successRate, spent }`. `state` is the replay's [state](/docs/reference/app/replays#replay-states), or null once it is gone. |
+| `regressions` | array | Each task it regressed on: `{ taskId, originalRunId, title, candidate, baseline, scoreDelta, reasons }`, with each side's [result](/docs/reference/app/replays#results) and the change's reasons as `{ code, detail }`. |
+| `replayUrl` | string or null | The check's replay in the web app. |
+| `reused` | boolean | `true` when starting a check answered one this change already had. Always `false` on a read. |
+| `createdAt` | string | An RFC 3339 time. |
+
+## Verdicts
+
+| Verdict | Shown in the web app | When |
+| --- | --- | --- |
+| `failed` | Too many regressions | More tasks regressed than `mostRegressions` allows. Decided as soon as it happens, while replays still run. |
+| `running` | Checking | The change's replay or its baseline is queued or running, or the baseline is still being started. |
+| `undecided` | Undecided: `<reason>` | See below. |
+| `passed` | Passed | None of the above. |
+
+A task regressed as in a [replay](/docs/reference/app/replays#regressions).
+
+| `undecidedBecause` | Shown after `Undecided:` |
+| --- | --- |
+| `replay-gone` | its replay is gone |
+| `stopped` | its replay was stopped |
+| `over-ceiling` | its replay reached its ceiling |
+| `no-baseline` | there was no replay of the live config to compare with |
+| `baseline-unfinished` | the live config's replay did not finish |
+| `too-few-scored` | fewer than half the tasks were scored on both sides |
+
+## Who may read and change
+
+Reading needs a person on the team or an owner or admin of its workspace, or a
+[workspace token](/docs/reference/api/workspace-token) of the team's workspace
+with the `read` scope. Anyone else is answered `404`. Marking a set and
+starting a check also need `plan`. See
+[Team outcomes](/docs/reference/roles-and-permissions#team-outcomes).
+
+Starting a check is recorded as a
+[configuration change](/docs/reference/api/resource-api#configuration-changes)
+of the kind `replay-check`. Marking or unmarking a set is recorded as an
+`updated` change of the kind `replay-set`.
+
+## Errors
+
+| Status | Cause |
+| --- | --- |
+| `401` | No session or token, or an unknown token. |
+| `403` | A change by a caller who may read the team but not plan. |
+| `404` | The team, line, station, set or check is not one the caller may see, as in `There is no replay check <checkId> for this caller`. |
+| `409` | Marking a set while another at the station guards its changes (`Another replay set guards the changes of the station <stationId> already; a station has one such set`), or a set whose station has left its line. A line with no `replay_check` (`The line <lineKey> has no replay_check, so no planned change of it is checked; give it a replay_check block with most_regressions, ceiling and currency`). A station no set guards (`No replay set guards the changes of the station <stationKey>, so a planned change of it has nothing to replay; flag one of its replay sets as guarding changes`). A change with nothing to replay, `nothing-to-replay`: `The plan changes nothing that changes how the station's runs go; there is nothing to replay`, or `The plan changes only <fields> of the station, which a check keeps as the live station has them, and nothing that changes how its runs go; there is nothing to replay`. |
+| `422` | The planned block is not one the line takes, each problem at its path under `station`. A missing `lineId` or `stationKey`, or a `reference` or `line` not in its form. |

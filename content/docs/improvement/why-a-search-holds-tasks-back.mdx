@@ -1,0 +1,144 @@
+---
+type: concept
+icon: Lightbulb
+title: Why a search holds tasks back
+description: Why a search for a better station config keeps some of its tasks from its agent, why it ends with a frontier and not one winner, what it may change, and how its budget is spent.
+---
+
+A [replay](/docs/improvement/why-changes-are-replayed-on-past-tasks) answers
+one question: does this change do better than the station as it is, on these
+tasks? A search asks it many times over. An agent reads how the station's
+past runs went, proposes a changed config, sees how that config did when
+replayed, and proposes again. Each round learns from the one before.
+
+That loop has a known way of going wrong, and most of a search's design is
+there to catch it.
+
+## Fitting the tasks it sees
+
+An agent that sees which tasks a candidate failed, and why, will propose the
+next candidate to pass those tasks. After a few rounds the best candidate may
+mention a file name from one task, or a test from another, and score well on
+exactly the tasks it was tuned on. On the next real task it does no better
+than before. This is overfitting: a result that describes the tasks it was
+measured on, and nothing else.
+
+The more rounds a search runs, the more its scores on the tasks the agent saw
+flatter its candidates. Those scores still rank the candidates against each
+other, but they can no longer say how a candidate does on work the station
+has not seen.
+
+## Tasks the agent never sees
+
+So a search splits its replay set before it starts. About 30% of the set's
+tasks are held out: the agent never sees them, and the candidates are never
+replayed on them while the search runs. The rest are the searched tasks, the
+ones the agent studies and every candidate is replayed on.
+
+The agent is not told which tasks are held out, only how many. `spotlight
+history` in its run leaves out the held-out tasks' runs and their results,
+and it cannot read their traces. Team memories stay out of a search
+altogether: its agent can neither recall nor propose one.
+Once the search stops searching, the best candidates are replayed on the
+held-out tasks, and those scores are the ones to trust.
+
+A few choices follow from this.
+
+- The split is by task, not by run. If a set holds two runs of one task, both
+  land on the same side, so nothing about a held-out task leaks through a run
+  of it the agent saw.
+- The split is drawn from the search's own id, so each search draws its own,
+  and the same search always draws the same one.
+- A search needs at least 2 held-out tasks and at least 3 searched ones, so a
+  set needs runs of at least 5 different tasks. With fewer, the held-out score
+  would rest on a single task, or the agent would have almost nothing to learn
+  from.
+- Only the best candidates are replayed on the held-out tasks, up to as many
+  as one iteration may propose. In the docs' view, replaying every candidate
+  there would cost the most, and a score on held-out tasks is only worth having
+  for a candidate someone might pick.
+- The station's live config is replayed on the whole set at the start, so it
+  has a held-out score to compare with from the beginning. The same replay
+  becomes the set's baseline.
+
+## A frontier of candidates
+
+A candidate can do better by succeeding more often or by costing less. A
+bigger model may succeed on more tasks and cost far more a run.
+Which matters more depends on the team, and a search cannot know.
+
+So a search keeps the frontier: the candidates for which no other succeeds as
+often for less. Everything off the
+frontier is beaten on both counts by something on it. The live config is
+always on the frontier, so every candidate is read against the station as it
+is. The search page names a best candidate, the frontier candidate that
+succeeds most, held-out score first, but a person picks, and may pick a
+cheaper one that succeeds almost as often.
+
+## What a search may change
+
+A candidate may change only the station's prompt, harness, model, effort,
+harness profile, skills, tools, decisions, memories and description. A
+candidate that changes anything else is refused before it is replayed.
+
+What it may not change falls into three groups.
+
+- How it is scored. A replay scores a candidate by the station's own check and
+  judge. A search that could loosen the check or rewrite the judge's rubric
+  could pass by lowering the bar. In the docs' view, a search must
+  be held to a bar it cannot move.
+- How tasks flow. Which stations a run may hand a task on to and whether it
+  may finish a task shape the whole line, and the station's key, name and
+  kind identify it there. A change to them is a change to the line, which in
+  the docs' view a person should design.
+- Where it runs and what is watched. The station's runners and its alerts are
+  left as they are: they say where work is placed and what the team is told,
+  and neither makes a run better.
+
+A search starts from the station's live config when the search began, and
+every candidate is a change to that block.
+
+## Budgets
+
+A search can start many runs: the live config on every task, each candidate on
+every searched task, the best on every held-out task, and the agent once per
+iteration. A person sets one ceiling for all of it, and the search plans its
+spending before it starts.
+
+A tenth of the ceiling is set aside for the agent's runs, shared across the
+iterations. The rest is divided into an even share per replay run, sized so
+that every replay the budget allows has room, with a margin of as many extra
+runs as the search runs at once. Each replay gets a
+ceiling of its own from that share: the live config's covers every run in the
+set, each candidate's covers the searched runs, and each held-out replay the
+held-out runs. If the share would be under 0.01 in the ceiling's currency, the
+search is refused before it starts.
+
+Before each iteration, the search checks that what it has spent, plus what the
+held-out replays will need, plus one more iteration, still fits under the
+ceiling. If not, it stops searching and moves on to the held-out replays. So a
+search stops early rather than overspend, and the held-out check it ends with
+has its share set aside from the start.
+
+Some spend comes back without a price, as for a harness that reports no cost,
+or in another currency than the ceiling's. A search cannot leave that out
+without letting unpriced runs spend for free, so it counts each such replay
+run as its full share, and an unpriced agent run as its full share of the
+agent's tenth. An agent run is not cut off at its share, so a search can end a
+little over its ceiling.
+
+## Picking is still a review
+
+A search changes nothing on its own. When a person picks a candidate,
+Spotlight edits the station's block in the line's Terraform, commits it to a
+branch of its own, and opens a pull request. The change goes through the same
+review and the same `terraform apply` as any other change to the line, and if
+the line [checks its pull requests](/docs/configuration/check-terraform-pull-requests-for-station-regressions),
+that check replays it again. [Why configuration lives in Terraform](/docs/configuration/why-configuration-lives-in-terraform)
+gives the reasons the repository stays the record.
+
+## Related
+
+- [Search for a better station config](/docs/improvement/search-for-a-better-station-config)
+- [Searches](/docs/reference/app/searches)
+- [Why changes are replayed on past tasks](/docs/improvement/why-changes-are-replayed-on-past-tasks)

@@ -218,6 +218,10 @@ Each command exits `1` and prints its message on standard error.
 | `a replay may not remember: it has no effect outside Spotlight` | `spotlight remember` in a replay run. | [Replay runs](/docs/reference/app/replays#replay-runs) |
 | `A replay may not read a task's trace: it leaves nothing behind but its own result` | `spotlight trace` in a replay run. | [Replay runs](/docs/reference/app/replays#replay-runs) |
 | `this run may only fetch` | `403`. A `git push` from a replay run. | [Replay runs](/docs/reference/app/replays#replay-runs) |
+| `a search may not answer a remark: it studies the station's history and proposes station configs, nothing more` | `spotlight reply` in a search's agent run. `recall what the team remembers` and `propose a memory` in place of `answer a remark` for `spotlight recall` and `spotlight remember`. | [The search's agent run](/docs/reference/app/searches#the-searchs-agent-run) |
+| `this run cannot propose a candidate: only a search's runs do` | `spotlight candidate` in a run that is not a search's. | [spotlight candidate](/docs/reference/cli/agent-commands#spotlight-candidate) |
+| `This search iteration has proposed its <n> candidates, or tried to too often; end the run` | `spotlight candidate` once the iteration may propose no more. | [spotlight candidate](/docs/reference/cli/agent-commands#spotlight-candidate) |
+| `The search no longer holds this run` | `spotlight candidate` after the search stopped or moved on. | [spotlight candidate](/docs/reference/cli/agent-commands#spotlight-candidate) |
 
 ### Tool calls and integration requests
 
@@ -358,12 +362,34 @@ A replay's results give their reasons in words such as
 | `Only the team's members can see its replays` | The reader is neither on the team nor an owner or admin of the workspace. | [Team outcomes](/docs/reference/roles-and-permissions#team-outcomes) |
 | `Add runs to the set first.` | "Start a replay" on an empty set. | [Replay set page](/docs/reference/app/replays#replay-set-page) |
 | `Its station is gone from its line.` | "Start a replay" on a set whose station has left its line. | [Replay set page](/docs/reference/app/replays#replay-set-page) |
-| `A replay of this set is running, so it can't be deleted until that replay ends or is stopped.` | "Delete" on a set with a replay under way. | [Replay set page](/docs/reference/app/replays#replay-set-page) |
+| `A replay or search of this set is running, so it can't be deleted until that ends or is stopped.` | "Delete" on a set with a replay or search under way. | [Replay set page](/docs/reference/app/replays#replay-set-page) |
+| `A search of this set is under way, so its runs stay as they are until the search ends or is stopped.` | "Add runs" or taking a run out of a set a search is using. | [Search replays](/docs/reference/app/searches#search-replays) |
 | `Give a ceiling above nothing.`, `A ceiling is at most 1,000.`, `Name the currency in three letters, like USD.` | The ceiling entered when starting a replay. | [Replay set page](/docs/reference/app/replays#replay-set-page) |
 
 The [Replays API](/docs/reference/api/replays#errors) and
 [`spotlight replay`](/docs/reference/cli/replay-command) list their own
 messages.
+
+### Searches
+
+A refused pull request names its reason in words; see
+[Config pull request reasons](/docs/reference/app/searches#config-pull-request-reasons).
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `Only the team's members can see its searches` | The reader is neither on the team nor an owner or admin of the workspace. | [Team outcomes](/docs/reference/roles-and-permissions#team-outcomes) |
+| `A search of this station is under way.` | "Start a search" while the station is being searched. | [Station page](/docs/reference/app/searches#station-page) |
+| `Open a replay set first.` | "Start a search" at a station with no replay set. | [Station page](/docs/reference/app/searches#station-page) |
+| `No replay set covers 5 different tasks yet.` | "Start a search" when no set covers runs of 5 tasks. | [Station page](/docs/reference/app/searches#station-page) |
+| `It covers <n> tasks; a search needs runs of at least 5 different tasks, to hold some out.` | A set too small to search on, in the Start a search dialog. | [Start a search](/docs/reference/app/searches#start-a-search) |
+| `Give a whole number from <least> to <most>.` | An iteration, candidate or at-once count out of bounds. | [Start a search](/docs/reference/app/searches#start-a-search) |
+| `It can be picked once its replay on the searched tasks finishes.` | "Pick" on a candidate whose replay has not finished. | [Picking a candidate](/docs/reference/app/searches#picking-a-candidate) |
+| `Another replay set at this station guards its changes already. Turn it off there first.` | "Guards config changes" on a second set at a station. | [Guarding a station's changes](/docs/reference/app/searches#guarding-a-stations-changes) |
+
+The [Searches API](/docs/reference/api/searches#errors), the
+[Replay checks API](/docs/reference/api/replay-checks#errors) and
+[`spotlight replay check`](/docs/reference/cli/replay-command#exit-codes-for-check)
+list their own messages.
 
 ### Change review
 

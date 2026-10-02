@@ -33,14 +33,17 @@ out". It holds three parts.
 To a person who may not read the team's replays, "Replay sets" reads "Only
 the team's members can see its replays".
 
+After "Replays" comes "Searches", the station's searches for a better config.
+See [Searches](/docs/reference/app/searches#station-page).
+
 ## Replay set page
 
 `/w/<slug>/team/<teamId>/lines/<lineId>/stations/<stationId>/replay-sets/<setId>`
 
 | Part | Shows | Can change |
 | --- | --- | --- |
-| Header | The set's name, `<n> runs · opened <when>`. When its station has left the line: `Its station is gone from its line, so it starts no replays, takes no more runs and keeps none of its runs' workspaces. It can still be renamed, have runs taken out, or be deleted.` | "Rename". "Delete", then "Delete set": the set and its replays and their results go, and its runs' workspaces are no longer kept for it. Delete is refused while a replay of the set is queued or running, or still has runs in flight. |
-| Runs | Each run in the set: its task's title, linked to the run, its state, when it ended, and "Can be replayed" or [why it cannot be](#why-a-run-cannot-be-replayed). A task since deleted reads "A deleted task". | "Add runs" opens the station's latest 50 ended task runs, each with "Add", "In the set" or "Can't be replayed" and the reason. The X beside a run takes it out of the set. "Add runs" is not offered once the station is gone. |
+| Header | The set's name, `<n> runs · opened <when>`, and the "Guards config changes" switch (see [Guarding a station's changes](/docs/reference/app/searches#guarding-a-stations-changes)). When its station has left the line: `Its station is gone from its line, so it starts no replays, takes no more runs and keeps none of its runs' workspaces. It can still be renamed, have runs taken out, or be deleted.` | "Rename". "Delete", then "Delete set": the set and its replays and their results go, and its runs' workspaces are no longer kept for it. Delete is refused while a replay of the set is queued or running, or still has runs in flight, and while a search of the set is under way: "A replay or search of this set is running, so it can't be deleted until that ends or is stopped." Below the header, "Checks" lists the checks replayed on the set (see [Guarding a station's changes](/docs/reference/app/searches#guarding-a-stations-changes)). |
+| Runs | Each run in the set: its task's title, linked to the run, its state, when it ended, and "Can be replayed" or [why it cannot be](#why-a-run-cannot-be-replayed). A task since deleted reads "A deleted task". | "Add runs" opens the station's latest 50 ended task runs, each with "Add", "In the set" or "Can't be replayed" and the reason. The X beside a run takes it out of the set. "Add runs" is not offered once the station is gone. While a search of the set is under way, runs can be neither added nor taken out. |
 | Replays | Each replay of the set, newest first: its candidate, "Baseline" for the set's baseline, its [state](#replay-states), when it started, its success against the baseline, `<n> scored · <n> unscored`, and `Spent <spent> of <ceiling>`. With none, it reads "Not replayed yet". | "Start a replay": see below. |
 
 "Start a replay" is refused with "Add runs to the set first." on an empty set,
@@ -304,7 +307,9 @@ run's task title and `Replay at <station>`. It shows:
 
 - `A replay of <task title>`, linked to the original run;
 - `Under <candidate> in a replay of <set>`, with `(the baseline)` for a
-  baseline, linked to the replay page, and the run's result in it;
+  baseline, linked to the replay page, and the run's result in it; for a
+  search's replay, also `candidate <name> in its search`, or `the live config
+  it started from in its search`, linked to the search;
 - the run's [config](/docs/reference/app/tasks-runs-and-the-inbox#config) and
   [spend](/docs/reference/app/tasks-runs-and-the-inbox#spend), and its steps.
 
@@ -329,7 +334,7 @@ A replay run differs from a task run:
 | Change stack | Drafted when the candidate sets `diffs: true`, checked, and never sent to GitHub. |
 | Archive | None is kept for a later run. |
 | Outcomes | Not recorded among the station's outcomes or on Insights. No memories are drafted. |
-| Priority | Below every task run and chat run. At most 2 of a team's replay runs are queued or running at once. |
+| Priority | Below every task run and chat run. At most 2 of a team's replay runs, other than a search's, are queued or running at once. A search's replay runs are held to its own limit; see [Spend and ceiling](/docs/reference/app/searches#spend-and-ceiling). |
 
 See [Inside a sandbox](/docs/reference/hosts/sandbox) for the phases every
 run goes through.

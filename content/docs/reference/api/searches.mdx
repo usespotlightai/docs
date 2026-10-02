@@ -1,0 +1,178 @@
+---
+type: reference
+icon: BookText
+title: Searches API
+description: The team endpoints that estimate, start, read and stop searches for a better station config, pick a candidate and read the pull request it opens, with their bodies, fields, permissions and errors.
+---
+
+[Searches](/docs/reference/app/searches) are read and changed through these
+endpoints, under `/api/teams/{teamId}`. They answer JSON, and errors are
+`application/problem+json` as on the
+[resource API](/docs/reference/api/resource-api#errors). `{lineId}` and
+`{stationId}` are as in the [Replays API](/docs/reference/api/replays).
+
+## Endpoints
+
+| Method and path | Returns |
+| --- | --- |
+| `GET /lines/{lineId}/stations/{stationId}/searches` | The station's searches, newest first, each a [search](#search). |
+| `POST /lines/{lineId}/stations/{stationId}/searches/estimate` | `200` and an [estimate](#estimate-a-search). Nothing is written. |
+| `POST /lines/{lineId}/stations/{stationId}/searches` | `201` and `{ "id", "seedReplayId" }`: starts a search. See [Start a search](#start-a-search). |
+| `GET /searches` | The team's searches, newest first, a page at a time. |
+| `GET /searches/{searchId}` | One search with its split, iterations, candidates and frontier. See [Search detail](#search-detail). |
+| `POST /searches/{searchId}/stop` | `204`: stops the search. Its agent's run is withdrawn or stopped, its replays stop, and nothing more starts. |
+| `POST /searches/{searchId}/candidates/{candidateId}/pick` | `201` and a [config pull request](#config-pull-request) when picked, or picked again after a refusal; `200` and the one it has when picked already. |
+| `GET /config-pull-requests/{pullRequestId}` | A [config pull request](#config-pull-request). |
+| `GET /search-runs/{runId}` | A search's agent run: its search and iteration, the agent it ran, its steps, and what it spent. |
+
+`GET /searches` takes:
+
+| Parameter | Description |
+| --- | --- |
+| `limit` | At most this many. Default 50, at most 200. |
+| `before` | Only searches started before this one, by its id. A search the team does not hold answers an empty page. |
+
+A search's agent proposes candidates at `POST /api/runs/{runId}/search-candidates`,
+which only the runner holding the run may call, with its runner token. The
+agent reaches it through
+[`spotlight candidate`](/docs/reference/cli/agent-commands#spotlight-candidate).
+
+## Start a search
+
+```json
+{
+  "setId": "<replay set id>",
+  "budget": {
+    "iterations": 3,
+    "perIteration": 2,
+    "ceiling": { "amount": 20, "currency": "USD" },
+    "concurrency": 4
+  },
+  "agent": { "harness": "claude-code", "model": "claude-opus-4-5", "effort": "high" }
+}
+```
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `setId` | string | required | A replay set at the station, covering runs of at least 5 different tasks. |
+| `budget.iterations` | number | required | How many times the search runs its agent, 1 to 10. |
+| `budget.perIteration` | number | required | How many candidates each agent run may propose, 1 to 5. |
+| `budget.ceiling` | object | required | `{ amount, currency }`: the most the whole search may spend, above 0 and at most 1,000, in a three-letter currency. |
+| `budget.concurrency` | number | `4` | How many of its replay runs run at once, 1 to 10, apart from the team's own limit. |
+| `agent.harness` | string | required | The harness the agent runs on. One a runner can start. |
+| `agent.model` | string or null | none | The agent's model, 1 to 60 characters. Without it, the harness's default. |
+| `agent.effort` | string or null | none | `low`, `medium`, `high`, `xhigh` or `max`. Without it, the harness's default. |
+
+Starting takes a snapshot of the station's live config, draws the
+[held-out split](/docs/reference/glossary#held-out-task), and starts a replay
+of the live config on every run of the set: `seedReplayId`. That replay is the
+set's new baseline, with a ceiling from the search's budget.
+
+## Estimate a search
+
+The body is `setId` and `budget`, as above. The answer:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `searchedTasks` | number | Tasks its agent sees. |
+| `heldOutTasks` | number | Tasks it holds out. |
+| `runs` | object | The most runs it may start: `seed` (the live config, one per run of the set), `searchReplays` (every candidate it may propose, on the searched runs), `heldOutReplays` (the best candidates, on the held-out runs), `agent` (one per iteration) and `total`. |
+| `ceiling` | object | `{ amount, currency }`. |
+| `perReplayAllotments` | object | The ceilings each replay would get: `seed`, `searchReplay`, `heldOutReplay`, and `agentRun`, what each agent run is expected to spend. |
+| `estimatedDuration` | number or null | Roughly how long it takes at its concurrency, in milliseconds, from the average time of the set's runs. Null when none was timed. |
+
+The estimate assumes the choice of held-out tasks whose runs cost most.
+
+## Search
+
+Each item of a list, and the first fields of a search's detail:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `id`, `lineId`, `stationId`, `setId` | string | |
+| `state` | string | `seeding`, `searching`, `holding-out`, `finished` or `stopped`. See [Search states](/docs/reference/app/searches#search-states). |
+| `ending` | string or null | Why it stopped searching. See [Search endings](/docs/reference/app/searches#search-endings). |
+| `agent` | object | `{ harness, model, effort }`. |
+| `budget` | object | `{ iterations, perIteration, ceiling, concurrency }`. |
+| `spent` | object | `{ amount, currency }`: its replays and its agent's runs so far, in the ceiling's currency. |
+| `iterationsRun` | number | How many times its agent ran, or is running. |
+| `proposed` | number | How many candidates its agent proposed. |
+| `best` | object or null | `{ candidateId, name, seed, searchScore, heldOutScore, costPerRun }`: the [best candidate](/docs/reference/app/searches#best-candidate). `seed` is `true` when it is the live config. |
+| `startedAt`, `endedAt` | string, string or null | RFC 3339 times. |
+
+## Search detail
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `split` | object | `searchedTasks`, `heldOutTasks`, and `searched` and `heldOut`, each a list of `{ runId, taskId }` from the set. |
+| `iterations` | array | Each `{ number, runId, state, attempts, proposed, agentSpent }`. `state` is `wanted`, `running`, `ended` or `failed`. `attempts` counts its proposals, refused ones included; `proposed` lists the candidates it admitted, by id. `agentSpent` is what its agent run spent, once known. |
+| `seed` | object | The live config the search started from, as a [candidate](#candidate). Its search score counts the searched runs only, its held-out score the held-out runs. |
+| `candidates` | array | Every candidate its agent proposed. |
+| `frontier` | array of strings | The candidates on the [frontier](/docs/reference/app/searches#frontier), by id, cheapest first, the seed always among them. |
+
+### Candidate
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `candidateId` | string | |
+| `name` | string | The slug the agent named it by, or `seed` for the live config. |
+| `seed` | boolean | Whether it is the live config. |
+| `iteration` | number or null | The iteration that proposed it. Null for the seed. |
+| `hypothesis` | string or null | What its agent expected it to improve, and why. |
+| `fingerprint` | string or null | Its [config fingerprint](/docs/reference/glossary#config-fingerprint). |
+| `changes` | array | How it differs from the live config, each `{ part, name, kind, was, now }`, as on a [replay candidate](/docs/reference/api/replay-candidate#fields). |
+| `replayId`, `replayState` | string, string or null | Its replay on the searched runs; for the seed, its replay of the whole set. |
+| `heldOutReplayId`, `heldOutReplayState` | string or null | Its replay on the held-out runs, when it had one. |
+| `searchScore` | number or null | Its success rate on the searched runs, 0 to 1. |
+| `searchScored` | number | How many searched runs were scored. |
+| `heldOutScore` | number or null | Its success rate on the held-out runs, 0 to 1, once that replay finished. |
+| `costPerRun` | number or null | What it spent per scored searched run. Null while any of it went unpriced or was in another currency. |
+| `spent` | object | `{ amount, currency }`. |
+| `onFrontier` | boolean | Whether it is on the frontier. |
+| `pullRequest` | object or null | The [config pull request](#config-pull-request) picking it opened. Always null for the seed. |
+
+A searched candidate is not a [replay candidate](/docs/reference/api/replay-candidate)
+resource: it is not listed, imported, read or withdrawn there.
+
+## Config pull request
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `id` | string | |
+| `state` | string | `opening`, `opened` or `refused`. |
+| `url` | string or null | The pull request on GitHub, once opened. |
+| `reason` | object or null | Why it was refused: `{ code, message, attribute, expression, wanted }`. `code` is one of the [config pull request reasons](/docs/reference/app/searches#config-pull-request-reasons). `attribute` is the station attribute it is about, `expression` the Terraform expression that computes it, and `wanted` the value to set by hand. |
+| `teamId`, `searchId`, `candidateId`, `lineId`, `stationId` | string | |
+| `candidateName`, `stationKey` | string | |
+| `repository`, `path` | string or null | The line's `source` when it was picked. Null when the line named none. |
+| `branch` | string | The branch Spotlight commits to. |
+| `attempts` | number | How many times a person picked it. |
+| `createdAt`, `updatedAt` | string | RFC 3339 times. |
+
+Picking a candidate whose pull request is opening or opened answers that one.
+Picking a refused one tries again, reading the line's `source` afresh.
+
+## Who may read and change
+
+Reading, and estimating, need a person on the team or an owner or admin of
+its workspace, or a [workspace token](/docs/reference/api/workspace-token) of
+the team's workspace with the `read` scope. Anyone else is answered `404`.
+Starting and stopping a search and picking a candidate also need `plan`: a
+token with `read` alone is refused with `403`. See
+[Team outcomes](/docs/reference/roles-and-permissions#team-outcomes).
+
+Starting a search is recorded as a
+[configuration change](/docs/reference/api/resource-api#configuration-changes)
+of the kind `replay-search` with the action `created`, and stopping it as
+`updated`. Picking a candidate is recorded as `config-pull-request`, keyed by
+its branch: `created`, and `updated` when picked again after a refusal.
+
+## Errors
+
+| Status | Cause |
+| --- | --- |
+| `401` | No session or token, or an unknown token. |
+| `403` | A change by a caller who may read the team but not plan. |
+| `404` | The team, line, station, set, search, candidate or pull request is not one the caller may see, as in `There is no search <searchId> for this caller`. A set at another station than the one in the path. |
+| `409` | Starting a search of a station that is being searched (`The station <stationId> is being searched already; stop that search first`), or over a set whose station has left its line. Stopping a search that has ended (`The search <searchId> has ended`). Picking the seed (`The seed is the station's live config already; pick a candidate the search proposed`), or a candidate whose replay on the searched runs has not finished (`The candidate <name> has no finished replay on the searched tasks; pick it once its replay finishes`). |
+| `422` | A missing or invalid field, at its path, such as `budget.iterations`. A count out of bounds (`A search runs its agent from 1 to 10`). An agent the runners cannot start (`A search runs an agent whose harness names a harness a runner can start: <harnesses>`). A set covering too few tasks (`A search holds out at least 2 tasks and searches at least 3, but its replay set covers <n> tasks, of which it would hold out <m>; add runs of other tasks first`). A ceiling too low (`A search is capped high enough to give each replay run at least 0.01 <currency>; raise its ceiling or lower its iterations or candidates`). |

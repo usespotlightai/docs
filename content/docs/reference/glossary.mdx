@@ -36,7 +36,8 @@ task waits at the backlog until a person or a reaction moves it. See
 
 The replay of a station's live config on a replay set's runs, which every
 other replay of the set is compared with. It starts the first time a set is
-replayed, and again once runs are added after it. See
+replayed, again once runs are added after it, and when a [search](#search) of
+the set starts. See
 [Regressions](/docs/reference/app/replays#regressions).
 
 ## Before event
@@ -61,8 +62,9 @@ open remarks on the pull request, and how to hand over. See
 ## Candidate
 
 A work station's block as someone wants to try it, proposed to be
-[replayed](#replay) on the station's past tasks. It is never applied. See
-[Replay candidates](/docs/reference/api/replay-candidate).
+[replayed](#replay) on the station's past tasks. It is never applied. A person
+proposes one as a [replay candidate](/docs/reference/api/replay-candidate); a
+[search's](#search) agent proposes them as it searches.
 
 ## Catalog
 
@@ -136,6 +138,12 @@ network only through it. Egress admits or refuses each connection and
 adds secrets to requests to the hosts they are bound to. See
 [Egress](/docs/reference/hosts/egress).
 
+## Frontier
+
+The candidates of a [search](#search) for which no other candidate succeeds as
+often for less. The station's live config is always on it. See
+[Frontier](/docs/reference/app/searches#frontier).
+
 ## Grade
 
 A person's score of a judged run, on the judge's scale, given from the inbox.
@@ -174,6 +182,13 @@ See [Harness keys](/docs/reference/hosts/host-configuration#harness-keys).
 A team's named set of permission rules, MCP servers and native harness
 settings. A station names one in its `profile`. See
 [`spotlight_harness_profile`](/docs/reference/terraform/harness-profile).
+
+## Held-out task
+
+One of the tasks of a replay set that a [search](#search) keeps from its
+agent, about 30% of them. Only the best candidates are replayed on them, once
+the search stops searching, to check they did not just fit the tasks the agent
+saw. See [Why a search holds tasks back](/docs/improvement/why-a-search-holds-tasks-back).
 
 ## Hook
 
@@ -330,6 +345,13 @@ A run of some of a work station's past task runs again, under a
 started. A replay changes nothing outside Spotlight, and each of its runs is
 scored. See [Replays](/docs/reference/app/replays).
 
+## Replay check
+
+A [replay](#replay) of a work station's change as a Terraform plan would
+apply it, on the replay set that guards the station's changes, judged against
+the line's `replay_check`. CI runs it with `spotlight replay check`. See
+[Replay checks API](/docs/reference/api/replay-checks).
+
 ## Replay set
 
 A named list of up to 50 of a work station's past task runs, replayed
@@ -384,6 +406,13 @@ issuer, for a named subject, in place of a pool token. See
 
 The container one run executes in. A host starts a fresh sandbox for each run.
 See [Inside a sandbox](/docs/reference/hosts/sandbox).
+
+## Search
+
+A series of rounds in which an agent proposes changed configs for a work
+station, called [candidates](#candidate), each [replayed](#replay) on a replay
+set's tasks, within a budget. A person picks a candidate, and Spotlight opens a
+pull request with it. See [Searches](/docs/reference/app/searches).
 
 ## Secret
 

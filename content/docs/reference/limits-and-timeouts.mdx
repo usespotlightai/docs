@@ -104,10 +104,47 @@ See [Replays](/docs/reference/app/replays).
 | Runs in a replay set | 50 |
 | Replay set name, candidate name | 1 to 100 characters |
 | Runs offered to add to a set | the station's latest 50 ended task runs |
-| Replay runs of a team queued or running at once | 2 |
+| Replay runs of a team queued or running at once, not counting a search's | 2 |
 | Ceiling | above 0, at most 1,000, in a three-letter currency |
 | Attempts to queue a replay run | 10 |
 | `spotlight replay watch` interval | default 15 seconds, at least 1 second |
+
+## Searches
+
+See [Searches](/docs/reference/app/searches).
+
+| Item | Value |
+| --- | --- |
+| Tasks a set must cover | at least 5: at least 2 held out and at least 3 searched |
+| Share of tasks held out | 30%, rounded up |
+| Iterations | 1 to 10 |
+| Candidates per iteration | 1 to 5 |
+| Proposals an iteration may try, refused ones included | 3 times its candidates |
+| Replay runs of a search queued or running at once | 1 to 10, default 4, apart from the team's 2 |
+| Searches of a station under way at once | 1 |
+| Ceiling | above 0, at most 1,000, in a three-letter currency |
+| Share of the ceiling for the agent's runs | a tenth |
+| Least a replay run may be given | 0.01 of the ceiling's currency |
+| Hypothesis | 1 to 4,000 characters |
+| Candidate name | a slug of lowercase letters, digits and hyphens, at most 63 characters |
+| An agent run no runner takes | withdrawn after 60 minutes |
+| An agent run's spend not known | counted as unpriced 15 minutes after it ended |
+| Tries to open a config pull request | 5: the first, then again after 30 seconds, 2, 8 and 32 minutes |
+
+## Replay checks
+
+See [Replay checks API](/docs/reference/api/replay-checks).
+
+| Item | Value |
+| --- | --- |
+| Sets guarding a station's changes | at most 1 |
+| `mostRegressions` | 0 or more, default 0 |
+| Ceiling, each replay a check starts | above 0, at most 1,000, default 10 `USD` |
+| Replays a check starts | 1, or 2 when the set has no baseline of the live config |
+| Planned repositories sent with a check | at most 64,000 characters |
+| `spotlight replay check` wait | default 60 minutes |
+| `spotlight replay check` interval | default 15 seconds, at least 1 second |
+| Failed tries in a row before `spotlight replay check` gives up | 5 |
 
 ## Change stacks and decisions
 

@@ -6,7 +6,9 @@ description: The team endpoints behind replay sets and replays, their request bo
 ---
 
 Every part of [replays](/docs/reference/app/replays) other than candidates is
-read and changed through these endpoints, under `/api/teams/{teamId}`. They
+read and changed through these endpoints, under `/api/teams/{teamId}`.
+Searches have the [Searches API](/docs/reference/api/searches), and checks of
+planned changes the [Replay checks API](/docs/reference/api/replay-checks). They
 answer JSON, and errors are `application/problem+json` as on the
 [resource API](/docs/reference/api/resource-api#errors). Candidates are the
 [`replay-candidate`](/docs/reference/api/replay-candidate) resource.
@@ -18,7 +20,7 @@ answer JSON, and errors are `application/problem+json` as on the
 
 | Method and path | Returns |
 | --- | --- |
-| `GET /lines/{lineId}/stations/{stationId}/replay-sets` | The station's replay sets, each with its runs and whether each can still be replayed. |
+| `GET /lines/{lineId}/stations/{stationId}/replay-sets` | The station's replay sets, each with its runs, whether each can still be replayed, and `guardsChanges`, whether the set [guards the station's changes](/docs/reference/api/replay-checks). |
 | `GET /replay-sets` | Every replay set of the team, including those whose station has left its line. With `line` and `station`, only one station's. |
 | `GET /lines/{lineId}/stations/{stationId}/replayable-runs` | The station's latest 50 ended task runs, newest first, each with its refusal and the reason, or none. |
 | `POST /lines/{lineId}/stations/{stationId}/replay-sets` | `201` and `{ "id" }`: opens an empty set. |
@@ -28,9 +30,9 @@ answer JSON, and errors are `application/problem+json` as on the
 | `DELETE /replay-sets/{setId}/entries/{runId}` | `204`: takes a run out of the set, also once its station has left its line. |
 | `GET /replay-sets/{setId}/replays` | Every replay of the set, newest first, with each run's result, the baseline marked. |
 | `POST /replay-sets/{setId}/replays` | `201`: starts a replay. See [Start a replay](#start-a-replay). |
-| `GET /replays/{replayId}` | One replay, its totals, its baseline's id, and each task against the baseline, regressions first. |
+| `GET /replays/{replayId}` | One replay, its totals, its baseline's id, and each task against the baseline, regressions first. A replay a search started carries `search`: `{ searchId, candidateName }`, with `seed` for the live config; otherwise `search` is null. |
 | `POST /replays/{replayId}/stop` | `204`: stops the replay. |
-| `GET /replay-runs/{runId}/replay` | The replay a replay run belongs to, its candidate and set, and the run's result in it. |
+| `GET /replay-runs/{runId}/replay` | The replay a replay run belongs to, its candidate and set, `search` as above, and the run's result in it. |
 | `GET /replay-runs/{runId}` | A replay run: the run it replays, its steps, and what it spent. |
 
 `GET /replay-sets` takes:
@@ -90,5 +92,5 @@ of the kind `replay`, keyed by the replay's id.
 | `401` | No session or token, or an unknown token. |
 | `403` | A change by a caller who may read the team but not plan. |
 | `404` | The team, line, station, set, run, candidate or replay is not one the caller may see, as in `There is no replay set <setId> for this caller`. |
-| `409` | Adding a run already in the set (`The run <runId> is already in the replay set`), to a full set (`A replay set holds at most 50 runs`), or that cannot be replayed (`The run <runId> cannot be replayed: <reason>`, with a [refusal](/docs/reference/app/replays#why-a-run-cannot-be-replayed)). Deleting a set while a replay of it is under way (`The replay set <setId> is being replayed; stop its replays first`). Adding a run to, or replaying, a set whose station has left its line (`The station of replay set <setId> is gone from its line, so it takes no more runs and starts no replays; it may still be renamed, have runs taken out, or be deleted`). Stopping a replay that has ended (`The replay <replayId> has already ended or been stopped`). Starting a replay while the set's baseline changed (`The baseline of replay set <setId> changed while the replay was starting; start it again`). |
+| `409` | Adding a run already in the set (`The run <runId> is already in the replay set`), to a full set (`A replay set holds at most 50 runs`), or that cannot be replayed (`The run <runId> cannot be replayed: <reason>`, with a [refusal](/docs/reference/app/replays#why-a-run-cannot-be-replayed)). Deleting a set while a replay or a search of it is under way, or adding or taking out a run while a search of it is under way (`The replay set <setId> is being replayed or searched; stop its replays and searches first`). Adding a run to, or replaying, a set whose station has left its line (`The station of replay set <setId> is gone from its line, so it takes no more runs and starts no replays; it may still be renamed, have runs taken out, or be deleted`). Stopping a replay that has ended (`The replay <replayId> has already ended or been stopped`). Starting a replay while the set's baseline changed (`The baseline of replay set <setId> changed while the replay was starting; start it again`). |
 | `422` | A missing or invalid field, at its path: a name out of length (`A replay set is named in 1 to 100 characters`), a ceiling out of range (`What a replay spends is capped at more than nothing and at most 1,000`) or not in a three-letter currency, no `candidate`, or a set with no runs (`A replay replays at least one run`). A run of another station (`The run <runId> worked at another station than the replay set's`). `line` without `station`, or `station` without `line`, on `GET /replay-sets`. |

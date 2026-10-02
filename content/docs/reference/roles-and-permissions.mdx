@@ -29,7 +29,7 @@ A closed workspace grants nothing to anyone.
 | Permission | Allows | Granted to |
 | --- | --- | --- |
 | `read` | See a workspace and its resources, and export it as Terraform. | Every role. Every token. |
-| `plan` | Check expressions, at `POST /api/expressions/check`. Open, change and delete replay sets, start and stop replays, and propose and withdraw replay candidates, on a team whose outcomes the caller may read. | Every person. Tokens with `plan` or `configure`. |
+| `plan` | Check expressions, at `POST /api/expressions/check`. Open, change and delete replay sets, mark the set that guards a station's changes, start and stop replays, propose and withdraw replay candidates, start and stop searches, pick a search's candidate, and start replay checks, on a team whose outcomes the caller may read. | Every person. Tokens with `plan` or `configure`. |
 | `configure` | Create, change and delete teams, lines, integrations, hooks, skills and harness profiles; change the workspace. | Owners, admins. Tokens with `configure`. |
 | `manage-secrets` | Create, change and delete secrets. | Owners, admins. Tokens with `secrets`. |
 | `manage-runners` | Create, change and delete runner pools, runner trusts and workspace runners. | Owners, admins. Tokens with `runners`. |
@@ -87,6 +87,7 @@ Anyone else is answered `404`, as for something that does not exist.
 | Station alert items | Inbox items saying a station crossed one of its alert thresholds. They reach no one else. |
 | Insights | Every tab of a team's Insights page, and the [Insights API](/docs/reference/api/insights). |
 | Replays | A work station's "Replays" section, its replay sets, replays and replay runs, the [Replays API](/docs/reference/api/replays), and the team's [replay candidates](/docs/reference/api/replay-candidate). Changing them also needs `plan`. A replay run, with its config and event stream, is readable only through the team it replayed for, even after its station is removed. See [Replays](/docs/reference/app/replays). |
+| Searches and replay checks | A work station's "Searches" section, its searches, the pull requests picked candidates open, and its replay checks: the [Searches API](/docs/reference/api/searches) and the [Replay checks API](/docs/reference/api/replay-checks). Estimating a search needs only `read`. Starting and stopping a search, picking a candidate, marking a guarding set and starting a check also need `plan`. See [Searches](/docs/reference/app/searches). |
 
 ## Changing roles
 
