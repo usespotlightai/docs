@@ -19,7 +19,7 @@ See [Runs](/docs/reference/app/tasks-runs-and-the-inbox#runs).
 | Lease renewal by the host while a sandbox starts | every 20 seconds |
 | Attempts when the runner is lost | 3 in all |
 | Attempts while hooks go unanswered | 6 in all, 5 seconds to 2 minutes apart |
-| Run wall clock on a host | `SPOTLIGHT_RUN_TIMEOUT`, default 6 hours |
+| Run wall clock on a host | `SPOTLIGHT_RUN_TIMEOUT`, default 6 hours; the run fails `timed-out` and is tried again, 3 attempts in all, counted with lost runners |
 | Stop grace after the wall clock | 30 seconds |
 | Messages a person sends, checked for | every 2 seconds |
 
@@ -88,7 +88,26 @@ See [Inside a sandbox](/docs/reference/hosts/sandbox#run-phases).
 | Upload or download | 30 minutes |
 | Kept after its task finishes, or its chat stops carrying the conversation | 7 days |
 | Kept after a newer archive replaces it | 1 hour |
+| Kept after a run that started from it started | 30 days |
+| Kept while a run that started from it is in a replay set | until the run leaves the set, the set is deleted, or its station leaves the line |
 | An archive never sealed, kept | 24 hours |
+
+An archive a run started from, or one pinned by a replay set, is kept for that
+time even when its task has finished or a newer archive has replaced it.
+
+## Replays
+
+See [Replays](/docs/reference/app/replays).
+
+| Item | Value |
+| --- | --- |
+| Runs in a replay set | 50 |
+| Replay set name, candidate name | 1 to 100 characters |
+| Runs offered to add to a set | the station's latest 50 ended task runs |
+| Replay runs of a team queued or running at once | 2 |
+| Ceiling | above 0, at most 1,000, in a three-letter currency |
+| Attempts to queue a replay run | 10 |
+| `spotlight replay watch` interval | default 15 seconds, at least 1 second |
 
 ## Change stacks and decisions
 

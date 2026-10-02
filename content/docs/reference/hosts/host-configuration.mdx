@@ -44,7 +44,7 @@ Exactly one of `SPOTLIGHT_TOKEN`, or `SPOTLIGHT_TRUST` with
 | `SPOTLIGHT_ANSWER_WAIT` | `5m` | A Go duration. How long a sandbox whose run asked a person stays up for the answer, still using its place in `SPOTLIGHT_CAPACITY`, before the run is parked. `0` parks at once. Counts toward `SPOTLIGHT_RUN_TIMEOUT`. |
 | `SPOTLIGHT_RUNNER_IMAGE` | `ghcr.io/usespotlightai/spotlight-runner:<release>`, or `:latest` for a binary built without a release | Comma-separated images the host serves. Each entry is an exact image reference, or a prefix ending in `*` such as `ghcr.io/acme/*`. The first exact entry is the default image, used by every line that names none. If no entry is exact, the built-in default is added. |
 | `SPOTLIGHT_REGISTRY_CONFIG` | `$DOCKER_CONFIG/config.json`, else `~/.docker/config.json` | A Docker config file whose `auths` the host pulls with. Read on every pull. See [registry credentials](#registry-credentials). |
-| `SPOTLIGHT_RUN_TIMEOUT` | `6h` | A Go duration. A sandbox running longer is stopped and destroyed. |
+| `SPOTLIGHT_RUN_TIMEOUT` | `6h` | A Go duration. A sandbox running longer is stopped and destroyed, and its run reported `timed-out`. |
 | `SPOTLIGHT_SANDBOX_ENV` | `sandbox.env` beside the config file | A file of variables every sandbox gets. A missing default file is ignored; a missing named file is an error. |
 | `SPOTLIGHT_SANDBOX_PASS` | none | Comma-separated names of the host's own variables to pass into every sandbox. |
 | `SPOTLIGHT_SANDBOX_URL` | `SPOTLIGHT_URL` | The Spotlight address as sandboxes and egress reach it. |

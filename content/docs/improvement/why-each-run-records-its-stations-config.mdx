@@ -54,6 +54,17 @@ its change is checked, when a person acts on the task, and when its pull
 request opens, merges or closes. Nothing is reconstructed afterwards, so a run that ended before
 recording began has no outcome.
 
+## Where each run started
+
+A task's run also records where it started: the workspace archive it restored,
+if any, and the commit each repository was checked out at. The config says
+what the station gave the run; the starting point says what the run began
+from. With both kept, a past task can be run again from the same start under
+another config, which is what a
+[replay](/docs/improvement/why-changes-are-replayed-on-past-tasks) does. A change can
+then be tried on tasks whose outcome is already known, before it reaches new
+ones.
+
 ## The agent proposes, a person applies
 
 The agent working on a station proposes one change at a time, as a diff of the
@@ -65,5 +76,6 @@ gives the reasons.
 
 ## Related
 
-- [Improve a station from its runs](/docs/lines/improve-a-station-from-its-runs)
+- [Improve a station from its runs](/docs/improvement/improve-a-station-from-its-runs)
 - [Station outcomes](/docs/reference/app/tasks-runs-and-the-inbox#station-outcomes)
+- [Why changes are replayed on past tasks](/docs/improvement/why-changes-are-replayed-on-past-tasks)

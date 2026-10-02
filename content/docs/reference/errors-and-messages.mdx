@@ -25,7 +25,7 @@ pages for each command.
 | `The run asked for "<key>", which work does not pass to from where the task stands.` | The current station does not pass to the station named. | [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover) |
 | `The run said the work is done, and the line does not end where the task stands.` | The handover said `done` at a station without `ends: true`. | [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover) |
 | `The run failed: <message>` | The run failed. The message is one of the [run failure messages](#run-failure-messages). | [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-failed-with-a-message) |
-| `The run was given up on after <n> attempts without finishing.` | The runner was lost on the last attempt. Failure `runner-lost`. | [Failure codes](/docs/reference/app/tasks-runs-and-the-inbox#failure-codes), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-was-given-up-on) |
+| `The run was given up on after <n> attempts without finishing.` | The runner was lost, or the host stopped the sandbox at its run timeout, on the last attempt. Failure `runner-lost` or `timed-out`, as the last attempt ended. | [Failure codes](/docs/reference/app/tasks-runs-and-the-inbox#failure-codes), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-was-given-up-on) |
 | `Stopped from the console. It is back with you.` | A person stopped the run. | [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover), [Steer or stop a run](/docs/runs/steer-or-stop-a-run#stop-the-run) |
 | `The run was stopped from the console.` | A person stopped a run whose task then moved to a held-back station. | [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves) |
 | `Heard while a run held the task. It moves to <Station> when the run ends, unless the run passes it on:` | A reaction's happening arrived while a run held the task. | [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves) |
@@ -44,18 +44,18 @@ reason, the reasons are joined with `; `.
 
 | Message | Cause | See |
 | --- | --- | --- |
-| `The runner image <image> could not be pulled: <error>` | The host could not pull the line's image and holds no copy of it. | [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages), [Pull runner images from a private registry](/docs/hosts/pull-images-from-a-private-registry) |
-| `The runner image <image> is refused: <reason>` | The host does not serve the image. The reasons are those the [Runners page](#runners-page) shows. | [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-task-shows-in-progress-but-nothing-happens) |
-| `The runner image <digest> no longer holds <harness>, which this run needs` | The image changed and lost the station's harness. | [Harnesses](/docs/reference/hosts/harnesses), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-failed-with-a-message) |
-| `The sandbox's egress did not start: <error>` | Egress did not start. The error is one of the [egress start failures](#egress-start-failures). | [Egress start failures](/docs/reference/hosts/egress#egress-start-failures) |
-| `prepare: git clone <path>: <error>: <output>` | A repository could not be cloned. | [Run phases](/docs/reference/hosts/sandbox#run-phases), [Point a line at your repositories](/docs/lines/point-a-line-at-your-repositories) |
-| `prepare: preparing <path> did not finish within 10m0s` | The checkouts took longer than their time limit. | [Run phases](/docs/reference/hosts/sandbox#run-phases), [Limits and timeouts](/docs/reference/limits-and-timeouts) |
-| `clear an earlier run's outcome: <error>` | `.spotlight/outcome.json` from an earlier run could not be removed. | [Run phases](/docs/reference/hosts/sandbox#run-phases) |
-| `fetch attachment <id>: <error>` | An attachment could not be written into the workspace. | [Run phases](/docs/reference/hosts/sandbox#run-phases) |
-| `hand over workspace: <error>` | `/workspace` could not be given to the agent user. | [Run phases](/docs/reference/hosts/sandbox#run-phases) |
-| `start agent: <error>` | The harness did not start. | [Run phases](/docs/reference/hosts/sandbox#run-phases) |
-| `resume the session: <error>` | The harness could not reopen the task's earlier conversation. | [Run phases](/docs/reference/hosts/sandbox#run-phases) |
-| `open a session: <error>` | The harness could not open a new conversation. | [Run phases](/docs/reference/hosts/sandbox#run-phases) |
+| `The runner image <image> could not be pulled: <error>` | The host could not pull the line's image and holds no copy of it. Code `unprepared`. | [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages), [Pull runner images from a private registry](/docs/hosts/pull-images-from-a-private-registry) |
+| `The runner image <image> is refused: <reason>` | The host does not serve the image. The reasons are those the [Runners page](#runners-page) shows. Code `unprepared`. | [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-task-shows-in-progress-but-nothing-happens) |
+| `The runner image <digest> no longer holds <harness>, which this run needs` | The image changed and lost the station's harness. Code `unprepared`. | [Harnesses](/docs/reference/hosts/harnesses), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-failed-with-a-message) |
+| `The sandbox's egress did not start: <error>` | Egress did not start. The error is one of the [egress start failures](#egress-start-failures). Code `unprepared`. | [Egress start failures](/docs/reference/hosts/egress#egress-start-failures) |
+| `prepare: git clone <path>: <error>: <output>` | A repository could not be cloned. Code `unprepared`. | [Run phases](/docs/reference/hosts/sandbox#run-phases), [Point a line at your repositories](/docs/lines/point-a-line-at-your-repositories) |
+| `prepare: preparing <path> did not finish within 10m0s` | The checkouts took longer than their time limit. Code `unprepared`. | [Run phases](/docs/reference/hosts/sandbox#run-phases), [Limits and timeouts](/docs/reference/limits-and-timeouts) |
+| `clear an earlier run's outcome: <error>` | `.spotlight/outcome.json` from an earlier run could not be removed. Code `unprepared`. | [Run phases](/docs/reference/hosts/sandbox#run-phases) |
+| `fetch attachment <id>: <error>` | An attachment could not be written into the workspace. Code `unprepared`. | [Run phases](/docs/reference/hosts/sandbox#run-phases) |
+| `hand over workspace: <error>` | `/workspace` could not be given to the agent user. Code `unprepared`. | [Run phases](/docs/reference/hosts/sandbox#run-phases) |
+| `start agent: <error>` | The harness did not start. Code `exited`. | [Run phases](/docs/reference/hosts/sandbox#run-phases) |
+| `resume the session: <error>` | The harness could not reopen the task's earlier conversation. Code `exited`. | [Run phases](/docs/reference/hosts/sandbox#run-phases) |
+| `open a session: <error>` | The harness could not open a new conversation. Code `exited`. | [Run phases](/docs/reference/hosts/sandbox#run-phases) |
 | `harness_profile_unknown: The <Station> station names the <profile> harness profile, which its team does not hold` | The station's `profile` names no profile of the team. | [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-refused-to-start) |
 | `catalog_item_unknown: <reason>` | The station names a catalog item that does not exist. | [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-refused-to-start) |
 | `catalog_item_wrong_kind: <reason>` | The station names a catalog tool as a skill, or a skill as a tool. | [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-refused-to-start) |
@@ -91,7 +91,7 @@ Each follows `The sandbox's egress did not start: `.
 | `the container runtime is not answering yet` | The container engine did not respond. The host retries. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host) |
 | `could not report to the control plane, still trying` | Spotlight did not respond. The host retries. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host) |
 | `destroyed a sandbox left behind` | A sandbox from an earlier host process was removed at start. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host) |
-| `the sandbox ran past its time` | `SPOTLIGHT_RUN_TIMEOUT` passed. The sandbox is stopped with a 30-second grace. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-was-given-up-on) |
+| `the sandbox ran past its time` | `SPOTLIGHT_RUN_TIMEOUT` passed. The sandbox is stopped with a 30-second grace, and the run is reported `timed-out`. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-was-given-up-on) |
 | `could not start a sandbox; claiming from this image pauses` | A sandbox did not start. Claims for that image pause, longer after each failure in a row. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host) |
 | `gave up the work: its way out did not start` | Egress did not start. The run fails, or the check is skipped. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host) |
 | `the host is stopping, so the work is left to be claimed again` | The host stopped before the sandbox started. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host) |
@@ -214,6 +214,10 @@ Each command exits `1` and prints its message on standard error.
 | `this run was not given "<name>"; it was given: <tools>` | The tool is not granted to the run. | [Agent commands](/docs/reference/cli/agent-commands) |
 | `unreadable input: hand the tool JSON` | The input is over 8 MiB, or is not JSON. | [Agent commands](/docs/reference/cli/agent-commands) |
 | `could not read this run's tools to find "<name>": <error>` | The tool list could not be read. | [Agent commands](/docs/reference/cli/agent-commands) |
+| `a replay may not answer a remark: it has no effect outside Spotlight` | `spotlight reply` in a replay run. | [Replay runs](/docs/reference/app/replays#replay-runs) |
+| `a replay may not remember: it has no effect outside Spotlight` | `spotlight remember` in a replay run. | [Replay runs](/docs/reference/app/replays#replay-runs) |
+| `A replay may not read a task's trace: it leaves nothing behind but its own result` | `spotlight trace` in a replay run. | [Replay runs](/docs/reference/app/replays#replay-runs) |
+| `this run may only fetch` | `403`. A `git push` from a replay run. | [Replay runs](/docs/reference/app/replays#replay-runs) |
 
 ### Tool calls and integration requests
 
@@ -302,6 +306,9 @@ slugs.
 | `The <key> token trust would grant scopes the token defining it does not hold` | A token defines or changes a trust with scopes it does not hold. | [Who may define a trust](/docs/reference/terraform/workspace-token-trust#who-may-define-a-trust) |
 | `No such trust, a token its issuer did not sign for its audience, a workload it does not admit, or a closed workspace` | `401`. An exchange through a workspace token trust was refused. | [Exchange](/docs/reference/terraform/workspace-token-trust#exchange), [Run Terraform from GitHub Actions without a stored token](/docs/configuration/run-terraform-from-github-actions) |
 | `Both a token and an OIDC trust` | The provider is configured with a token and a trust. | [Provider configuration](/docs/reference/terraform/terraform-provider#provider-configuration) |
+| `There is already a candidate at <address>` | `409` `already-exists`. A replay candidate's name is taken at its station. | [Replay candidates](/docs/reference/api/replay-candidate#errors) |
+| `keeps the station's key, <key>` | A replay candidate's `station.key` names another station. | [Checks](/docs/reference/api/replay-candidate#checks) |
+| `The candidate <id> is being replayed; stop its replays first` | `409` `in-use`. Withdrawing a candidate a replay is running. | [Replay candidates](/docs/reference/api/replay-candidate#errors) |
 
 ## Web app
 
@@ -317,6 +324,46 @@ one of these reasons.
 | `could not look inside it: <error>` | The image could not be inspected. | [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-task-shows-in-progress-but-nothing-happens), [Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image) |
 | `its runner is release <release>, older than the <release> this control plane needs` | The image's runner release is too old. | [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-task-shows-in-progress-but-nothing-happens) |
 | `its runner reports no release, so it is older than the <release> this control plane needs` | The image's runner reports no release. | [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-task-shows-in-progress-but-nothing-happens) |
+
+### Replays
+
+A run that cannot be replayed shows one of these on a replay set's page, in the
+Add runs dialog, and after `It could not be replayed or started:` on a replay's result.
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `There is no such run` | `unknown-run`. The run is not in the workspace. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
+| `It worked no task of its own` | `not-a-task-run`. A chat's run, or a replay run. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
+| `Its task was deleted` | `task-gone`. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
+| `It has not ended yet` | `still-running`. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
+| `It never recorded where it started` | `no-starting-point`. The run ended before starting points were recorded, or its runner could not record one. | [Starting point](/docs/reference/app/tasks-runs-and-the-inbox#starting-point) |
+| `The task as it was briefed was never kept` | `no-briefing`. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
+| `The workspace it started from is no longer kept` | `archive-gone`. More than 30 days have passed since the run started, and it was in no replay set. | [Workspace archives](/docs/reference/limits-and-timeouts#workspace-archives) |
+| `Files it was briefed with are gone` | `attachments-gone`. An attachment the task was briefed with is no longer stored. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
+| `A repository it worked in has left the line` | `repository-gone`. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
+| `It did not run at this station` | `not-at-the-station`. The line no longer has the station. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
+| `The candidate cannot run it` | `candidate-unfit`. The candidate was removed, or no longer fits the line as it is. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
+| `It could not be started` | `cannot-start`. The candidate runs no harness a runner can start. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
+| `It could not be checked just now` | `unchecked`. Spotlight could not read the run's facts. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
+| `It was never started` | `forgone`. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
+| `It failed to start after several tries` | `dispatch-failed`. Queuing the run failed 10 times. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
+
+A replay's results give their reasons in words such as
+`It asked a person, which a replay cannot` or
+`Its checks could not run: the checks ran out of time`; see
+[Results](/docs/reference/app/replays#results) for each.
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `Only the team's members can see its replays` | The reader is neither on the team nor an owner or admin of the workspace. | [Team outcomes](/docs/reference/roles-and-permissions#team-outcomes) |
+| `Add runs to the set first.` | "Start a replay" on an empty set. | [Replay set page](/docs/reference/app/replays#replay-set-page) |
+| `Its station is gone from its line.` | "Start a replay" on a set whose station has left its line. | [Replay set page](/docs/reference/app/replays#replay-set-page) |
+| `A replay of this set is running, so it can't be deleted until that replay ends or is stopped.` | "Delete" on a set with a replay under way. | [Replay set page](/docs/reference/app/replays#replay-set-page) |
+| `Give a ceiling above nothing.`, `A ceiling is at most 1,000.`, `Name the currency in three letters, like USD.` | The ceiling entered when starting a replay. | [Replay set page](/docs/reference/app/replays#replay-set-page) |
+
+The [Replays API](/docs/reference/api/replays#errors) and
+[`spotlight replay`](/docs/reference/cli/replay-command) list their own
+messages.
 
 ### Change review
 
