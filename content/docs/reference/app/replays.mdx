@@ -1,0 +1,335 @@
+---
+type: reference
+icon: BookText
+title: Replays
+description: The Replays section of a Station page, the replay set and replay pages, replay runs on the Run page, replay states, results and their reasons, why a run cannot be replayed, spend and ceilings, and how a replay run differs from a task run.
+---
+
+A [replay](/docs/reference/glossary#replay) runs some of a work station's past
+task runs again under a [candidate](/docs/reference/glossary#candidate) config,
+and scores each one. The same data is read and written through the
+[Replays API](/docs/reference/api/replays), candidates through the
+[`replay-candidate`](/docs/reference/api/replay-candidate) resource, and both
+from the [`spotlight replay`](/docs/reference/cli/replay-command) command.
+
+Only people on the team, the workspace's owners and admins, and workspace
+tokens with the `read` scope can read a team's replay sets, replays,
+candidates and replay runs. Anyone else is answered `404`. Opening a set,
+renaming or deleting it, adding or removing runs, starting or stopping a
+replay, and proposing or deleting a candidate also need `plan`. See
+[Team outcomes](/docs/reference/roles-and-permissions#team-outcomes).
+
+## Station page
+
+A work station's page has a "Replays" section, after "How its runs turned
+out". It holds three parts.
+
+| Part | Shows |
+| --- | --- |
+| Replay sets | One row per set of the station: its name, linked to the set's page, `<n> runs`, "Station gone" when its station has left the line, and its latest replay, as `Latest: <candidate>`, the replay's state and its [success](#success) against the baseline. A set never replayed reads "Not replayed yet". "Open a replay set" asks for a name, then opens the new set's page. With no sets, the part reads "No replay sets yet". |
+| Candidates | One row per proposed candidate of the station, newest first: its name, its short [config fingerprint](/docs/reference/glossary#config-fingerprint), when it was proposed, and `Changed from live <fingerprint>:` with one phrase per change, as the Run page's [Config](/docs/reference/app/tasks-runs-and-the-inbox#config) words them. A candidate that changes nothing reads "The same as the live config when it was proposed." With none, the part reads "No candidates yet". The live snapshots Spotlight takes for baselines are not listed; they show as "Live config" on the replays that ran them. |
+| Propose a candidate | The command that proposes one, with the station's address filled in, and "Copy command". |
+
+To a person who may not read the team's replays, "Replay sets" reads "Only
+the team's members can see its replays".
+
+## Replay set page
+
+`/w/<slug>/team/<teamId>/lines/<lineId>/stations/<stationId>/replay-sets/<setId>`
+
+| Part | Shows | Can change |
+| --- | --- | --- |
+| Header | The set's name, `<n> runs · opened <when>`. When its station has left the line: `Its station is gone from its line, so it starts no replays, takes no more runs and keeps none of its runs' workspaces. It can still be renamed, have runs taken out, or be deleted.` | "Rename". "Delete", then "Delete set": the set and its replays and their results go, and its runs' workspaces are no longer kept for it. Delete is refused while a replay of the set is queued or running, or still has runs in flight. |
+| Runs | Each run in the set: its task's title, linked to the run, its state, when it ended, and "Can be replayed" or [why it cannot be](#why-a-run-cannot-be-replayed). A task since deleted reads "A deleted task". | "Add runs" opens the station's latest 50 ended task runs, each with "Add", "In the set" or "Can't be replayed" and the reason. The X beside a run takes it out of the set. "Add runs" is not offered once the station is gone. |
+| Replays | Each replay of the set, newest first: its candidate, "Baseline" for the set's baseline, its [state](#replay-states), when it started, its success against the baseline, `<n> scored · <n> unscored`, and `Spent <spent> of <ceiling>`. With none, it reads "Not replayed yet". | "Start a replay": see below. |
+
+"Start a replay" is refused with "Add runs to the set first." on an empty set,
+and with "Its station is gone from its line." once the station has left the
+line. It opens a dialog:
+
+| Field | Values |
+| --- | --- |
+| Replay under | "Live config", the station as it is configured now (the default), or one of the station's proposed candidates. |
+
+With "Live config", the replay becomes the set's baseline when the set has
+none yet, or becomes the new baseline when the set's runs changed since the
+last one; otherwise it replays beside the set's baseline. With a
+proposed candidate, a baseline of the live config starts beside it when the set
+has none covering all its runs, with a ceiling of its own equal to this one, so
+the two may spend up to twice the ceiling. The dialog says which applies.
+| Ceiling | The most the replay may spend, above 0 and at most 1,000, and a three-letter currency, `USD` unless changed. |
+
+"Start replay" opens the new replay's page. The dialog refuses a ceiling of 0
+or less with "Give a ceiling above nothing.", more than 1,000 with "A ceiling
+is at most 1,000.", and a currency that is not three letters with "Name the
+currency in three letters, like USD."
+
+## Replay page
+
+`/w/<slug>/team/<teamId>/lines/<lineId>/stations/<stationId>/replays/<replayId>`
+
+To someone who may read the team's replays, an unknown replay, or one of
+another station, reads "Replay not found". To anyone else, the page reads
+"Only the team's members can see its replays".
+
+The header shows the candidate's name, or "Live config", then
+`Replays <set> · started <when> · config <fingerprint>` and, for a queued,
+stopped or over-budget replay, its [state's note](#replay-states). The set's
+baseline also reads `This is the set's baseline: the live config, which every
+other replay of the set is compared against.` While the replay is queued or
+running, "Stop", then "Stop replay", stops it.
+
+| Label | Shows |
+| --- | --- |
+| Success | `<share> succeeded`, or "No score yet". Beside it, the change from the baseline in points, as in `+25 pts vs baseline 50%`, or `· the baseline` on the baseline itself. |
+| Scored | `<n> scored · <n> unscored`, then what scores the station: `by its checks and its judge`, `by its checks`, `by its judge`, or `nothing scores this station`. |
+| Spent | `<spent> of <ceiling>`, with a bar that fills as the ceiling is spent, and `Over the ceiling by <amount>` when runs already running took the replay past it, then "Runs", "Drafting" and "Judging" in the ceiling's currency. "Also spent" sums what was spent in other currencies, one sum per currency. "Not priced" counts the runs whose cost was never reported and the drafting and judging model calls that came back with no price, as in `2 runs · 1 model call`. |
+
+Under "Task by task", one row per task, regressions first, then in the set's
+order. With a baseline to compare with:
+
+| Column | Shows |
+| --- | --- |
+| Task | The task's title, linked to the original run, and "Regressed" when the task [regressed](#regressions). |
+| This replay | The [result](#results), its first reason with a count of the rest, and "Run", linked to the replay run. |
+| Baseline | The baseline's result on the task, in the same form. |
+| Judge | The judge's score for this replay, `vs` the baseline's, then the difference to two decimals, or why the two are [not compared](#score-comparisons). A score reads `Yes`, `No` or `<n>/5`. |
+| Cost vs baseline | This replay's run cost less the baseline's, once both have settled. |
+| Time vs baseline | This replay's run time less the baseline's, once both have settled. |
+
+Without a baseline, the columns are "Task", "Result", "Judge", "Cost" and
+"Time", for this replay alone. A value not known reads `–`.
+
+## Replay states
+
+| State | Label | Note | Final |
+| --- | --- | --- | --- |
+| `queued` | Queued | Waiting for a runner | no |
+| `running` | Running | | no |
+| `finished` | Finished | | yes |
+| `stopped` | Stopped | Stopped by a person; nothing more starts | yes |
+| `over-budget` | Over budget | It spent its ceiling, so nothing more starts | yes |
+
+A replay is `running` once its first run is queued, and `finished` once every
+run has a result. A stopped replay starts no more runs, and its running runs
+are stopped. An over-budget replay starts no more runs, and its runs already
+running finish. A run that never started reads "It never
+ran".
+
+## Results
+
+| Result | Meaning |
+| --- | --- |
+| Pending | The run has not ended, or its checks or judging have not finished. |
+| Succeeded | The run ended and passed everything that scores the station. |
+| Failed | The run failed with `exited`, `refused`, `timed-out` or no failure code, asked a person, or failed a check or the judge. Only a failed result can be a regression. |
+| Unscored | Nothing could score the run: it could not be replayed or started, its replay stopped it or reached its ceiling first, its checks or judging could not give an answer, it failed before the agent began or for another reason outside the candidate, or Spotlight abandoned it (see [Run failures](#run-failures)). |
+
+A run is scored by the candidate's own station block:
+
+| Scored by | When | Passes |
+| --- | --- | --- |
+| Its checks | The block sets `diffs: true` and a `check`. | The check passes on every layer of the run's change stack. |
+| Its judge | The block has a `judge`. Every replay run is judged, whatever the judge's `sample`. | `Yes`, or 4 or more on a 1 to 5 rubric. |
+
+With both, a run must pass both. When the original run's next person act was
+Closed or Approved, the judge is also given the original's change, and scores
+the replay against it. A replay's judge score is not a run's
+[judge score](/docs/reference/app/tasks-runs-and-the-inbox#judge-score): it
+counts toward no agreement, standing, Insights figure or alert.
+
+Each result carries reasons, shown as `<reason>: <detail>` where there is a
+detail:
+
+| Code | Reason shown | Result |
+| --- | --- | --- |
+| `unreplayable` | It could not be replayed or started, with [the refusal](#why-a-run-cannot-be-replayed) | Unscored |
+| `not-run` | It never ran | Unscored |
+| `run-failed` | The run failed, with its [failure](#run-failures) | Failed or Unscored, by failure |
+| `run-stopped` | Its replay was stopped, or reached its ceiling, before the run finished | Unscored |
+| `asked-a-person` | It asked a person, which a replay cannot | Failed |
+| `check-failed` | Its checks failed, with the layer that failed | Failed |
+| `check-skipped` | Its checks could not run, with [the skip](#check-skips) | Unscored |
+| `change-undrafted` | Its change could not be drafted | Unscored |
+| `no-change` | It changed nothing for the checks to run on | Unscored |
+| `no-change-stack` | It changed files, but its change never reached Spotlight | Unscored |
+| `judged` | The judge passed it, with the judge's reason | Succeeded |
+| `judge-failed` | The judge failed it, with the judge's reason | Failed |
+| `unjudged` | The judge could not judge it, with [why](#judging-failures) | Unscored |
+| `nothing-judges` | Neither checks nor a judge score this station | Unscored |
+
+The judge's reasons cite the replay run's steps and the hunks of its change,
+as a run's judge reasons do.
+
+### Run failures
+
+A failed replay run is classified by its [failure code](/docs/reference/app/tasks-runs-and-the-inbox#failure-codes):
+
+| Failure | Detail shown | Result |
+| --- | --- | --- |
+| `exited` | the agent exited with an error | Failed |
+| `refused` | Spotlight would not start it as configured, as for a harness profile that is missing or tools, MCP servers or secrets a replay is not given | Failed |
+| none | | Failed |
+| `unprepared` | its workspace could not be made ready before the agent began, so it goes unscored | Unscored |
+| `unprovisioned` | no runner could be provisioned, so it goes unscored | Unscored |
+| `hooks-unanswered` | its hooks never answered, so it goes unscored | Unscored |
+| `runner-lost` | the runner was lost, so it goes unscored | Unscored |
+| `timed-out` | it kept running past its host's time limit | Failed |
+| `superseded` | it was superseded, so it goes unscored | Unscored |
+
+A run Spotlight gave up on as abandoned with no code is unscored. A `timed-out` attempt that is tried again still spends against the ceiling.
+Only a failed result can be a regression.
+
+### Check skips
+
+| Code | Detail shown |
+| --- | --- |
+| `no-base` | its starting commit was missing |
+| `no-checkout` | its checkout was missing |
+| `checkout-failed` | its checkout failed |
+| `setup-failed` | the repository's setup failed |
+| `no-room` | there was no runner to check on |
+| `out-of-time` | the checks ran out of time |
+| `no-image` | the image to check in was missing |
+| `unprovisioned` | no runner could be provisioned to check on |
+| `nobody-checked` | no runner took the check in time |
+| `skipped` | the checks were skipped |
+| `undrafted` | its change was never drafted |
+| `no-check-asked` | the candidate runs no check command |
+
+A replay's checks run as a station's checks do. See
+[Checks](/docs/reference/app/change-stacks-and-decisions#checks).
+
+### Judging failures
+
+| Code | Detail shown |
+| --- | --- |
+| `unavailable` | no judge model was available |
+| `unreadable-rubric` | the rubric could not be read |
+| `no-evidence` | there was nothing to judge |
+| `refused` | the judge declined |
+| `unreadable` | the judge's answer could not be read |
+| `ungrounded` | the judge cited nothing the run did |
+| `errored` | judging went wrong |
+| `interrupted` | judging was interrupted |
+| `stopped-before-judging` | the replay stopped before judging |
+
+### Success
+
+A replay's success is the share of its scored runs that succeeded. Unscored
+and pending runs are left out, so a run that could not be replayed or started,
+or that its replay stopped, never counts against the candidate.
+
+## Regressions
+
+A replay is compared with its set's baseline: the newest replay of the live
+config the set started as a baseline, while it is queued, running or
+finished. A stopped or over-budget baseline is not compared with, and the next
+replay of the set starts a new one.
+
+A task regressed when the baseline succeeded on it and this replay failed, or
+when this replay's judge score is more than 0.01 below the baseline's. An
+unscored result is never a regression.
+
+### Score comparisons
+
+Judge scores are compared only when both runs were judged, under the same
+rubric version, and either both or neither against the original's accepted
+change. Otherwise the "Judge" column says why:
+
+| Code | Shown |
+| --- | --- |
+| `unjudged` | One side was not judged |
+| `other-rubric` | Judged by different rubrics |
+| `other-reference` | Only one was judged against the accepted change |
+
+## Why a run cannot be replayed
+
+A run that cannot be replayed is refused when it is added to a set, with
+`409`, and a run in a set that can no longer be replayed reads its refusal
+on the set's page. A run refused when its replay comes to start it is
+unscored, with `It could not be replayed or started: <refusal>`.
+
+| Code | Shown |
+| --- | --- |
+| `unknown-run` | There is no such run |
+| `not-a-task-run` | It worked no task of its own |
+| `task-gone` | Its task was deleted |
+| `still-running` | It has not ended yet |
+| `no-starting-point` | It never recorded where it started |
+| `no-briefing` | The task as it was briefed was never kept |
+| `archive-gone` | The workspace it started from is no longer kept |
+| `attachments-gone` | Files it was briefed with are gone |
+| `repository-gone` | A repository it worked in has left the line |
+| `not-at-the-station` | It did not run at this station |
+| `candidate-unfit` | The candidate cannot run it |
+| `cannot-start` | It could not be started |
+| `unchecked` | It could not be checked just now |
+| `forgone` | It was never started |
+| `dispatch-failed` | It failed to start after several tries |
+
+`not-at-the-station`, `repository-gone`, `candidate-unfit`, `cannot-start`,
+`forgone` and `dispatch-failed` arise only when a replay comes to start the
+run. `candidate-unfit` means the candidate was removed, or its block no longer
+fits the line as it is now. `cannot-start` means the candidate's station runs
+no harness a runner can start. `dispatch-failed` follows 10 failed attempts to
+queue the run. `unchecked` means Spotlight could not read the run's facts at
+that moment; it may clear on its own.
+
+A run keeps the workspace archive it started from for 30 days after it
+started, and for as long as it is in a replay set. See
+[Workspace archives](/docs/reference/limits-and-timeouts#workspace-archives).
+
+## Spend and ceiling
+
+A replay's spend is the cost of its runs, of drafting their change stacks and of
+judging them, counted in the ceiling's currency. A drafting or judging attempt
+that failed counts what it was billed. A cost in another currency is summed
+apart and does not count toward the ceiling, nor does a cost that was never
+reported. Each replay has its own
+ceiling. A baseline started beside a replay has a ceiling of its own, equal to
+the replay's.
+
+Once a replay's spend reaches its ceiling, it ends as `over-budget`: nothing
+more of it starts, its runs not yet started are withdrawn, and its runs already
+running finish. What they spend still counts, so a replay can end above its
+ceiling. The replay page then reads `Over the ceiling by <amount>`, and
+`spotlight replay status` adds `over the ceiling by <amount>`.
+
+## Replay runs
+
+A replay run's Run page opens at `/w/<slug>/team/<teamId>/runs/<runId>`, like
+any run, from "Run" on the replay page. Its breadcrumb ends with the original
+run's task title and `Replay at <station>`. It shows:
+
+- `A replay of <task title>`, linked to the original run;
+- `Under <candidate> in a replay of <set>`, with `(the baseline)` for a
+  baseline, linked to the replay page, and the run's result in it;
+- the run's [config](/docs/reference/app/tasks-runs-and-the-inbox#config) and
+  [spend](/docs/reference/app/tasks-runs-and-the-inbox#spend), and its steps.
+
+In place of the message box: `A replay runs on its own. Nobody can talk to it,
+and nothing it does reaches the task.` A replay run can be read, with its
+config and its event stream, only by those who may read the team it replayed
+for, recorded when it was queued, even after its station is removed. Anyone
+else is answered `404`, and the page reads `There is no such run for this team.`
+
+A replay run differs from a task run:
+
+| | Replay run |
+| --- | --- |
+| Task | Holds no task. The task's state, notes, board and inbox do not change. |
+| Workspace | The exact archive the original run restored, or none if it restored none. A replay that cannot restore it fails. |
+| Checkouts | Each repository at the commit the original run started from. |
+| Briefing | The task as briefed to the original run, with its notes, attachments and decisions then, and the memories it was briefed with. `spotlight history` and `spotlight recall` read as of the original run's start. |
+| Git | Fetch only. A push is refused with `this run may only fetch`. |
+| Tools, MCP servers, secrets | None. |
+| Hooks | None run for it. |
+| Asking a person | Ends the run, counted as asked. Handing the task to a person, or to nowhere, does the same. |
+| Change stack | Drafted when the candidate sets `diffs: true`, checked, and never sent to GitHub. |
+| Archive | None is kept for a later run. |
+| Outcomes | Not recorded among the station's outcomes or on Insights. No memories are drafted. |
+| Priority | Below every task run and chat run. At most 2 of a team's replay runs are queued or running at once. |
+
+See [Inside a sandbox](/docs/reference/hosts/sandbox) for the phases every
+run goes through.

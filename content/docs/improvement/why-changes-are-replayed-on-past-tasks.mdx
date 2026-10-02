@@ -1,0 +1,149 @@
+---
+type: concept
+icon: Lightbulb
+title: Why changes are replayed on past tasks
+description: Why Spotlight tests a station change by running past tasks again, what a replay starts from and what it may not touch, how it is scored against a baseline, and what it costs.
+---
+
+A team changes a work station to make its runs better, with a sharper prompt
+or another model. Whether the change helped shows in the runs after
+it, but slowly and with noise. Each run works a different task, so a run that
+went badly after the change may have had a harder task. People act on a run
+hours or days after it ends, and a pull request merges later still. By the time
+enough runs have been recorded to say anything, the station may have been
+changed again.
+
+A replay answers the question sooner, on fixed ground. It takes runs the
+station has already done and runs their tasks again under a changed config,
+called a candidate. The tasks are the same for every candidate, so the results
+can be set side by side, task by task, before the change reaches the team's
+real work.
+
+## The same start, a different config
+
+For a comparison to mean anything, the only thing that differs between a
+replay and the run it repeats has to be the config. So a replay starts where
+the original run started, as closely as Spotlight can rebuild it:
+
+- the same workspace, restored from the exact archive the original restored,
+  with each repository checked out at the commit the original started from;
+- the task as it was briefed to the original: its title, description, notes,
+  attachments and decisions then, not as they read now;
+- the team memories the original was briefed with, and only memories that
+  stood when it started;
+- the station's history and outcomes, as `spotlight history` reads them, as
+  they stood when the original started.
+
+What changes is the station block: the candidate's prompt, harness, model,
+effort, harness profile, skills, check and judge, compiled into the line as it
+is now.
+
+## What a replay may not touch
+
+A replay works a real task in a real repository, and its agent believes it is
+doing the work. Anything it did outside the sandbox would act on the task a
+second time: a push to the task's branch, a comment on its pull request, a
+question in someone's inbox, a memory proposed to the team. So a replay is a run of its own kind. It never
+holds the task, and it leaves nothing behind but its own result:
+
+- Its git access is fetch-only. A push is refused.
+- It is given no tools and no MCP servers, and so wears no secrets.
+- No hook runs for it.
+- It cannot answer a pull request's remarks, propose a memory or read a
+  task's trace.
+- Its change stack is drafted and checked, and never sent to GitHub.
+- It never asks a person. A replay that would put the task to a person, by
+  handing it over to one or asking permission, ends there and counts as asked.
+- It is not counted among the station's outcomes or on the Insights page, and
+  no memories are drafted from it.
+
+The sandbox's network is not narrowed further. Egress lets a replay reach the
+hosts the host's allow-list admits, as for any run; see
+[Limit where sandboxes can connect](/docs/security/limit-where-sandboxes-connect).
+
+## Scored against the station as it is now
+
+A replay is scored by what the candidate itself asks for. If the candidate's
+station drafts change stacks (`diffs: true`) and has a `check`, its change must
+pass that check. If it has a judge, the judge scores the change against its
+rubric. Where people accepted the original's change, by closing the task or
+approving after the run, the judge is also shown that change and scores the
+replay against it. A run passes the judge on a yes, or on 4 or more on a 1 to 5
+rubric. With both a check and a judge, a run must pass both.
+
+A replay's judge scores never count toward the judge's agreement with people,
+its standing, Insights or alerts. They are only compared between replays.
+
+Some runs cannot be scored. A run that changed nothing gives the check nothing
+to run on; a check that could not run, or judging that could not finish, says
+nothing either way. Those runs are unscored and left out of the success rate,
+each with its reason. So are runs that could not be replayed or started, runs a
+replay's stop or ceiling cut short, runs Spotlight abandoned with no failure
+code, and runs that failed for a reason outside the candidate: a workspace that
+could not be made ready before the agent began (`unprepared`), no runner
+provisioned (`unprovisioned`), hooks unanswered (`hooks-unanswered`), a lost
+runner (`runner-lost`) or `superseded`.
+
+Only some runs count against the candidate, and only they can be regressions:
+a run that failed with `exited`, with `timed-out` (it kept running past its
+host's time limit), with `refused` (Spotlight would not start it as configured,
+as for a missing harness profile or tools, MCP servers or secrets a replay is
+not given) or with no code; a run that asked a person; and a run that failed
+its check or judge. In
+the docs' view, this keeps a failure to measure from reading as a failure of
+the candidate.
+
+Every candidate is compared with a baseline: the station's live config
+replayed on the same runs, at about the same time. The original runs are not
+the comparison. In the docs' view, they ran under conditions a replay cannot
+bring back, such as an earlier model release or a dependency that has since
+moved, and a baseline replayed now meets the same conditions the candidate
+meets. A task regresses when the baseline succeeded on it and the candidate
+did not, or when the judge scored the candidate lower.
+
+## What it costs
+
+A replay spends what its runs cost, and what drafting and judging their
+changes cost. A person sets a ceiling on each replay, and once a replay's spend
+reaches it, nothing more of it starts. Runs already running finish, so a replay
+can end a little over its ceiling, and its page says by how much. The
+baseline started beside a proposed candidate has a ceiling of its own, the
+same as the replay that started it, so the two can spend twice that ceiling. A
+replay of the live config becomes the baseline itself when the set has none,
+or when the set's runs changed since the last one. Costs in another currency
+than the ceiling's, and costs never reported, do not count toward it. The
+replay page shows them apart from the spend the ceiling counts.
+
+Replays take runners the team's real work needs. At most 2 of a team's replay
+runs run at once, and replay runs wait behind every waiting task run and chat
+run. In the docs' view, a replay answers a question about the future, and
+should never hold up work that people are waiting on now.
+
+## What a replay can start from
+
+A run can be replayed only if Spotlight kept where it started. Each task run
+records the workspace archive it restored and the commit each repository
+started from. Runs that ended before Spotlight began recording this cannot be
+replayed.
+
+Spotlight keeps that archive for 30 days after the run started, and for as long
+as the run is in a replay set. After that the archive goes, and the run can
+no longer be replayed. A run is also refused if its task was deleted, if a file
+its task was briefed with is gone, or if a repository it worked in has left the
+line. [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed)
+lists each reason.
+
+## A replay changes nothing
+
+A replay never changes the station, however well its candidate does. A person
+reads the result and makes the change in Terraform, the same way as any other
+change to a line. [Why configuration lives in Terraform](/docs/configuration/why-configuration-lives-in-terraform)
+gives the reasons. Once applied, the change's own runs are recorded under its
+new config, and [the record of each run's config](/docs/improvement/why-each-run-records-its-stations-config)
+shows whether it held up on the team's real work.
+
+## Related
+
+- [Replay past tasks against a change to a station](/docs/improvement/replay-past-tasks-against-a-station-change)
+- [Replays](/docs/reference/app/replays)
+- [Why a judge must agree with people before its scores show](/docs/improvement/why-a-judge-must-agree-with-people)

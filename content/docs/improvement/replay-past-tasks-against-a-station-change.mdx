@@ -1,0 +1,250 @@
+---
+type: how-to
+icon: SquarePen
+title: Replay past tasks against a change to a station
+description: Run some of a work station's past tasks again under a changed config, compare the results with the station as it is now, and then make the change in Terraform.
+---
+
+Use this to try a change to a work station, such as a new prompt or another
+model, on tasks the station has already worked, before you apply it. A replay
+starts each chosen task again from where its run started, under the changed
+config, and scores what it does. Nothing a replay does reaches the task,
+GitHub or anyone's inbox. You need:
+
+- To be on the team, or an owner or admin of the workspace.
+- Runs at the station that can still be replayed. Spotlight keeps where a run
+  started for 30 days. See [What a replay can start from](/docs/improvement/why-changes-are-replayed-on-past-tasks#what-a-replay-can-start-from).
+- A host serving the workspace with the station's harness. Replays run on the
+  workspace's runners, after any task run that is waiting. See
+  [Install a host](/docs/hosts/run-a-host).
+- A [workspace token](/docs/administration/issue-a-workspace-token) with the
+  `plan` scope, and the `spotlight` binary to propose the change. You don't
+  need a host on your own computer; see
+  [Install](/docs/reference/cli/replay-command#install).
+- The team's configuration in Terraform, to apply the change afterwards. See
+  [Manage Spotlight with Terraform](/docs/configuration/manage-spotlight-with-terraform).
+
+## Pick the tasks to replay
+
+A replay set is a list of the station's past runs that you replay together,
+up to 50.
+
+<Steps>
+<Step>
+
+Open the line's board and select the station's name. Under **Replays**, select
+**Open a replay set**, name the set, and select **Open set**. The set's page
+opens.
+
+</Step>
+<Step>
+
+Select **Add runs**. The dialog lists the station's latest ended runs. Select
+**Add** beside each run to replay, then **Done**.
+
+A run that cannot be replayed reads **Can't be replayed** and says why, such as
+**It never recorded where it started**. See
+[Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed).
+
+</Step>
+</Steps>
+
+Add runs the station did well as well as runs it did badly. While a run is in a
+set, Spotlight keeps the workspace it started from.
+
+## Propose the change
+
+A candidate is the station's config as you want to try it. You write it as
+JSON, in the shape of one entry of a line's `stations`, and propose it with
+`spotlight replay propose`. Spotlight checks it as it would check the line with
+the station replaced, and never applies it.
+
+<Steps>
+<Step>
+
+Give the command your Spotlight address and token:
+
+```bash
+export SPOTLIGHT_URL=https://app.usespotlight.ai
+export SPOTLIGHT_API_TOKEN=<workspace token>
+```
+
+On a [self-hosted Spotlight](/docs/reference/glossary#spotlight-address), use
+your deployment's address.
+
+</Step>
+<Step>
+
+Save the station's block as it is now. A workspace token sees one workspace, so
+its id is the only one listed:
+
+```bash
+WORKSPACE=$(curl -s -H "Authorization: Bearer $SPOTLIGHT_API_TOKEN" \
+  "$SPOTLIGHT_URL/api/resources/workspaces" | jq -r '.items[0].id')
+
+curl -s -H "Authorization: Bearer $SPOTLIGHT_API_TOKEN" \
+  "$SPOTLIGHT_URL/api/resources/workspaces/$WORKSPACE/lines/import?address=core/delivery" \
+  | jq '.definition.stations[] | select(.key == "implementation")' > implementation.json
+```
+
+Replace `core/delivery` with the team and line keys, and `implementation` with
+the station's key.
+
+</Step>
+<Step>
+
+Edit `implementation.json` to make the change, such as a new `prompt`, `model`
+or `effort`. Keep `key` as it is. [Station fields](/docs/reference/terraform/line#station-fields)
+lists every field.
+
+</Step>
+<Step>
+
+Propose it, with a name that tells it from the station's other candidates:
+
+```bash
+spotlight replay propose --station core/delivery/implementation \
+  --name "Higher effort" implementation.json
+```
+
+The command prints the candidate's address and what it changes from the
+station's live config, the config the station runs with now. The Station page
+shows the same command with the station's address filled in, under **Propose a
+candidate**, and lists the candidate under **Candidates**.
+
+</Step>
+</Steps>
+
+If Spotlight refuses the block, each message names its field under `station`,
+as in `station.effort`. The command refuses a `.tf` or `.hcl` file: give the
+block as JSON. See
+[`spotlight replay propose`](/docs/reference/cli/replay-command#spotlight-replay-propose).
+
+## Start a replay
+
+<Tabs items={['Web app', 'Command line']}>
+<Tab value="Web app">
+
+<Steps>
+<Step>
+
+On the Station page, under **Replay sets**, select the set, then **Start a
+replay**.
+
+</Step>
+<Step>
+
+Under **Replay under**, choose the candidate.
+
+</Step>
+<Step>
+
+Under **Ceiling**, enter the most the replay may spend and its currency, as
+in `5.00` and `USD`. The ceiling covers the replay's runs and the drafting and
+judging of their changes.
+
+</Step>
+<Step>
+
+Select **Start replay**. The replay's page opens.
+
+</Step>
+</Steps>
+
+</Tab>
+<Tab value="Command line">
+
+```bash
+spotlight replay start --station core/delivery/implementation \
+  --set "Queue fixes" --candidate "Higher effort" --ceiling 5
+```
+
+The ceiling is in `USD` unless you add `--currency`. The command prints the
+replay's id and the command to follow it.
+
+</Tab>
+</Tabs>
+
+Every replay of a set is compared with its baseline: the station's live config
+replayed on the same runs. If the set has no baseline covering all its runs,
+because it was never replayed or runs were added since:
+
+- Under **Live config**, the replay becomes the baseline.
+- Under a proposed candidate, a baseline starts beside it, with a ceiling of its
+  own the same as yours, so the two may spend up to twice the ceiling.
+
+If the set has a baseline covering its runs, a **Live config** replay runs
+beside it, and no new baseline starts.
+
+At most 2 of a team's replay runs run at once. See
+[Limits and timeouts](/docs/reference/limits-and-timeouts#replays).
+
+## Follow the replay
+
+The replay's page shows its state, how many of its runs succeeded against the
+baseline, and what it has spent of its ceiling. From the command line:
+
+```bash
+spotlight replay watch --team core <replay id>
+```
+
+It prints progress every 15 seconds until the replay and its baseline have
+ended, then the result for each task. It exits `2` if the candidate regressed on
+any task, so a CI job that runs it fails on a regression. See
+[`spotlight replay watch`](/docs/reference/cli/replay-command#spotlight-replay-watch).
+
+To stop a replay, select **Stop**, then **Stop replay**, on its page, or run
+`spotlight replay stop --team core <replay id>`. Nothing more of it starts, and
+its running runs are stopped. A replay that spends its ceiling ends as **Over
+budget**: nothing more starts, and runs already running finish.
+
+## Read the result
+
+Under **Task by task**, the replay's page lists each task, regressions first.
+A task reads **Regressed** when the baseline succeeded on it and the candidate
+did not, or when the station's judge scored the candidate's change lower. Each
+result shows its first reason, such as **Its checks failed**; hover over it for
+the rest. Select **Run** beside a result to open that replay run.
+
+A task is **Unscored** when nothing could score it, such as a run that changed
+nothing for the checks to run on, could not be replayed, or was cut short by a
+stop or the ceiling. Unscored tasks are left out of the success rate and are
+never regressions. See [Results](/docs/reference/app/replays#results) for every result and
+reason.
+
+If the candidate did worse, propose another candidate and replay the same set.
+Each replay of a set is compared with the same baseline.
+
+## Make the change
+
+A replay never changes the station. To keep a change that did better:
+
+<Steps>
+<Step>
+
+Make the same change in the station's block of the line's `spotlight_line`
+resource, or in its prompt file. See
+[Change a line's stations](/docs/lines/change-a-lines-stations).
+
+</Step>
+<Step>
+
+Run `terraform apply`.
+
+</Step>
+</Steps>
+
+Runs with the new config start a new group under **How its runs turned out** on
+the Station page. See
+[Check whether it helped](/docs/improvement/improve-a-station-from-its-runs#check-whether-it-helped).
+
+To let go of a set you no longer need, select **Delete** on its page. Its
+replays go with it, and Spotlight stops keeping its runs' workspaces for it.
+
+## Related
+
+- [Why changes are replayed on past tasks](/docs/improvement/why-changes-are-replayed-on-past-tasks)
+- [Replays](/docs/reference/app/replays)
+- [`spotlight replay`](/docs/reference/cli/replay-command)
+- [Replay candidates](/docs/reference/api/replay-candidate)
+- [Improve a station from its runs](/docs/improvement/improve-a-station-from-its-runs)

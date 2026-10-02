@@ -8,6 +8,8 @@ description: The subcommands of the spotlight binary, what each reads, prints an
 `spotlight` is one binary. A host runs `spotlight host`. Each sandbox runs
 `spotlight runner` and `spotlight egress` from the runner image. An agent runs
 the [agent commands](/docs/reference/cli/agent-commands) inside its sandbox.
+A person or a CI job runs [`spotlight replay`](/docs/reference/cli/replay-command)
+from anywhere to replay a station's past tasks.
 
 ## Synopsis
 
@@ -17,6 +19,7 @@ spotlight host install
 spotlight runner
 spotlight runner harnesses <json>
 spotlight egress
+spotlight replay <subcommand>
 spotlight version
 spotlight help
 ```
@@ -27,7 +30,7 @@ Any other first argument is taken as an [agent command](/docs/reference/cli/agen
 | --- | --- | --- |
 | `spotlight` with no arguments | Usage on standard error. | `1` |
 | `spotlight help`, `-h` or `--help` | Usage on standard output. | `0` |
-| `spotlight version` | The release, such as `20260926-01`. A binary built without one prints `dev`. | `0` |
+| `spotlight version` | The release, such as `20261002-01`. A binary built without one prints `dev`. | `0` |
 
 ## spotlight host
 
@@ -58,7 +61,7 @@ standard error as `spotlight host: <error>`.
 | `destroyed a sandbox left behind` | A sandbox from an earlier host process was removed at start. |
 | `started a sandbox` | A run or check began. |
 | `the sandbox finished` | The sandbox exited. |
-| `the sandbox ran past its time` | `SPOTLIGHT_RUN_TIMEOUT` passed. The sandbox is stopped with a 30-second grace. |
+| `the sandbox ran past its time` | `SPOTLIGHT_RUN_TIMEOUT` passed. The sandbox is stopped with a 30-second grace, and the run is reported `timed-out`: `Its sandbox ran past the host's limit of <timeout> and was stopped.` |
 | `could not start a sandbox; claiming from this image pauses` | Claims for that image pause, longer after each failure in a row, up to about 30 seconds. |
 | `gave up the work: its way out did not start` | Egress did not start. The run fails, or the check is skipped. |
 | `the host is stopping, so the work is left to be claimed again` | The host stopped before the sandbox started. |
@@ -205,7 +208,7 @@ spotlight runner harnesses '[]'
 ```
 
 ```json
-{"release":"20260926-01","harnesses":[]}
+{"release":"20261002-01","harnesses":[]}
 ```
 
 ### Exit codes
@@ -232,3 +235,13 @@ argument prints the usage and exits `1`. It reads what the host handed it from
 | --- | --- |
 | `0` | Stopped on `SIGINT` or `SIGTERM`. |
 | `1` | Egress could not start. |
+
+## spotlight replay
+
+```text
+spotlight replay <subcommand>
+```
+
+Proposes replay candidates and starts, follows and stops replays, reading
+`SPOTLIGHT_URL` and `SPOTLIGHT_API_TOKEN`. Its subcommands, flags, output and
+exit codes are on [`spotlight replay`](/docs/reference/cli/replay-command).

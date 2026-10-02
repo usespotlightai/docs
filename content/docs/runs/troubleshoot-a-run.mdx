@@ -85,8 +85,9 @@ Refused runs are not retried. After changing the station, reply to the item.
 ## The run was given up on
 
 "The run was given up on after N attempts without finishing." means runners
-claimed the run and then stopped reporting, N times in a row. Spotlight puts a
-lost run back in the queue by itself before it gives up.
+claimed the run and then stopped reporting, or ran it past the host's run time
+limit, N times in a row. Spotlight puts such a run back in the queue by itself
+before it gives up. The Run page shows its code: `runner-lost` or `timed-out`.
 
 Read the log of the host that claimed it around the time of each attempt.
 Look for the host stopping or restarting, and for the warning
@@ -96,7 +97,8 @@ at its run time limit. See [Limits and timeouts](/docs/reference/limits-and-time
 ## The inbox item says it failed N times
 
 `×N` on an inbox row (the tooltip reads "Failed N times") means the same
-failure happened again in the same conversation. Find the message in the
+failure happened again in the same conversation. A lost runner and a run time
+limit count as the same failure here, named for the latest. Find the message in the
 tables above and fix what it names before you reply again.
 
 ## The agent worked without the repository's setup

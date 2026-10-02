@@ -32,6 +32,13 @@ The first station of every line, of kind `backlog`. Nothing runs there, so a
 task waits at the backlog until a person or a reaction moves it. See
 [`spotlight_line`](/docs/reference/terraform/line).
 
+## Baseline
+
+The replay of a station's live config on a replay set's runs, which every
+other replay of the set is compared with. It starts the first time a set is
+replayed, and again once runs are added after it. See
+[Regressions](/docs/reference/app/replays#regressions).
+
 ## Before event
 
 A hook event that waits while its hooks run, such as `tool.using`. A hook on a
@@ -50,6 +57,12 @@ The first prompt a task's run gives its agent: the station's prompt, the task,
 what earlier stations noted, the task's decisions, the repositories, skills,
 open remarks on the pull request, and how to hand over. See
 [Briefing](/docs/reference/hosts/sandbox#briefing).
+
+## Candidate
+
+A work station's block as someone wants to try it, proposed to be
+[replayed](#replay) on the station's past tasks. It is never applied. See
+[Replay candidates](/docs/reference/api/replay-candidate).
 
 ## Catalog
 
@@ -304,6 +317,25 @@ optionally only while the task stands at a given station. See
 [`spotlight_line`](/docs/reference/terraform/line) and
 [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves).
 
+## Regression
+
+A task on which a replay did worse than its set's [baseline](#baseline): the
+baseline succeeded and the replay did not, or the judge scored the replay's
+change lower. See [Regressions](/docs/reference/app/replays#regressions).
+
+## Replay
+
+A run of some of a work station's past task runs again, under a
+[candidate](#candidate) or the station's live config, from where each run
+started. A replay changes nothing outside Spotlight, and each of its runs is
+scored. See [Replays](/docs/reference/app/replays).
+
+## Replay set
+
+A named list of up to 50 of a work station's past task runs, replayed
+together. While a run is in a set, the workspace it started from is kept. See
+[Replay set page](/docs/reference/app/replays#replay-set-page).
+
 ## Repository
 
 A GitHub repository, `owner/name`, named on a line. The line's runs check it
@@ -325,8 +357,8 @@ the station's [judge](#judge). Its first line can name its scale,
 
 ## Run
 
-One execution of a harness in a fresh sandbox, either for a task at a station
-or for a chat. See [Runs](/docs/reference/app/tasks-runs-and-the-inbox#runs).
+One execution of a harness in a fresh sandbox, for a task at a station, for a
+chat, or for a [replay](#replay). See [Runs](/docs/reference/app/tasks-runs-and-the-inbox#runs).
 
 ## Runner
 
@@ -380,6 +412,12 @@ The value `spotlight-egress:<NAME>` a sandbox holds in place of a harness key
 or a run secret. Egress replaces it with the real value in the request header.
 See [What egress adds to requests](/docs/reference/hosts/egress#what-egress-adds-to-requests).
 
+## Starting point
+
+Where a task's run started: the workspace archive it restored, if any, and the
+commit each repository was checked out at. A replay starts from it. See
+[Starting point](/docs/reference/app/tasks-runs-and-the-inbox#starting-point).
+
 ## Station
 
 A step on a line, of kind `backlog`, `work` or `completed`. A work station
@@ -413,6 +451,14 @@ The record of a task's runs and their steps, with their timings and faults.
 The web app shows it under Observability, `spotlight trace` writes it to a
 file, and a chat message can share up to 20. See
 [spotlight trace](/docs/reference/cli/agent-commands#spotlight-trace).
+
+## Unscored
+
+The result of a replay run that nothing could score: one that could not be
+replayed or started, was cut short by its replay's stop or ceiling, failed
+before its agent began or for another reason outside the candidate, or changed
+nothing for its checks to run on. Unscored runs are left out of a replay's
+success and are never regressions. See [Results](/docs/reference/app/replays#results).
 
 ## Workspace
 

@@ -1,0 +1,94 @@
+---
+type: reference
+icon: BookText
+title: Replays API
+description: The team endpoints behind replay sets and replays, their request bodies, who may read and change them, and their errors.
+---
+
+Every part of [replays](/docs/reference/app/replays) other than candidates is
+read and changed through these endpoints, under `/api/teams/{teamId}`. They
+answer JSON, and errors are `application/problem+json` as on the
+[resource API](/docs/reference/api/resource-api#errors). Candidates are the
+[`replay-candidate`](/docs/reference/api/replay-candidate) resource.
+
+`{lineId}` is a line's id, and `{stationId}` a station's id, as a candidate's
+`stationId` holds it.
+
+## Endpoints
+
+| Method and path | Returns |
+| --- | --- |
+| `GET /lines/{lineId}/stations/{stationId}/replay-sets` | The station's replay sets, each with its runs and whether each can still be replayed. |
+| `GET /replay-sets` | Every replay set of the team, including those whose station has left its line. With `line` and `station`, only one station's. |
+| `GET /lines/{lineId}/stations/{stationId}/replayable-runs` | The station's latest 50 ended task runs, newest first, each with its refusal and the reason, or none. |
+| `POST /lines/{lineId}/stations/{stationId}/replay-sets` | `201` and `{ "id" }`: opens an empty set. |
+| `PATCH /replay-sets/{setId}` | `204`: renames the set, also once its station has left its line. |
+| `DELETE /replay-sets/{setId}` | `204`: deletes the set and its replays, and lets go of the archives it kept. |
+| `POST /replay-sets/{setId}/entries` | `204`: adds a run to the set. |
+| `DELETE /replay-sets/{setId}/entries/{runId}` | `204`: takes a run out of the set, also once its station has left its line. |
+| `GET /replay-sets/{setId}/replays` | Every replay of the set, newest first, with each run's result, the baseline marked. |
+| `POST /replay-sets/{setId}/replays` | `201`: starts a replay. See [Start a replay](#start-a-replay). |
+| `GET /replays/{replayId}` | One replay, its totals, its baseline's id, and each task against the baseline, regressions first. |
+| `POST /replays/{replayId}/stop` | `204`: stops the replay. |
+| `GET /replay-runs/{runId}/replay` | The replay a replay run belongs to, its candidate and set, and the run's result in it. |
+| `GET /replay-runs/{runId}` | A replay run: the run it replays, its steps, and what it spent. |
+
+`GET /replay-sets` takes:
+
+| Parameter | Description |
+| --- | --- |
+| `line` | With `station`: the id of the line whose station's sets to list. |
+| `station` | With `line`: the key of the station whose sets to list. A line the caller cannot see, or a key the line has no station by, is answered `404`: `There is no station <key> for this caller`. |
+
+## Request bodies
+
+| Endpoint | Body |
+| --- | --- |
+| Open or rename a set | `{ "name": "<name>" }`. 1 to 100 characters, with surrounding spaces trimmed. |
+| Add a run | `{ "runId": "<run id>" }`. An ended task run at the set's station. |
+| Start a replay | `{ "candidate": "<candidate id or live>", "ceiling": { "amount": <number>, "currency": "<code>" } }` |
+
+## Start a replay
+
+`candidate` is the id of one of the station's proposed candidates, or `live`
+for the station as it is configured now. `ceiling.amount` is above 0 and at
+most 1,000, and `ceiling.currency` a three-letter code.
+
+When the set has no baseline covering all its runs, a baseline replay of the
+live config starts too, with a ceiling of its own equal to `ceiling`. With
+`candidate` set to `live`, the replay itself becomes the baseline. The answer:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `id` | string | The replay. |
+| `ceiling` | object | `{ amount, currency }`, the replay's own ceiling. |
+| `baseline` | object or null | `{ id, ceiling, status }` when a baseline started: `status` is `started` when the replay is the baseline, and `starting` when a baseline starts beside it. Null when the set's baseline already covers its runs. |
+
+## Who may read and change
+
+Reading needs a person on the team or an owner or admin of its workspace,
+signed in, or a [workspace token](/docs/reference/api/workspace-token) of the
+team's workspace with the `read` scope, sent as `Authorization: Bearer
+<token>`. Anyone else is answered `404`. See
+[Team outcomes](/docs/reference/roles-and-permissions#team-outcomes).
+
+Opening, renaming and deleting sets, adding and removing runs, and starting
+and stopping replays also need `plan`: every person who may read, or a token
+with `plan` or `configure`. A token with `read` alone is refused with `403`
+and the title `Not allowed to plan`.
+
+A replay run's config, which the Run page reads at `GET /runs/{runId}/config`, is answered only to those who may read the team's replays.
+
+Starting and stopping a replay are recorded as
+[configuration changes](/docs/reference/api/resource-api#configuration-changes)
+of the kind `replay`, keyed by the replay's id.
+
+## Errors
+
+| Status | Cause |
+| --- | --- |
+| `401` | No session or token, or an unknown token. |
+| `403` | A change by a caller who may read the team but not plan. |
+| `404` | The team, line, station, set, run, candidate or replay is not one the caller may see, as in `There is no replay set <setId> for this caller`. |
+| `409` | Adding a run already in the set (`The run <runId> is already in the replay set`), to a full set (`A replay set holds at most 50 runs`), or that cannot be replayed (`The run <runId> cannot be replayed: <reason>`, with a [refusal](/docs/reference/app/replays#why-a-run-cannot-be-replayed)). Deleting a set while a replay of it is under way (`The replay set <setId> is being replayed; stop its replays first`). Adding a run to, or replaying, a set whose station has left its line (`The station of replay set <setId> is gone from its line, so it takes no more runs and starts no replays; it may still be renamed, have runs taken out, or be deleted`). Stopping a replay that has ended (`The replay <replayId> has already ended or been stopped`). Starting a replay while the set's baseline changed (`The baseline of replay set <setId> changed while the replay was starting; start it again`). |
+| `422` | A missing or invalid field, at its path: a name out of length (`A replay set is named in 1 to 100 characters`), a ceiling out of range (`What a replay spends is capped at more than nothing and at most 1,000`) or not in a three-letter currency, no `candidate`, or a set with no runs (`A replay replays at least one run`). A run of another station (`The run <runId> worked at another station than the replay set's`). `line` without `station`, or `station` without `line`, on `GET /replay-sets`. |

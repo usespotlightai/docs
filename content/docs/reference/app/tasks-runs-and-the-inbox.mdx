@@ -133,7 +133,9 @@ When a happening finds a task, the line decides one of these outcomes:
 
 ## Runs
 
-A run is one execution of a harness, for a task at a station or for a chat.
+A run is one execution of a harness, for a task at a station or for a chat. A
+replay run, which runs a past task run again under a candidate config, holds no
+task and is described in [Replays](/docs/reference/app/replays#replay-runs).
 
 ### Run states
 
@@ -158,7 +160,7 @@ waiting or parked run "Waiting for you".
 | `queued` | `claimed` | A runner that meets the run's placement claims it, and no other run for the same task and station is claimed or waiting. |
 | `queued` | `failed` | The station gives what cannot be given: a catalog item that does not exist or that the plan does not include, or a harness profile the team does not hold (`refused`). A push pool could not provision a runner (`unprovisioned`). |
 | `queued` | `superseded` | The task moved to another station or was deleted. |
-| `claimed` | `queued` | The lease lapsed, no stop was asked for, and the run has had fewer than 3 attempts. Or its `run.starting` hooks could not be asked, and the run is handed back to wait. |
+| `claimed` | `queued` | The lease lapsed, or the host stopped the sandbox at its run timeout (`timed-out`), no stop was asked for, and the run has had fewer than 3 attempts. Or its `run.starting` hooks could not be asked, and the run is handed back to wait. |
 | `claimed` | `waiting` | The turn ended cleanly with the task put to a person, and the runner reports the workspace stored for the turn. Only a task's run waits; a chat run never does. |
 | `waiting` | `claimed` | The person answers while the sandbox is kept, in the inbox, in the task's Slack thread or on the run's page. The answer goes to the same session, in the same attempt. A run asked to stop is not taken up. |
 | `waiting` | `parked` | `SPOTLIGHT_ANSWER_WAIT` passes without an answer, at once when no host started the runner, or the lease lapses. |
@@ -166,7 +168,7 @@ waiting or parked run "Waiting for you".
 | `parked` | `queued` | The person answers. The run is queued as its next attempt, and restores the stored workspace wherever it is claimed. |
 | `waiting`, `parked` | `completed` | The task is moved or deleted, or the run is stopped. |
 | `claimed` | `completed` | The runner reports an outcome without a failure, or the run is stopped, or its lease lapses after it was asked to stop. |
-| `claimed` | `failed` | The harness failed (`exited`). A hook on `run.starting` refused it (`refused`). Its hooks could not be asked after the last hand-back (`hooks-unanswered`). Its lease lapsed on the last attempt, and no stop was asked for (`runner-lost`). |
+| `claimed` | `failed` | The harness failed (`exited`), or the run failed before its harness started (`unprepared`). A hook on `run.starting` refused it (`refused`). Its hooks could not be asked after the last hand-back (`hooks-unanswered`). Its lease lapsed on the last attempt, and no stop was asked for (`runner-lost`). Its host stopped it at its run timeout on the last attempt, and no stop was asked for (`timed-out`). |
 | `failed` | `superseded` | The run's task has moved on. |
 
 Words said to a run at the station where its task stands idle, when that
@@ -182,22 +184,27 @@ something to it. See [Steer or stop a run](/docs/runs/steer-or-stop-a-run).
 
 | Code | Cause | Retried |
 | --- | --- | --- |
-| `exited` | The runner reported that the run failed. | no |
+| `exited` | The runner reported that the run failed once its harness had started, or the harness did not start. | no |
+| `unprepared` | The run failed before its harness started: its workspace, checkouts, attachments, skills or harness files could not be made ready, or its host could not start a sandbox with the line's image and its egress. | no |
 | `refused` | The run could not be given what its station names, or a hook refused its start. | no |
 | `unprovisioned` | A push pool did not provision a runner for it. | no |
 | `hooks-unanswered` | Its `run.starting` hooks could not be asked. | yes |
 | `runner-lost` | Its runner stopped renewing the lease. | yes |
+| `timed-out` | Its host stopped its sandbox for running past `SPOTLIGHT_RUN_TIMEOUT`. | yes |
 | `superseded` | Its task had moved on. | no |
 
 A run whose `run.starting` hooks could not be asked is handed back and tried
 again, 6 attempts in all, waiting 5 seconds and doubling to at most 2 minutes.
-A run whose runner is lost is queued again at once, 3 attempts in all.
+A run whose runner is lost, or that timed out, is queued again at once, 3
+attempts in all, counted together.
 
 A failed run puts the task to a person with a failure of source `run` and the
 run's code. A failing hook reports a failure of source `hook:<key>`; see
 [`spotlight_hook`](/docs/reference/terraform/hook) for its codes. A failure with the same source and
 code as one already open on the task raises that failure's count instead of
-asking again.
+asking again. `runner-lost` and `timed-out` count as one repeating failure: the
+count carries on across both, and the failure is named for the latest code.
+Every other code, and each hook's failures, repeat only with themselves.
 
 ### Run failure messages
 
@@ -206,15 +213,15 @@ for more than one reason, the reasons are joined with `; `.
 
 | Message | Cause |
 | --- | --- |
-| `The runner image <image> could not be pulled: <error>` | The host could not pull the line's image and holds no copy of it. Code `exited`. |
-| `The runner image <image> is refused: <reason>` | The host does not serve the image. The reasons are those the Runners page shows for the image. Code `exited`. |
-| `The runner image <digest> no longer holds <harness>, which this run needs` | The image changed and lost the station's harness. Code `exited`. |
-| `The sandbox's egress did not start: <error>` | See [Egress start failures](/docs/reference/hosts/egress#egress-start-failures). Code `exited`. |
-| `prepare: git clone <path>: <error>: <output>` | A repository could not be cloned. Code `exited`. |
-| `prepare: preparing <path> did not finish within 10m0s` | The checkouts took longer than their time limit. Code `exited`. |
-| `clear an earlier run's outcome: <error>` | `.spotlight/outcome.json` from an earlier run could not be removed. Code `exited`. |
-| `fetch attachment <id>: <error>` | An attachment could not be written into the workspace. Code `exited`. |
-| `hand over workspace: <error>` | `/workspace` could not be given to the agent user. Code `exited`. |
+| `The runner image <image> could not be pulled: <error>` | The host could not pull the line's image and holds no copy of it. Code `unprepared`. |
+| `The runner image <image> is refused: <reason>` | The host does not serve the image. The reasons are those the Runners page shows for the image. Code `unprepared`. |
+| `The runner image <digest> no longer holds <harness>, which this run needs` | The image changed and lost the station's harness. Code `unprepared`. |
+| `The sandbox's egress did not start: <error>` | See [Egress start failures](/docs/reference/hosts/egress#egress-start-failures). Code `unprepared`. |
+| `prepare: git clone <path>: <error>: <output>` | A repository could not be cloned. Code `unprepared`. |
+| `prepare: preparing <path> did not finish within 10m0s` | The checkouts took longer than their time limit. Code `unprepared`. |
+| `clear an earlier run's outcome: <error>` | `.spotlight/outcome.json` from an earlier run could not be removed. Code `unprepared`. |
+| `fetch attachment <id>: <error>` | An attachment could not be written into the workspace. Code `unprepared`. |
+| `hand over workspace: <error>` | `/workspace` could not be given to the agent user. Code `unprepared`. |
 | `start agent: <error>` | The harness did not start. Code `exited`. |
 | `resume the session: <error>` | The harness could not reopen the task's earlier conversation. Code `exited`. |
 | `open a session: <error>` | The harness could not open a new conversation. Code `exited`. |
@@ -226,15 +233,16 @@ for more than one reason, the reasons are joined with `; `.
 | `No runner was provisioned for it in <n> attempts; the last was <failure>` | No push pool started a runner. See [Provision call failures](/docs/reference/events/provision-call#failures). Code `unprovisioned`. |
 | `Its hooks could not be asked after <n> tries: <reason>` | Its `run.starting` hooks went unanswered on every attempt. Code `hooks-unanswered`. |
 
-A run whose runner is lost on its last attempt is noted
-`The run was given up on after <n> attempts without finishing.`, with the code
-`runner-lost`. See [Inside a sandbox](/docs/reference/hosts/sandbox#run-phases) for
+A run whose runner is lost, or that times out, on its last attempt is noted
+`The run was given up on after <n> attempts without finishing.`, with the
+failure `runner-lost` or `timed-out`, as its last attempt ended. See [Inside a sandbox](/docs/reference/hosts/sandbox#run-phases) for
 the phase each runner message comes from.
 
 ### Config
 
 When a task's run is queued at a station with a harness, it records the
-station's config as it stands then. A chat's run records none.
+station's config as it stands then. A replay run records its candidate's
+config. A chat's run records none.
 
 | Part | Holds |
 | --- | --- |
@@ -269,6 +277,18 @@ and one phrase for each change:
 | Judge | `Judge added`, `Judge removed`, `Judge rubric changed`, `Judge sample <was> → <now>`, `Judge trust <was> → <now>`, with sample and trust as percentages |
 
 For example: `Prompt changed · Effort high → xhigh · Skill reviewing added`.
+
+### Starting point
+
+Once its checkouts are ready, a task's run records where it started: the
+workspace archive it restored, if any, and the commit each repository's
+checkout is at. A later attempt of the same run does not replace what the
+first attempt recorded. If the starting point cannot be recorded, the run
+carries on and its `start` step reads
+`Where the run started was not recorded: <error>`. A run with no starting point
+cannot be [replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed).
+The archive is kept for 30 days after the run started; see
+[Workspace archives](/docs/reference/limits-and-timeouts#workspace-archives).
 
 ### Spend
 
@@ -441,7 +461,8 @@ A run that was not judged shows none of this.
 
 A work station's page lists how its latest 50 ended task runs turned out, under
 "How its runs turned out". Outcomes are recorded as runs end and as people act;
-a run that ended before recording began is not listed.
+a run that ended before recording began is not listed. Replay runs are not
+listed; see [Replays](/docs/reference/app/replays).
 
 Only people on the team, the workspace's owners and admins, and workspace
 tokens with the `read` scope can read a station's outcomes. Anyone else is

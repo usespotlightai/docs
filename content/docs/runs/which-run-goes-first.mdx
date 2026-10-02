@@ -59,6 +59,16 @@ In a chat a person is typing and waiting for a reply, while a task run works
 while nobody watches. Putting the conversation first, as we see it, keeps the
 wait off the only run someone is sitting in front of.
 
+## Replays go last
+
+A [replay](/docs/improvement/why-changes-are-replayed-on-past-tasks) runs a station's
+past tasks again to test a change before it is applied. Its runs have a
+priority of -1, below every task run and chat run, and at most 2 of a team's
+replay runs are queued or running at once. A replay answers a question about
+a change nobody has made yet, while a task run moves work someone is waiting
+for. As we see it, a replay should use spare room and never take a runner from
+that work.
+
 ## Station order is only for people
 
 The board shows a line's stations as sections in a fixed order, and that order

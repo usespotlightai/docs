@@ -1,0 +1,253 @@
+---
+type: reference
+icon: BookText
+title: spotlight replay
+description: The spotlight replay subcommands that propose candidates, list sets, and start, follow and stop replays, with their flags, environment, output and exit codes.
+---
+
+`spotlight replay` proposes [replay candidates](/docs/reference/api/replay-candidate)
+and starts, follows and stops [replays](/docs/reference/app/replays) from any
+computer, through the resource API and the [Replays API](/docs/reference/api/replays).
+It is part of the `spotlight` binary; see
+[The spotlight command](/docs/reference/cli/spotlight-command).
+
+## Synopsis
+
+```text
+spotlight replay propose --station <team/line/station> --name <name> <station.json>
+spotlight replay candidates --station <team/line/station>
+spotlight replay show --station <team/line/station> <candidate name or id>
+spotlight replay sets --station <team/line/station>
+spotlight replay start --station <team/line/station> --set <name or id> --candidate <name, id or live> --ceiling <amount> [--currency USD]
+spotlight replay status --team <key> <replay id>
+spotlight replay watch --team <key> <replay id> [--every 15s]
+spotlight replay stop --team <key> <replay id>
+```
+
+Every subcommand also takes `--json`. Flags may come before or after the
+argument.
+
+## Install
+
+`spotlight replay` needs only the `spotlight` binary, not a host. The
+[install script](/docs/reference/cli/install-script) sets up a host, so
+download the binary from the release instead:
+
+| `<os>` | `<arch>` |
+| --- | --- |
+| `linux` or `darwin` | `amd64` or `arm64` |
+
+```bash
+curl -fsSL -o spotlight https://github.com/usespotlightai/cli/releases/latest/download/spotlight-<os>-<arch>
+curl -fsSL -o spotlight.sha256 https://github.com/usespotlightai/cli/releases/latest/download/spotlight-<os>-<arch>.sha256
+```
+
+Compare the file's SHA-256 with `spotlight.sha256`, then make it executable
+with `chmod +x spotlight`. For a given release, replace `latest/download` with
+`download/<version>`.
+
+## Environment
+
+| Variable | Description |
+| --- | --- |
+| `SPOTLIGHT_URL` | Required. The [Spotlight address](/docs/reference/glossary#spotlight-address), as `https://app.usespotlight.ai`. |
+| `SPOTLIGHT_API_TOKEN` | Required. A [workspace token](/docs/reference/api/workspace-token). `read` is enough for `candidates`, `show`, `sets`, `status` and `watch`; `propose`, `start` and `stop` need `plan`. |
+
+Without either, every subcommand fails with
+`set SPOTLIGHT_URL and SPOTLIGHT_API_TOKEN to replay`, followed by the usage.
+The token must see exactly one workspace; otherwise the command fails with
+`the token sees <n> workspaces; use a workspace token, which acts in exactly one`.
+
+## Common behaviour
+
+| | Value |
+| --- | --- |
+| Request timeout | 2 minutes |
+| Client header | `Spotlight-Client: cli/<release>` |
+| An error | `spotlight replay: <error>` on standard error. A refusal from Spotlight is printed as its `detail`, or its `title`, followed by each field error as `<path>: <message>` on a line of its own. |
+| `--json` | Prints Spotlight's answer as indented JSON in place of the text output. |
+
+`--station` names a station as `<team key>/<line key>/<station key>`, as in
+`core/delivery/implementation`. Another form fails with
+`--station is a team, line and station key, as in core/delivery/build, not "<value>"`,
+and a line without that station with
+`line <team>/<line> has no station <key>; it has <keys>`.
+
+`--team` names a team by its key. A set or candidate is named by its id or its
+exact name. A name no set or candidate has fails with
+`<station> has no <kind> "<name>"; it has <names>`, and a name more than one
+has with `<station> has <n> of <kind> named "<name>"; name one by its id: <ids>`.
+
+## Exit codes
+
+| Code | Meaning |
+| --- | --- |
+| `0` | Done. For `status` and `watch`, the candidate regressed on no task. |
+| `1` | A usage error, a refusal, or Spotlight could not be reached. |
+| `2` | `status` or `watch` only: the candidate regressed against its baseline on at least one task. The message reads `the candidate regressed against its baseline on <n> of <m> tasks`. |
+
+## spotlight replay propose
+
+```text
+spotlight replay propose --station <team/line/station> --name <name> <station.json>
+```
+
+Proposes a candidate for the station from a file holding its station block as
+JSON, in the shape of one entry of a line's `stations`. Give `-` to read the
+block from standard input. Nothing is applied.
+
+| Flag | Required | Description |
+| --- | --- | --- |
+| `--station` | yes | The station. |
+| `--name` | yes | The candidate's name. See [Fields](/docs/reference/api/replay-candidate#fields). |
+
+The request carries a new `Idempotency-Key`. If Spotlight cannot be reached or
+answers with a `5xx` status, the request is sent once more with the same key,
+so the retry never proposes the candidate twice.
+
+```text
+Proposed core/delivery/implementation/Higher effort (<id>); nothing is applied.
+What it changes from the live config <fingerprint>:
+  effort high → xhigh
+```
+
+The fingerprint is shown to 12 characters. A candidate that changes nothing
+prints `It changes nothing from the live config <fingerprint>.`
+
+| Message | Cause |
+| --- | --- |
+| `--name tells the candidate from the station's others` | No `--name`, or a blank one. |
+| `name one file holding the station block, as the line resource holds a station, or - to read it from stdin` | No file, or more than one. |
+| `<path> is HCL; Spotlight writes HCL but never reads it, so give the station block as JSON, as the line resource holds it` | The file ends in `.tf` or `.hcl`. |
+| `<path> holds no JSON object; it holds the station block, as the line resource holds a station` | The file is not a JSON object. |
+| `propose <name>: <refusal>` | Spotlight refused the candidate. See [Checks](/docs/reference/api/replay-candidate#checks). |
+
+## spotlight replay candidates
+
+```text
+spotlight replay candidates --station <team/line/station>
+```
+
+Lists the station's proposed candidates as a table with the columns `NAME`,
+`CHANGES` (how many), `PROPOSED` and `ID`. With none, it prints
+`<station> has no candidates.`
+
+## spotlight replay show
+
+```text
+spotlight replay show --station <team/line/station> <candidate name or id>
+```
+
+Prints one candidate: its address and when it was proposed, its id, its
+fingerprint, and what it changes from the live config, as `propose` does.
+
+## spotlight replay sets
+
+```text
+spotlight replay sets --station <team/line/station>
+```
+
+Lists the station's replay sets as a table with the columns `NAME`, `RUNS`,
+`REPLAYABLE` (runs that can still be replayed), `CREATED` and `ID`. With none,
+it prints `<station> has no replay sets; pick one on the station's page.`
+Sets are opened and filled on the [Station page](/docs/reference/app/replays#station-page).
+
+## spotlight replay start
+
+```text
+spotlight replay start --station <team/line/station> --set <name or id> --candidate <name, id or live> --ceiling <amount> [--currency USD]
+```
+
+Starts a replay of the set under the candidate.
+
+| Flag | Required | Default | Description |
+| --- | --- | --- | --- |
+| `--station` | yes | | The station. |
+| `--set` | yes | | The replay set. |
+| `--candidate` | yes | | A proposed candidate, or `live` for the station as it is configured now. |
+| `--ceiling` | yes | | The most the replay may spend, a number above 0. Spotlight takes at most 1,000. |
+| `--currency` | no | `USD` | The ceiling's currency, as a three-letter code. |
+
+```text
+Started replay <id> of <set> under <candidate>, spending at most <ceiling>.
+Its baseline, the live config, replays beside it as <id>, with a ceiling of its own.
+Follow it with: spotlight replay watch --team <team> <id>
+```
+
+The second line appears only when a baseline starts beside the replay.
+
+| Message | Cause |
+| --- | --- |
+| `--set and --candidate name what to replay, and under what` | `--set` or `--candidate` is missing. |
+| `--ceiling is the most the replay may spend, as a number above 0, not "<value>"` | `--ceiling` is missing, not a number, or 0 or less. |
+| `start a replay of <set>: <refusal>` | Spotlight refused to start it. See [Errors](/docs/reference/api/replays#errors). |
+
+## spotlight replay status
+
+```text
+spotlight replay status --team <key> <replay id>
+```
+
+Prints the replay as it stands, and exits `2` if it regressed on any task.
+
+```text
+Replay <id> under <candidate> (<kind>): <state>, <spent> of <ceiling> spent
+Succeeded: <n> of <scored> (<share>%), <n> unscored
+Its baseline, <state>: <n> of <scored> (<share>%), <n> unscored
+```
+
+When runs already running took the replay past its ceiling, the first line
+ends with `, over the ceiling by <amount>, spent by runs already running when it
+was reached`. `<kind>` is `proposed`, or `live` for a replay of the live config.
+The third line reads `It is the set's baseline.` for a baseline, and
+`The set has no baseline to compare against.` when there is none. A table
+follows with one row per task, regressions first: a `REGRESSED` mark, `TASK`,
+`CANDIDATE` and `BASELINE` (each a result: `pending`, `succeeded`, `failed` or
+`unscored`, or `none`), `COST Δ`, `STEPS Δ` and `SCORE Δ`. A difference not
+known reads `-`.
+
+With `--json`, it prints `{ "replay", "baseline" }`, each as the
+[Replays API](/docs/reference/api/replays) reads a replay.
+
+## spotlight replay watch
+
+```text
+spotlight replay watch --team <key> <replay id> [--every 15s]
+```
+
+Reads the replay every `--every` until both it and its baseline have ended,
+then prints what `status` prints and exits as `status` does. Until then it
+prints one line each time:
+
+```text
+<state>: <n> of <m> settled, <spent> spent
+```
+
+With `--json`, it prints only the final answer.
+
+| Flag | Default | Description |
+| --- | --- | --- |
+| `--team` | required | The team's key. |
+| `--every` | `15s` | How often to read the replay, as a Go duration such as `30s` or `1m`. At least `1s`. |
+
+A read that fails because Spotlight could not be reached, or answered with a
+`5xx` status, is tried again. The command prints
+`could not ask (<error>); asking again`, unless `--json` is given, and waits
+twice `--every` after the first failure in a row, doubling after each, at most
+2 minutes. After 5 failures in a row it ends with
+`gave up after 5 failed tries in a row: <error>`. Any other refusal ends the
+command at once. An `--every` under `1s` fails with
+`--every is at least 1s, not <value>`.
+
+## spotlight replay stop
+
+```text
+spotlight replay stop --team <key> <replay id>
+```
+
+Stops the replay: nothing more of it starts, and its running runs are
+stopped. It then reads the replay and prints
+`Stopped replay <id>, now <state>: nothing more of it starts, and its running runs stop.`
+With `--json`, it prints the replay as read after stopping, as the
+[Replays API](/docs/reference/api/replays) reads one. A replay that has already
+ended is refused with `409`.

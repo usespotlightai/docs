@@ -27,7 +27,7 @@ role and scope allows.
 
 ## Operations
 
-Every resource kind has six operations. `<plural>` is the kind's collection
+Every resource kind has these six operations, except where a rule below says otherwise. `<plural>` is the kind's collection
 path, from the [endpoint catalogue](#endpoint-catalogue). `<holder>` is
 `workspaces/{workspaceId}` or `teams/{teamId}`, depending on what holds the kind.
 
@@ -89,6 +89,7 @@ Every resource representation has these fields besides its own.
 | `runner-pool` | key | `ephemeral` |
 | `runner-trust` | key | `production-cluster` |
 | `workspace-runners` | the workspace's slug | `acme` |
+| `replay-candidate` | `<team key>/<line key>/<station key>/<name>` | `core/delivery/implementation/Higher effort` |
 
 ## Errors
 
@@ -163,6 +164,7 @@ All paths are under `/api/resources`.
 | `runner-pool` | workspace | `POST /workspaces/{workspaceId}/runner-pools` | `/runner-pools/{id}` | `/workspaces/{workspaceId}/runner-pools` |
 | `runner-trust` | workspace | `POST /workspaces/{workspaceId}/runner-trusts` | `/runner-trusts/{id}` | `/workspaces/{workspaceId}/runner-trusts` |
 | `workspace-runners` | workspace | `POST /workspaces/{workspaceId}/workspace-runners` | `/workspace-runners/{id}` | `/workspaces/{workspaceId}/workspace-runners` |
+| `replay-candidate` | station | `POST /lines/{lineId}/stations/{stationKey}/replay-candidates` | `/replay-candidates/{id}`, read and delete only | `/workspaces/{workspaceId}/replay-candidates` |
 
 Import is the list path followed by `/import`, except for workspaces.
 
@@ -175,6 +177,9 @@ Rules particular to a kind:
   revokes it.
 - `workspace-runners`: a workspace has at most one, so its list returns zero or
   one item.
+- `replay-candidate`: has no update. Proposing and withdrawing one need `plan`,
+  and only someone who may read the station's team sees one. It is not
+  exported.
 
 Each kind's fields are on its own page:
 
@@ -193,6 +198,7 @@ Each kind's fields are on its own page:
 | `runner-pool` | [`spotlight_runner_pool`](/docs/reference/terraform/runner-pool) |
 | `runner-trust` | [`spotlight_runner_trust`](/docs/reference/terraform/runner-trust) |
 | `workspace-runners` | [`spotlight_workspace_runners`](/docs/reference/terraform/workspace-runners) |
+| `replay-candidate` | [Replay candidates](/docs/reference/api/replay-candidate) |
 
 ## Export
 
@@ -239,7 +245,7 @@ anyone else the workspace is `404`.
 | Field | Type | Description |
 | --- | --- | --- |
 | `seq` | integer | Rises with every change. Pass it as `before` to page back. |
-| `resource` | string | The kind, as in `line` or `secret`. |
+| `resource` | string | The kind, as in `line` or `secret`, or `replay` for a replay started or stopped. |
 | `resourceId` | string | The resource's `id`. |
 | `key` | string | The key or name it had within its team or workspace. |
 | `action` | string | `created`, `updated` or `deleted`. |
