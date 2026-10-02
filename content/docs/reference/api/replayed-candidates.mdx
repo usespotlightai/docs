@@ -1,0 +1,123 @@
+---
+type: reference
+icon: BookText
+title: Replayed candidates API
+description: The read-only endpoint behind the Insights Candidates tab, its period, every field it answers, who may read it, and its errors.
+---
+
+The [Candidates](/docs/reference/app/insights#candidates) tab of a team's
+Insights page is read through this endpoint. It answers JSON, and errors are
+`application/problem+json` as on the
+[resource API](/docs/reference/api/resource-api#errors).
+
+```
+GET /api/teams/{teamId}/replayed-candidates?period=30d
+```
+
+It answers the station configs the team replayed on past tasks in the period,
+by station and by replay set, each set with its
+[baseline](/docs/reference/glossary#baseline): the live config replayed. A
+success rate here is a replay's, scored by the candidate's own checks and judge
+on past tasks, and says nothing of how live runs went. A replay set holds runs,
+and a task may have more than one run in it: success rates, `scored`,
+`compared` and `regressions` count runs.
+
+## Parameters
+
+| Parameter | Description |
+| --- | --- |
+| `period` | `7d`, `30d` or `90d`: whole UTC days up to and including today. Default: `30d`. |
+
+A candidate is answered when it was replayed in the period:
+
+| `kind` | Answered when |
+| --- | --- |
+| `searched` | Its search started in the period. |
+| `proposed` | A replay of it over the set started in the period. With more than one, its newest finished replay in the period is answered, or else its newest. |
+
+Candidates of [replay checks](/docs/reference/api/replay-checks) are left
+out, and the live config is answered only as each set's `baseline`. A set's
+`health` and `baseline` are as they stand now, whatever the period.
+
+The endpoint reads the team's newest 500 replays started in the period. When
+there were more, it answers `truncated: true` and leaves out the oldest.
+
+## Answer
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `period` | object | `{ name, from, to }`: the period's name, the start of its first UTC day, and the start of the UTC day after today, which it stops short of. RFC 3339 times. |
+| `truncated` | boolean | Whether the team replayed more in the period than one answer covers. |
+| `stations` | array | Each work station with a candidate replayed in the period, the newest replayed first: `{ lineId, stationId, sets }`. A station removed from its line is still answered. |
+
+### Set
+
+Each item of a station's `sets`, the newest replayed first:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `setId` | string | |
+| `name` | string | |
+| `stationGone` | boolean | Whether its station has left its line. |
+| `guardsChanges` | boolean | Whether it [guards its station's changes](/docs/reference/app/searches#guarding-a-stations-changes). |
+| `health` | object | `{ tasks, runs, oldestRunEndedAt, newestRunEndedAt, lastAddedAt }`. `runs` counts the runs the set holds now, and `tasks` the different tasks they worked. The three times are when the oldest and the newest of its runs ended, and when a run was last added to it; each is null while there is none. |
+| `baseline` | object or null | Its newest baseline that is queued, running or finished, whatever the period. Null while it has none. See [Baseline](#baseline). |
+| `candidates` | array | The candidates replayed over it in the period, the newest replayed first. See [Candidate](#candidate). |
+
+### Baseline
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `replayId` | string | |
+| `state` | string | `queued`, `running`, `finished`, `stopped` or `over-budget`. |
+| `fingerprint` | string or null | The [config fingerprint](/docs/reference/glossary#config-fingerprint) of the live config it replayed. |
+| `scored` | number | How many of its runs were scored. |
+| `successRate` | number or null | Its [success](/docs/reference/app/replays#success) over the whole set, 0 to 1. Null while none was scored. |
+| `costPerRun` | number or null | What it spent per scored run. Null while any of its spend went unpriced or was in another currency than its ceiling's. |
+| `currency` | string | Its ceiling's currency, which `costPerRun` is in. |
+| `endedAt` | string or null | |
+
+### Candidate
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `candidateId` | string | |
+| `name` | string | |
+| `kind` | string | `searched` or `proposed`. |
+| `hypothesis` | string or null | What the search's agent expected it to improve, and why. Null unless `searched`. |
+| `fingerprint` | string or null | Its config fingerprint. |
+| `changes` | array | How it differs from the live config, each `{ part, name, kind, was, now }`, as on a [replay candidate](/docs/reference/api/replay-candidate#fields). |
+| `replayId` | string | Its replay: on the searched tasks when `searched`, over the set when `proposed`. |
+| `replayState` | string or null | That replay's state, as for a baseline. |
+| `replayedAt` | string or null | When that replay started. Null while a searched candidate's replay cannot be found. |
+| `tasks` | number | How many different tasks its replay covers: the searched ones for a searched candidate. |
+| `runs` | number | How many runs its replay covers. |
+| `successRate` | number or null | Its replay success, 0 to 1, over all the runs it was scored on. For a searched candidate, its [search score](/docs/reference/app/searches#scores), as its search page gives it; for a proposed one, its replay's success. |
+| `scored` | number | How many of its runs were scored. |
+| `heldOut` | object or null | `{ replayId, state, score, tasks, runs }`: its replay on the tasks its search held out, kept apart from `successRate`. `score` is its success there, 0 to 1, once that replay finished, else null; `tasks` is how many different tasks the search held out, and `runs` how many held-out runs the replay was scored on, the runs `score` covers. Null for a candidate not replayed there, and for every proposed candidate. |
+| `costPerRun` | number or null | What its replay spent per scored run. Null while any of its spend went unpriced or was in another currency. |
+| `currency` | string | The currency `costPerRun` is in: its search's ceiling's, or its replay's. |
+| `live` | object or null | `{ successRate, costPerRun, currency }`: how the set's baseline did on the compared runs alone. `currency` is the baseline's, and may differ from the candidate's. Null without a baseline. |
+| `successRateOnCompared` | number or null | The candidate's own success on the compared runs alone, 0 to 1, to set beside `live.successRate`. Null without a baseline. |
+| `costPerRunOnCompared` | number or null | What the candidate spent per run on the compared runs alone, in its own `currency`, to set beside `live.costPerRun`. Null without a baseline, and while any of that spend went unpriced. |
+| `regressions` | number or null | How many of the compared runs it [regressed](/docs/reference/app/replays#regressions) on, as its replay page counts them. Null without a baseline. |
+| `compared` | number | The compared runs: how many of its runs the baseline replayed too. |
+| `onFrontier` | boolean or null | Whether it is on its search's [frontier](/docs/reference/app/searches#frontier). Null unless `searched`. |
+| `search` | object or null | `{ searchId, state, startedAt, seed }`: the search that proposed it. `state` is `seeding`, `searching`, `holding-out`, `finished` or `stopped`. `seed` is `{ successRate, costPerRun, scored }`: the live config the search started from, scored on the same searched runs as its candidates, as the search page gives the live config's search score, with its cost per run in the candidate's `currency`. Null unless `searched`. |
+| `pullRequest` | object or null | `{ id, state, url, reason }`: the [config pull request](/docs/reference/api/searches#config-pull-request) picking it opened. Null until a person picks it, and for every proposed candidate. |
+
+## Who may read
+
+A person on the team or an owner or admin of its workspace, signed in, or a
+[workspace token](/docs/reference/api/workspace-token) of the team's workspace
+with the `read` scope, sent as `Authorization: Bearer <token>`. Anyone else is
+answered `404`. See
+[Team outcomes](/docs/reference/roles-and-permissions#team-outcomes).
+
+## Errors
+
+| Status | Cause |
+| --- | --- |
+| `401` | No session or token, or an unknown token. |
+| `404` | The team is not one the caller may read: `There is no team <teamId> for this caller`. |
+| `422` | `period` is not `7d`, `30d` or `90d`, or is given twice: `Replayed candidates look back 7d, 30d or 90d`. |

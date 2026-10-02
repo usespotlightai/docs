@@ -54,8 +54,9 @@ holds the task, and it leaves nothing behind but its own result:
 - Its change stack is drafted and checked, and never sent to GitHub.
 - It never asks a person. A replay that would put the task to a person, by
   handing it over to one or asking permission, ends there and counts as asked.
-- It is not counted among the station's outcomes or on the Insights page, and
-  no memories are drafted from it.
+- It is not counted among the station's outcomes or in the Insights figures
+  of the team's runs, and no memories are drafted from it. Insights shows
+  replays apart, on its Candidates tab.
 
 The sandbox's network is not narrowed further. Egress lets a replay reach the
 hosts the host's allow-list admits, as for any run; see
@@ -72,7 +73,8 @@ replay against it. A run passes the judge on a yes, or on 4 or more on a 1 to 5
 rubric. With both a check and a judge, a run must pass both.
 
 A replay's judge scores never count toward the judge's agreement with people,
-its standing, Insights or alerts. They are only compared between replays.
+its standing, alerts or the Insights figures of the team's runs. They are only
+compared between replays.
 
 Some runs cannot be scored. A run that changed nothing gives the check nothing
 to run on; a check that could not run, or judging that could not finish, says
@@ -133,6 +135,32 @@ its task was briefed with is gone, or if a repository it worked in has left the
 line. [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed)
 lists each reason.
 
+## Replays beside live runs
+
+Once a team has replayed a few candidates, the question is which of them, if
+any, to apply. The Candidates tab of the team's Insights page sets every
+candidate replayed in a period beside the live config replayed on the same
+replay set, station by station, and the Changes tab can draw a station's
+replayed candidates on the same chart as the setups its live runs used.
+
+The two kinds of point measure different things. A live setup's height is
+what happened to real runs: whether a person accepted the work, sent it back,
+or merged its pull request. A replayed candidate's height is replay success:
+the share of replayed past runs that passed the candidate's own check and
+judge. The
+Changes chart draws replayed points apart, as a series of their own, and says
+what their height is, so neither is read as the other.
+
+A candidate is read against the live config replayed on the same runs, not
+against the live runs, because only that replay worked the same tasks at about
+the same time. A search's candidates are set beside the live config on that
+search's own runs, and a proposed candidate beside the set's baseline.
+A search's held-out score is never drawn as a point. In the docs' view, it
+comes from other tasks than the search score, so one point cannot stand for
+both, and it is the score to trust, so it is given as a figure of its own.
+The candidates of a pull request's replay check are left out: their verdict is
+on the pull request and on the replay set's page.
+
 ## A replay changes nothing
 
 A replay never changes the station, however well its candidate does. A person
@@ -152,3 +180,4 @@ shows whether it held up on the team's real work.
 - [Replays](/docs/reference/app/replays)
 - [Why a judge must agree with people before its scores show](/docs/improvement/why-a-judge-must-agree-with-people)
 - [Why a search holds tasks back](/docs/improvement/why-a-search-holds-tasks-back)
+- [Insights: Candidates](/docs/reference/app/insights#candidates)
