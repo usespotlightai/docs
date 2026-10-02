@@ -2,13 +2,14 @@
 type: reference
 icon: BookText
 title: Insights
-description: The team's Insights page, its period and tabs, what each figure counts, how pull requests are recorded and typed, config changes and setups compared, which skills and MCP servers runs use, how memories are used, the Runs filters, and the 20,000-run limit.
+description: The team's Insights page, its period and tabs, what each figure counts, how pull requests are recorded and typed, config changes and setups compared, replayed candidates beside the live config, which skills and MCP servers runs use, how memories are used, the Runs filters, and the 20,000-run limit.
 ---
 
 The Insights page sums up how a team's runs, tasks and pull requests went over
 a period, against the period before it. It is "Insights" in the team's
 sidebar, at `/w/<slug>/team/<teamId>/insights`. The same figures are read
-through the [Insights API](/docs/reference/api/insights).
+through the [Insights API](/docs/reference/api/insights), and the Candidates
+tab through the [Replayed candidates API](/docs/reference/api/replayed-candidates).
 
 Only people on the team, the workspace's owners and admins, and workspace
 tokens with the `read` scope can read Insights, on every tab. Anyone else is
@@ -44,7 +45,7 @@ Outcomes are recorded as runs end and as people act. Nothing that happened
 before recording began is counted. A deleted task's runs, pull request and acts
 are removed.
 
-The figures on every tab except Pull requests and Runs are worked out from the team's latest
+The figures on every tab except Pull requests, Candidates and Runs are worked out from the team's latest
 20,000 runs that ended in the period and the period before, or the last 30
 days where that reaches further. The team's task pull requests, tasks people
 acted on, tasks with failures and agent chats over that time are each counted
@@ -407,8 +408,187 @@ attempts it kept.
 A run whose cost was never worked out has no size and is left out when a size
 is picked.
 
+### Replayed candidates beside the setups
+
+With a station picked, the chart also draws the station's replayed candidates,
+the same points the [Candidates](#candidates-chart) tab draws, as a series of
+its own. They are drawn hollow and listed after `Replayed:` in the legend, by
+shape:
+
+| Shape | Point |
+| --- | --- |
+| Diamond | "Live config, replayed": the live config replayed, as on the Candidates tab. |
+| Circle | "Searched": a candidate a search proposed. |
+| Square | "Proposed": a [replay candidate](/docs/reference/api/replay-candidate) proposed by a person or Terraform. |
+
+A replayed point's height is its replay success: the share of the past runs
+it was scored on that succeeded, scored by the candidate's own checks and
+judge, whatever outcome the card charts. It is not the live outcome the setups
+show. While replayed points are drawn, the side of the chart is labelled
+`<outcome> · replay success`, the card's description adds `replayed points show
+replay success on past tasks instead`, and the note under the chart reads
+`Replayed points' height is replay success on up to <n> runs of past tasks,
+scored by each candidate's own checks and judge`, then says it is not the live
+outcome and that the task-size filter does not apply to them. `<n>` is the
+most runs any replayed point was scored on.
+
+A searched candidate's height is its search score. Its held-out score is never
+drawn; hovering over it shows `held out <share> of <n> held-out runs` once it
+has one. Hovering over a replayed point also shows `Replayed <name>`, `Replay
+success <share> of <n> scored runs · <cost> a run`, and the replay set as
+`over <set>`.
+
+Only replayed points whose replay has finished and that have a cost per run in
+the currency the setups are compared in are drawn. "Task size" does not narrow them, and they are not
+joined to the setups' frontier. While the card charts "Sent back", where lower
+is better, replayed points are not drawn.
+
+| Note under the chart | When |
+| --- | --- |
+| `Pick a station to see its replayed candidates beside its live setups.` | "Every station" is picked and the team has replayed candidates in the period. |
+| `Replayed points show success, so they're hidden while the chart shows Sent back.` | "Sent back" is charted. |
+| `Not priced, so not shown: <names>` | Replayed points with no cost per run. |
+| `Priced in another currency, so not shown: <names>` | Replayed points priced in another currency than the setups. When the setups have no currency, it reads `Nothing here is priced to set them against, so not shown: <names>`. |
+| `Not finished, so not shown: <name> (<state>)` | Replayed points whose replay has not finished, with its state in lower case, as in `(running)` or `(over budget)`. |
+| `Not scored yet, so not shown: <names>` | Replayed points whose replay finished with no run scored. |
+| `This station's replayed candidates are not drawn, as no live setup here has a priced outcome to set them beside. The table lists them.` | No live setup at the station has a priced outcome to chart. |
+| `The replayed candidates could not be loaded.`, with a way to try again | Reading them failed. The rest of the tab still shows. |
+
+"Show table" adds a "Replayed" table under the setups', with "Replayed" (the
+candidate's name, or the live config's), "Kind", "Replay set", "Past tasks
+scored" (the runs scored), "Cost per run", "Replay success" and "Held out", for
+the points the chart draws.
+
 With no config changes and no setups in the period, the tab reads
 `Once stations run tasks, their config changes and how each harness, model and effort did show here.`
+
+## Candidates
+
+The Candidates tab sets the station configs the team replayed on past tasks
+against the station's live config, replayed on the same tasks, before any of
+them is applied. Nothing on it was applied to a station. It counts
+[replays](/docs/reference/app/replays), not the team's runs, so the
+20,000-run limit does not apply, and it has no filters but the period.
+
+A replay set holds runs, and a task may have more than one run in it. Success
+rates, scored counts and comparisons on this tab count runs.
+
+### Which candidates show
+
+| Candidate | Shows when |
+| --- | --- |
+| Searched | Its [search](/docs/reference/app/searches) started in the period. |
+| Proposed | A replay of it started in the period. With more than one over a set, the newest finished one shows, or else the newest. |
+
+The live config shows only as the replays it was compared with, and the
+candidates of
+[replay checks](/docs/reference/app/searches#guarding-a-stations-changes) do
+not show: a check's verdict is on its pull request and under "Checks" on its
+[replay set page](/docs/reference/app/replays#replay-set-page). A set's health
+and baseline are as they stand now, whatever the period.
+
+The tab reads the newest 500 replays started in the period. When there were
+more, it shows
+`Only the latest replays over this period are counted; the oldest are left out.`
+
+With none, the tab reads "No candidates replayed in this period", with "Open
+the line", which opens one of the team's lines.
+
+### Station cards
+
+One card per work station with a candidate in the period, the station with
+the newest replay first. A card is titled by the station, or "A removed
+station", and reads `<line> · Replay success on past tasks against cost per
+run, scored by each candidate's own checks and judge. Nothing here was applied
+to the station.` Within it, each replay set the candidates were replayed over
+has a part of its own, the newest replayed first, headed by its health:
+
+| Part | Shows |
+| --- | --- |
+| Name | The set's name, linked to its [page](/docs/reference/app/replays#replay-set-page). "Guards changes" when the set [guards the station's changes](/docs/reference/app/searches#guarding-a-stations-changes), and "Station gone" when its station has left the line. |
+| Health | `<n> tasks`, the different tasks its runs worked, with `(<m> runs)` when it holds more runs than tasks, then when its runs ended, then `last added <when>`, joined by `·`, as in `24 tasks (27 runs) · ended 3–41 days ago · last added 2 days ago`. "No tasks yet" for an empty set. |
+| No baseline | `The live config was never replayed over it, so nothing is compared with live.` when the set has no [baseline](/docs/reference/glossary#baseline). |
+
+When the runs ended reads `ended today`, `ended <n> days ago`,
+`ended today to <n> days ago`, or `ended <newest>–<oldest> days ago`, counted
+in UTC days, from the newest and oldest of the set's runs.
+
+### Candidates chart
+
+Each set's chart plots its candidates and the live config, cost per run along
+the bottom and replay success up the side, from 0 to 100%. Replay success is
+the share of the runs a candidate was scored on that succeeded, scored by its
+own checks and judge (see [Success](/docs/reference/app/replays#success)):
+
+| Shape | Point | Height |
+| --- | --- | --- |
+| Diamond | "Live config, replayed (the search's tasks)": the live config a search started from. One per search; with more than one search over the set, `(tasks of the search on <day>)`. | Its search score: the live config's success on that search's searched runs. |
+| Diamond | "Live config, replayed (whole set)": the set's baseline. Drawn only when the set has a proposed candidate. | Its success over the whole set. |
+| Circle | "Searched". | Its [search score](/docs/reference/app/searches#scores), on its search's searched runs. |
+| Square | "Proposed". | Its replay's success over the set. |
+
+So a searched candidate is drawn beside the live config on the same runs, and a
+proposed candidate beside the baseline. A searched candidate on its search's
+[frontier](/docs/reference/app/searches#frontier) is highlighted, as "On the
+search's frontier" in the legend. The frontier of each search, its live
+config diamond among them, is joined by a dashed line, one line per search.
+
+Hovering over a point shows `Replayed <name>`, `Replay success <share> of <n>
+scored runs · <cost> a run`, the set as `over <set>`, its held-out score as
+`held out <share> of <n> held-out runs` once it has one, and `on the
+search's frontier` for a frontier candidate.
+
+The chart is in the set's currency: its baseline's, or else that of its newest
+candidate. Only candidates whose replay has finished are drawn. Points left out
+are listed under the chart: `Not priced, so not shown: <name> (<success>)` for
+those with no cost per run, because some of the replay's spend went unpriced;
+`Priced in another currency, so not shown: <name> (<success>)`;
+`Not finished, so not shown: <name> (<state>)`, with the replay's state in
+lower case; and `Not scored yet, so not shown: <name>` for a finished replay
+with no run scored. With nothing
+to draw, the chart reads `Nothing replayed over it has a priced score yet.
+Show the table for what there is.`
+
+### Candidates table
+
+"Show table" lists each set's health, then its baseline and candidates. The
+first row, "Live config, replayed (whole set)", is linked to the baseline's
+[replay page](/docs/reference/app/replays#replay-page), with `<share> of <n>
+runs scored`, or "Not scored yet", and `<cost> a run`, or "Unpriced". Then
+each candidate, the newest replayed first, shows:
+
+- its name, "Searched" or "Proposed", "On the frontier" for a frontier point,
+  and its replay's [state](/docs/reference/app/replays#replay-states) until
+  that replay has finished;
+- for a searched candidate, its agent's hypothesis;
+- `Changed from live:` with one phrase per change, as the Run page's
+  [Config](/docs/reference/app/tasks-runs-and-the-inbox#config) words them, or
+  "The same as the live config.";
+- "Replayed": the tasks its replay covers, with the runs when there are more,
+  as for a set's health;
+- "Search score" for a searched candidate, "Replay success" for a proposed
+  one, as `<share> of <n> runs scored` or "Not scored yet";
+- for a searched candidate, "Held out", apart from its search score:
+  `<share> of <n> held-out runs`, "Replaying" while its held-out replay is queued or running,
+  "Not held out" when it was not replayed on the held-out tasks, or `–`;
+- "Cost per run", or "Unpriced";
+- once it has runs compared with the baseline, its success against the live
+  config's on those runs alone, as `72% vs live 56% on the same 18 runs`, the
+  difference in points, and, when both are priced in the same currency, their
+  cost on those runs, as `cost $0.82 vs live $0.60 a run on the same 18 runs`;
+- `<n> regressions over <m> runs compared`, counting the runs it
+  [regressed](/docs/reference/app/replays#regressions) on of those compared
+  with the baseline, or "No runs compared yet", or "No baseline to compare
+  with";
+- links:
+
+| Link | When | Opens |
+| --- | --- | --- |
+| Pull request | Picking it opened a pull request. | The pull request on GitHub. |
+| Pick on the search | A searched candidate with no opened pull request. | Its search page, at the candidate, where it can be [picked](/docs/reference/app/searches#picking-a-candidate). |
+| Baseline comparison | A searched candidate compared with a baseline. | Its replay page, task by task against the baseline. |
+| Its changes and baseline comparison | A proposed candidate compared with a baseline. | Its replay page. |
+| Its changes | A proposed candidate with no baseline. | Its replay page. |
 
 ## People
 
