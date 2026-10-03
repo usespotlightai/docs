@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Replays
-description: The Replays section of a Station page, the replay set and replay pages, replay runs on the Run page, replay states, results and their reasons, why a run cannot be replayed, spend and ceilings, and how a replay run differs from a task run.
+description: The Replays section of a Station page, the replay set and replay pages, replay states, results and their reasons, success with its range, gains and noise, why a run cannot be replayed, spend and ceilings, and how a replay run differs from a task run.
 ---
 
 A [replay](/docs/reference/glossary#replay) runs some of a work station's past
@@ -43,8 +43,9 @@ See [Searches](/docs/reference/app/searches#station-page).
 | Part | Shows | Can change |
 | --- | --- | --- |
 | Header | The set's name, `<n> runs · opened <when>`, and the "Guards config changes" switch (see [Guarding a station's changes](/docs/reference/app/searches#guarding-a-stations-changes)). When its station has left the line: `Its station is gone from its line, so it starts no replays, takes no more runs and keeps none of its runs' workspaces. It can still be renamed, have runs taken out, or be deleted.` | "Rename". "Delete", then "Delete set": the set and its replays and their results go, and its runs' workspaces are no longer kept for it. Delete is refused while a replay of the set is queued or running, or still has runs in flight, and while a search of the set is under way: "A replay or search of this set is running, so it can't be deleted until that ends or is stopped." Below the header, "Checks" lists the checks replayed on the set (see [Guarding a station's changes](/docs/reference/app/searches#guarding-a-stations-changes)). |
+| Noise | How much the set's [success](#success) moves by chance under the live config: see [Noise](#noise). | "Measure noise" opens the same dialog as "Start a replay", with "Live config" chosen and "Repeats" at 3. It is refused for the same reasons as "Start a replay". |
 | Runs | Each run in the set: its task's title, linked to the run, its state, when it ended, and "Can be replayed" or [why it cannot be](#why-a-run-cannot-be-replayed). A task since deleted reads "A deleted task". | "Add runs" opens the station's latest 50 ended task runs, each with "Add", "In the set" or "Can't be replayed" and the reason. The X beside a run takes it out of the set. "Add runs" is not offered once the station is gone. While a search of the set is under way, runs can be neither added nor taken out. |
-| Replays | Each replay of the set, newest first: its candidate, "Baseline" for the set's baseline, its [state](#replay-states), when it started, its success against the baseline, `<n> scored · <n> unscored`, and `Spent <spent> of <ceiling>`. With none, it reads "Not replayed yet". | "Start a replay": see below. |
+| Replays | Each replay of the set, newest first: its candidate, "Baseline" for the set's baseline, its [state](#replay-states), when it started, its success with its range and its [gain](#gains) over the baseline, `<n> scored · <n> unscored`, `Spent <spent> of <ceiling>`, and `Each run <n> times` when it replays each run more than once. With none, it reads "Not replayed yet". | "Start a replay": see below. |
 
 "Start a replay" is refused with "Add runs to the set first." on an empty set,
 and with "Its station is gone from its line." once the station has left the
@@ -53,19 +54,23 @@ line. It opens a dialog:
 | Field | Values |
 | --- | --- |
 | Replay under | "Live config", the station as it is configured now (the default), or one of the station's proposed candidates. |
+| Repeats | How many times to replay each run, 1 to 5. `1` at first, `3` from "Measure noise". |
+| Ceiling | The most the replay may spend, every copy of each run included, above 0 and at most 1,000, and a three-letter currency, `USD` unless changed. |
 
 With "Live config", the replay becomes the set's baseline when the set has
 none yet, or becomes the new baseline when the set's runs changed since the
-last one; otherwise it replays beside the set's baseline. With a
-proposed candidate, a baseline of the live config starts beside it when the set
-has none covering all its runs, with a ceiling of its own equal to this one, so
-the two may spend up to twice the ceiling. The dialog says which applies.
-| Ceiling | The most the replay may spend, above 0 and at most 1,000, and a three-letter currency, `USD` unless changed. |
+last one, or when the last one replayed each run fewer times than this one;
+otherwise it replays beside the set's baseline. With a proposed candidate, a
+baseline of the live config starts beside it when the set has none covering
+all its runs with at least as many copies, with a ceiling of its own equal to
+this one and the same repeats, so the two may spend up to twice the ceiling.
+The dialog says which applies.
 
 "Start replay" opens the new replay's page. The dialog refuses a ceiling of 0
 or less with "Give a ceiling above nothing.", more than 1,000 with "A ceiling
-is at most 1,000.", and a currency that is not three letters with "Name the
-currency in three letters, like USD."
+is at most 1,000.", a currency that is not three letters with "Name the
+currency in three letters, like USD.", and repeats out of bounds with "Give a
+whole number from 1 to 5."
 
 ## Replay page
 
@@ -84,8 +89,9 @@ running, "Stop", then "Stop replay", stops it.
 
 | Label | Shows |
 | --- | --- |
-| Success | `<share> succeeded`, or "No score yet". Beside it, the change from the baseline in points, as in `+25 pts vs baseline 50%`, or `· the baseline` on the baseline itself. |
+| Success | `<share> (<low>–<high>%) succeeded`, the [success](#success) with its range, or "No score yet". Beside it, the [gain](#gains) over the baseline, as in `+25 pts (+5 to +40) vs baseline 50% (35–65%) · Better`, or `· the baseline` on the baseline itself. The success's range and the verdict each carry a note on what they mean, which opens on hover or focus. |
 | Scored | `<n> scored · <n> unscored`, then what scores the station: `by its checks and its judge`, `by its checks`, `by its judge`, or `nothing scores this station`. |
+| Copies | `Each run <n> times`. Shown only when the replay replays each run more than once. |
 | Spent | `<spent> of <ceiling>`, with a bar that fills as the ceiling is spent, and `Over the ceiling by <amount>` when runs already running took the replay past it, then "Runs", "Drafting" and "Judging" in the ceiling's currency. "Also spent" sums what was spent in other currencies, one sum per currency. "Not priced" counts the runs whose cost was never reported and the drafting and judging model calls that came back with no price, as in `2 runs · 1 model call`. |
 
 Under "Task by task", one row per task, regressions first, then in the set's
@@ -94,14 +100,15 @@ order. With a baseline to compare with:
 | Column | Shows |
 | --- | --- |
 | Task | The task's title, linked to the original run, and "Regressed" when the task [regressed](#regressions). |
-| This replay | The [result](#results), its first reason with a count of the rest, and "Run", linked to the replay run. |
+| This replay | The [result](#results), its first reason with a count of the rest, and "Run", linked to the replay run. With more than one copy, `<n> of <m> copies succeeded`, where `<m>` counts the scored copies, or "No copy scored yet", then each copy as `Copy <n>` and its result in the same form. |
 | Baseline | The baseline's result on the task, in the same form. |
-| Judge | The judge's score for this replay, `vs` the baseline's, then the difference to two decimals, or why the two are [not compared](#score-comparisons). A score reads `Yes`, `No` or `<n>/5`. |
-| Cost vs baseline | This replay's run cost less the baseline's, once both have settled. |
-| Time vs baseline | This replay's run time less the baseline's, once both have settled. |
+| Judge | The judge's score for this replay, `vs` the baseline's, then the difference to two decimals, or why the two are [not compared](#score-comparisons). A score reads `Yes`, `No` or `<n>/5`; with copies, each copy's score, joined by `·`, and the difference between the two sides' averages. |
+| Cost vs baseline | This replay's run cost less the baseline's, each averaged over its copies, once every copy of both has settled. |
+| Time vs baseline | This replay's run time less the baseline's, averaged the same way. |
 
 Without a baseline, the columns are "Task", "Result", "Judge", "Cost" and
-"Time", for this replay alone. A value not known reads `–`.
+"Time", for this replay alone, cost and time averaged over the copies. A value
+not known reads `–`.
 
 ## Replay states
 
@@ -221,9 +228,51 @@ A replay's checks run as a station's checks do. See
 
 ### Success
 
-A replay's success is the share of its scored runs that succeeded. Unscored
-and pending runs are left out, so a run that could not be replayed or started,
-or that its replay stopped, never counts against the candidate.
+A replay's success is worked out task by task, a task being one run of the
+set. A task's success is the share of its scored copies that succeeded: `1` or
+`0` with one copy, and `2/3` when 2 of 3 copies succeeded. The replay's success
+is the average over the tasks with a scored copy. Unscored and pending runs are
+left out, so a run that could not be replayed or started, or that its replay
+stopped, never counts against the candidate.
+
+Beside it is its range: the 95% interval of the average, from 2,000 resamples
+of the scored tasks, shown as `(<low>–<high>%)`. Reading the same results
+again gives the same range.
+
+### Gains
+
+A replay other than the baseline reads its gain over the baseline: on each
+task both scored, its success less the baseline's, averaged, in points, with
+the 95% interval of that average from the same resampling of those tasks.
+
+| Verdict | Shown | When |
+| --- | --- | --- |
+| `better` | Better | The whole interval is above 0, and the gain is at least `min_gain`. |
+| `worse` | Worse | The whole interval is below 0, and the loss is at least `min_gain`. |
+| `within-noise` | Within noise | Anything else, and always when fewer than 5 tasks were scored on both sides. |
+
+`min_gain` is the line's [`replay_check.min_gain`](/docs/reference/terraform/line#replay-check-fields),
+or 0.05 when the line has no `replay_check`. The app shows it as `+5 pts`. A
+replay reads it from the line as it is now; a
+[replay check](/docs/reference/api/replay-checks) keeps the one it started
+under.
+
+### Noise
+
+The "Noise" part of the set's page reads the newest finished replay of the
+live config that replayed each run 2 or more times, whose
+[config fingerprint](/docs/reference/glossary#config-fingerprint) is the
+station's now. Until there is one, it reads "Not measured" and `Replay the live
+config over the set 3 times to see how much its success moves by chance
+alone.` Then:
+
+| Shows | Meaning |
+| --- | --- |
+| `Success moved <n> pts between <m> copies` | The spread: the highest copy's success rate less the lowest's. A copy's rate is the share of its scored runs that succeeded. |
+| `more than the <min_gain> the line counts as real, so one copy can't tell a real gain from chance` | The spread is more than `min_gain`. Otherwise, `within the <min_gain> the line counts as real`. |
+| `Each copy: <rate>, <rate>, …` | Each copy's success rate, in order. |
+| `<n> tasks went both ways` | Tasks whose copies both succeeded and failed, or "No task went both ways". The tasks are listed under it. |
+| `measured on config <fingerprint> <when>` | The fingerprint and when the replay ended. "Its replay" opens it. |
 
 ## Regressions
 
@@ -232,9 +281,12 @@ config the set started as a baseline, while it is queued, running or
 finished. A stopped or over-budget baseline is not compared with, and the next
 replay of the set starts a new one.
 
-A task regressed when the baseline succeeded on it and this replay failed, or
-when this replay's judge score is more than 0.01 below the baseline's. An
-unscored result is never a regression.
+A task regressed when the baseline's [success](#success) on it is more than
+0.5 above this replay's, or when this replay's judge score, averaged over its
+copies, is more than 0.01 below the baseline's. With one copy each, that is the
+baseline succeeding and this replay failing. A task can regress only once
+every copy of it, on both sides, has settled and has its result. An unscored
+result is never a regression.
 
 ### Score comparisons
 
@@ -287,7 +339,7 @@ started, and for as long as it is in a replay set. See
 
 ## Spend and ceiling
 
-A replay's spend is the cost of its runs, of drafting their change stacks and of
+A replay's spend is the cost of its runs, every copy included, of drafting their change stacks and of
 judging them, counted in the ceiling's currency. A drafting or judging attempt
 that failed counts what it was billed. A cost in another currency is summed
 apart and does not count toward the ceiling, nor does a cost that was never

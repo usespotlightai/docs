@@ -2,7 +2,7 @@
 type: concept
 icon: Lightbulb
 title: Why changes are replayed on past tasks
-description: Why Spotlight tests a station change by running past tasks again, what a replay starts from and what it may not touch, how it is scored against a baseline, and what it costs.
+description: Why Spotlight tests a station change by running past tasks again, what a replay starts from and what it may not touch, how it is scored against a baseline, why its results come with a range, and what it costs.
 ---
 
 A team changes a work station to make its runs better, with a sharper prompt
@@ -101,13 +101,86 @@ the comparison. In the docs' view, they ran under conditions a replay cannot
 bring back, such as an earlier model release or a dependency that has since
 moved, and a baseline replayed now meets the same conditions the candidate
 meets. A task regresses when the baseline succeeded on it and the candidate
-did not, or when the judge scored the candidate lower.
+did not, or when the judge scored the candidate lower. With more than one
+copy of each run, the rule changes a little; see
+[Copies of the same run](#copies-of-the-same-run).
+
+## Every result comes with a range
+
+An agent does not do the same thing twice. Replayed twice on the same task
+under the same config, a run can pass the first time and fail the second. So a
+replay's success rate is partly chance, and so is the difference between a
+candidate and its baseline. On a set of 20 tasks, one task going the other way
+moves the rate by 5 points.
+
+So every success rate comes with a range: a 95% interval, drawn by resampling
+the replay's tasks 2,000 times and reading where the middle 95% of the
+resampled rates fall. A candidate's gain over the baseline is worked out task
+by task, as the candidate's success on each task less the baseline's on the
+same task, and its range is resampled the same way. In the docs' view,
+pairing the tasks this way keeps how hard each task is out of the gain, since
+the candidate and the baseline faced the same tasks. Here, and wherever
+results count tasks, a task is one run of the set: a set that holds two runs
+of the same task counts them as two.
+
+A gain then reads one of three ways. It is better when its whole range lies
+above no change and it reaches the smallest gain the line counts as real,
+`min_gain` in the line's `replay_check`, 5 points unless set. It is worse when
+its whole range lies below no change and the loss reaches the same size.
+Anything else is within noise. With fewer than 5 tasks scored on both sides,
+every gain is within noise. In the docs' view, a gain can be clearly real and
+still too small to be worth a change, and `min_gain` is where a team says how
+small that is.
+
+A replay check reads its gain the same way, but the gain does not decide the
+check: a pull request still passes or fails on its count of regressions.
+
+## Copies of the same run
+
+A replay can replay each run up to 5 times. Each task's success is then the
+share of its copies that succeeded, so one task can count as two thirds of a
+success. The rate is averaged over tasks, not over copies, so a task replayed
+more often does not weigh more, and the range is drawn over tasks. More copies
+make each task's score steadier, which narrows the range. They add no tasks: a
+set that is too small, or whose tasks are too alike, stays so.
+
+With copies, a task regresses only once every copy on both sides has settled,
+and only when the share of the baseline's copies that succeeded is more than
+half above the candidate's. One copy failing where the baseline succeeded
+every time is not enough. With one copy each, this is the rule above: the
+baseline succeeded and the candidate did not. A judge's scores are compared as
+the average over each side's copies.
+
+The baseline a replay is compared with must have at least as many copies of
+each run. When it has fewer, a new baseline starts beside the replay with the
+same number of copies.
+
+## How noisy a set is
+
+Replaying the live config with copies shows how far a set's success moves when
+nothing changed: the spread between the copies' success rates, and which tasks
+went both ways. That spread is the set's noise, and the replay set's page
+shows it once measured. It is measured on the station's config as it is now,
+from the newest finished replay of the live config with at least 2 copies.
+Once a change gives the station a new
+[config fingerprint](/docs/reference/glossary#config-fingerprint), the noise
+is unmeasured again, since the new config may be steadier or less so.
+
+A search reads the noise before it starts. With none measured, it warns that a
+small gain may be luck. With a spread larger than `min_gain` allows at the
+number of copies asked for, it warns and suggests more: the copies needed are
+the spread divided by `min_gain`, squared and rounded up, and it suggests at
+most 5. That rule takes the spread to shrink with the square root of the
+number of copies, as an average of independent tries does. More than 5 needed
+means no search of that set, at any number of copies, can tell such a gain
+from noise. A search starts all the same; the warning is advice.
 
 ## What it costs
 
 A replay spends what its runs cost, and what drafting and judging their
-changes cost. A person sets a ceiling on each replay, and once a replay's spend
-reaches it, nothing more of it starts. Runs already running finish, so a replay
+changes cost. Each copy of a run is a run of its own, so a replay with 3
+copies starts three times the runs. A person sets a ceiling on each replay,
+and once a replay's spend reaches it, nothing more of it starts. Runs already running finish, so a replay
 can end a little over its ceiling, and its page says by how much. The
 baseline started beside a proposed candidate has a ceiling of its own, the
 same as the replay that started it, so the two can spend twice that ceiling. A

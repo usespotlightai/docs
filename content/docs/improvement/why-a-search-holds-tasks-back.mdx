@@ -40,7 +40,9 @@ history` in its run leaves out the held-out tasks' runs and their results,
 and it cannot read their traces. Team memories stay out of a search
 altogether: its agent can neither recall nor propose one.
 Once the search stops searching, the best candidates are replayed on the
-held-out tasks, and those scores are the ones to trust.
+held-out tasks, and those scores are the ones to trust. Each score, and each
+candidate's gain over the live config, comes with a range; see
+[Every result comes with a range](/docs/improvement/why-changes-are-replayed-on-past-tasks#every-result-comes-with-a-range).
 
 A few choices follow from this.
 
@@ -102,8 +104,9 @@ every candidate is a change to that block.
 
 A search can start many runs: the live config on every task, each candidate on
 every searched task, the best on every held-out task, and the agent once per
-iteration. A person sets one ceiling for all of it, and the search plans its
-spending before it starts.
+iteration. With more than one copy of each run, every one of those replays
+starts that many copies. A person sets one ceiling for all of it, and the
+search plans its spending before it starts.
 
 A tenth of the ceiling is set aside for the agent's runs, shared across the
 iterations. The rest is divided into an even share per replay run, sized so

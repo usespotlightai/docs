@@ -36,8 +36,8 @@ task waits at the backlog until a person or a reaction moves it. See
 
 The replay of a station's live config on a replay set's runs, which every
 other replay of the set is compared with. It starts the first time a set is
-replayed, again once runs are added after it, and when a [search](#search) of
-the set starts. See
+replayed, again once runs are added after it or a replay asks for more copies
+of each run than it has, and when a [search](#search) of the set starts. See
 [Regressions](/docs/reference/app/replays#regressions).
 
 ## Before event
@@ -288,6 +288,16 @@ proposed, and the Memory page shows how many runs used each memory. See
 [Station fields](/docs/reference/terraform/line#station-fields) and
 [Agent commands](/docs/reference/cli/agent-commands#spotlight-recall).
 
+## Noise
+
+How far a replay set's success moves by chance: the spread between the success
+rates of copies of the same runs, replayed under the station's live config
+with each run replayed 2 or more times. Separately, a gain whose 95% interval
+reaches across no change, that is smaller than the line's `min_gain`, or that
+rests on fewer than 5 tasks scored on both sides, reads "Within noise". See
+[Noise](/docs/reference/app/replays#noise) and
+[Why changes are replayed on past tasks](/docs/improvement/why-changes-are-replayed-on-past-tasks#every-result-comes-with-a-range).
+
 ## Note
 
 An entry on a task's trail, of kind `asked`, `passed`, `answered` or `said`,
@@ -337,14 +347,15 @@ optionally only while the task stands at a given station. See
 
 A task on which a replay did worse than its set's [baseline](#baseline): the
 baseline succeeded and the replay did not, or the judge scored the replay's
-change lower. See [Regressions](/docs/reference/app/replays#regressions).
+change lower. When each run is replayed more than once, the share of the
+baseline's copies that succeeded is more than half above the replay's. See [Regressions](/docs/reference/app/replays#regressions).
 
 ## Replay
 
 A run of some of a work station's past task runs again, under a
 [candidate](#candidate) or the station's live config, from where each run
-started. A replay changes nothing outside Spotlight, and each of its runs is
-scored. See [Replays](/docs/reference/app/replays).
+started, each up to 5 times. A replay changes nothing outside Spotlight, and
+each of its runs is scored. See [Replays](/docs/reference/app/replays).
 
 ## Replay check
 
