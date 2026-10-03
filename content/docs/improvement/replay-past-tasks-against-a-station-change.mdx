@@ -139,9 +139,16 @@ Under **Replay under**, choose the candidate.
 </Step>
 <Step>
 
+Under **Repeats**, enter how many times to replay each run, from 1 to 5. More
+copies narrow the range around the result, and cost as many more runs. See
+[Measure the set's noise](#measure-the-sets-noise).
+
+</Step>
+<Step>
+
 Under **Ceiling**, enter the most the replay may spend and its currency, as
-in `5.00` and `USD`. The ceiling covers the replay's runs and the drafting and
-judging of their changes.
+in `5.00` and `USD`. The ceiling covers the replay's runs, every copy of them,
+and the drafting and judging of their changes.
 
 </Step>
 <Step>
@@ -159,7 +166,8 @@ spotlight replay start --station core/delivery/implementation \
   --set "Queue fixes" --candidate "Higher effort" --ceiling 5
 ```
 
-The ceiling is in `USD` unless you add `--currency`. The command prints the
+The ceiling is in `USD` unless you add `--currency`. To replay each run more
+than once, add `--repeats` and a number up to 5. The command prints the
 replay's id and the command to follow it.
 
 </Tab>
@@ -173,8 +181,10 @@ because it was never replayed or runs were added since:
 - Under a proposed candidate, a baseline starts beside it, with a ceiling of its
   own the same as yours, so the two may spend up to twice the ceiling.
 
-If the set has a baseline covering its runs, a **Live config** replay runs
-beside it, and no new baseline starts.
+If the set has a baseline covering its runs, with at least as many copies of
+each as you asked for, a **Live config** replay runs beside it, and no new
+baseline starts. Otherwise a new baseline starts as above, with your number of
+repeats.
 
 At most 2 of a team's replay runs run at once. See
 [Limits and timeouts](/docs/reference/limits-and-timeouts#replays).
@@ -200,11 +210,30 @@ budget**: nothing more starts, and runs already running finish.
 
 ## Read the result
 
+**Success** gives the replay's success rate with the range it likely falls in,
+as in `62% (48–75%) succeeded`, then its gain over the baseline in points,
+with that gain's range and a verdict:
+
+- **Better**: the whole range is above no change, and the gain reaches the
+  smallest gain the line counts as real.
+- **Worse**: the whole range is below no change, and the loss reaches it.
+- **Within noise**: anything else. The difference may be chance.
+
+Act on **Better** or **Worse**. If a result you expected to matter reads
+**Within noise**, add runs of more tasks to the set, or replay with more
+repeats. The smallest
+gain that counts is the line's `replay_check.min_gain`, 5 points unless set;
+see [Set how large a gain must be](#set-how-large-a-gain-must-be).
+
 Under **Task by task**, the replay's page lists each task, regressions first.
-A task reads **Regressed** when the baseline succeeded on it and the candidate
-did not, or when the station's judge scored the candidate's change lower. Each
-result shows its first reason, such as **Its checks failed**; hover over it for
-the rest. Select **Run** beside a result to open that replay run.
+A task reads **Regressed** when the station's judge scored the candidate's
+change lower, or when the baseline succeeded on it and the candidate did not.
+With more than one copy, a task regresses when the share of the baseline's
+copies that succeeded is more than half above the candidate's, as when the
+baseline succeeded 3 times in 3 and the candidate once. Each result shows its
+first reason, such as **Its checks failed**; hover over it for the rest.
+Select **Run** beside a result to open that replay run. With more than one
+copy, each task shows how many copies succeeded, then each copy's result.
 
 A task is **Unscored** when nothing could score it, such as a run that changed
 nothing for the checks to run on, could not be replayed, or was cut short by a
@@ -214,6 +243,66 @@ reason.
 
 If the candidate did worse, propose another candidate and replay the same set.
 Each replay of a set is compared with the same baseline.
+
+## Measure the set's noise
+
+The same config replayed twice on the same tasks does not get the same
+result: an agent can solve a task one time and fail it the next. Measure how
+much a set's success moves by chance before you read small gains on it.
+
+<Steps>
+<Step>
+
+On the set's page, under **Noise**, select **Measure noise**. The replay
+dialog opens with **Live config** chosen and **Repeats** set to 3.
+
+</Step>
+<Step>
+
+Enter a ceiling, then select **Start replay**. The replay runs the set three
+times over, so give it about three times what one replay of the set costs.
+
+</Step>
+<Step>
+
+Once the replay finishes, **Noise** on the set's page reads how far success
+moved between the copies, as in `Success moved 13 pts between 3 copies`, and
+whether that is more than the gain the line counts as real. Under it are each
+copy's success rate and the tasks that went both ways.
+
+</Step>
+</Steps>
+
+If the noise is more than the gain the line counts as real, one replay of the
+set cannot tell a real gain from chance. Replay candidates on it with more
+repeats, add runs of more tasks, or both. A search on the set warns about the
+same and suggests how many repeats to ask for.
+
+The noise belongs to the station's config as it is now. Once an applied
+change gives the station a new config fingerprint, the set reads **Not
+measured** again until the new live config is replayed with repeats. A replay
+of the live config with 2 or more repeats, started any other way, measures it
+too once it finishes.
+
+## Set how large a gain must be
+
+If a gain of a few points is not worth a change to your team, raise the
+smallest gain the line's replays, searches and checks count as real. Give the line's
+`replay_check` block a `min_gain`, as a share from above 0 to 1, and apply it:
+
+```hcl
+replay_check {
+  most_regressions = 0
+  ceiling          = 10
+  currency         = "USD"
+  min_gain         = 0.1
+}
+```
+
+Without it, a gain counts as real from 0.05, which the app shows as `+5 pts`.
+The same block is what lets `spotlight replay check` check the line's pull
+requests; see
+[Check Terraform pull requests for station regressions](/docs/configuration/check-terraform-pull-requests-for-station-regressions).
 
 ## Compare the station's candidates
 

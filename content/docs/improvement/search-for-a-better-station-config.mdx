@@ -92,6 +92,10 @@ Set the budget:
   from 1 to 5.
 - **At once**: how many of the search's replay runs run together, from 1 to
   10. They run beside the team's other replays, below every task run.
+- **Repeats**: how many times each of its replays replays each run, from 1 to
+  5. The live config's replay, every candidate's and the held-out replays all
+  take this many copies. More copies narrow the range around each score, and
+  the runs and spend grow with them.
 - **Ceiling**: the most the whole search may spend, its replays and its
   agent's runs, and its currency, as in `20.00` and `USD`.
 
@@ -106,10 +110,26 @@ candidates, not the station's own.
 <Step>
 
 Read the estimate under the fields. It gives how many tasks are searched and
-held out, the most runs the search may start, what each replay may spend, and
-roughly how long it takes, from how long the set's runs took. If the estimate
-says the ceiling is too low to give each replay run at least 0.01, raise the
-ceiling or lower the iterations or candidates.
+held out, how many copies of each run, the most runs the search may start,
+what each replay may spend, and roughly how long it takes, from how long the
+set's runs took. If the estimate says the ceiling is too low to give each
+replay run at least 0.01, raise the ceiling or lower the iterations,
+candidates or repeats.
+
+</Step>
+<Step>
+
+Read any warning under the estimate:
+
+- If nobody has measured how much the set's success moves by chance,
+  [measure the set's noise](/docs/improvement/replay-past-tasks-against-a-station-change#measure-the-sets-noise)
+  first, or set **Repeats** above 1.
+- If the set's success moves more than the line counts as real, select the
+  button under the warning, as in **Replay each run 5 times**, to set
+  **Repeats** to what it suggests, and raise the ceiling if the estimate asks.
+
+The search starts with a warning all the same, but a gain it finds may be
+chance.
 
 </Step>
 <Step>
@@ -148,6 +168,14 @@ their scores and can still be picked.
 
 ## Read the results
 
+Each score comes with the range it likely falls in, as in `72% (50–89%)`, and
+each candidate with its gain over the live config on the searched tasks and,
+once replayed there, on the held-out tasks: the gain in points, its range, and
+**Better**, **Worse** or **Within noise**. A gain reads **Better** only when
+its whole range is above no change and it reaches the gain the line counts as
+real, which the header gives under **Live config**. See
+[Every result comes with a range](/docs/improvement/why-changes-are-replayed-on-past-tasks#every-result-comes-with-a-range).
+
 **Success against cost** plots each candidate's success on the searched tasks
 against what it spent a run. The candidates joined by the line are the
 frontier: for each, no other candidate succeeded as often for less. The live
@@ -157,9 +185,10 @@ config is always on it. Select **Show table** to read the same as a table.
 score on the held-out tasks once it has one, else by its score on the searched
 tasks. It reads **Live config** when nothing beat the station as it is.
 
-Give the held-out score the most weight. A candidate that does well on the
-searched tasks and worse on the held-out ones has likely fitted the tasks the
-agent saw. A candidate not on the frontier when the search stopped reads **Not
+Give the held-out score the most weight. A held-out gain that reads **Better**
+is the strongest sign a candidate helps, though with fewer than 5 held-out
+tasks every held-out gain reads **Within noise**. A candidate that does well on the searched tasks and
+worse on the held-out ones has likely fitted the tasks the agent saw. A candidate not on the frontier when the search stopped reads **Not
 held out**. Select **Its replay** or **Its held-out replay** beside a
 candidate to see its result task by task. See
 [Replays](/docs/reference/app/replays#replay-page).
@@ -187,8 +216,9 @@ Select it to open the pull request on GitHub.
 </Step>
 <Step>
 
-Review the pull request. Its description has the agent's hypothesis and the
-candidate's scores beside the live config's. The plan of the change runs in
+Review the pull request. Its description has the agent's hypothesis, the
+candidate's scores beside the live config's with their ranges, and whether
+each gain is more than noise. The plan of the change runs in
 your Terraform workflow as for any other pull request; if the line
 [checks pull requests](/docs/configuration/check-terraform-pull-requests-for-station-regressions),
 that check runs too.

@@ -471,7 +471,9 @@ them is applied. Nothing on it was applied to a station. It counts
 20,000-run limit does not apply, and it has no filters but the period.
 
 A replay set holds runs, and a task may have more than one run in it. Success
-rates, scored counts and comparisons on this tab count runs.
+rates average over the set's runs, and comparisons count them. Scored counts
+count replay runs, so a replay that replays each run 3 times scores up to three
+times the set's runs.
 
 ### Which candidates show
 
@@ -507,6 +509,7 @@ has a part of its own, the newest replayed first, headed by its health:
 | --- | --- |
 | Name | The set's name, linked to its [page](/docs/reference/app/replays#replay-set-page). "Guards changes" when the set [guards the station's changes](/docs/reference/app/searches#guarding-a-stations-changes), and "Station gone" when its station has left the line. |
 | Health | `<n> tasks`, the different tasks its runs worked, with `(<m> runs)` when it holds more runs than tasks, then when its runs ended, then `last added <when>`, joined by `·`, as in `24 tasks (27 runs) · ended 3–41 days ago · last added 2 days ago`. "No tasks yet" for an empty set. |
+| Noise | The set's [noise](/docs/reference/app/replays#noise), as `Success moved <n> pts between <m> copies, ` followed by `more than the <min_gain> the line counts as real, so one copy can't tell a real gain from chance` or `within the <min_gain> the line counts as real`, or `Noise not measured`. |
 | No baseline | `The live config was never replayed over it, so nothing is compared with live.` when the set has no [baseline](/docs/reference/glossary#baseline). |
 
 When the runs ended reads `ended today`, `ended <n> days ago`,
@@ -517,8 +520,9 @@ in UTC days, from the newest and oldest of the set's runs.
 
 Each set's chart plots its candidates and the live config, cost per run along
 the bottom and replay success up the side, from 0 to 100%. Replay success is
-the share of the runs a candidate was scored on that succeeded, scored by its
-own checks and judge (see [Success](/docs/reference/app/replays#success)):
+a replay's [success](/docs/reference/app/replays#success), scored by the
+candidate's own checks and judge: with one copy of each run, the share of the
+runs it was scored on that succeeded:
 
 | Shape | Point | Height |
 | --- | --- | --- |
@@ -553,8 +557,9 @@ Show the table for what there is.`
 
 "Show table" lists each set's health, then its baseline and candidates. The
 first row, "Live config, replayed (whole set)", is linked to the baseline's
-[replay page](/docs/reference/app/replays#replay-page), with `<share> of <n>
-runs scored`, or "Not scored yet", and `<cost> a run`, or "Unpriced". Then
+[replay page](/docs/reference/app/replays#replay-page), with
+`<share> (<low>–<high>%) of <n> runs scored`, or "Not scored yet", and
+`<cost> a run`, or "Unpriced". Then
 each candidate, the newest replayed first, shows:
 
 - its name, "Searched" or "Proposed", "On the frontier" for a frontier point,
@@ -567,15 +572,18 @@ each candidate, the newest replayed first, shows:
 - "Replayed": the tasks its replay covers, with the runs when there are more,
   as for a set's health;
 - "Search score" for a searched candidate, "Replay success" for a proposed
-  one, as `<share> of <n> runs scored` or "Not scored yet";
+  one, as `<share> (<low>–<high>%) of <n> runs scored`, with its 95% range,
+  or "Not scored yet";
 - for a searched candidate, "Held out", apart from its search score:
-  `<share> of <n> held-out runs`, "Replaying" while its held-out replay is queued or running,
+  `<share> (<low>–<high>%) of <n> held-out runs`, "Replaying" while its held-out replay is queued or running,
   "Not held out" when it was not replayed on the held-out tasks, or `–`;
 - "Cost per run", or "Unpriced";
 - once it has runs compared with the baseline, its success against the live
-  config's on those runs alone, as `72% vs live 56% on the same 18 runs`, the
-  difference in points, and, when both are priced in the same currency, their
-  cost on those runs, as `cost $0.82 vs live $0.60 a run on the same 18 runs`;
+  config's on those runs alone, as
+  `72% (60–84%) vs live 56% (40–70%) on the same 18 runs`, then its
+  [gain](/docs/reference/app/replays#gains) over the live config on them, as
+  `+16 pts (+2 to +30) · Better`, and, when both are priced in the same
+  currency, their cost on those runs, as `cost $0.82 vs live $0.60 a run on the same 18 runs`;
 - `<n> regressions over <m> runs compared`, counting the runs it
   [regressed](/docs/reference/app/replays#regressions) on of those compared
   with the baseline, or "No runs compared yet", or "No baseline to compare

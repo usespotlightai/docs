@@ -17,7 +17,7 @@ endpoints, under `/api/teams/{teamId}`. They answer JSON, and errors are
 | --- | --- |
 | `GET /lines/{lineId}/stations/{stationId}/searches` | The station's searches, newest first, each a [search](#search). |
 | `POST /lines/{lineId}/stations/{stationId}/searches/estimate` | `200` and an [estimate](#estimate-a-search). Nothing is written. |
-| `POST /lines/{lineId}/stations/{stationId}/searches` | `201` and `{ "id", "seedReplayId" }`: starts a search. See [Start a search](#start-a-search). |
+| `POST /lines/{lineId}/stations/{stationId}/searches` | `201` and `{ "id", "seedReplayId", "warnings" }`: starts a search. See [Start a search](#start-a-search). |
 | `GET /searches` | The team's searches, newest first, a page at a time. |
 | `GET /searches/{searchId}` | One search with its split, iterations, candidates and frontier. See [Search detail](#search-detail). |
 | `POST /searches/{searchId}/stop` | `204`: stops the search. Its agent's run is withdrawn or stopped, its replays stop, and nothing more starts. |
@@ -46,7 +46,8 @@ agent reaches it through
     "iterations": 3,
     "perIteration": 2,
     "ceiling": { "amount": 20, "currency": "USD" },
-    "concurrency": 4
+    "concurrency": 4,
+    "repeats": 1
   },
   "agent": { "harness": "claude-code", "model": "claude-opus-4-5", "effort": "high" }
 }
@@ -59,6 +60,7 @@ agent reaches it through
 | `budget.perIteration` | number | required | How many candidates each agent run may propose, 1 to 5. |
 | `budget.ceiling` | object | required | `{ amount, currency }`: the most the whole search may spend, above 0 and at most 1,000, in a three-letter currency. |
 | `budget.concurrency` | number | `4` | How many of its replay runs run at once, 1 to 10, apart from the team's own limit. |
+| `budget.repeats` | number | `1` | How many times each of its replays replays each run, 1 to 5: the live config's, every candidate's and the held-out replays. The runs and the share of the ceiling each needs grow with it. |
 | `agent.harness` | string | required | The harness the agent runs on. One a runner can start. |
 | `agent.model` | string or null | none | The agent's model, 1 to 60 characters. Without it, the harness's default. |
 | `agent.effort` | string or null | none | `low`, `medium`, `high`, `xhigh` or `max`. Without it, the harness's default. |
@@ -66,7 +68,8 @@ agent reaches it through
 Starting takes a snapshot of the station's live config, draws the
 [held-out split](/docs/reference/glossary#held-out-task), and starts a replay
 of the live config on every run of the set: `seedReplayId`. That replay is the
-set's new baseline, with a ceiling from the search's budget.
+set's new baseline, with a ceiling from the search's budget. `warnings` are
+as for an [estimate](#estimate-a-search); the search starts all the same.
 
 ## Estimate a search
 
@@ -76,10 +79,21 @@ The body is `setId` and `budget`, as above. The answer:
 | --- | --- | --- |
 | `searchedTasks` | number | Tasks its agent sees. |
 | `heldOutTasks` | number | Tasks it holds out. |
-| `runs` | object | The most runs it may start: `seed` (the live config, one per run of the set), `searchReplays` (every candidate it may propose, on the searched runs), `heldOutReplays` (the best candidates, on the held-out runs), `agent` (one per iteration) and `total`. |
+| `runs` | object | The most runs it may start: `seed` (the live config, one per run of the set and copy), `searchReplays` (every candidate it may propose, on the searched runs), `heldOutReplays` (the best candidates, on the held-out runs), `agent` (one per iteration) and `total`. Every replay count includes the copies `budget.repeats` asks for. |
 | `ceiling` | object | `{ amount, currency }`. |
 | `perReplayAllotments` | object | The ceilings each replay would get: `seed`, `searchReplay`, `heldOutReplay`, and `agentRun`, what each agent run is expected to spend. |
 | `estimatedDuration` | number or null | Roughly how long it takes at its concurrency, in milliseconds, from the average time of the set's runs. Null when none was timed. |
+| `minGain` | number | The smallest gain over the live config the line counts as real: `replay_check.min_gain`, or `0.05` when the line has none. |
+| `warnings` | array | What makes the search's results hard to trust. Empty when nothing does. See [Warnings](#warnings). |
+
+### Warnings
+
+Each warning is `{ kind, spread, minGain, neededRepeats, suggestedRepeats }`.
+
+| `kind` | When | Other fields |
+| --- | --- | --- |
+| `noise-unmeasured` | No finished replay of the live config, at its current [config fingerprint](/docs/reference/glossary#config-fingerprint), replayed the set's runs more than once. See [Noise](/docs/reference/app/replays#noise). | All null. |
+| `noisy` | The set's success moves between copies so much that `budget.repeats` copies cannot bring it under `minGain`. | `spread`: how far the set's success moved between copies. `neededRepeats`: the copies it would take, the spread divided by `minGain`, squared and rounded up, however many; more than 5 means no search of the set can tell such a gain from noise. `suggestedRepeats`: `neededRepeats`, at most 5. |
 
 The estimate assumes the choice of held-out tasks whose runs cost most.
 
@@ -93,7 +107,7 @@ Each item of a list, and the first fields of a search's detail:
 | `state` | string | `seeding`, `searching`, `holding-out`, `finished` or `stopped`. See [Search states](/docs/reference/app/searches#search-states). |
 | `ending` | string or null | Why it stopped searching. See [Search endings](/docs/reference/app/searches#search-endings). |
 | `agent` | object | `{ harness, model, effort }`. |
-| `budget` | object | `{ iterations, perIteration, ceiling, concurrency }`. |
+| `budget` | object | `{ iterations, perIteration, ceiling, concurrency, repeats }`. |
 | `spent` | object | `{ amount, currency }`: its replays and its agent's runs so far, in the ceiling's currency. |
 | `iterationsRun` | number | How many times its agent ran, or is running. |
 | `proposed` | number | How many candidates its agent proposed. |
@@ -109,6 +123,7 @@ Each item of a list, and the first fields of a search's detail:
 | `seed` | object | The live config the search started from, as a [candidate](#candidate). Its search score counts the searched runs only, its held-out score the held-out runs. |
 | `candidates` | array | Every candidate its agent proposed. |
 | `frontier` | array of strings | The candidates on the [frontier](/docs/reference/app/searches#frontier), by id, cheapest first, the seed always among them. |
+| `minGain` | number | The smallest gain over the seed the line counts as real: `replay_check.min_gain`, or `0.05` when the line has none. |
 
 ### Candidate
 
@@ -123,9 +138,13 @@ Each item of a list, and the first fields of a search's detail:
 | `changes` | array | How it differs from the live config, each `{ part, name, kind, was, now }`, as on a [replay candidate](/docs/reference/api/replay-candidate#fields). |
 | `replayId`, `replayState` | string, string or null | Its replay on the searched runs; for the seed, its replay of the whole set. |
 | `heldOutReplayId`, `heldOutReplayState` | string or null | Its replay on the held-out runs, when it had one. |
-| `searchScore` | number or null | Its success rate on the searched runs, 0 to 1. |
-| `searchScored` | number | How many searched runs were scored. |
-| `heldOutScore` | number or null | Its success rate on the held-out runs, 0 to 1, once that replay finished. |
+| `searchScore` | number or null | Its [success](/docs/reference/app/replays#success) on the searched runs, 0 to 1. |
+| `searchInterval` | object or null | `{ rate, low, high }`: `searchScore` with its 95% interval. |
+| `searchScored` | number | How many searched replay runs, copies included, were scored. |
+| `searchedGain` | object or null | Its gain over the seed on the searched runs, paired task by task, as a [replay's gain](/docs/reference/api/replays#gain). Null for the seed. |
+| `heldOutScore` | number or null | Its success on the held-out runs, 0 to 1, once that replay finished. |
+| `heldOutInterval` | object or null | `heldOutScore` with its 95% interval. |
+| `heldOutGain` | object or null | Its gain over the seed on the held-out runs, once both its held-out replay and the seed's replay finished. Null for the seed. |
 | `costPerRun` | number or null | What it spent per scored searched run. Null while any of it went unpriced or was in another currency. |
 | `spent` | object | `{ amount, currency }`. |
 | `onFrontier` | boolean | Whether it is on the frontier. |
@@ -175,4 +194,4 @@ its branch: `created`, and `updated` when picked again after a refusal.
 | `403` | A change by a caller who may read the team but not plan. |
 | `404` | The team, line, station, set, search, candidate or pull request is not one the caller may see, as in `There is no search <searchId> for this caller`. A set at another station than the one in the path. |
 | `409` | Starting a search of a station that is being searched (`The station <stationId> is being searched already; stop that search first`), or over a set whose station has left its line. Stopping a search that has ended (`The search <searchId> has ended`). Picking the seed (`The seed is the station's live config already; pick a candidate the search proposed`), or a candidate whose replay on the searched runs has not finished (`The candidate <name> has no finished replay on the searched tasks; pick it once its replay finishes`). |
-| `422` | A missing or invalid field, at its path, such as `budget.iterations`. A count out of bounds (`A search runs its agent from 1 to 10`). An agent the runners cannot start (`A search runs an agent whose harness names a harness a runner can start: <harnesses>`). A set covering too few tasks (`A search holds out at least 2 tasks and searches at least 3, but its replay set covers <n> tasks, of which it would hold out <m>; add runs of other tasks first`). A ceiling too low (`A search is capped high enough to give each replay run at least 0.01 <currency>; raise its ceiling or lower its iterations or candidates`). |
+| `422` | A missing or invalid field, at its path, such as `budget.iterations`. A count out of bounds (`A search runs its agent from 1 to 10`). An agent the runners cannot start (`A search runs an agent whose harness names a harness a runner can start: <harnesses>`). A set covering too few tasks (`A search holds out at least 2 tasks and searches at least 3, but its replay set covers <n> tasks, of which it would hold out <m>; add runs of other tasks first`). A ceiling too low (`A search is capped high enough to give each replay run at least 0.01 <currency>; raise its ceiling or lower its iterations or candidates`). `budget.repeats` not a number (`is how many times each replay replays each run, as a number`) or out of range (`A search replays each run a number of times from 1 to 5`). |

@@ -19,8 +19,15 @@ by station and by replay set, each set with its
 [baseline](/docs/reference/glossary#baseline): the live config replayed. A
 success rate here is a replay's, scored by the candidate's own checks and judge
 on past tasks, and says nothing of how live runs went. A replay set holds runs,
-and a task may have more than one run in it: success rates, `scored`,
-`compared` and `regressions` count runs.
+and a task may have more than one run in it. Success rates, their intervals
+and gains are worked out over the set's runs, each run counted once however
+many copies of it were replayed (see [Success](/docs/reference/app/replays#success)).
+`compared` and `regressions` count the set's runs, and `scored` counts replay
+runs, copies included.
+
+An `interval` is `{ rate, low, high }`: the success rate with its 95% interval.
+A gain is `{ gain, low, high, verdict, minGain, tasks }`, as in the
+[Replays API](/docs/reference/api/replays#gain).
 
 ## Parameters
 
@@ -60,7 +67,7 @@ Each item of a station's `sets`, the newest replayed first:
 | `name` | string | |
 | `stationGone` | boolean | Whether its station has left its line. |
 | `guardsChanges` | boolean | Whether it [guards its station's changes](/docs/reference/app/searches#guarding-a-stations-changes). |
-| `health` | object | `{ tasks, runs, oldestRunEndedAt, newestRunEndedAt, lastAddedAt }`. `runs` counts the runs the set holds now, and `tasks` the different tasks they worked. The three times are when the oldest and the newest of its runs ended, and when a run was last added to it; each is null while there is none. |
+| `health` | object | `{ tasks, runs, oldestRunEndedAt, newestRunEndedAt, lastAddedAt, noise, minGain }`. `runs` counts the runs the set holds now, and `tasks` the different tasks they worked. The three times are when the oldest and the newest of its runs ended, and when a run was last added to it; each is null while there is none. `noise` is the set's noise, as in the [Replays API](/docs/reference/api/replays#success-ranges-and-noise), or null until measured; `minGain` the smallest gain its line counts as real. |
 | `baseline` | object or null | Its newest baseline that is queued, running or finished, whatever the period. Null while it has none. See [Baseline](#baseline). |
 | `candidates` | array | The candidates replayed over it in the period, the newest replayed first. See [Candidate](#candidate). |
 
@@ -73,6 +80,7 @@ Each item of a station's `sets`, the newest replayed first:
 | `fingerprint` | string or null | The [config fingerprint](/docs/reference/glossary#config-fingerprint) of the live config it replayed. |
 | `scored` | number | How many of its runs were scored. |
 | `successRate` | number or null | Its [success](/docs/reference/app/replays#success) over the whole set, 0 to 1. Null while none was scored. |
+| `interval` | object or null | `successRate` with its 95% interval. |
 | `costPerRun` | number or null | What it spent per scored run. Null while any of its spend went unpriced or was in another currency than its ceiling's. |
 | `currency` | string | Its ceiling's currency, which `costPerRun` is in. |
 | `endedAt` | string or null | |
@@ -91,19 +99,22 @@ Each item of a station's `sets`, the newest replayed first:
 | `replayState` | string or null | That replay's state, as for a baseline. |
 | `replayedAt` | string or null | When that replay started. Null while a searched candidate's replay cannot be found. |
 | `tasks` | number | How many different tasks its replay covers: the searched ones for a searched candidate. |
-| `runs` | number | How many runs its replay covers. |
-| `successRate` | number or null | Its replay success, 0 to 1, over all the runs it was scored on. For a searched candidate, its [search score](/docs/reference/app/searches#scores), as its search page gives it; for a proposed one, its replay's success. |
+| `runs` | number | How many runs of the set its replay covers, each once however many copies. |
+| `successRate` | number or null | Its replay success, 0 to 1. For a searched candidate, its [search score](/docs/reference/app/searches#scores), as its search page gives it; for a proposed one, its replay's success. |
+| `interval` | object or null | `successRate` with its 95% interval. |
 | `scored` | number | How many of its runs were scored. |
-| `heldOut` | object or null | `{ replayId, state, score, tasks, runs }`: its replay on the tasks its search held out, kept apart from `successRate`. `score` is its success there, 0 to 1, once that replay finished, else null; `tasks` is how many different tasks the search held out, and `runs` how many held-out runs the replay was scored on, the runs `score` covers. Null for a candidate not replayed there, and for every proposed candidate. |
+| `heldOut` | object or null | `{ replayId, state, score, interval, tasks, runs }`: its replay on the tasks its search held out, kept apart from `successRate`. `score` is its success there, 0 to 1, once that replay finished, else null; `tasks` is how many different tasks the search held out, and `runs` how many held-out replay runs, copies included, it was scored on. Null for a candidate not replayed there, and for every proposed candidate. |
 | `costPerRun` | number or null | What its replay spent per scored run. Null while any of its spend went unpriced or was in another currency. |
 | `currency` | string | The currency `costPerRun` is in: its search's ceiling's, or its replay's. |
-| `live` | object or null | `{ successRate, costPerRun, currency }`: how the set's baseline did on the compared runs alone. `currency` is the baseline's, and may differ from the candidate's. Null without a baseline. |
+| `live` | object or null | `{ successRate, interval, costPerRun, currency }`: how the set's baseline did on the compared runs alone. `currency` is the baseline's, and may differ from the candidate's. Null without a baseline. |
 | `successRateOnCompared` | number or null | The candidate's own success on the compared runs alone, 0 to 1, to set beside `live.successRate`. Null without a baseline. |
+| `intervalOnCompared` | object or null | `successRateOnCompared` with its 95% interval, to set beside `live.interval`. Null without a baseline. |
 | `costPerRunOnCompared` | number or null | What the candidate spent per run on the compared runs alone, in its own `currency`, to set beside `live.costPerRun`. Null without a baseline, and while any of that spend went unpriced. |
 | `regressions` | number or null | How many of the compared runs it [regressed](/docs/reference/app/replays#regressions) on, as its replay page counts them. Null without a baseline. |
 | `compared` | number | The compared runs: how many of its runs the baseline replayed too. |
+| `againstLive` | object or null | Its gain over the baseline on the compared runs, paired run by run, against the line's `min_gain`. Null without a baseline. |
 | `onFrontier` | boolean or null | Whether it is on its search's [frontier](/docs/reference/app/searches#frontier). Null unless `searched`. |
-| `search` | object or null | `{ searchId, state, startedAt, seed }`: the search that proposed it. `state` is `seeding`, `searching`, `holding-out`, `finished` or `stopped`. `seed` is `{ successRate, costPerRun, scored }`: the live config the search started from, scored on the same searched runs as its candidates, as the search page gives the live config's search score, with its cost per run in the candidate's `currency`. Null unless `searched`. |
+| `search` | object or null | `{ searchId, state, startedAt, seed }`: the search that proposed it. `state` is `seeding`, `searching`, `holding-out`, `finished` or `stopped`. `seed` is `{ successRate, interval, costPerRun, scored }`: the live config the search started from, scored on the same searched runs as its candidates, as the search page gives the live config's search score, with its cost per run in the candidate's `currency`. Null unless `searched`. |
 | `pullRequest` | object or null | `{ id, state, url, reason }`: the [config pull request](/docs/reference/api/searches#config-pull-request) picking it opened. Null until a person picks it, and for every proposed candidate. |
 
 ## Who may read

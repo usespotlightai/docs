@@ -74,6 +74,7 @@ resource "spotlight_line" "core_delivery" {
     most_regressions = 0
     ceiling          = 10
     currency         = "USD"
+    min_gain         = 0.05
   }
 }
 ```
@@ -87,6 +88,11 @@ resource "spotlight_line" "core_delivery" {
   ceiling, and a little over if runs are still going when it is reached. A
   check that reaches its ceiling before it fails is undecided. See
   [Ceiling](/docs/reference/api/replay-checks#ceiling).
+- `min_gain`: the smallest gain in success that counts as more than noise, as
+  a share above 0 and at most 1, `0.05` unless set. The output says whether
+  the change's gain over the live config reaches it. It does not decide
+  whether the check passes. The line's replays and searches read their gains
+  against it too.
 
 A line without `replay_check` is not checked: the job fails for its stations
 and says so. The set's page shows the line's threshold under **Guards config changes**
@@ -164,6 +170,11 @@ streams holds no station blocks, and the command refuses it. To pin a release,
 replace `latest/download` with `download/<version>`. See
 [Install](/docs/reference/cli/replay-command#install).
 
+To replay each run of the set more than once, add `--repeats` and a number
+up to 5. Each copy is a run, and the line's `ceiling` covers them all, so
+raise it to match. See
+[Copies of the same run](/docs/improvement/why-changes-are-replayed-on-past-tasks#copies-of-the-same-run).
+
 The command waits for the checks, up to 60 minutes unless you pass
 `--timeout`. A check still running then keeps running in Spotlight, and the
 job ends with exit code `3` and the check's link.
@@ -178,9 +189,10 @@ job ends with exit code `3` and the check's link.
 | `3` | A check is undecided, or still running at the timeout. |
 
 The job's summary gets a table with one row per station: its verdict, how many
-tasks regressed, how the change and the live config did, what the check spent,
-and a link to its replay in Spotlight. Each regressed task is listed under it,
-with why. The log prints the same.
+tasks regressed, how the change and the live config did, each with its range,
+the change's gain over the live config with `better`, `worse` or
+`within noise`, what the check spent, and a link to its replay in Spotlight. Each
+regressed task is listed under it, with why. The log prints the same.
 
 Some changes are not checked, and the output notes why: a new line, a line
 that is removed, a station that is added or removed, or a station where

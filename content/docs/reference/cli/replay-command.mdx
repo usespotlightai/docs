@@ -20,11 +20,11 @@ spotlight replay propose --station <team/line/station> --name <name> <station.js
 spotlight replay candidates --station <team/line/station>
 spotlight replay show --station <team/line/station> <candidate name or id>
 spotlight replay sets --station <team/line/station>
-spotlight replay start --station <team/line/station> --set <name or id> --candidate <name, id or live> --ceiling <amount> [--currency USD]
+spotlight replay start --station <team/line/station> --set <name or id> --candidate <name, id or live> --ceiling <amount> [--currency USD] [--repeats 1]
 spotlight replay status --team <key> <replay id>
 spotlight replay watch --team <key> <replay id> [--every 15s]
 spotlight replay stop --team <key> <replay id>
-spotlight replay check [--json] [--timeout 60m] [--every 15s] [--commit <sha>] [--pull-request <n>] <plan.json | ->
+spotlight replay check [--json] [--timeout 60m] [--every 15s] [--commit <sha>] [--pull-request <n>] [--repeats 1] <plan.json | ->
 ```
 
 Every subcommand also takes `--json`. Flags may come before or after the
@@ -162,7 +162,7 @@ Sets are opened and filled on the [Station page](/docs/reference/app/replays#sta
 ## spotlight replay start
 
 ```text
-spotlight replay start --station <team/line/station> --set <name or id> --candidate <name, id or live> --ceiling <amount> [--currency USD]
+spotlight replay start --station <team/line/station> --set <name or id> --candidate <name, id or live> --ceiling <amount> [--currency USD] [--repeats 1]
 ```
 
 Starts a replay of the set under the candidate.
@@ -174,19 +174,23 @@ Starts a replay of the set under the candidate.
 | `--candidate` | yes | | A proposed candidate, or `live` for the station as it is configured now. |
 | `--ceiling` | yes | | The most the replay may spend, a number above 0. Spotlight takes at most 1,000. |
 | `--currency` | no | `USD` | The ceiling's currency, as a three-letter code. |
+| `--repeats` | no | `1` | How many times to replay each run, 1 to 5. The ceiling covers every copy. |
 
 ```text
 Started replay <id> of <set> under <candidate>, spending at most <ceiling>.
+It replays each run <n> times, to measure how much its results move by chance.
 Its baseline, the live config, replays beside it as <id>, with a ceiling of its own.
 Follow it with: spotlight replay watch --team <team> <id>
 ```
 
-The second line appears only when a baseline starts beside the replay.
+The second line appears only with `--repeats` above 1, and the third only when
+a baseline starts beside the replay.
 
 | Message | Cause |
 | --- | --- |
 | `--set and --candidate name what to replay, and under what` | `--set` or `--candidate` is missing. |
 | `--ceiling is the most the replay may spend, as a number above 0, not "<value>"` | `--ceiling` is missing, not a number, or 0 or less. |
+| `--repeats is how many times to replay each run, from 1 to 5, not <n>` | `--repeats` is below 1 or above 5. |
 | `start a replay of <set>: <refusal>` | Spotlight refused to start it. See [Errors](/docs/reference/api/replays#errors). |
 
 ## spotlight replay status
@@ -199,19 +203,37 @@ Prints the replay as it stands, and exits `2` if it regressed on any task.
 
 ```text
 Replay <id> under <candidate> (<kind>): <state>, <spent> of <ceiling> spent
-Succeeded: <n> of <scored> (<share>%), <n> unscored
-Its baseline, <state>: <n> of <scored> (<share>%), <n> unscored
+It replays each run <n> times.
+Succeeded: <n> of <scored> (<share>%); <share>% (<low>–<high>%) over <n> of <m> tasks, <n> unscored
+Its baseline, <state>: <n> of <scored> (<share>%); <share>% (<low>–<high>%) over <n> of <m> tasks, <n> unscored
+Within noise of the baseline: +4 points (-8 to +16) over 12 tasks, not clearly past the 5-point gain that counts as real
 ```
 
 When runs already running took the replay past its ceiling, the first line
 ends with `, over the ceiling by <amount>, spent by runs already running when it
 was reached`. `<kind>` is `proposed`, or `live` for a replay of the live config.
-The third line reads `It is the set's baseline.` for a baseline, and
-`The set has no baseline to compare against.` when there is none. A table
-follows with one row per task, regressions first: a `REGRESSED` mark, `TASK`,
-`CANDIDATE` and `BASELINE` (each a result: `pending`, `succeeded`, `failed` or
-`unscored`, or `none`), `COST Δ`, `STEPS Δ` and `SCORE Δ`. A difference not
-known reads `-`.
+The second line appears only when the replay replays each run more than once.
+On the `Succeeded` lines, `<n> of <scored>` counts copies, and the
+[success](/docs/reference/app/replays#success) with its 95% range follows,
+over the tasks with a scored copy of the tasks replayed. The baseline line
+reads `It is the set's baseline.` for a baseline, and
+`The set has no baseline to compare against.` when there is none.
+
+When there is a gain, the line after it reads the
+[gain](/docs/reference/app/replays#gains) over the baseline, in points, with
+its range and the tasks both scored:
+
+| Verdict | Line |
+| --- | --- |
+| `better` | `Better than the baseline: <gain> points (<low> to <high>) over <n> tasks, past the <min_gain>-point gain that counts as real` |
+| `worse` | `Worse than the baseline: <gain> points (<low> to <high>) over <n> tasks` |
+| `within-noise` | `Within noise of the baseline: <gain> points (<low> to <high>) over <n> tasks, not clearly past the <min_gain>-point gain that counts as real` |
+
+A table follows with one row per task, regressions first: a `REGRESSED` mark,
+`TASK`, `CANDIDATE` and `BASELINE` (each a result: `pending`, `succeeded`,
+`failed` or `unscored`, or `none`; with copies, each copy's result joined by
+`/`, as in `succeeded/failed/succeeded`), `COST Δ`, `STEPS Δ` and `SCORE Δ`,
+each averaged over the copies. A difference not known reads `-`.
 
 With `--json`, it prints `{ "replay", "baseline" }`, each as the
 [Replays API](/docs/reference/api/replays) reads a replay.
@@ -262,7 +284,7 @@ ended is refused with `409`.
 ## spotlight replay check
 
 ```text
-spotlight replay check [--json] [--timeout 60m] [--every 15s] [--commit <sha>] [--pull-request <n>] <plan.json | ->
+spotlight replay check [--json] [--timeout 60m] [--every 15s] [--commit <sha>] [--pull-request <n>] [--repeats 1] <plan.json | ->
 ```
 
 Checks each work station a saved Terraform plan changes against the replay set
@@ -279,6 +301,7 @@ for the verdicts. Give it the output of `terraform show -json <planfile>`, or
 | `--every` | `15s` | How often to read the checks, as a Go duration, at least `1s`. |
 | `--commit` | none | The commit that plans the change, recorded on each check. |
 | `--pull-request` | none | The pull request that plans the change, recorded on each check and used to name its candidate. |
+| `--repeats` | `1` | How many times each check replays each run of the set, 1 to 5. The line's `ceiling` covers every copy. |
 
 ### Environment for check
 
@@ -326,8 +349,8 @@ A station is reported `UNDECIDED` without being checked when:
 | `not checked, since the plan also changes the <resources> its runs depend on, which a check cannot replay before apply` | The plan also changes a `spotlight_skill` it names, the `spotlight_harness_profile` it names, a `spotlight_integration` whose tools it uses, a `spotlight_hook` that matches it, or any `spotlight_secret`. A changed secret makes every work station of the lines in the plan undecided. |
 
 Each check is started with an `Idempotency-Key` made from the line, the
-station, its planned block, the planned repositories, `--commit` and
-`--pull-request`, so running the job again on the same plan answers the same
+station, its planned block, the planned repositories, `--commit`,
+`--pull-request` and `--repeats`, so running the job again on the same plan answers the same
 check. Starting and reading are tried again when Spotlight cannot be reached or
 answers with a `5xx` status, waiting twice `--every` after the first failure
 and doubling, at most 2 minutes, and given up after 5 failures in a row.
@@ -363,12 +386,20 @@ note: <note>
 
 core/delivery/build: FAILED
   1 of 6 tasks regressed (at most 0 may), replaying set "Queue fixes": 6 tasks, 6 scored on both sides
-  candidate 4 of 6 succeeded (67%), baseline 5 of 6 succeeded (83%)
+  candidate 4 of 6 succeeded, 67% (33–100%) over 6 tasks, baseline 5 of 6 succeeded, 83% (50–100%) over 6 tasks
+  Within noise of the baseline: -17 points (-50 to +0) over 6 tasks, not clearly past the 5-point gain that counts as real
   spent 3.2 USD of a 10 USD ceiling
   scored with the live check, judge, which the plan also changes
   REGRESSED <task id> "<title>": failed where the baseline succeeded, check-failed: npm test
   <link to the check's replay>
 ```
+
+With `--repeats` above 1, a line `each run replayed <n> times` comes before
+the `candidate` line. The `candidate` and `baseline` line counts copies, then gives each
+side's success with its range over the tasks scored, and the next line the
+candidate's gain over the baseline, worded as for
+[`status`](#spotlight-replay-status). The gain does not decide the status.
+`REGRESSED` lines give each copy's result joined by `/`.
 
 A plan that changes no live station prints
 `The plan changes no live station of a line, so there is nothing to check.`
@@ -377,9 +408,10 @@ With `--json`, it prints `{ "stations", "notes", "exitCode" }`, each station as
 [check](/docs/reference/api/replay-checks#check) as Spotlight read it last.
 
 The step summary is headed `Spotlight replay check`, with any notes, then a
-table with the columns Station, Verdict, Regressed, Candidate, Baseline, Spent
-and Replay, then, for each station with a message or regressions, the message
-and each regressed task.
+table with the columns Station, Verdict, Regressed, Candidate, Baseline, Gain,
+Spent and Replay, then, for each station with a message, a gain or
+regressions, the message, the gain line and each regressed task. A gain reads
+as in `-17 points (-50 to +0), within noise`, or `-` without one.
 
 ### Exit codes for check
 
@@ -402,5 +434,6 @@ and each regressed task.
 | `the workspace token trust <trust> did not admit the OIDC token: <refusal>` | The trust refused the exchange. |
 | `--timeout is how long to wait, above 0, not <value>` | `--timeout` is 0 or less. |
 | `--every is at least 1s, not <value>` | `--every` is under `1s`. |
+| `--repeats is how many times to replay each run, from 1 to 5, not <n>` | `--repeats` is below 1 or above 5. |
 
 Each is printed after `spotlight replay check: ` on standard error.
