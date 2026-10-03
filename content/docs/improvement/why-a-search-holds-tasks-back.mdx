@@ -63,6 +63,17 @@ A few choices follow from this.
   has a held-out score to compare with from the beginning. The same replay
   becomes the set's baseline.
 
+When a candidate's gain over the live config reads Better on the searched
+tasks but not on the held-out ones, the search marks it "Only on seen tasks".
+That is the pattern overfitting leaves: the gain held on the tasks the agent
+tuned against and did not reach the tasks it never saw. A marked candidate can
+still be picked. A held-out gain rests on few tasks and can read Within
+noise for a candidate that does help, so in the docs' view the person who
+picks should weigh it, with the mark in front of them on the search page and
+in the pull request. With fewer than 5 held-out tasks scored on both sides,
+the held-out gain cannot tell either way, so the search says that instead of
+marking the candidate.
+
 ## A frontier of candidates
 
 A candidate can do better by succeeding more often or by costing less. A
