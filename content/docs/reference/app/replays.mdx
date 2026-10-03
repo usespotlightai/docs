@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Replays
-description: The Replays section of a Station page, the replay set and replay pages, replay states, results and their reasons, success with its range, gains and noise, why a run cannot be replayed, spend and ceilings, and how a replay run differs from a task run.
+description: The Replays section of a Station page, the replay set and replay pages, replay states, results and their reasons, success with its range, gains, a set's health and the replays that check it, why a run cannot be replayed, spend and ceilings, and how a replay run differs from a task run.
 ---
 
 A [replay](/docs/reference/glossary#replay) runs some of a work station's past
@@ -16,7 +16,8 @@ Only people on the team, the workspace's owners and admins, and workspace
 tokens with the `read` scope can read a team's replay sets, replays,
 candidates and replay runs. Anyone else is answered `404`. Opening a set,
 renaming or deleting it, adding or removing runs, starting or stopping a
-replay, and proposing or deleting a candidate also need `plan`. See
+replay, checking a set, trying a stronger model on it, and proposing or
+deleting a candidate also need `plan`. See
 [Team outcomes](/docs/reference/roles-and-permissions#team-outcomes).
 
 ## Station page
@@ -43,7 +44,7 @@ See [Searches](/docs/reference/app/searches#station-page).
 | Part | Shows | Can change |
 | --- | --- | --- |
 | Header | The set's name, `<n> runs · opened <when>`, and the "Guards config changes" switch (see [Guarding a station's changes](/docs/reference/app/searches#guarding-a-stations-changes)). When its station has left the line: `Its station is gone from its line, so it starts no replays, takes no more runs and keeps none of its runs' workspaces. It can still be renamed, have runs taken out, or be deleted.` | "Rename". "Delete", then "Delete set": the set and its replays and their results go, and its runs' workspaces are no longer kept for it. Delete is refused while a replay of the set is queued or running, or still has runs in flight, and while a search of the set is under way: "A replay or search of this set is running, so it can't be deleted until that ends or is stopped." Below the header, "Checks" lists the checks replayed on the set (see [Guarding a station's changes](/docs/reference/app/searches#guarding-a-stations-changes)). |
-| Noise | How much the set's [success](#success) moves by chance under the live config: see [Noise](#noise). | "Measure noise" opens the same dialog as "Start a replay", with "Live config" chosen and "Repeats" at 3. It is refused for the same reasons as "Start a replay". |
+| Health | `Whether this set can tell a better config from a worse one. Check it before you search on it.`, then one line per reading of the set's [health](#health). | "Check this set" opens the [Check dialog](#check-this-set), and "Try a stronger model" the [stronger model dialog](#try-a-stronger-model). Both are refused for the same reasons as "Start a replay"; "Try a stronger model" also when the station names no harness: "The station names no harness, so there is no model to choose." "Try a stronger model" is disabled while the station's config loads, and if it cannot be loaded reads "The station's model could not be loaded." with "Try again". |
 | Runs | Each run in the set: its task's title, linked to the run, its state, when it ended, and "Can be replayed" or [why it cannot be](#why-a-run-cannot-be-replayed). A task since deleted reads "A deleted task". | "Add runs" opens the station's latest 50 ended task runs, each with "Add", "In the set" or "Can't be replayed" and the reason. The X beside a run takes it out of the set. "Add runs" is not offered once the station is gone. While a search of the set is under way, runs can be neither added nor taken out. |
 | Replays | Each replay of the set, newest first: its candidate, "Baseline" for the set's baseline, its [state](#replay-states), when it started, its success with its range and its [gain](#gains) over the baseline, `<n> scored · <n> unscored`, `Spent <spent> of <ceiling>`, and `Each run <n> times` when it replays each run more than once. With none, it reads "Not replayed yet". | "Start a replay": see below. |
 
@@ -54,7 +55,7 @@ line. It opens a dialog:
 | Field | Values |
 | --- | --- |
 | Replay under | "Live config", the station as it is configured now (the default), or one of the station's proposed candidates. |
-| Repeats | How many times to replay each run, 1 to 5. `1` at first, `3` from "Measure noise". |
+| Repeats | How many times to replay each run, 1 to 5. `1` at first. |
 | Ceiling | The most the replay may spend, every copy of each run included, above 0 and at most 1,000, and a three-letter currency, `USD` unless changed. |
 
 With "Live config", the replay becomes the set's baseline when the set has
@@ -257,22 +258,117 @@ replay reads it from the line as it is now; a
 [replay check](/docs/reference/api/replay-checks) keeps the one it started
 under.
 
-### Noise
+## Health
 
-The "Noise" part of the set's page reads the newest finished replay of the
-live config that replayed each run 2 or more times, whose
-[config fingerprint](/docs/reference/glossary#config-fingerprint) is the
-station's now. Until there is one, it reads "Not measured" and `Replay the live
-config over the set 3 times to see how much its success moves by chance
-alone.` Then:
+The "Health" part of the set's page says whether the set can tell a better
+config from a worse one. It is read for the station's live config as it is
+now: only replays of the live config at the station's current
+[config fingerprint](/docs/reference/glossary#config-fingerprint) count. Each reading is a line with its label,
+what it found, advice under it, and "Its replay", which opens the replay it
+was read from. A reading that found a problem is marked with a warning sign.
+
+| Line | Read from | Until then |
+| --- | --- | --- |
+| Noise | The newest finished replay of the live config that replayed each run 2 or more times. | "Not measured" |
+| Room to improve | The newest finished replay of the live config over every run of the set, other than a search's. | "Not measured" |
+| Judge agreeing with itself | The newest of those replays that was a [check of the set](#check-this-set). | "Not checked" |
+| Flaky checks | The same replay. | "Not checked" |
+| Stronger model | The newest [stronger model replay](#try-a-stronger-model) of the live config as it is now. | "Not tried" |
+
+### Noise
 
 | Shows | Meaning |
 | --- | --- |
 | `Success moved <n> pts between <m> copies` | The spread: the highest copy's success rate less the lowest's. A copy's rate is the share of its scored runs that succeeded. |
-| `more than the <min_gain> the line counts as real, so one copy can't tell a real gain from chance` | The spread is more than `min_gain`. Otherwise, `within the <min_gain> the line counts as real`. |
+| `More than the <min_gain> the line counts as real, so one copy can't tell a real gain from chance. Search with each run replayed more times, or raise the line's min_gain.` | The spread is more than `min_gain`, marked. Otherwise, `Within the <min_gain> the line counts as real, so a gain that size is unlikely to be chance.` |
 | `Each copy: <rate>, <rate>, …` | Each copy's success rate, in order. |
 | `<n> tasks went both ways` | Tasks whose copies both succeeded and failed, or "No task went both ways". The tasks are listed under it. |
-| `measured on config <fingerprint> <when>` | The fingerprint and when the replay ended. "Its replay" opens it. |
+| `measured on config <fingerprint> <when>` | The fingerprint and when the replay ended. |
+
+### Room to improve
+
+| Shows | When |
+| --- | --- |
+| `The live config succeeds on <share>` | Its success over the whole set is 95% or less. |
+| `Almost none: the live config succeeds on <share>`, marked, with `A search for more success has nowhere to go. Search for the same success at less cost, or add tasks the live config fails.` | Its success is above 95%. A [search](/docs/reference/app/searches#start-a-search) of the set then aims for the same success for less unless told otherwise. |
+
+### Judge agreeing with itself
+
+| Shows | When |
+| --- | --- |
+| "Judging again" | No change has been judged a second time yet. |
+| `Same verdict on <share> of <n> changes` | The share of changes judged twice, both times with a verdict, that the judge passed both times or failed both times. Marked below 80%, with `Its verdicts are partly chance, so a search would chase luck. Make the rubric more specific before you search.` |
+
+While some second judgings are still to come, the advice adds `<n> second
+judgings still to come.`
+
+### Flaky checks
+
+| Shows | When |
+| --- | --- |
+| "Checking again" | No change has been checked a second time yet. |
+| `None of <n> changes flipped` | Every change checked twice, both times passing or failing, gave the same answer both times. |
+| `<n> of <m> changes flipped` | Marked. The changes whose check passed once and failed once are listed under it, under "Tasks whose check flipped": each task's title, linked to the replay run, and the two results, as in `Passed, then failed`. |
+
+While some second checks are still to come, the advice adds `<n> second checks
+still to come.`
+
+### Stronger model
+
+The stronger config is shown by its model and effort, as in `opus, high
+effort`.
+
+| Shows | When |
+| --- | --- |
+| `Replaying with <config>` | Its replay is queued or running. |
+| `<config> did not finish` | Its replay was stopped or ran over its ceiling, so nothing was compared. "Try again" opens the stronger model dialog with the model and effort tried last. |
+| "Could not be compared" | The live replay it is compared with was stopped, ran over its ceiling, or is gone. "Try again" opens the stronger model dialog with the model and effort tried last. |
+| "Nothing to compare with yet" | Its replay finished, and the live replay it is compared with has not. |
+| `<config> did better` | Its [gain](#gains) over the live replay reads Better. |
+| `<config> did not do clearly better` | Marked. Its gain reads Within noise or Worse. |
+
+Once compared, the line shows the gain, against `the live config`, and lists
+under "Tasks the stronger model did worse on" each task whose success under
+the stronger config is below the live config's: the task's title, linked to
+the original run, and both successes, as in `100% live, 33% stronger`.
+
+### Check this set
+
+"Check this set" opens a dialog titled `Check <set>`, with one field,
+"Ceiling": the most the check may spend, as for "Start a replay". "Start the
+check" starts a replay of the live config that replays each run 3 times, and
+opens its page. It measures the set's noise, and becomes the set's baseline
+when a "Live config" replay would.
+
+Once it finishes, every change whose check passed or failed is checked a
+second time, and every change the judge gave a verdict on is judged a second
+time. Changes are judged again in order while the ceiling still has
+room for one more at what its first judging cost; the rest are not judged
+again. A second judging or check never changes a run's result.
+
+### Try a stronger model
+
+"Try a stronger model" opens a dialog titled `Try a stronger model on <set>`:
+
+| Field | Values |
+| --- | --- |
+| Model and effort | A model and effort for the station's harness, the live config's at first. Under it, once the harness's models and efforts are loaded: `Pick a model the harness offers, or a higher effort than the live config's <effort>: <higher efforts>.` When the live config names no effort, it is counted as the harness's lowest: `… than the live config's default, counted as its lowest, <lowest>: …`. If they cannot be loaded: "The harness's models and efforts could not be loaded." with "Try again". |
+| Repeats | How many times to replay each run, 1 to 5. `1` at first. |
+| Ceiling | The most this replay may spend, as for "Start a replay". |
+
+The dialog refuses a model and effort that are both the live config's with
+"Choose a model or an effort other than the live config's.", a model the
+harness does not offer with "Its harness does not offer that model.", and an effort not later than the live config's, or than the
+harness's lowest when the live config names none, in the harness's list with "That effort is not higher than the live config's. Pick a
+higher one, or keep the live effort."
+
+"Start replay" replays the set under the live config with that model, effort,
+or both, and opens its page. The replay's candidate is named `Stronger model,
+<date>`. It is compared with the newest replay of the live config over the
+whole set that is queued, running or finished and replays each run at least as
+many times. With none, one starts beside it, with the same repeats and a
+ceiling of its own equal to this one, so the two may spend up to twice the
+ceiling; it is the set's new baseline when the set needs one.
 
 ## Regressions
 
@@ -345,7 +441,8 @@ that failed counts what it was billed. A cost in another currency is summed
 apart and does not count toward the ceiling, nor does a cost that was never
 reported. Each replay has its own
 ceiling. A baseline started beside a replay has a ceiling of its own, equal to
-the replay's.
+the replay's. The second judgings of a [check of the set](#check-this-set)
+count against its ceiling, but not toward its success or what its runs cost.
 
 Once a replay's spend reaches its ceiling, it ends as `over-budget`: nothing
 more of it starts, its runs not yet started are withdrawn, and its runs already

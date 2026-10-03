@@ -84,9 +84,25 @@ So a search keeps the frontier: the candidates for which no other succeeds as
 often for less. Everything off the
 frontier is beaten on both counts by something on it. The live config is
 always on the frontier, so every candidate is read against the station as it
-is. The search page names a best candidate, the frontier candidate that
-succeeds most, held-out score first, but a person picks, and may pick a
-cheaper one that succeeds almost as often.
+is. The search page names a best candidate, but a person picks, and may pick
+a cheaper one that succeeds almost as often.
+
+What the search names as best depends on what it aims for, which a person
+chooses when it starts. Aiming for more success, the best is the candidate
+that succeeds most, held-out score first. Aiming for the same success for
+less, the search keeps out of its frontier, its held-out replays and its best
+every candidate whose gain over the live config does not read Better or Within
+noise, and ranks the rest by what a run costs. Only candidates cheaper than
+the live config are then replayed on the held-out tasks: in the docs' view, a
+candidate that costs as much has nothing to offer such a search. The best is then the
+cheapest, and the page calls it that.
+
+A search aims for the same success for less unless told otherwise when the
+live config already succeeds on more than 95% of the set: there, more success
+has almost nowhere to come from.
+Its agent is told the same, and is pointed at what the station may spend
+without needing to, such as a cheaper model, a lower effort or a shorter
+prompt.
 
 ## What a search may change
 

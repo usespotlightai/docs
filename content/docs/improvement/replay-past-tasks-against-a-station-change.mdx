@@ -141,7 +141,7 @@ Under **Replay under**, choose the candidate.
 
 Under **Repeats**, enter how many times to replay each run, from 1 to 5. More
 copies narrow the range around the result, and cost as many more runs. See
-[Measure the set's noise](#measure-the-sets-noise).
+[Check the set's health](#check-the-sets-health).
 
 </Step>
 <Step>
@@ -244,45 +244,58 @@ reason.
 If the candidate did worse, propose another candidate and replay the same set.
 Each replay of a set is compared with the same baseline.
 
-## Measure the set's noise
+## Check the set's health
 
-The same config replayed twice on the same tasks does not get the same
-result: an agent can solve a task one time and fail it the next. Measure how
-much a set's success moves by chance before you read small gains on it.
+Check whether a set can tell a better config from a worse one before you read
+small gains on it or [search](/docs/improvement/search-for-a-better-station-config)
+on it.
 
 <Steps>
 <Step>
 
-On the set's page, under **Noise**, select **Measure noise**. The replay
-dialog opens with **Live config** chosen and **Repeats** set to 3.
+On the set's page, under **Health**, select **Check this set**. Enter a
+ceiling, then select **Start the check**. The check replays the live config
+over the set three times, then judges and checks each change a second time, so
+give it a little more than three times what one replay of the set costs.
 
 </Step>
 <Step>
 
-Enter a ceiling, then select **Start replay**. The replay runs the set three
-times over, so give it about three times what one replay of the set costs.
+Select **Try a stronger model**. Under **Model and effort**, choose a model the
+harness offers, a higher effort than the live config's, or both. Enter
+**Repeats** and a ceiling, then select **Start replay**. If the set has no
+replay of the live config with as many repeats, one starts beside it with a
+ceiling of its own the same as yours.
 
 </Step>
 <Step>
 
-Once the replay finishes, **Noise** on the set's page reads how far success
-moved between the copies, as in `Success moved 13 pts between 3 copies`, and
-whether that is more than the gain the line counts as real. Under it are each
-copy's success rate and the tasks that went both ways.
+Once the replays finish, read the lines under **Health** on the set's page.
+A line marked with a warning sign found a problem:
+
+- **Noise** more than the gain the line counts as real: replay candidates
+  with more repeats, add runs of more tasks, or
+  [raise `min_gain`](#set-how-large-a-gain-must-be).
+- **Room to improve** reads **Almost none**: search for the same success for
+  less, or add runs of tasks the live config fails.
+- **Judge agreeing with itself** below 80%: make the judge's rubric more
+  specific. See [Set a station's judge and alerts](/docs/improvement/set-a-stations-judge-and-alerts).
+- **Flaky checks** lists tasks whose check flipped: fix the flaky tests, or
+  take those tasks' runs out of the set.
+- **Stronger model** did not do clearly better: start with the tasks listed
+  under it as done worse on, and check their rubric and checks.
 
 </Step>
 </Steps>
 
-If the noise is more than the gain the line counts as real, one replay of the
-set cannot tell a real gain from chance. Replay candidates on it with more
-repeats, add runs of more tasks, or both. A search on the set warns about the
-same and suggests how many repeats to ask for.
+If **Stronger model** reads **Could not be compared** or did not finish,
+select **Try again**.
 
-The noise belongs to the station's config as it is now. Once an applied
-change gives the station a new config fingerprint, the set reads **Not
-measured** again until the new live config is replayed with repeats. A replay
-of the live config with 2 or more repeats, started any other way, measures it
-too once it finishes.
+The readings belong to the station's config as it is now. Once an applied
+change gives the station a new config fingerprint, they read **Not
+measured**, **Not checked** or **Not tried** until the set is checked again. A replay of the live config with 2 or
+more repeats, started any other way, measures the noise too once it finishes.
+See [Health](/docs/reference/app/replays#health) for every reading.
 
 ## Set how large a gain must be
 

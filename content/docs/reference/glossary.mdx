@@ -141,8 +141,9 @@ adds secrets to requests to the hosts they are bound to. See
 ## Frontier
 
 The candidates of a [search](#search) for which no other candidate succeeds as
-often for less. The station's live config is always on it. See
-[Frontier](/docs/reference/app/searches#frontier).
+often for less. The station's live config is always on it. In a search that
+aims for the same success for less, only candidates whose gain over the live
+config reads Better or Within noise can be on it. See [Frontier](/docs/reference/app/searches#frontier).
 
 ## Grade
 
@@ -292,7 +293,8 @@ proposed, and the Memory page shows how many runs used each memory. See
 
 How far a replay set's success moves by chance: the spread between the success
 rates of copies of the same runs, replayed under the station's live config
-with each run replayed 2 or more times. Separately, a gain whose 95% interval
+with each run replayed 2 or more times. It is one reading of a set's
+[health](#replay-set-health). Separately, a gain whose 95% interval
 reaches across no change, that is smaller than the line's `min_gain`, or that
 rests on fewer than 5 tasks scored on both sides, reads "Within noise". See
 [Noise](/docs/reference/app/replays#noise) and
@@ -370,6 +372,15 @@ A named list of up to 50 of a work station's past task runs, replayed
 together. While a run is in a set, the workspace it started from is kept. See
 [Replay set page](/docs/reference/app/replays#replay-set-page).
 
+## Replay set health
+
+Whether a [replay set](#replay-set) can tell a better config from a worse one,
+read for the station's live config as it is now: its [noise](#noise), how
+much of it the live config succeeds on already, whether the station's judge
+and check give the same answer twice, and whether a stronger model does better
+on it. Checking a set measures the first four; trying a stronger model, the
+last. See [Health](/docs/reference/app/replays#health).
+
 ## Repository
 
 A GitHub repository, `owner/name`, named on a line. The line's runs check it
@@ -423,8 +434,9 @@ See [Inside a sandbox](/docs/reference/hosts/sandbox).
 
 A series of rounds in which an agent proposes changed configs for a work
 station, called [candidates](#candidate), each [replayed](#replay) on a replay
-set's tasks, within a budget. A person picks a candidate, and Spotlight opens a
-pull request with it. See [Searches](/docs/reference/app/searches).
+set's tasks, within a budget. A search aims for more success, or for the same
+success for less. A person picks a candidate, and Spotlight opens a pull
+request with it. See [Searches](/docs/reference/app/searches).
 
 ## Secret
 

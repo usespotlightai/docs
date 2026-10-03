@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Searches
-description: The Searches section of a Station page, the Start a search dialog and its warnings, the search page, search and iteration states, scores, gains, the frontier and candidates whose gain showed only on seen tasks, the pull request a picked candidate opens and why one is refused, and a replay set that guards a station's changes.
+description: The Searches section of a Station page, the Start a search dialog, its aims and its warnings, the search page, search and iteration states, scores, gains, the frontier and candidates whose gain showed only on seen tasks, the pull request a picked candidate opens and why one is refused, and a replay set that guards a station's changes.
 ---
 
 A [search](/docs/reference/glossary#search) has an agent propose changed
@@ -28,7 +28,7 @@ A work station's page has a "Searches" section, after "Replays", headed
 
 | Part | Shows |
 | --- | --- |
-| Searches | One row per search of the station, newest first: `Search <n>`, numbered from the station's first search and linked to its page, its [state](#search-states) (hover for its [ending](#search-endings)), `on <set> · started <when>`, and its best candidate as `Best: <name> · <score> held out` or `· <score> searched`, the score with its range, and its [reading](#only-on-seen-tasks) when it has one, or "No best candidate yet". Under it, `<n> of <m> iterations`, `<spent> of <ceiling>`, and the ending once it has one. With none, the part reads "No searches yet", with "Open a replay set first" when the station has no set, else "Start a search". |
+| Searches | One row per search of the station, newest first: `Search <n>`, numbered from the station's first search and linked to its page, its [state](#search-states) (hover for its [ending](#search-endings)), `on <set> · started <when>`, and its [best candidate](#best-candidate) as `Best: <name> · <score> held out` or `· <score> searched`, `Cheapest:` in place of `Best:` for a search that aims for the same success for less, the score with its range, and its [reading](#only-on-seen-tasks) when it has one, or "No best candidate yet" (`No candidate holds its success yet` when it aims for the same success for less). Under it, `<n> of <m> iterations`, `<spent> of <ceiling>`, and the ending once it has one. With none, the part reads "No searches yet", with "Open a replay set first" when the station has no set, else "Start a search". |
 | Start a search | Opens the [Start a search](#start-a-search) dialog. Not offered, with the reason under it, while a search of the station is under way ("A search of this station is under way."), when the station has no set ("Open a replay set first."), or when no set covers runs of 5 different tasks ("No replay set covers 5 different tasks yet."). |
 | Source | `A picked candidate opens a pull request against <repository> at <path>`, from the line's [`source`](/docs/reference/terraform/line#source-fields), or "The line does not say where its Terraform lives, so a picked candidate cannot open a pull request. Give the line a source in Terraform." |
 
@@ -42,9 +42,18 @@ A work station's page has a "Searches" section, after "Replays", headed
 | At once | Replay runs it runs together, 1 to 10. `4` at first. |
 | Repeats | How many times each of its replays replays each run, 1 to 5: the live config's, every candidate's and the held-out replays. `1` at first. |
 | Ceiling | The most the whole search may spend, its replays and its agent's runs, above 0 and at most 1,000, and a three-letter currency, `USD` at first. |
+| Aim for | "More success": `Ranks candidates by how often they succeed.` Or "The same success for less": `Ranks the candidates that succeed as often as the live config, within noise, by what a run costs.` See [Aims](#aims). |
 | Its agent | The harness the search's agent runs on, and its model and effort. Without a model or effort, the harness's own defaults. |
 
 A count out of bounds reads `Give a whole number from <least> to <most>.`
+
+"Aim for" is preselected until a person chooses: "The same success for less"
+when the chosen set's [room to improve](/docs/reference/app/replays#room-to-improve)
+reads Almost none, with `Chosen for you: the live config already succeeds on
+<share> of this set, so there is little room to succeed more.` under it, and
+"More success" otherwise. Once the estimate arrives, its aim is preselected
+instead. The aim is sent with the search only once a person picks one or the
+estimate has arrived; otherwise the search [chooses it](#aims) as it starts.
 
 Once a set and a budget are given, the dialog shows an estimate, read from
 the [estimate endpoint](/docs/reference/api/searches#estimate-a-search):
@@ -63,14 +72,18 @@ much or less. Its counts of runs and its allotments count every copy. Under
 it: "An agent run may go a little over
 what it is given, so the search may end slightly over its ceiling."
 
-Under the estimate, the dialog may warn, from the set's [noise](/docs/reference/app/replays#noise)
-and the line's `min_gain`:
+Under the estimate, the dialog may warn, from the set's
+[health](/docs/reference/app/replays#health) and the line's `min_gain`:
 
 | Warning | When |
 | --- | --- |
-| `Nobody has measured how much this set's success moves by chance, so a small gain may be luck. Measure its noise on the set page, or replay each run more than once.` | The set's noise is not measured. |
+| `Nobody has measured how much this set's success moves by chance, so a small gain may be luck. Use Check this set on the set page, or replay each run more than once.` | The set's noise is not measured. |
 | `This set's success moved <n> pts between copies of the same runs, more than the +<n> pts the line counts as real. Replaying each run <n> times would bring that down.` | The copies needed to bring the noise under `min_gain` are more than "Repeats" and at most 5: the spread divided by `min_gain`, squared, rounded up. |
 | `This set's success moved <n> pts between copies of the same runs, more than the +<n> pts the line counts as real. Even replaying each run 5 times, the most allowed, won't bring it under that, so read small gains with care or raise the line's smallest real gain.` | The copies needed are more than 5. |
+| `The live config already succeeds on <share> of this set, so there is little room to succeed more. Aim for the same success for less, or add tasks the live config fails.` | The live config succeeds on more than 95% of the set. |
+| `Judging the same change twice, the judge gave the same verdict only <share> of the time over <n> changes, so its verdicts are partly chance. Make the rubric more specific before you search.` | The set's newest check found the judge agreeing with itself less than 80% of the time. |
+| `The check passed once and failed once on <n> of <m> changes it ran twice, so it may flip a candidate's result by chance. The set page lists them.` | The set's newest check found a flaky check. |
+| `A stronger model did not do clearly better on this set (<gain>, likely <low> to <high>) and did worse on <n> tasks, so its tasks may be unclear or its scoring off.` | The newest stronger model replay was compared and its gain is not Better. |
 
 Under either of the last two, unless "Repeats" is the suggestion already,
 `Replay each run <n> times` sets "Repeats" to the copies needed, at most 5. A warning does not stop the search from starting. "Start
@@ -92,11 +105,12 @@ The header shows `Search <n>`, its [state](#search-states), `Searches on <set>
 | Label | Shows |
 | --- | --- |
 | Budget | `<n> iterations · <n> candidates each · up to <ceiling> · <n> at once · each run once`, or `each run <n> times`. |
+| Aims for | "More success" or "The same success for less"; hover or focus for its note. See [Aims](#aims). |
 | Live config | The live config's search score with its range, `of <n> scored`, then `a gain in success counts as real from <min_gain>`, as in `+5 pts`. |
 | Agent | The harness, model and effort its agent runs with. |
 | Progress | `<n> of <m> iterations · <n> candidates proposed`. |
 | Spent | `<spent> of <ceiling>`, with a bar that fills as the ceiling is spent. |
-| Best | The [best candidate](#best-candidate), its score with its range, `held out` or `searched`, and its [reading](#only-on-seen-tasks) when it has one. |
+| Best | The [best candidate](#best-candidate), its score with its range, `held out` or `searched`, and its [reading](#only-on-seen-tasks) when it has one. Labelled "Cheapest" when the search aims for the same success for less. |
 
 ### Tasks
 
@@ -109,7 +123,8 @@ agent never sees those tasks or their results.
 A chart of each candidate with a priced search score: its
 [search score](#scores) up the side, its cost per run along the bottom. Points
 on the [frontier](#frontier) are joined by a line, and the live config is
-drawn as a diamond. When any frontier candidate is
+drawn as a diamond. Its note says what the frontier joins for the search's
+[aim](#aims). When any frontier candidate is
 [marked](#only-on-seen-tasks), a note above the chart reads `<n> candidates on
 the frontier gained only on the tasks the search could see, not on the held-out
 ones.` ("candidate" for 1). Candidates scored but not priced are listed under the
@@ -218,7 +233,7 @@ Each iteration's agent run is a run of its own kind:
 | Task | Holds no task. |
 | Placement | Where the station's runs go: the station's `runners`, else the line's. Its priority is below every task run and chat run. |
 | Workspace | No repository is checked out, and no skills, settings files or team memories are laid out. |
-| Briefing | The station's live config as the search started, the budget left, how many candidates it may propose, how many tasks are held out, what a candidate may change, and how to propose one. |
+| Briefing | The station's live config as the search started, the budget left, how many candidates it may propose, how many tasks are held out, what counts as better for the search's [aim](#aims), what a candidate may change, and how to propose one. |
 | `spotlight history` | Only the searched station. The held-out tasks' runs are left out; the searched runs are always written. A `candidates/` folder holds each candidate so far. See [`spotlight history`](/docs/reference/cli/agent-commands#spotlight-history). |
 | `spotlight candidate` | Proposes a candidate. See [`spotlight candidate`](/docs/reference/cli/agent-commands#spotlight-candidate). |
 | Refused | Messages from people, git, tools, `spotlight reply`, `spotlight recall` and `spotlight remember`. `spotlight trace` finds no held-out task. |
@@ -262,22 +277,42 @@ counted above the [chart](#success-against-cost) and warned about when
 [picked](#picking-a-candidate). A marked candidate stays on the frontier, can
 still be the [best candidate](#best-candidate), and can still be picked.
 
+### Aims
+
+A search aims for one of two things, chosen when it starts and kept for its
+life:
+
+| Aim | `objective` | Ranks |
+| --- | --- | --- |
+| More success | `success` | Every scored candidate, by score, then the cheaper. |
+| The same success for less | `cost` | The live config, and the candidates whose gain over the live config reads Better or Within noise, by cost per run, then by score. A candidate whose gain reads Worse, or is not known yet, is left out. |
+
+Left unset, a search aims for the same success for less when the set's
+[room to improve](/docs/reference/app/replays#room-to-improve) reads Almost
+none, and for more success otherwise.
+
 ### Frontier
 
 The frontier is every candidate with a finished searched replay and a search
 score that no other candidate beats on both counts: succeeding at least as
 often for no more cost per run, and better on one. An unpriced cost counts as
-the highest. The live config is always on the frontier.
+the highest. The live config is always on the frontier. When the search aims
+for the same success for less, only candidates whose gain on the searched
+tasks reads Better or Within noise can be on it.
 
 When a search stops searching, the frontier's candidates, the live config
 aside, are replayed on the held-out runs, as many as "Candidates per
-iteration", highest search score first, then cheapest.
+iteration", in the order of its [aim](#aims). When it aims for the same success
+for less, only candidates that cost less per run than the live config are.
 
 ### Best candidate
 
-The frontier point that succeeds most: by held-out score once any candidate has
-one, else by search score, then the cheaper. When the live config succeeds most,
-the best reads "Live config".
+The candidate first in the order of the search's [aim](#aims): by held-out
+score and held-out gain once any candidate has a held-out score, else by
+search score and searched gain. When it aims for more success, that is the one
+that succeeds most, then the cheaper; when it aims for the same success for
+less, the cheapest that holds its success, read "Cheapest". When the live
+config comes first, the best reads "Live config".
 
 ## Spend and ceiling
 
