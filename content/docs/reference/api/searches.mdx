@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Searches API
-description: The team endpoints that estimate, start, read and stop searches for a better station config, pick a candidate and read the pull request it opens, with their bodies, fields, permissions and errors.
+description: The team endpoints that estimate, start, read and stop searches for a better station config, pick a candidate and read the pull request it opens, record why a stalled search's tasks fail, with their bodies, fields, permissions and errors.
 ---
 
 [Searches](/docs/reference/app/searches) are read and changed through these
@@ -36,6 +36,19 @@ A search's agent proposes candidates at `POST /api/runs/{runId}/search-candidate
 which only the runner holding the run may call, with its runner token. The
 agent reaches it through
 [`spotlight candidate`](/docs/reference/cli/agent-commands#spotlight-candidate).
+From a reflection's run it is refused with `409`.
+
+A reflection's agent records a cause at `POST /api/runs/{runId}/search-causes`,
+on the same terms, through
+[`spotlight cause`](/docs/reference/cli/agent-commands#spotlight-cause). The
+body is `{ "taskId", "cause", "evidence", "suggestion" }`, `suggestion`
+optional; it answers `201` and `{ "taskId", "cause", "replayRunId" }`.
+
+| Status | Cause |
+| --- | --- |
+| `404` | The run is no search run the runner holds, the search no longer holds it, or the task is none the reflection looks into. |
+| `409` | The run's iteration proposes candidates. |
+| `422` | A `cause` other than `config`, `task`, `judge`, `check` or `infra`; no `evidence`, or more than 4,000 characters of it; a `suggestion` over 4,000 characters. |
 
 ## Start a search
 
@@ -128,12 +141,25 @@ Each item of a list, and the first fields of a search's detail:
 | Field | Type | Description |
 | --- | --- | --- |
 | `split` | object | `searchedTasks`, `heldOutTasks`, and `searched` and `heldOut`, each a list of `{ runId, taskId }` from the set. |
-| `iterations` | array | Each `{ number, runId, state, attempts, proposed, agentSpent }`. `state` is `wanted`, `running`, `ended` or `failed`. `attempts` counts its proposals, refused ones included; `proposed` lists the candidates it admitted, by id. `agentSpent` is what its agent run spent, once known. |
+| `iterations` | array | Each `{ number, kind, runId, state, attempts, proposed, agentSpent, reflection }`. `kind` is `propose` or `reflect`. `state` is `wanted`, `running`, `ended` or `failed`. `attempts` counts its proposals, refused ones included; `proposed` lists the candidates it admitted, by id. `agentSpent` is what its agent run spent, once known. `reflection` is a [reflection](#reflection) for a `reflect` iteration, else null. |
 | `seed` | object | The live config the search started from, as a [candidate](#candidate). Its search score counts the searched runs only, its held-out score the held-out runs. |
 | `candidates` | array | Every candidate its agent proposed. |
 | `frontier` | array of strings | The candidates on the [frontier](/docs/reference/app/searches#frontier), by id, cheapest first, the seed always among them. With `objective` set to `cost`, only candidates whose `searchedGain.verdict` is `better` or `within-noise`. |
 | `onlyOnSeenTasks` | number | How many frontier candidates' `onlyOnSeenTasks` is `marked`. See [Only on seen tasks](/docs/reference/app/searches#only-on-seen-tasks). |
 | `minGain` | number | The smallest gain over the seed the line counts as real: `replay_check.min_gain`, or `0.05` when the line has none. |
+
+### Reflection
+
+What an iteration that looked into why the search
+[stalled](/docs/reference/app/searches#stalls) looked into and found.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `standing` | string or null | The candidate whose failures it looked into, by id: the seed's when nothing beat the live config. Null until it looked. |
+| `tasks` | array | The searched tasks that config still failed, each `{ taskId, originalRunId, replayRunId }`: the task, its run in the set, and the replay run that failed it. Never a held-out task. |
+| `causes` | array | One per task given a cause, each `{ taskId, originalRunId, replayRunId, cause, evidence, suggestion, recordedAt }`. `cause` is `config`, `task`, `judge`, `check` or `infra`; see [Causes](/docs/reference/app/searches#causes). `suggestion` is a string or null. |
+| `outcome` | string or null | Once it ended: `went-on`, `no-config-cause`, `no-failures`, `did-not-run` or `out-of-budget`. See [Reflection outcomes](/docs/reference/app/searches#reflection-outcomes). |
+| `endedSearch` | boolean | Whether the search stopped searching when it ended: `true` for every `outcome` but `went-on`. |
 
 ### Candidate
 

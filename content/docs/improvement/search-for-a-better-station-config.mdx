@@ -2,7 +2,7 @@
 type: how-to
 icon: SquarePen
 title: Search for a better station config
-description: Have an agent propose changed configs for a work station, replay each on the station's past tasks, and open a pull request for the one you pick.
+description: Have an agent propose changed configs for a work station, replay each on the station's past tasks, act on what it finds when it stalls, and open a pull request for the one you pick.
 ---
 
 Use this when you want Spotlight to look for a better config for a work
@@ -176,7 +176,9 @@ The search's page shows its state beside its name:
    every task of the set. The agent waits for this to finish.
 2. **Searching**: the agent runs once per iteration and proposes candidates.
    Each candidate is replayed on the searched tasks, and the next iteration
-   starts once those replays have ended, so the agent sees how they did.
+   starts once those replays have ended, so the agent sees how they did. If
+   two iterations in a row find nothing better, the next one may look into
+   why instead. See [If the search stalls](#if-the-search-stalls).
 3. **Checking on held-out tasks**: once it stops searching, the best
    candidates are replayed on the tasks the agent never saw.
 4. **Finished**, or **Stopped**, with the reason under the name, such as **It
@@ -191,6 +193,68 @@ agent's run** to see what the agent read and did.
 To stop a search, select **Stop**, then **Stop search**. The agent's run
 stops and nothing more is replayed. Candidates whose replays finished keep
 their scores and can still be picked.
+
+## If the search stalls
+
+A search stalls when two iterations in a row propose nothing better than the
+best config before them. If it has at least 2 iterations and enough of its
+ceiling left, the next iteration proposes nothing: its agent looks into each
+searched task the best config so far still fails, and records what caused
+the failure. When a change to the config could fix some of them, the search
+goes on and its next agent is told what was found. Otherwise the search ends.
+See [Stalls](/docs/reference/app/searches#stalls).
+
+If you started the search, you get an inbox notice when it ends this way, and
+when it goes on but found something to fix outside the config.
+
+<Steps>
+<Step>
+
+Open **Inbox**. A notice about the search reads, for example, **The search
+for a better Build config stalled: nothing left the config can fix**. Open
+it. Under **Details**, it says what happened, then names each task with what
+to fix. Select **Open the search**.
+
+</Step>
+<Step>
+
+On the search's page, under **Why it stalled, looked into in iteration
+`<n>`**, the tasks are grouped by cause. Each shows what in the runs showed
+the cause and what the agent suggests. Select **Open the failed replay run**
+to check it yourself.
+
+</Step>
+<Step>
+
+Fix what each group asks:
+
+- **The task itself**: take the task's run out of the replay set, or reword
+  the task. See [Pick the tasks to replay](/docs/improvement/replay-past-tasks-against-a-station-change#pick-the-tasks-to-replay).
+- **The judge**: fix the judge's rubric. See
+  [Set a station's judge and alerts](/docs/improvement/set-a-stations-judge-and-alerts).
+- **The check**: fix the broken or flaky test the station's check runs.
+- **Around the work**: replay the task again. If it keeps failing, fix what
+  the run needs, such as a tool or a service.
+- **The station's config**: nothing. The search keeps trying configs for
+  these.
+- **No cause recorded**: open the failed replay run and decide for yourself.
+
+</Step>
+<Step>
+
+Back on the notice, select **Dismiss**. It moves under **Resolved**.
+
+</Step>
+<Step>
+
+If the search ended, start a new one once the fixes are in.
+
+</Step>
+</Steps>
+
+If the notice reads **stalled, with no budget left to look into why**, the
+search had fewer than 2 iterations or too little of its ceiling left. Start
+a new search with more iterations or a higher ceiling.
 
 ## Read the results
 

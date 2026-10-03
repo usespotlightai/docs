@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Tasks, runs and the inbox
-description: Task fields and states, notes, handovers and moves, run states, failure codes, configs, spend, a station's judge and alerts, station outcomes, the inbox, grades, station alerts, approvals, chats and attachments.
+description: Task fields and states, notes, handovers and moves, run states, failure codes, configs, spend, a station's judge and alerts, station outcomes, the inbox and its notices, grades, station alerts, approvals, chats and attachments.
 ---
 
 A task stands at one station of a line. Runs work it; people answer it from the
@@ -522,8 +522,9 @@ A part with no value shows `–`.
 ## The inbox
 
 A person's inbox holds every conversation, open or resolved, on every task in
-the workspace that is assigned to them. Items are ordered by their latest note,
-newest first, in the sections "Open" and "Resolved".
+the workspace that is assigned to them, and the [notices](#notices) put to
+them. Items are ordered by their latest note, notices by when they were
+raised, newest first, in the sections "Open" and "Resolved".
 
 | Flag | Set when |
 | --- | --- |
@@ -536,6 +537,37 @@ Only the task's assignee can answer an item, and only an open conversation can
 be answered. An answer writes an `answered` note. The run that asked carries
 on; if no run holds the task and the station has a harness, a run starts there,
 taking up the harness session where the last run left it.
+
+### Notices
+
+A notice tells one person about their team's work, outside any task. Spotlight
+raises one when a [search stalls](/docs/reference/app/searches#notices).
+Nothing waits on it, and it cannot be answered.
+
+| Field | Shows |
+| --- | --- |
+| Form | `ended`: work the person started has ended. `advice`: it carries on, with something they could fix. |
+| Headline | What it is about, at most 200 characters. |
+| Points | 1 to 20, of at most 1,000 characters each: what happened, then what it suggests. |
+| Link | A page of its team, with a label naming it. |
+
+| Flag | Set when |
+| --- | --- |
+| unread | Its person has not opened it, and it is not settled. Opening it reads it. |
+| resolved | Its person selected "Dismiss". A settled notice shows under "Resolved" for 30 days after it was settled, then leaves the inbox. |
+
+Its row shows a lightbulb, the headline, an unread dot, the day it was raised,
+and the first point. Its page, `/w/<slug>/inbox/notices/<noticeId>`, shows when
+it was raised, the headline, the points under "Details", a button that opens
+the link, and "Dismiss", or once settled, "Dismissed. There is nothing left
+to do here." A failed dismissal reads "It could not be dismissed. Try again."
+
+A notice reaches only its person, and only while they are a member of its
+team's workspace. To anyone else, and once it has left the inbox, its page
+reads "Nothing here is waiting on you any more." Reading and settling are
+`POST /api/workspaces/{slug}/inbox/notices/{noticeId}/read` and `…/settle`,
+each answering `204`, or `404` for a notice not put to the caller. Disbanding
+a team forgets its notices.
 
 ### Grades
 
