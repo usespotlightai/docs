@@ -2,7 +2,7 @@
 type: concept
 icon: Lightbulb
 title: Why changes are replayed on past tasks
-description: Why Spotlight tests a station change by running past tasks again, what a replay starts from and what it may not touch, how it is scored against a baseline, why its results come with a range, and what it costs.
+description: Why Spotlight tests a station change by running past tasks again, what a replay starts from and what it may not touch, how it is scored against a baseline, why its results come with a range, how a replay set is checked before it is trusted, and what it costs.
 ---
 
 A team changes a work station to make its runs better, with a sharper prompt
@@ -174,6 +174,40 @@ most 5. That rule takes the spread to shrink with the square root of the
 number of copies, as an average of independent tries does. More than 5 needed
 means no search of that set, at any number of copies, can tell such a gain
 from noise. A search starts all the same; the warning is advice.
+
+## Whether a set can tell configs apart
+
+Noise is one way a set can fail to tell a better config from a worse one.
+There are others, and on any of them a search would chase something other than
+a better config. A set's page reads each of them for the live config as it is
+now, as its health, and a search warns about each before it starts.
+
+- Room to improve. When the live config already succeeds on more than 95% of
+  the set, a candidate has almost no tasks left to win. A search of such a set aims, unless told otherwise, for the
+  same success for less: it ranks the candidates whose gain over the live
+  config is not Worse by what a run costs.
+- A judge that disagrees with itself. A judge is a model, and asked twice
+  about the same change it can answer differently. When it passes or fails
+  the same change alike less than 80% of the time, part of every score is
+  chance, and a search would chase luck.
+- Flaky checks. A test that passes on one run and fails on the next, on the
+  same change, can flip a candidate's result by chance. Running the check a
+  second time on the same change shows which tasks do it.
+- A set that does not reward a stronger model. On a set whose tasks are clear
+  and whose scoring is right, the live config with a stronger model or a higher
+  effort should do better. When its gain over the live config, replayed at
+  least as often, does not read Better, the tasks may be unclear or the
+  scoring off, and the tasks it did worse on are where to look first. In the
+  docs' view, this is a check on the set, not on the model: a stronger config
+  is the one change whose direction is known in advance.
+
+Checking a set replays the live config over it with 3 copies of each run,
+which also measures its noise, then judges and checks each change a second
+time. The second judgings cost model calls, so they count against the check's
+ceiling and stop once it would be spent; the rest are not judged again. A
+second judging or check never changes a run's result. In the docs' view, it
+measures the judge and the check, not the run. The second judgings also do not
+count toward what the check's runs cost.
 
 ## What it costs
 

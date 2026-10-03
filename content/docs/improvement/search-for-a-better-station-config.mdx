@@ -17,6 +17,8 @@ line's Terraform. You need:
 - To be on the team, or an owner or admin of the workspace.
 - A replay set at the station with runs of at least 5 different tasks. See
   [Pick the tasks to replay](/docs/improvement/replay-past-tasks-against-a-station-change#pick-the-tasks-to-replay).
+  [Check the set's health](/docs/improvement/replay-past-tasks-against-a-station-change#check-the-sets-health)
+  first, so you know whether its results can be trusted.
 - A host serving the workspace with the station's harness, and the harness you
   want the search's agent to run on. See [Install a host](/docs/hosts/run-a-host).
 - To open pull requests from it: the line's Terraform in a GitHub repository
@@ -102,6 +104,18 @@ Set the budget:
 </Step>
 <Step>
 
+Under **Aim for**, choose what counts as better:
+
+- **More success**: candidates that succeed more often.
+- **The same success for less**: candidates that succeed as often as the live
+  config, within noise, and cost less a run.
+
+If the live config already succeeds on more than 95% of the set, **The same
+success for less** is chosen for you, with a note saying so. You can change it.
+
+</Step>
+<Step>
+
 Under **Its agent**, choose the harness, and the model and effort if you want
 other than the harness's own defaults. This is the agent that proposes
 candidates, not the station's own.
@@ -122,7 +136,7 @@ candidates or repeats.
 Read any warning under the estimate:
 
 - If nobody has measured how much the set's success moves by chance,
-  [measure the set's noise](/docs/improvement/replay-past-tasks-against-a-station-change#measure-the-sets-noise)
+  [check the set](/docs/improvement/replay-past-tasks-against-a-station-change#check-the-sets-health)
   first, or set **Repeats** above 1.
 - If the set's success moves more than the line counts as real, select the
   button under the warning, as in **Replay each run 3 times**, to set
@@ -130,6 +144,15 @@ Read any warning under the estimate:
   If the warning says even 5 copies won't bring it under, read small gains
   with care, or raise the line's
   [`min_gain`](/docs/reference/terraform/line#replay-check-fields).
+- If the live config already succeeds on almost all of the set, aim for the
+  same success for less, or add runs of tasks the live config fails.
+- If the judge gave the same verdict too rarely when it judged the same change
+  twice, make its rubric more specific before you search.
+- If the check passed once and failed once on the same change, fix the flaky
+  tests, or take those tasks' runs out of the set. The set's page lists them.
+- If a stronger model did not do clearly better on the set, look at the tasks
+  it did worse on, listed on the set's page: their rubric or checks may be
+  wrong.
 
 The search starts with a warning all the same, but a gain it finds may be
 chance.
@@ -184,9 +207,16 @@ against what it spent a run. The candidates joined by the line are the
 frontier: for each, no other candidate succeeded as often for less. The live
 config is always on it. Select **Show table** to read the same as a table.
 
-**Best**, in the header, is the frontier candidate that succeeded most: by its
-score on the held-out tasks once it has one, else by its score on the searched
-tasks. It reads **Live config** when nothing beat the station as it is.
+**Best**, in the header, is the candidate that succeeded most: by its score on
+the held-out tasks once it has one, else by its score on the searched tasks.
+It reads **Live config** when nothing beat the station as it is.
+
+If the search aims for the same success for less, the frontier holds only
+candidates whose gain over the live config reads **Better** or **Within
+noise**, only those cheaper than the live config are replayed on the held-out
+tasks, and the header reads **Cheapest** in place of **Best**: the cheapest of
+the live config and the candidates whose gain reads **Better** or **Within
+noise**.
 
 Give the held-out score the most weight. A held-out gain that reads **Better**
 is the strongest sign a candidate helps. A candidate whose gain reads

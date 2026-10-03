@@ -67,7 +67,7 @@ Each item of a station's `sets`, the newest replayed first:
 | `name` | string | |
 | `stationGone` | boolean | Whether its station has left its line. |
 | `guardsChanges` | boolean | Whether it [guards its station's changes](/docs/reference/app/searches#guarding-a-stations-changes). |
-| `health` | object | `{ tasks, runs, oldestRunEndedAt, newestRunEndedAt, lastAddedAt, noise, minGain }`. `runs` counts the runs the set holds now, and `tasks` the different tasks they worked. The three times are when the oldest and the newest of its runs ended, and when a run was last added to it; each is null while there is none. `noise` is the set's noise, as in the [Replays API](/docs/reference/api/replays#success-ranges-and-noise), or null until measured; `minGain` the smallest gain its line counts as real. |
+| `health` | object | `{ tasks, runs, oldestRunEndedAt, newestRunEndedAt, lastAddedAt, noise, saturation, judge, checks, sanity, minGain }`. `runs` counts the runs the set holds now, and `tasks` the different tasks they worked. The three times are when the oldest and the newest of its runs ended, and when a run was last added to it; each is null while there is none. `noise`, `saturation`, `judge`, `checks` and `sanity` are the set's health, as in the [Replays API](/docs/reference/api/replays#set-health); `minGain` the smallest gain its line counts as real. |
 | `baseline` | object or null | Its newest baseline that is queued, running or finished, whatever the period. Null while it has none. See [Baseline](#baseline). |
 | `candidates` | array | The candidates replayed over it in the period, the newest replayed first. See [Candidate](#candidate). |
 
@@ -114,7 +114,7 @@ Each item of a station's `sets`, the newest replayed first:
 | `compared` | number | The compared runs: how many of its runs the baseline replayed too. |
 | `againstLive` | object or null | Its gain over the baseline on the compared runs, paired run by run, against the line's `min_gain`. Null without a baseline. |
 | `onFrontier` | boolean or null | Whether it is on its search's [frontier](/docs/reference/app/searches#frontier). Null unless `searched`. |
-| `search` | object or null | `{ searchId, state, startedAt, seed }`: the search that proposed it. `state` is `seeding`, `searching`, `holding-out`, `finished` or `stopped`. `seed` is `{ successRate, interval, costPerRun, scored }`: the live config the search started from, scored on the same searched runs as its candidates, as the search page gives the live config's search score, with its cost per run in the candidate's `currency`. Null unless `searched`. |
+| `search` | object or null | `{ searchId, state, objective, startedAt, seed }`: the search that proposed it. `state` is `seeding`, `searching`, `holding-out`, `finished` or `stopped`. `objective` is `success` or `cost`, the search's [aim](/docs/reference/app/searches#aims), which decides `onFrontier`. `seed` is `{ successRate, interval, costPerRun, scored }`: the live config the search started from, scored on the same searched runs as its candidates, as the search page gives the live config's search score, with its cost per run in the candidate's `currency`. Null unless `searched`. |
 | `pullRequest` | object or null | `{ id, state, url, reason }`: the [config pull request](/docs/reference/api/searches#config-pull-request) picking it opened. Null until a person picks it, and for every proposed candidate. |
 
 ## Who may read
