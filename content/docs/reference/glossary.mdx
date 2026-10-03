@@ -91,6 +91,13 @@ A station's one-line command, such as `npm test`, run against the whole change
 and then each layer of a change stack drafted at that station. See
 [Checks](/docs/reference/app/change-stacks-and-decisions#checks).
 
+## Claim
+
+A statement a good run makes true, such as `The change adds a test that fails
+without it.`, listed in a station's `judge` block. The [judge](#judge) marks
+each claim met or not, and scores a run as the share met. See
+[Judge fields](/docs/reference/terraform/line#judge-fields).
+
 ## Cohort
 
 A group of layers in a change stack, of kind `change` or `incidental`, with a
@@ -148,6 +155,7 @@ config reads Better or Within noise can be on it. See [Frontier](/docs/reference
 ## Grade
 
 A person's score of a judged run, on the judge's scale, given from the inbox.
+On [claims](#claim), a grade marks each claim met or not.
 The judge's agreement with people is measured against grades. See
 [Grades](/docs/reference/app/tasks-runs-and-the-inbox#grades).
 
@@ -225,7 +233,7 @@ connects to it. See [`spotlight_integration`](/docs/reference/terraform/integrat
 ## Judge
 
 A model that scores a share of a work station's runs against the station's
-[rubric](#rubric), citing the steps and changes behind each reason. Its scores
+[rubric](#rubric) or [claims](#claim), citing the steps and changes behind each reason. Its scores
 show only once they agree often enough with people's. A station sets one in
 its `judge` block. See [Judging](/docs/reference/app/tasks-runs-and-the-inbox#judging)
 and [Judge fields](/docs/reference/terraform/line#judge-fields).
@@ -410,7 +418,8 @@ and when it is finished. A person's move must name the current revision. See
 
 What a good run at a station looks like, in Markdown, written by the team for
 the station's [judge](#judge). Its first line can name its scale,
-`scores: yes-no` or `scores: 1-5`. See
+`scores: yes-no` or `scores: 1-5`. A judge can have [claims](#claim) in
+place of a rubric, or beside one. See
 [Judge fields](/docs/reference/terraform/line#judge-fields).
 
 ## Run
@@ -457,6 +466,16 @@ Spotlight opens a pull request with it. See [Searches](/docs/reference/app/searc
 A named value a workspace keeps. Spotlight puts it in a request header on
 requests to the hosts it is bound to; the value never enters a sandbox. See
 [`spotlight_secret`](/docs/reference/terraform/secret).
+
+## Side by side
+
+A judging of two replays' changes to the same task together, without the
+judge being told which replay made which, against the change people accepted.
+A replay whose candidate has a judge, other than a baseline or a check of a
+set, is set side by side with the replay it is compared with once it
+finishes, and reads its wins, losses and ties beside its success.
+It never changes a run's result. See
+[Side by side](/docs/reference/app/replays#side-by-side).
 
 ## Skill
 

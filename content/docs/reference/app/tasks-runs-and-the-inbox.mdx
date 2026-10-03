@@ -331,7 +331,8 @@ of these hold:
 - It falls in the judge's `sample`. Whether a run falls in it is worked out
   from the run's id, so it never changes. A `sample` of 1 judges every run, and
   0 none.
-- The rubric's scale can be read.
+- The rubric's scale can be read. A judge with claims always scores claim by
+  claim.
 - It has not been judged before. A run is judged once.
 
 At most 4 runs are judged at once. The judge reads the task's title (up to 300
@@ -349,15 +350,22 @@ The judge is told how many steps and hunks were left out.
 The judge answers with a score on the rubric's scale and 1 to 5 reasons. Each
 reason is up to 1,000 characters and cites 1 to 10 steps, by their place in the
 run's journal, or hunks, by name. A reason citing a step or hunk the judge did
-not read is dropped. A score is recorded against the rubric's version, the
-SHA-256 of its text.
+not read is dropped.
+
+A judge with claims answers each claim, in order, met or not, with 1 to 3
+reasons of its own in the same form. It is told that a claim the steps and
+hunks do not show to hold is not met. Its score is the share of claims met,
+and each claim keeps its mark and its reasons.
+
+A score is recorded against the rubric version: the SHA-256 of the rubric, the
+claims and the pass share together.
 
 | Failure | When | Tried again |
 | --- | --- | --- |
 | `no-evidence` | The run left no steps and no hunks. | no |
 | `refused` | The model refused to answer. | up to 4 attempts, from 30 seconds to 10 minutes apart |
-| `unreadable` | The answer could not be read, gave more than 5 reasons, or a score off the scale. | up to 3 attempts, from 30 seconds to 5 minutes apart |
-| `ungrounded` | Half the reasons or fewer cited what the judge read. | up to 3 attempts, from 30 seconds to 5 minutes apart |
+| `unreadable` | The answer could not be read, gave more than 5 reasons, or a score off the scale. With claims: it did not answer each claim once, in order, or gave a claim no reasons or more than 3. | up to 3 attempts, from 30 seconds to 5 minutes apart |
+| `ungrounded` | Half the reasons or fewer cited what the judge read. With claims: half or fewer of any one claim's reasons. | up to 3 attempts, from 30 seconds to 5 minutes apart |
 | `errored` | Another error. | up to 4 attempts, from 30 seconds to 10 minutes apart |
 
 A run whose judging failed shows no score.
@@ -370,7 +378,8 @@ the version of the run's judge score, or else the station's rubric at the time.
 On a yes-or-no scale, a run no one graded takes its people's score from what
 happened next: Yes when a person next closed the task or approved, No when a
 person next sent it back or refused; failing those, Yes when its pull request
-merged and No when it closed unmerged. A 1 to 5 scale uses grades only.
+merged and No when it closed unmerged. A 1 to 5 scale and claims use grades
+only.
 
 Agreement is measured for each rubric version, over its latest 500 judged runs,
 from the runs with both scores:
@@ -379,6 +388,10 @@ from the runs with both scores:
 | --- | --- | --- |
 | Yes or no | Cohen's kappa | Agreed: the share of runs where both scores are the same. |
 | 1 to 5 | Spearman's ρ, with tied ranks averaged | Mean error: the mean absolute difference between the two scores. |
+| Claims | Cohen's kappa over every claim's marks, pooled across claims | Agreed: the share of claim marks where both said the same. For each claim, its own Cohen's kappa, agreed share and count of runs. |
+
+On claims, a run counts once toward the runs with both scores, however many
+claims it has.
 
 The judge's scores show only when the station's current rubric is trusted:
 
@@ -407,13 +420,16 @@ answered `404`. See [Team outcomes](/docs/reference/roles-and-permissions#team-o
 Under "Judge", "Judges" reads `<sample> of runs`, as a percentage, and
 "Trusted from" reads `agreement with people of <trust> or more`, with `trust`
 to two decimals. The agreement is Cohen's kappa or Spearman's ρ; see
-[Agreement](#agreement). "Rubric" opens the rubric. Then:
+[Agreement](#agreement). A judge with claims lists them under "Claims",
+numbered, then `A run passes when it meets every claim.`, or `A run passes
+when it meets at least <share> of its claims.` "Rubric" opens the rubric, when
+the judge has one. Then:
 
 | Part | Shows |
 | --- | --- |
 | Standing | Whether the judge is trusted, as `Trusted: <measure> is <value> over <n> runs, at least the <trust> it needs.`, or why its scores are hidden, as `Hidden until more runs have both a judge score and people's: <n> so far.` The measure and `trust` are shown to two decimals. |
 | Coverage | `Of the station's last <n> runs`, over its latest 200 runs that ran: "Both scores", "Judge only", "People only" and "Neither". |
-| Agreement by rubric | One card per rubric version, newest judged first, marked "Current" or "Earlier": the first 7 characters of its version, `<n> judged · <n> with people's scores`, the measure and what is also shown, a matrix of the judge's scores down and people's across, and a chart of the judge's and people's scores by day. The chart shows the judge's daily mean only on the current rubric's card while it is trusted; otherwise its legend reads "Judge hidden". |
+| Agreement by rubric | One card per rubric version, newest judged first, marked "Current" or "Earlier": the first 7 characters of its version, `<n> judged · <n> with people's scores`, the measure and what is also shown, a matrix of the judge's scores down and people's across, and a chart of the judge's and people's scores by day. On claims, the measure reads "Cohen's kappa, every claim", the matrix counts claim marks, the chart reads "share of claims met, by day", and "Agreement claim by claim" has one row per claim: "Claim", "Cohen's kappa", "Agreed" and "Runs". An earlier version's claims read as `Claim <n>`. The chart shows the judge's daily mean only on the current rubric's card while it is trusted; otherwise its legend reads "Judge hidden". |
 
 With no judged runs, the section reads "No judged runs yet".
 
@@ -444,14 +460,15 @@ four under 0.01. With `over` set to 1, the line reads
 
 ### Judge score
 
-The Run page of a judged run shows "Judged" and the judge's score, `Yes`, `No`
-or `<n> of 5`, when the station's current rubric is trusted and the score was
+The Run page of a judged run shows "Judged" and the judge's score, `Yes`, `No`,
+`<n> of 5` or `<n> of <m> claims met`, when the station's current rubric is trusted and the score was
 given under it. Otherwise it shows `score hidden`. People's
 grades follow as `People said <grades>`, with `(you)` beside the reader's own.
 While the judge is not trusted, its standing is shown beneath. A shown score
 lists its reasons under it, each with the steps and hunks it cites, as
 `Step <n>` or the file's name and hunk header. Selecting a hunk opens the file
-at that hunk; selecting a step shows it.
+at that hunk; selecting a step shows it. On claims, each claim is listed with
+"Met" or "Not met" and its own reasons under it.
 
 A run's judge score and people's grades can be read only by people on the
 team, the workspace's owners and admins, and workspace tokens with the `read`
@@ -580,15 +597,20 @@ It reaches the inbox of the task's assignee, or of everyone on the team when the
 task has no assignee. It never reaches a person who is neither on the team nor
 an owner or admin of the workspace. The item shows "Grade this run", the task, "What the run
 said last", "Its changes", and "Is this a good run?" with Yes and No, or
-"How good is this run, from 1 to 5?" with 1 to 5. The judge's score is not
-shown on it.
+"How good is this run, from 1 to 5?" with 1 to 5. On claims, it reads "Does
+the run meet each claim?" and lists each claim with Yes and No; "Save grade"
+saves once every claim is answered, and until then the item reads "Answer
+every claim to save your grade." A claim whose words changed since the judge
+marked it reads `Claim <n>`, with "Its words changed since the judge marked
+it, so it reads by its place." The judge's score is not shown on it.
 
 - Any person on the team, and any owner or admin of the workspace, can grade
   a run. Anyone else is answered `404`. One grade settles the item for
   everyone.
 - A person's later grade of the same run replaces their earlier one.
 - A run is graded on its judge's scale, else on the scale of its station's
-  rubric, else yes or no.
+  rubric, else yes or no. On claims, a grade marks every claim met or not, and
+  counts as the share met.
 - Nothing waits on a grade. The task moves on as it would without one.
 
 ### Station alerts

@@ -6,8 +6,8 @@ description: Why a station's judge stays hidden until its scores match people's,
 ---
 
 A station's [judge](/docs/reference/glossary#judge) is a model that reads a
-share of the station's runs and scores each one against a rubric the team
-wrote. It can read every sampled run, which no person has time to do, and so
+share of the station's runs and scores each one against a rubric or a list of
+claims the team wrote. It can read every sampled run, which no person has time to do, and so
 it can say how a station is doing between the runs people look at closely. A
 model can also misread a rubric, or read it more strictly or loosely than the
 team meant. A score that disagrees with what people would have said is worse
@@ -32,7 +32,8 @@ with a run says whether it was good: closing the task or approving after it is
 a yes, sending it back or refusing is a no, and failing those, a merged pull
 request is a yes and one closed unmerged is a no. A 1 to 5 rubric has no such
 signal, because closing a task says nothing about whether the run was a 3 or a
-4, so it relies on grades alone.
+4, so it relies on grades alone. So do claims: closing a task says the run was
+good enough, not which of its claims held.
 
 In the docs' view, the second source is what makes a judge usable on a busy
 station: its agreement can be measured from the work people do anyway, and
@@ -52,12 +53,36 @@ scores every run one point lower than people do still ranks them the same way,
 and its scores still tell good runs from bad. The mean error, shown beside it,
 says how far apart the two scores sit.
 
+For claims, Spotlight sets each claim's mark from the judge beside the same
+claim's mark from people, pools those pairs across every claim, and measures
+Cohen's kappa over them. It also measures each claim on its own. A judge can
+read most claims as people do and one of them differently; the pooled figure
+says whether the judge can be trusted, and the per-claim figures say which
+claim to reword.
+
 At least 10 runs need both scores before any measure counts. In the docs'
 view, with fewer, one or two runs would decide the result.
 
+## Claims instead of one score
+
+A rubric asks the judge for one score of the whole run, and a score from 1 to
+5 drifts from one call to the next. A claim such as "the change adds a test for
+the reported bug" is narrower: the judge answers it yes or no and cites what
+shows it, and a person can check that one answer and argue with it. Claims
+make a judge steadier and easier to check against people, which is why a
+station can have them. In the docs' view, a person who disagrees with a 3 has
+little to point at, while a person who disagrees with one claim can say which.
+
+A claims judge scores a run as the share of its claims met. Whether that share
+is enough to pass matters only when a replay decides whether a run succeeded,
+so the team sets it beside the claims as `pass_share`, every claim unless told
+otherwise. A rubric can stay beside the claims, to tell the judge what the
+station is for.
+
 ## Each rubric starts again
 
-Agreement is kept per rubric version. Changing the rubric's text changes what
+Agreement is kept per rubric version. A rubric version covers the rubric, the
+claims and the pass share together. Changing any of them changes what
 the judge is asked, so the agreement measured under the old text says nothing
 about the new one, and the judge is hidden again until it has agreed with
 people under the new text. A changed rubric is also a changed station config,

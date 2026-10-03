@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Replays
-description: The Replays section of a Station page, the replay set and replay pages, replay states, results and their reasons, success with its range, gains, a set's health and the replays that check it, why a run cannot be replayed, spend and ceilings, and how a replay run differs from a task run.
+description: The Replays section of a Station page, the replay set and replay pages, replay states, results and their reasons, success with its range, gains, side-by-side wins, losses and ties, a set's health and the replays that check it, why a run cannot be replayed, spend and ceilings, and how a replay run differs from a task run.
 ---
 
 A [replay](/docs/reference/glossary#replay) runs some of a work station's past
@@ -27,7 +27,7 @@ out". It holds three parts.
 
 | Part | Shows |
 | --- | --- |
-| Replay sets | One row per set of the station: its name, linked to the set's page, `<n> runs`, "Station gone" when its station has left the line, and its latest replay, as `Latest: <candidate>`, the replay's state and its [success](#success) against the baseline. A set never replayed reads "Not replayed yet". "Open a replay set" asks for a name, then opens the new set's page. With no sets, the part reads "No replay sets yet". |
+| Replay sets | One row per set of the station: its name, linked to the set's page, `<n> runs`, "Station gone" when its station has left the line, and its latest replay, as `Latest: <candidate>`, the replay's state, its [success](#success) against the baseline and its [side-by-side](#side-by-side) wins, losses and ties. A set never replayed reads "Not replayed yet". "Open a replay set" asks for a name, then opens the new set's page. With no sets, the part reads "No replay sets yet". |
 | Candidates | One row per proposed candidate of the station, newest first: its name, its short [config fingerprint](/docs/reference/glossary#config-fingerprint), when it was proposed, and `Changed from live <fingerprint>:` with one phrase per change, as the Run page's [Config](/docs/reference/app/tasks-runs-and-the-inbox#config) words them. A candidate that changes nothing reads "The same as the live config when it was proposed." With none, the part reads "No candidates yet". The live snapshots Spotlight takes for baselines are not listed; they show as "Live config" on the replays that ran them. |
 | Propose a candidate | The command that proposes one, with the station's address filled in, and "Copy command". |
 
@@ -46,7 +46,7 @@ See [Searches](/docs/reference/app/searches#station-page).
 | Header | The set's name, `<n> runs · opened <when>`, and the "Guards config changes" switch (see [Guarding a station's changes](/docs/reference/app/searches#guarding-a-stations-changes)). When its station has left the line: `Its station is gone from its line, so it starts no replays, takes no more runs and keeps none of its runs' workspaces. It can still be renamed, have runs taken out, or be deleted.` | "Rename". "Delete", then "Delete set": the set and its replays and their results go, and its runs' workspaces are no longer kept for it. Delete is refused while a replay of the set is queued or running, or still has runs in flight, and while a search of the set is under way: "A replay or search of this set is running, so it can't be deleted until that ends or is stopped." Below the header, "Checks" lists the checks replayed on the set (see [Guarding a station's changes](/docs/reference/app/searches#guarding-a-stations-changes)). |
 | Health | `Whether this set can tell a better config from a worse one. Check it before you search on it.`, then one line per reading of the set's [health](#health). | "Check this set" opens the [Check dialog](#check-this-set), and "Try a stronger model" the [stronger model dialog](#try-a-stronger-model). Both are refused for the same reasons as "Start a replay"; "Try a stronger model" also when the station names no harness: "The station names no harness, so there is no model to choose." "Try a stronger model" is disabled while the station's config loads, and if it cannot be loaded reads "The station's model could not be loaded." with "Try again". |
 | Runs | Each run in the set: its task's title, linked to the run, its state, when it ended, and "Can be replayed" or [why it cannot be](#why-a-run-cannot-be-replayed). A task since deleted reads "A deleted task". | "Add runs" opens the station's latest 50 ended task runs, each with "Add", "In the set" or "Can't be replayed" and the reason. The X beside a run takes it out of the set. "Add runs" is not offered once the station is gone. While a search of the set is under way, runs can be neither added nor taken out. |
-| Replays | Each replay of the set, newest first: its candidate, "Baseline" for the set's baseline, its [state](#replay-states), when it started, its success with its range and its [gain](#gains) over the baseline, `<n> scored · <n> unscored`, `Spent <spent> of <ceiling>`, and `Each run <n> times` when it replays each run more than once. With none, it reads "Not replayed yet". | "Start a replay": see below. |
+| Replays | Each replay of the set, newest first: its candidate, "Baseline" for the set's baseline, its [state](#replay-states), when it started, its success with its range, its [gain](#gains) over the baseline and its [side-by-side](#side-by-side) wins, losses and ties, `<n> scored · <n> unscored`, `Spent <spent> of <ceiling>`, and `Each run <n> times` when it replays each run more than once. With none, it reads "Not replayed yet". | "Start a replay": see below. |
 
 "Start a replay" is refused with "Add runs to the set first." on an empty set,
 and with "Its station is gone from its line." once the station has left the
@@ -86,29 +86,34 @@ The header shows the candidate's name, or "Live config", then
 stopped or over-budget replay, its [state's note](#replay-states). The set's
 baseline also reads `This is the set's baseline: the live config, which every
 other replay of the set is compared against.` While the replay is queued or
-running, "Stop", then "Stop replay", stops it.
+running, "Stop", then "Stop replay", stops it. A replay with a
+[counterpart](#counterparts) reads `Each task compared with <counterpart>.`,
+linked to that replay.
 
 | Label | Shows |
 | --- | --- |
-| Success | `<share> (<low>–<high>%) succeeded`, the [success](#success) with its range, or "No score yet". Beside it, the [gain](#gains) over the baseline, as in `+25 pts (+5 to +40) vs baseline 50% (35–65%) · Better`, or `· the baseline` on the baseline itself. The success's range and the verdict each carry a note on what they mean, which opens on hover or focus. |
+| Success | `<share> (<low>–<high>%) succeeded`, the [success](#success) with its range, or "No score yet". Beside it, the [gain](#gains) over its [counterpart](#counterparts), as in `+25 pts (+5 to +40) vs baseline 50% (35–65%) · Better`, or `· the baseline` on the baseline itself. Then, once any task was [set side by side](#side-by-side), `Side by side with <counterpart>: <n> wins, <n> losses, <n> ties`, the counterpart linked to its replay. The success's range, the verdict and the wins, losses and ties each carry a note on what they mean, which opens on hover or focus. |
 | Scored | `<n> scored · <n> unscored`, then what scores the station: `by its checks and its judge`, `by its checks`, `by its judge`, or `nothing scores this station`. |
 | Copies | `Each run <n> times`. Shown only when the replay replays each run more than once. |
-| Spent | `<spent> of <ceiling>`, with a bar that fills as the ceiling is spent, and `Over the ceiling by <amount>` when runs already running took the replay past it, then "Runs", "Drafting" and "Judging" in the ceiling's currency. "Also spent" sums what was spent in other currencies, one sum per currency. "Not priced" counts the runs whose cost was never reported and the drafting and judging model calls that came back with no price, as in `2 runs · 1 model call`. |
+| Spent | `<spent> of <ceiling>`, with a bar that fills as the ceiling is spent, and `Over the ceiling by <amount>` when runs already running took the replay past it, then "Runs", "Drafting" and "Judging" in the ceiling's currency, and "Side by side" once [side-by-side judging](#side-by-side) spent anything, with the note "Judging changes side by side counts against the ceiling, but not toward cost per run." "Also spent" sums what was spent in other currencies, one sum per currency. "Not priced" counts the runs whose cost was never reported and the drafting and judging model calls that came back with no price, as in `2 runs · 1 model call`. |
 
 Under "Task by task", one row per task, regressions first, then in the set's
-order. With a baseline to compare with:
+order. With a [counterpart](#counterparts) to compare with, named in the
+column headers as it is shown, such as "The baseline":
 
 | Column | Shows |
 | --- | --- |
 | Task | The task's title, linked to the original run, and "Regressed" when the task [regressed](#regressions). |
 | This replay | The [result](#results), its first reason with a count of the rest, and "Run", linked to the replay run. With more than one copy, `<n> of <m> copies succeeded`, where `<m>` counts the scored copies, or "No copy scored yet", then each copy as `Copy <n>` and its result in the same form. |
-| Baseline | The baseline's result on the task, in the same form. |
-| Judge | The judge's score for this replay, `vs` the baseline's, then the difference to two decimals, or why the two are [not compared](#score-comparisons). A score reads `Yes`, `No` or `<n>/5`; with copies, each copy's score, joined by `·`, and the difference between the two sides' averages. |
-| Cost vs baseline | This replay's run cost less the baseline's, each averaged over its copies, once every copy of both has settled. |
-| Time vs baseline | This replay's run time less the baseline's, averaged the same way. |
+| `<Counterpart>` | The counterpart's result on the task, in the same form. |
+| Judge | The judge's score for this replay, `vs` the counterpart's, then the difference to two decimals, or why the two are [not compared](#score-comparisons). A score reads `Yes`, `No`, `<n>/5` or `<n> of <m> claims met`; with copies, each copy's score, joined by `·`, and the difference between the two sides' averages. |
+| Closer to the accepted change | Which change the judge found better [side by side](#side-by-side): "This one", the counterpart, as in "The baseline", or "Neither", and `–` for a task not compared. Shown only once any task was compared. |
+| `Cost vs <counterpart>` | This replay's run cost less the counterpart's, each averaged over its copies, once every copy of both has settled. |
+| `Time vs <counterpart>` | This replay's run time less the counterpart's, averaged the same way. |
 
-Without a baseline, the columns are "Task", "Result", "Judge", "Cost" and
-"Time", for this replay alone, cost and time averaged over the copies. A value
+Without a counterpart, the columns are "Task", "Result", "Judge", "Closer to
+the accepted change" once any task was compared, "Cost" and "Time", for this
+replay alone, cost and time averaged over the copies. A value
 not known reads `–`.
 
 ## Replay states
@@ -141,7 +146,7 @@ A run is scored by the candidate's own station block:
 | Scored by | When | Passes |
 | --- | --- | --- |
 | Its checks | The block sets `diffs: true` and a `check`. | The check passes on every layer of the run's change stack. |
-| Its judge | The block has a `judge`. Every replay run is judged, whatever the judge's `sample`. | `Yes`, or 4 or more on a 1 to 5 rubric. |
+| Its judge | The block has a `judge`. Every replay run is judged, whatever the judge's `sample`. | `Yes`, 4 or more on a 1 to 5 rubric, or at least the judge's `passShare` of its claims met. |
 
 With both, a run must pass both. When the original run's next person act was
 Closed or Approved, the judge is also given the original's change, and scores
@@ -172,7 +177,8 @@ detail:
 | `nothing-judges` | Neither checks nor a judge score this station | Unscored |
 
 The judge's reasons cite the replay run's steps and the hunks of its change,
-as a run's judge reasons do.
+as a run's judge reasons do. On claims, each claim's mark and reasons are kept
+with the claims as worded when it was judged.
 
 ### Run failures
 
@@ -242,8 +248,8 @@ again gives the same range.
 
 ### Gains
 
-A replay other than the baseline reads its gain over the baseline: on each
-task both scored, its success less the baseline's, averaged, in points, with
+A replay with a [counterpart](#counterparts) reads its gain over it: on each
+task both scored, its success less the counterpart's, averaged, in points, with
 the 95% interval of that average from the same resampling of those tasks.
 
 | Verdict | Shown | When |
@@ -257,6 +263,63 @@ or 0.05 when the line has no `replay_check`. The app shows it as `+5 pts`. A
 replay reads it from the line as it is now; a
 [replay check](/docs/reference/api/replay-checks) keeps the one it started
 under.
+
+## Side by side
+
+A replay whose candidate has a judge is set beside its
+[counterpart](#counterparts), task by task, once the replay has finished. A
+stopped or over-budget replay never finishes, so it is never set side by side.
+Each copy of a task is set beside the counterpart's copy with the same number,
+or else its first copy, when all of these hold:
+
+- Both runs completed with a change of at least one line, and have their
+  result.
+- People accepted the original run's change: its next person act was Closed or
+  Approved.
+- Both replays are judged under the same rubric version. Otherwise the copy
+  reads `other-rubric`.
+- The ceiling has room. Each pair is tried at most twice, and before asking,
+  Spotlight sets aside four times what judging the copy's own change cost, two
+  readings for each of two attempts, on top of what the replay has spent and
+  what its pairs still being judged have set aside. A copy that would pass the
+  ceiling is not asked; once no pair is still being judged, it reads `budget`.
+
+The judge is given the station's rubric, its claims or both, the task's title
+and description, the two changes as hunks labelled A and B, and the accepted
+change, which is neither. It is not told which change is the replay's. It
+answers `A`, `B` or a tie, with 1 to 5 reasons, each citing 1 to 10 hunks of A
+or B and never of the accepted change. It reads the pair twice: once in an
+order drawn from the two runs, and once the other way round. When the two
+readings name the same change, or both a tie, that is the outcome; otherwise
+the outcome is a tie. The replay's change winning is a win, the counterpart's a
+loss. At most 4 pairs are judged at once, and a pair whose judging fails is
+tried once more at most.
+
+A task with copies is a win when more of its compared copies won than lost, a
+loss when more lost, and a tie otherwise. The replay's wins, losses and ties
+count tasks with at least one compared copy. They never change a run's result,
+the replay's success, its gain or its regressions.
+
+Until it is judged, a copy reads "Not judged side by side yet: that happens
+once the replay finishes." A copy not compared reads `Not judged side by side:
+<reason>.`:
+
+| Code | Reason shown |
+| --- | --- |
+| `unavailable` | no judge model was available |
+| `unreadable-rubric` | the rubric could not be read |
+| `no-evidence` | there was nothing to compare: either change, or the accepted change, has no hunks |
+| `refused` | the judge declined |
+| `unreadable` | the judge's answer could not be read |
+| `ungrounded` | the judge cited nothing either change did |
+| `errored` | judging went wrong |
+| `interrupted` | judging was interrupted |
+| `other-rubric` | its counterpart was judged by another version of the judge |
+| `budget` | no room was left under the ceiling |
+
+What side-by-side judging spends counts against the replay's ceiling, but not
+toward its spend totals or its cost per run. The replay page shows it apart, as
+"Side by side" under "Spent".
 
 ## Health
 
@@ -370,17 +433,35 @@ many times. With none, one starts beside it, with the same repeats and a
 ceiling of its own equal to this one, so the two may spend up to twice the
 ceiling; it is the set's new baseline when the set needs one.
 
-## Regressions
+## Counterparts
 
-A replay is compared with its set's baseline: the newest replay of the live
-config the set started as a baseline, while it is queued, running or
+A replay other than a baseline or a [check of the set](#check-this-set) is
+compared with one other replay of the set, its counterpart, chosen when it
+starts and kept. Its task-by-task rows, its gain and its
+[side-by-side](#side-by-side) comparisons all use the same counterpart.
+
+| Replay | Counterpart |
+| --- | --- |
+| Under a proposed candidate or the live config | The baseline that starts beside it, else the set's baseline standing when it starts that covers its runs with at least as many copies, a finished one first. |
+| A [stronger model](#try-a-stronger-model) replay | The replay of the live config it is compared with. |
+| A search's replay of a candidate, on the searched or the held-out tasks | The search's replay of the live config it started from. |
+| A [replay check](/docs/reference/api/replay-checks) of a planned change | The baseline that starts beside it, else the set's standing baseline, as for a proposed candidate. |
+
+A replay with none is compared with the set's baseline: the newest replay of
+the live config the set started as a baseline, while it is queued, running or
 finished. A stopped or over-budget baseline is not compared with, and the next
 replay of the set starts a new one.
 
-A task regressed when the baseline's [success](#success) on it is more than
+The counterpart is shown as `the baseline` when it is the set's baseline now,
+else as `the search's starting config` for a search's replay, `the live
+config` for a stronger model replay, and `an earlier baseline` for the others.
+
+## Regressions
+
+A task regressed when the counterpart's [success](#success) on it is more than
 0.5 above this replay's, or when this replay's judge score, averaged over its
-copies, is more than 0.01 below the baseline's. With one copy each, that is the
-baseline succeeding and this replay failing. A task can regress only once
+copies, is more than 0.01 below the counterpart's. With one copy each, that is
+the counterpart succeeding and this replay failing. A task can regress only once
 every copy of it, on both sides, has settled and has its result. An unscored
 result is never a regression.
 
@@ -439,8 +520,8 @@ A replay's spend is the cost of its runs, every copy included, of drafting their
 judging them, counted in the ceiling's currency. A drafting or judging attempt
 that failed counts what it was billed. A cost in another currency is summed
 apart and does not count toward the ceiling, nor does a cost that was never
-reported. Each replay has its own
-ceiling. A baseline started beside a replay has a ceiling of its own, equal to
+reported. Side-by-side judging counts against the ceiling, but not toward
+the spend; see [Side by side](#side-by-side). Each replay has its own ceiling. A baseline started beside a replay has a ceiling of its own, equal to
 the replay's. The second judgings of a [check of the set](#check-this-set)
 count against its ceiling, but not toward its success or what its runs cost.
 
@@ -461,6 +542,17 @@ run's task title and `Replay at <station>`. It shows:
   baseline, linked to the replay page, and the run's result in it; for a
   search's replay, also `candidate <name> in its search`, or `the live config
   it started from in its search`, linked to the search;
+- on claims, each claim with "Met" or "Not met" and its reasons, then the
+  pass share, as on the Station page;
+- once the run was asked to be [set side by side](#side-by-side), `Closer to
+  the accepted change:` with "This one", "The other change" or "Neither", and
+  "The other run", linked to the counterpart's run. Before it is judged: "Not
+  judged side by side yet: that happens once the replay finishes." When the two readings disagreed: "The judge read the
+  two changes both ways round and picked a different one depending on which it
+  saw first, so this counts as a tie." Under "Both readings", `With this change
+  shown first:` and `With the other change shown first:`, each with its
+  outcome and reasons, as in `Cites 2 hunks of this change and 1 hunk of the
+  other`;
 - the run's [config](/docs/reference/app/tasks-runs-and-the-inbox#config) and
   [spend](/docs/reference/app/tasks-runs-and-the-inbox#spend), and its steps.
 

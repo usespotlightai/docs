@@ -209,7 +209,7 @@ reviews {
 | `skills` | array of strings | `[]` | The skills given to the agent: a team [skill](/docs/reference/terraform/skill) key, or a catalog skill as `catalog.<name>@<x.y.z>`. Each skill once. A key starting `spotlight-` is refused. |
 | `passesTo` | array of strings | `[]` | The keys of the stations a run here may hand a task on to. |
 | `ends` | boolean | `false` | Whether a run here may finish the task by handing over with `done`. From any other station, `done` goes to a person instead. |
-| `judge` | object | none | Scores the station's runs against a rubric. Only on a `work` station. See [judge fields](#judge-fields). A read leaves it out when none is set. |
+| `judge` | object | none | Scores the station's runs against a rubric, a list of claims, or both. Only on a `work` station. See [judge fields](#judge-fields). A read leaves it out when none is set. |
 | `alerts` | array of objects | `[]` | Thresholds on a measure of the station's runs, kept in the order written. Only on a `work` station. See [alert fields](#alert-fields). |
 
 Spotlight checks catalog tools and skills against what the workspace's plan
@@ -233,15 +233,35 @@ the built-in and catalog tools, and
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `rubric` | string | required | What a good run looks like, in Markdown. Not empty, at most 20,000 characters. In Terraform, usually read with `file()`. |
+| `rubric` | string | none | What a good run looks like, in Markdown. Not empty, at most 20,000 characters. In Terraform, usually read with `file()`. Required when `claims` is not set. |
+| `claims` | array of strings | none | Checkable claims the judge answers yes or no about each run, in order: 1 to 20, each not empty and at most 500 characters, with surrounding spaces trimmed. Required when `rubric` is not set. |
+| `passShare` | number | `1` | The share of claims a replayed run must meet to pass, from 0 to 1. `1` means every claim. Only with `claims`. Terraform: `pass_share`. |
 | `sample` | number | required | The share of runs judged, from 0 to 1. |
-| `trust` | number | required | The agreement with people the judge needs before its scores show, from 0 to 1: Cohen's kappa on a yes-or-no rubric, Spearman's ρ on a 1 to 5 rubric. See [Agreement](/docs/reference/app/tasks-runs-and-the-inbox#agreement). |
+| `trust` | number | required | The agreement with people the judge needs before its scores show, from 0 to 1: Cohen's kappa on a yes-or-no rubric and on claims, Spearman's ρ on a 1 to 5 rubric. See [Agreement](/docs/reference/app/tasks-runs-and-the-inbox#agreement). |
 
-The three fields are required together. See
+A judge has `sample`, `trust`, and `rubric`, `claims` or both. See
 [Judging](/docs/reference/app/tasks-runs-and-the-inbox#judging) for which runs
 are judged and when scores show.
 
-The rubric names its scale on its first line that is not blank, or on a line
+A judge with `claims` scores claim by claim: its score is the share of claims
+met. A `rubric` beside them is given to the judge with the claims, and needs no
+`scores:` line. `passShare` decides only whether a replayed run passes; see
+[Results](/docs/reference/app/replays#results). A read returns `claims` and
+`passShare` only when the judge has claims, and `rubric` only when it has one.
+
+```hcl
+judge {
+  claims = [
+    "The change adds a test that fails without it.",
+    "The change touches only what the task names.",
+  ]
+  pass_share = 1
+  sample     = 0.2
+  trust      = 0.6
+}
+```
+
+Without `claims`, the rubric names its scale on its first line that is not blank, or on a line
 of a front matter block that opens the rubric between two `---` lines:
 
 | Line | Scale |
@@ -254,11 +274,14 @@ of a front matter block that opens the rubric between two `---` lines:
 A `scores:` line further down is not read.
 
 An export writes each rubric to
-`judges/<team>/<line>/<station>.md` and reads it with `file()`.
+`judges/<team>/<line>/<station>.md` and reads it with `file()`. It writes
+`claims` in the block, one claim to a line, with `pass_share`.
 
-The judge is part of the station's config: a run records its rubric's SHA-256,
-`sample` and `trust`, and a change to any of them changes the
-[config fingerprint](/docs/reference/glossary#config-fingerprint).
+The judge is part of the station's config: a run records one SHA-256 of its
+rubric, claims and pass share together, its rubric version, with `sample` and
+`trust`. A change to any of them changes the
+[config fingerprint](/docs/reference/glossary#config-fingerprint), and a
+change to the rubric, a claim or the pass share starts a new rubric version.
 
 | Message | Cause |
 | --- | --- |
@@ -266,7 +289,13 @@ The judge is part of the station's config: a run records its rubric's SHA-256,
 | `A judge's rubric must be at most 20000 characters` | `rubric` is longer. |
 | `A judge's sample is the share of runs judged, from 0 to 1` | `sample` is outside 0 to 1. |
 | `A judge's trust is how often the judge must agree with people, from 0 to 1` | `trust` is outside 0 to 1. |
-| `A judge's rubric names its scale as "scores: yes-no" or "scores: 1-5" on its first line` | The `scores:` line names another scale, or the rubric opens a front matter block with `---` and never closes it. |
+| `A judge's rubric names its scale as "scores: yes-no" or "scores: 1-5" on its first line` | The judge has no `claims`, and the `scores:` line names another scale, or the rubric opens a front matter block with `---` and never closes it. |
+| `A judge's rubric or its claims say what a good run is, and at least one of them is given` | Neither `rubric` nor `claims` is set. |
+| `A judge's claims lists 1 to 20 claims when it lists any` | `claims` is empty or has more than 20. |
+| `A judge's claims each must not be empty` | A claim is empty or only whitespace. |
+| `A judge's claims each must be at most 500 characters` | A claim is longer. |
+| `A judge's passShare is given only beside the claims it counts` | `passShare` is set without `claims`. |
+| `A judge's passShare is the share of claims a run must meet to pass, from 0 to 1` | `passShare` is outside 0 to 1. |
 
 Each is returned with `422` at the path `stations[<n>].judge.<field>`.
 

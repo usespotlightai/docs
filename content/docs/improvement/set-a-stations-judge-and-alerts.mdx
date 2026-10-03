@@ -2,7 +2,7 @@
 type: how-to
 icon: SquarePen
 title: Set a station's judge and alerts
-description: Give a work station a rubric its runs are judged against, and thresholds on how its runs turn out, in the line's Terraform.
+description: Give a work station a rubric or checkable claims its runs are judged against, and thresholds on how its runs turn out, in the line's Terraform.
 ---
 
 Use this to have a share of a work station's runs scored against what a good
@@ -50,8 +50,8 @@ station {
 
 Set `sample` to the share of runs to judge, and `trust` to the agreement with
 people the judge needs before its scores show, both from 0 to 1. Agreement is
-Cohen's kappa on a yes-or-no rubric and Spearman's ρ on a 1 to 5 rubric, so
-`0.6` is not 60% of runs.
+Cohen's kappa on a yes-or-no rubric and on claims, and Spearman's ρ on a 1 to 5
+rubric, so `0.6` is not 60% of runs.
 
 </Step>
 <Step>
@@ -63,6 +63,55 @@ Run `terraform apply`.
 
 A judge is part of the station's config, so the next run starts a new group
 under **How its runs turned out**, and its Run page lists `Judge added`.
+
+## Judge by claims
+
+Use claims in place of a rubric's single score when you can say what a good
+run does as statements the judge can check one by one.
+
+<Steps>
+<Step>
+
+Write 1 to 20 claims, each a statement of at most 500 characters that holds
+for a good run, such as `The change adds a test that fails without it.`
+
+</Step>
+<Step>
+
+Put them in the station's `judge` block as `claims`. Leave out `rubric`, or
+keep it to give the judge more context:
+
+```hcl
+judge {
+  claims = [
+    "The change adds a test that fails without it.",
+    "The change touches only what the task names.",
+  ]
+  pass_share = 1
+  sample     = 0.2
+  trust      = 0.6
+}
+```
+
+A rubric beside claims needs no `scores:` line.
+
+</Step>
+<Step>
+
+If a replayed run may pass without meeting every claim, set `pass_share` to the
+share it must meet, such as `0.5`. Leave it out to require every claim.
+
+</Step>
+<Step>
+
+Run `terraform apply`.
+
+</Step>
+</Steps>
+
+The judge then marks each claim met or not, with its own reasons. Changing a
+claim, its order or `pass_share` starts a new rubric version, and the judge's
+agreement with people is measured again from nothing.
 
 ## Set alerts
 
@@ -92,7 +141,7 @@ most one alert of each kind of threshold, such as one `rises_by` and one
 ## Check the station
 
 Open the line's board and select the station's name. The Station page shows
-**Judge**, with the share judged and the agreement it needs, and **Alerts**,
+**Judge**, with the share judged, the agreement it needs and any claims, and **Alerts**,
 with one line per alert. Only people on the team and the workspace's owners
 and admins can see **Judge**.
 
