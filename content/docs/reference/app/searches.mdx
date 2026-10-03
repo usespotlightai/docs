@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Searches
-description: The Searches section of a Station page, the Start a search dialog, its aims and its warnings, the search page, search and iteration states, scores, gains, the frontier and candidates whose gain showed only on seen tasks, the pull request a picked candidate opens and why one is refused, and a replay set that guards a station's changes.
+description: The Searches section of a Station page, the Start a search dialog, its aims and its warnings, the search page, search and iteration states, stalls and why a search stalled, scores, gains, the frontier and candidates whose gain showed only on seen tasks, the pull request a picked candidate opens and why one is refused, and a replay set that guards a station's changes.
 ---
 
 A [search](/docs/reference/glossary#search) has an agent propose changed
@@ -112,6 +112,25 @@ The header shows `Search <n>`, its [state](#search-states), `Searches on <set>
 | Spent | `<spent> of <ceiling>`, with a bar that fills as the ceiling is spent. |
 | Best | The [best candidate](#best-candidate), its score with its range, `held out` or `searched`, and its [reading](#only-on-seen-tasks) when it has one. Labelled "Cheapest" when the search aims for the same success for less. |
 
+### Why it stalled
+
+One section per [reflection](#reflections), newest first, above "Tasks",
+headed `Why it stalled, looked into in iteration <n>`. The page opened with
+`#why-it-stalled-<n>` scrolls to it.
+
+| Part | Shows |
+| --- | --- |
+| Whose failures | `Looked at why <name> failed`, or `Looked at why the live config failed`, once the reflection knows the config it looks into. |
+| While it runs | "Two iterations in a row found nothing better, so its agent is looking into why the remaining tasks fail." |
+| Once it ended | `After two iterations in a row found nothing better, its agent looked into the <n> tasks the best config so far still failed, and sorted them by what caused each failure.` when it had tasks, then its [outcome](#reflection-outcomes). |
+| Causes | One group per [cause](#causes) recorded, in the order task, judge, check, infra, config: its title, what it means and what to do, then each task the cause was given for. |
+| No cause recorded | Once it ended, the tasks it looked into without recording a cause: "Its agent looked into these but recorded no cause for them." |
+
+Each task shows its title in the set, or `Task <first 8 characters of its id>`,
+"Open the failed replay run", linked to the Run page of the replay run that
+failed it, the agent's evidence, and `Suggested: <suggestion>` when it gave
+one.
+
 ### Tasks
 
 `Searched <n>` and `Held out <n>`, counted in tasks, and "The held-out tasks",
@@ -151,6 +170,14 @@ run", linked to the agent run's Run page. An iteration with
 no candidates reads "Its agent has not proposed anything yet." while it runs,
 and "Its agent proposed nothing that could be replayed." after.
 
+A [reflection's](#reflections) group reads `Iteration <n> · Looked for why it
+stalled`, its state, what its agent spent and "Its agent's run", without a
+count of proposals. Under it: "It proposes nothing. Its agent is looking into
+why the remaining tasks fail." until it ends, then `It proposed nothing. It
+looked into <n> tasks the best config so far still failed and recorded <n>
+causes.`, and "See why it stalled", which scrolls to its
+[section](#why-it-stalled).
+
 Each candidate shows:
 
 - its name, "On the frontier" for a frontier point, its
@@ -189,8 +216,8 @@ of the set, as many times as "Repeats" asks, and this replay becomes the set's
 the agent proposes up to "Candidates per iteration" candidates, each replayed on
 the searched runs. An iteration closes once its agent run has ended, its spend
 is known, and its candidates' replays have ended. Then the next iteration
-starts, unless the search has run its iterations, stalled, or cannot afford
-one more. It then holds out: `holding-out` while the best candidates are
+starts, unless the search has run its iterations, [stalled](#stalls), or
+cannot afford one more. It then holds out: `holding-out` while the best candidates are
 replayed on the held-out runs, then `finished`. A search with no candidate
 whose replay finished goes straight to `finished`.
 
@@ -200,15 +227,16 @@ whose replay finished goes straight to `finished`.
 | --- | --- | --- |
 | `iterations-spent` | It ran every iteration it was given | `finished` |
 | `ceiling-reached` | It reached its ceiling | `finished` |
-| `stalled` | Two iterations in a row found nothing, so it stopped | `finished` |
+| `stalled` | It found nothing better twice in a row | `finished` |
 | `stopped` | A person stopped it | `stopped` |
 | `station-gone` | Its station is gone from its line | `stopped` |
 | `set-gone` | Its replay set was deleted | `stopped` |
 | `seed-failed` | The live config could not be replayed | `stopped` |
 
 `ceiling-reached` also ends a search whose replay of the live config ran over
-its ceiling. An iteration found nothing when its agent run failed, or none of
-its candidates' replays finished. A stopped search withdraws its agent's run
+its ceiling. `stalled` ends a search that [stalled](#stalls) with no room to
+look into why, or whose reflection found nothing the config can fix. A stopped
+search withdraws its agent's run
 and stops its replays.
 
 ## Iteration states
@@ -219,6 +247,10 @@ and stops its replays.
 | `running` | Running | Its agent run is queued or running, and may propose candidates. |
 | `ended` | Ended | Its agent run ended. |
 | `failed` | Failed | Its agent run failed, asked a person, or could not start. |
+
+Each iteration is of one kind: `propose`, whose agent proposes candidates, or
+`reflect`, a [reflection](#reflections), whose agent proposes nothing and
+records causes. A reflection counts toward "Iterations" like any other.
 
 An agent run no runner takes within 60 minutes is withdrawn, and its iteration
 fails. An agent run whose spend is not known 15 minutes after it ended is
@@ -233,11 +265,107 @@ Each iteration's agent run is a run of its own kind:
 | Task | Holds no task. |
 | Placement | Where the station's runs go: the station's `runners`, else the line's. Its priority is below every task run and chat run. |
 | Workspace | No repository is checked out, and no skills, settings files or team memories are laid out. |
-| Briefing | The station's live config as the search started, the budget left, how many candidates it may propose, how many tasks are held out, what counts as better for the search's [aim](#aims), what a candidate may change, and how to propose one. |
+| Briefing | The station's live config as the search started, the budget left, how many candidates it may propose, how many tasks are held out, what counts as better for the search's [aim](#aims), what a candidate may change, and how to propose one. After a reflection that went on, also each `config` cause it recorded, with its task, evidence and suggestion. A reflection's briefing instead names the config whose failures it looks into, lists each failing task with its original run and the replay run that failed it, describes the five [causes](#causes), and says how to record one. |
 | `spotlight history` | Only the searched station. The held-out tasks' runs are left out; the searched runs are always written. A `candidates/` folder holds each candidate so far. See [`spotlight history`](/docs/reference/cli/agent-commands#spotlight-history). |
-| `spotlight candidate` | Proposes a candidate. See [`spotlight candidate`](/docs/reference/cli/agent-commands#spotlight-candidate). |
+| `spotlight candidate` | Proposes a candidate. Refused in a reflection. See [`spotlight candidate`](/docs/reference/cli/agent-commands#spotlight-candidate). |
+| `spotlight cause` | Records a task's cause, in a reflection only. See [`spotlight cause`](/docs/reference/cli/agent-commands#spotlight-cause). |
 | Refused | Messages from people, git, tools, `spotlight reply`, `spotlight recall` and `spotlight remember`. `spotlight trace` finds no held-out task. |
 | Asking a person | Ends the run, and its iteration fails. |
+
+## Stalls
+
+A propose iteration found something better when one of its candidates'
+replays on the searched tasks finished with a gain, paired task by task on
+the searched runs against the best config of the iterations before it, that
+the search's [aim](#aims) counts:
+
+| Aim | Better than the best before |
+| --- | --- |
+| More success | Its gain reads Better. |
+| The same success for less | Its gain does not read Worse, and it costs less per run, both costs known. |
+
+The best before is the first in the order of the aim among the live config
+and the candidates of earlier iterations whose replays finished. An iteration
+whose agent run failed, or none of whose candidates' replays finished, found
+nothing better.
+
+When an iteration closes, the search ends `iterations-spent` once it has run
+every iteration. Otherwise, if its last two iterations were both propose
+iterations that found nothing better, it has stalled:
+
+- With at least 2 iterations left, and room under the ceiling for what it has
+  spent, what the held-out replays need, one more iteration and one more agent
+  run, its next iteration is a [reflection](#reflections).
+- Otherwise it ends `stalled`, and its starter gets a [notice](#notices).
+
+A reflection is not a propose iteration, so after one that went on, two more
+propose iterations must find nothing better before the search stalls again.
+
+### Reflections
+
+A reflection looks into the failures of the best config so far: the first in
+the order of the search's aim among the live config and every candidate whose
+searched replay finished. It looks into each searched run of the set on which
+that config's success, the share of its scored copies that succeeded, is below
+one half and at least one copy failed. A held-out task is never among them. The
+first failed copy is the replay run it links to.
+
+With no such task, the reflection ends at once, without an agent run, and the
+search ends `stalled`. Otherwise its agent records one [cause](#causes) per
+task with [`spotlight cause`](/docs/reference/cli/agent-commands#spotlight-cause).
+Recording a task's cause again replaces the one before. Once its agent run
+ends, or fails:
+
+| Recorded | The search |
+| --- | --- |
+| At least one `config` cause | Wants a propose iteration, whose briefing lists the `config` causes, if it can afford one; else ends `ceiling-reached`, or `iterations-spent` with none left. |
+| No `config` cause | Ends `stalled`. |
+
+### Causes
+
+| `cause` | Title | Means | Shown to do |
+| --- | --- | --- | --- |
+| `task` | The task itself | "The task is unclear, out of date, or cannot be done as asked, so no config would get it right." | "Fix the task, or take it out of the replay set." |
+| `judge` | The judge | "The work may be fine, but the judge scored it wrong, so its rubric asks for the wrong thing." | "Fix the judge's rubric." |
+| `check` | The check | "The check failed for a reason the change did not cause, such as a broken or flaky test." | "Fix the check." |
+| `infra` | Around the work | "The run failed around the work, for example the runner, the network or a missing tool." | "Replay it again. If it keeps failing, fix what the run needs." |
+| `config` | The station's config | "A change to the station's config, such as its prompt, model or skills, could still fix it." | "Nothing for you to do: the search keeps trying configs for these." |
+
+Only `config` lets the search go on.
+
+### Reflection outcomes
+
+| `outcome` | When | Shown |
+| --- | --- | --- |
+| `went-on` | A `config` cause, and the search wanted a propose iteration. | "The search went on, because a change to the config could still fix some of them." |
+| `out-of-budget` | A `config` cause, but the search could not afford a propose iteration or had none left. | "A change to the config could still fix some of them, but the search had no budget left to try one, so it ended." |
+| `no-config-cause` | No `config` cause. | "This ended the search: nothing left the config can fix. What it did not spend is kept." |
+| `no-failures` | No searched task failed. | "No searched task failed, so there was nothing to look into, and the search ended." |
+| `did-not-run` | Its agent run failed before it recorded any cause. | "Its agent's run failed before it recorded any cause, so the search ended." |
+
+### Notices
+
+The person who started the search, or for a search started with a workspace
+token, the person who issued the token, gets an
+[inbox notice](/docs/reference/app/tasks-runs-and-the-inbox#notices) linked to
+the search, "Open the search", while they are a member of the team's
+workspace:
+
+| When | Form | Headline |
+| --- | --- | --- |
+| A reflection ended the search | `ended` | By outcome: `<search> stalled: nothing left the config can fix`, `<search> stalled: its best config already passes every task it searches, so there was nothing to look into`, `<search> stalled, and looking into why could not run`, or `<search> ran out of budget: it found what the config could fix, but could not try it`. |
+| A reflection went on and recorded a cause other than `config` | `advice` | `<search> goes on, but found failures outside the config` |
+| The search stalled with no room for a reflection | `ended` | `<search> stalled, with no budget left to look into why` |
+
+`<search>` is `The search for a better <station> config`. The first point
+says what happened. After it, one point per cause other than `config`, as
+`<what to do>, for "<task title>": <suggestion>`, or the evidence without a
+suggestion: "Take the task out of the replay set, or reword it", "Fix the
+judge's rubric", "Fix the station's check" or "Fix what the run needed around
+the work". A task with no title reads "one of the searched tasks". A point is
+cut at 1,000 characters; past 20 points, the last reads `<n> more on the
+search's page`. A reflection that went on with only `config` causes sends no
+notice. Each reflection sends at most one.
 
 ## Scores
 

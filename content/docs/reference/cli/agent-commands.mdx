@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Agent commands
-description: The spotlight commands an agent runs inside its sandbox to hand a task over, answer a remark, read a trace or a station's history, recall and propose team memories, propose a search candidate, and use tools.
+description: The spotlight commands an agent runs inside its sandbox to hand a task over, answer a remark, read a trace or a station's history, recall and propose team memories, propose a search candidate, record why a stalled search's tasks fail, and use tools.
 ---
 
 An agent runs these commands from anywhere in its sandbox. Each one talks to
@@ -17,6 +17,7 @@ spotlight history --station <key> [--line <key>] [--fingerprint <fp>] [--outcome
 spotlight recall "<words>" | <handle>
 spotlight remember --kind <kind> --body <text> [--path <path>]... [--reach <reach>] [--supersedes <handle>]
 spotlight candidate --name <name> --hypothesis <text | @file> <station.json | ->
+spotlight cause --task <task> --cause config|task|judge|check|infra --evidence <text | @file> [--suggestion <text | @file>]
 spotlight tools
 spotlight <tool> [--<input> <value>...]
 ```
@@ -53,6 +54,7 @@ fails:
 | `recall` | `no run to recall from: spotlight runs inside a Spotlight workspace` |
 | `remember` | `no run to remember from: spotlight runs inside a Spotlight workspace` |
 | `candidate` | `no run to propose a candidate from: spotlight runs inside a Spotlight workspace` |
+| `cause` | `no run to record a cause from: spotlight runs inside a Spotlight workspace` |
 | `tools` | `no run to reach for tools in: spotlight runs inside a Spotlight workspace` |
 | `<tool>` | `could not read this run's tools to find "<name>": no run to reach for tools in: spotlight runs inside a Spotlight workspace` |
 
@@ -411,6 +413,7 @@ try at most three times as many as it may propose.
 | `found by a search is named other than seed, which names the live config the search started from` | At `name`: the name is `seed`. |
 | `This search has a candidate named <name> already; name it otherwise` | Another iteration took the name. |
 | `This search iteration has proposed its <n> candidates, or tried to too often; end the run` | The iteration may propose no more. |
+| `This search iteration looks into why the search stalled, so it proposes no candidates; record a cause for each failing task with spotlight cause` | The run is a [reflection's](/docs/reference/app/searches#reflections). |
 | `The search no longer holds this run` | The search stopped, or moved on from this iteration. |
 
 Other problems with the block are those of a
@@ -419,6 +422,49 @@ under `station`.
 
 ```bash
 spotlight candidate --name terse-prompt --hypothesis @why.md station.json
+```
+
+## spotlight cause
+
+```text
+spotlight cause --task <task> --cause config|task|judge|check|infra --evidence <text | @file> [--suggestion <text | @file>]
+```
+
+Records why a failing task failed, from the agent run of a search's
+[reflection](/docs/reference/app/searches#reflections). Only the tasks its
+briefing lists take a cause. Recording a task's cause again replaces the one
+before.
+
+| Flag | Required | Description |
+| --- | --- | --- |
+| `--task` | yes | The task's id, as the briefing lists it. |
+| `--cause` | yes | `config`, `task`, `judge`, `check` or `infra`. See [Causes](/docs/reference/app/searches#causes). |
+| `--evidence` | yes | What in the runs shows the cause, in 1 to 4,000 characters. `@<file>` reads it from a file. |
+| `--suggestion` | no | What a person, or the search's next iteration, should change, in at most 4,000 characters. `@<file>` reads it from a file. |
+
+On success it prints:
+
+```text
+Recorded <cause> as the cause for task <task>, whose replay run <run> failed.
+Recording another cause for the task replaces this one.
+```
+
+| Message | Cause |
+| --- | --- |
+| `--task is required` | No `--task`. The usage follows. |
+| `--cause is one of config, task, judge, check, infra` | `--cause` is missing or names no cause. The usage follows. |
+| `--evidence is required` | No `--evidence`. The usage follows. |
+| `read the evidence: <error>` | `@<file>` for `--evidence` could not be read; `read the suggestion` for `--suggestion`. |
+| `<file> holds no evidence` | `@<file>` is empty; `holds no suggestion` for `--suggestion`. |
+| `this run cannot record a cause: only a search's runs do` | The run is not a search's. |
+| `This search iteration proposes candidates; only an iteration that looks into why the search stalled records causes` | The run's iteration is not a reflection. |
+| `No failing task <task> among the tasks this reflection looks into; record causes only for the tasks its briefing lists` | `--task` names a task the briefing does not list. |
+| `A cause's evidence says what in the runs shows the cause, in 1 to 4,000 characters` | The evidence is over 4,000 characters. |
+| `A cause's suggestion says what to fix in at most 4,000 characters` | The suggestion is over 4,000 characters. |
+| `The search no longer holds this run`, or `The search no longer holds the run <run>, so it takes no more candidates from it` | The search stopped, or moved on from this iteration. |
+
+```bash
+spotlight cause --task a17c4e02-9b3d-4f61-8e5a-0c2d7b9f4a13 --cause judge --evidence @evidence.md --suggestion "Drop the rubric line that asks for tests."
 ```
 
 ## spotlight tools

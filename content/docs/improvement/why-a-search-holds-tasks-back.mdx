@@ -2,7 +2,7 @@
 type: concept
 icon: Lightbulb
 title: Why a search holds tasks back
-description: Why a search for a better station config keeps some of its tasks from its agent, why it ends with a frontier and not one winner, what it may change, and how its budget is spent.
+description: Why a search for a better station config keeps some of its tasks from its agent, why it ends with a frontier and not one winner, why it stops to look into a stall, what it may change, and how its budget is spent.
 ---
 
 A [replay](/docs/improvement/why-changes-are-replayed-on-past-tasks) answers
@@ -37,7 +37,8 @@ ones the agent studies and every candidate is replayed on.
 
 The agent is not told which tasks are held out, only how many. `spotlight
 history` in its run leaves out the held-out tasks' runs and their results,
-and it cannot read their traces. Team memories stay out of a search
+and it cannot read their traces. When a stalled search looks into why its
+tasks fail, it looks only at searched tasks. Team memories stay out of a search
 altogether: its agent can neither recall nor propose one.
 Once the search stops searching, the best candidates are replayed on the
 held-out tasks, and those scores are the ones to trust. Each score, and each
@@ -126,6 +127,23 @@ What it may not change falls into three groups.
 
 A search starts from the station's live config when the search began, and
 every candidate is a change to that block.
+
+## When the config is not the problem
+
+Some tasks fail for reasons no station config can reach: the task is unclear
+or asks for something impossible, the judge's rubric fails good work, the
+check is flaky, or the run broke around the work. In the docs' view, more
+iterations against such tasks spend the budget and find nothing, and an agent
+pushed to beat them anyway is pushed toward fitting them.
+
+So when two iterations in a row find nothing better than the best config
+before them, a search with room left spends its next iteration looking
+instead of proposing. Its agent gives each task the best config still fails
+one cause. Only a cause in the config keeps the search going, and the next
+agent is told what was found. The other causes go to the person who started
+the search as an inbox notice, since fixing a task, a judge or a check is
+outside what a search may change. See
+[Stalls](/docs/reference/app/searches#stalls).
 
 ## Budgets
 

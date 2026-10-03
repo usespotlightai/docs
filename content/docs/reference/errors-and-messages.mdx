@@ -221,7 +221,11 @@ Each command exits `1` and prints its message on standard error.
 | `a search may not answer a remark: it studies the station's history and proposes station configs, nothing more` | `spotlight reply` in a search's agent run. `recall what the team remembers` and `propose a memory` in place of `answer a remark` for `spotlight recall` and `spotlight remember`. | [The search's agent run](/docs/reference/app/searches#the-searchs-agent-run) |
 | `this run cannot propose a candidate: only a search's runs do` | `spotlight candidate` in a run that is not a search's. | [spotlight candidate](/docs/reference/cli/agent-commands#spotlight-candidate) |
 | `This search iteration has proposed its <n> candidates, or tried to too often; end the run` | `spotlight candidate` once the iteration may propose no more. | [spotlight candidate](/docs/reference/cli/agent-commands#spotlight-candidate) |
-| `The search no longer holds this run` | `spotlight candidate` after the search stopped or moved on. | [spotlight candidate](/docs/reference/cli/agent-commands#spotlight-candidate) |
+| `The search no longer holds this run` | `spotlight candidate` or `spotlight cause` after the search stopped or moved on. | [spotlight candidate](/docs/reference/cli/agent-commands#spotlight-candidate) |
+| `This search iteration looks into why the search stalled, so it proposes no candidates; record a cause for each failing task with spotlight cause` | `spotlight candidate` in a reflection's run. | [spotlight candidate](/docs/reference/cli/agent-commands#spotlight-candidate) |
+| `this run cannot record a cause: only a search's runs do` | `spotlight cause` in a run that is not a search's. | [spotlight cause](/docs/reference/cli/agent-commands#spotlight-cause) |
+| `This search iteration proposes candidates; only an iteration that looks into why the search stalled records causes` | `spotlight cause` in a run whose iteration proposes candidates. | [spotlight cause](/docs/reference/cli/agent-commands#spotlight-cause) |
+| `No failing task <task> among the tasks this reflection looks into; record causes only for the tasks its briefing lists` | `spotlight cause` for a task the briefing does not list. | [spotlight cause](/docs/reference/cli/agent-commands#spotlight-cause) |
 
 ### Tool calls and integration requests
 
@@ -390,6 +394,13 @@ The [Searches API](/docs/reference/api/searches#errors), the
 [Replay checks API](/docs/reference/api/replay-checks#errors) and
 [`spotlight replay check`](/docs/reference/cli/replay-command#exit-codes-for-check)
 list their own messages.
+
+### Inbox notices
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `It could not be dismissed. Try again.` | "Dismiss" on a notice failed. | [Notices](/docs/reference/app/tasks-runs-and-the-inbox#notices) |
+| `Nothing here is waiting on you any more.` | A notice or inbox item that is not put to the reader, or has left the inbox. | [Notices](/docs/reference/app/tasks-runs-and-the-inbox#notices) |
 
 ### Change review
 

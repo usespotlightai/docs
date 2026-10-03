@@ -306,6 +306,12 @@ An entry on a task's trail, of kind `asked`, `passed`, `answered` or `said`,
 with a voice (`station`, `person` or `world`) and a form. A note's words never
 change. See [Notes](/docs/reference/app/tasks-runs-and-the-inbox#notes).
 
+## Notice
+
+An inbox entry that tells one person about their team's work, outside any
+task, such as a [search](#search) they started that stalled. Nothing waits on
+it; its person dismisses it. See [Notices](/docs/reference/app/tasks-runs-and-the-inbox#notices).
+
 ## Occurrence
 
 One instance of an event that hooks fire for, with an id of its own. A hook's
@@ -344,6 +350,13 @@ A line's rule that moves a task to a station when a happening arrives,
 optionally only while the task stands at a given station. See
 [`spotlight_line`](/docs/reference/terraform/line) and
 [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves).
+
+## Reflection
+
+An iteration of a stalled [search](#search) that proposes nothing: its agent
+records why each searched task the best config so far still fails, as one of
+five causes. Only a cause the config can fix lets the search go on. See
+[Reflections](/docs/reference/app/searches#reflections).
 
 ## Regression
 
@@ -435,8 +448,9 @@ See [Inside a sandbox](/docs/reference/hosts/sandbox).
 A series of rounds in which an agent proposes changed configs for a work
 station, called [candidates](#candidate), each [replayed](#replay) on a replay
 set's tasks, within a budget. A search aims for more success, or for the same
-success for less. A person picks a candidate, and Spotlight opens a pull
-request with it. See [Searches](/docs/reference/app/searches).
+success for less. A search that finds nothing better twice in a row stalls,
+and may run a [reflection](#reflection). A person picks a candidate, and
+Spotlight opens a pull request with it. See [Searches](/docs/reference/app/searches).
 
 ## Secret
 
