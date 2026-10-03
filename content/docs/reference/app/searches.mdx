@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Searches
-description: The Searches section of a Station page, the Start a search dialog and its warnings, the search page, search and iteration states, scores, gains and the frontier, the pull request a picked candidate opens and why one is refused, and a replay set that guards a station's changes.
+description: The Searches section of a Station page, the Start a search dialog and its warnings, the search page, search and iteration states, scores, gains, the frontier and candidates whose gain showed only on seen tasks, the pull request a picked candidate opens and why one is refused, and a replay set that guards a station's changes.
 ---
 
 A [search](/docs/reference/glossary#search) has an agent propose changed
@@ -28,7 +28,7 @@ A work station's page has a "Searches" section, after "Replays", headed
 
 | Part | Shows |
 | --- | --- |
-| Searches | One row per search of the station, newest first: `Search <n>`, numbered from the station's first search and linked to its page, its [state](#search-states) (hover for its [ending](#search-endings)), `on <set> · started <when>`, and its best candidate as `Best: <name> · <score> held out` or `· <score> searched`, or "No best candidate yet". Under it, `<n> of <m> iterations`, `<spent> of <ceiling>`, and the ending once it has one. With none, the part reads "No searches yet", with "Open a replay set first" when the station has no set, else "Start a search". |
+| Searches | One row per search of the station, newest first: `Search <n>`, numbered from the station's first search and linked to its page, its [state](#search-states) (hover for its [ending](#search-endings)), `on <set> · started <when>`, and its best candidate as `Best: <name> · <score> held out` or `· <score> searched`, the score with its range, and its [reading](#only-on-seen-tasks) when it has one, or "No best candidate yet". Under it, `<n> of <m> iterations`, `<spent> of <ceiling>`, and the ending once it has one. With none, the part reads "No searches yet", with "Open a replay set first" when the station has no set, else "Start a search". |
 | Start a search | Opens the [Start a search](#start-a-search) dialog. Not offered, with the reason under it, while a search of the station is under way ("A search of this station is under way."), when the station has no set ("Open a replay set first."), or when no set covers runs of 5 different tasks ("No replay set covers 5 different tasks yet."). |
 | Source | `A picked candidate opens a pull request against <repository> at <path>`, from the line's [`source`](/docs/reference/terraform/line#source-fields), or "The line does not say where its Terraform lives, so a picked candidate cannot open a pull request. Give the line a source in Terraform." |
 
@@ -69,10 +69,11 @@ and the line's `min_gain`:
 | Warning | When |
 | --- | --- |
 | `Nobody has measured how much this set's success moves by chance, so a small gain may be luck. Measure its noise on the set page, or replay each run more than once.` | The set's noise is not measured. |
-| `This set's success moved <n> pts between copies of the same runs, more than the <min_gain> the line counts as real. Replaying each run <n> times would bring that down.` | The copies needed to bring the noise under `min_gain` are more than "Repeats": the spread divided by `min_gain`, squared, rounded up. The suggestion is that number, at most 5. |
+| `This set's success moved <n> pts between copies of the same runs, more than the +<n> pts the line counts as real. Replaying each run <n> times would bring that down.` | The copies needed to bring the noise under `min_gain` are more than "Repeats" and at most 5: the spread divided by `min_gain`, squared, rounded up. |
+| `This set's success moved <n> pts between copies of the same runs, more than the +<n> pts the line counts as real. Even replaying each run 5 times, the most allowed, won't bring it under that, so read small gains with care or raise the line's smallest real gain.` | The copies needed are more than 5. |
 
-Under the second warning, `Replay each run <n> times` sets "Repeats" to the
-suggestion. A warning does not stop the search from starting. "Start
+Under either of the last two, unless "Repeats" is the suggestion already,
+`Replay each run <n> times` sets "Repeats" to the copies needed, at most 5. A warning does not stop the search from starting. "Start
 search" opens the new search's page. A refusal is shown at its field, such as
 a ceiling too low to give each replay run at least 0.01 of its currency.
 
@@ -91,11 +92,11 @@ The header shows `Search <n>`, its [state](#search-states), `Searches on <set>
 | Label | Shows |
 | --- | --- |
 | Budget | `<n> iterations · <n> candidates each · up to <ceiling> · <n> at once · each run once`, or `each run <n> times`. |
-| Live config | The live config's search score with its range, `of <n> scored`, then `a gain counts as real from <min_gain>`, as in `+5 pts`. |
+| Live config | The live config's search score with its range, `of <n> scored`, then `a gain in success counts as real from <min_gain>`, as in `+5 pts`. |
 | Agent | The harness, model and effort its agent runs with. |
 | Progress | `<n> of <m> iterations · <n> candidates proposed`. |
 | Spent | `<spent> of <ceiling>`, with a bar that fills as the ceiling is spent. |
-| Best | The [best candidate](#best-candidate) and its score, `held out` or `searched`. |
+| Best | The [best candidate](#best-candidate), its score with its range, `held out` or `searched`, and its [reading](#only-on-seen-tasks) when it has one. |
 
 ### Tasks
 
@@ -108,13 +109,16 @@ agent never sees those tasks or their results.
 A chart of each candidate with a priced search score: its
 [search score](#scores) up the side, its cost per run along the bottom. Points
 on the [frontier](#frontier) are joined by a line, and the live config is
-drawn as a diamond. Candidates scored but not priced are listed under the
+drawn as a diamond. When any frontier candidate is
+[marked](#only-on-seen-tasks), a note above the chart reads `<n> candidates on
+the frontier gained only on the tasks the search could see, not on the held-out
+ones.` ("candidate" for 1). Candidates scored but not priced are listed under the
 chart as `Not priced, so not shown: <name> (<score>)`. "Show table" lists every
 candidate instead:
 
 | Column | Shows |
 | --- | --- |
-| Candidate | Its name, or "Live config", and `frontier` for a frontier point. |
+| Candidate | Its name, or "Live config", `frontier` for a frontier point, and its [reading](#only-on-seen-tasks) when it has one. |
 | Iteration | The iteration that proposed it, or `–` for the live config. |
 | Searched | Its search score with its range, `of <n> scored`, counting replay runs, copies included. |
 | Gain on searched | Its [gain](#gains) over the live config on the searched tasks, or `–` for the live config. |
@@ -134,7 +138,8 @@ and "Its agent proposed nothing that could be replayed." after.
 
 Each candidate shows:
 
-- its name, "On the frontier" for a frontier point, and its replay's
+- its name, "On the frontier" for a frontier point, its
+  [reading](#only-on-seen-tasks) when it has one, and its replay's
   [state](/docs/reference/app/replays#replay-states) until that replay has
   finished;
 - its agent's hypothesis: what the candidate should improve, and why;
@@ -143,8 +148,8 @@ Each candidate shows:
   "The same as the live config.";
 - `Searched <score> (<low>–<high>%) of <n> scored`, or "Not scored yet",
   `Held out` with its range, and `Cost per run`;
-- once it has them, `Over the live config, searched` and `held out`, each
-  with its [gain](#gains);
+- once it has them, `Gain over the live config, searched` and `Gain over the
+  live config, held out`, each with its [gain](#gains);
 - "Its replay", linked to its replay on the searched tasks ("Its replay of the
   set" for the live config), and "Its held-out replay" when it has one;
 - what picking it does: see [Picking a candidate](#picking-a-candidate).
@@ -239,6 +244,24 @@ paired task by task, with its range and a verdict of Better, Worse or Within
 noise, as a [replay's gain](/docs/reference/app/replays#gains) is, against the
 line's `min_gain`. The frontier and the best candidate do not depend on it.
 
+### Only on seen tasks
+
+Once a candidate's held-out gain is known, a candidate whose searched gain reads
+Better gets a reading from it:
+
+| Held-out gain | Shown | Note |
+| --- | --- | --- |
+| Better | Nothing | |
+| Within noise or Worse, over at least 5 tasks scored on both sides | "Only on seen tasks": the candidate is marked | "It beat the live config on the tasks the search could see, but not on the held-out tasks it never saw, so the gain may not carry over to new work." |
+| Over fewer than 5 tasks scored on both sides | "Too few held-out tasks to tell" | "It beat the live config on the tasks the search could see, but too few held-out tasks were scored to tell whether the gain carries over to new work." |
+
+Hovering over or focusing the reading opens its note. A candidate whose
+searched gain does not read Better has no reading, nor does one before its
+held-out gain is known, nor the live config. Only marked candidates are
+counted above the [chart](#success-against-cost) and warned about when
+[picked](#picking-a-candidate). A marked candidate stays on the frontier, can
+still be the [best candidate](#best-candidate), and can still be picked.
+
 ### Frontier
 
 The frontier is every candidate with a finished searched replay and a search
@@ -280,7 +303,7 @@ can be picked once its replay on the searched tasks finishes."
 
 | State | Shown | Can change |
 | --- | --- | --- |
-| not picked | "Pick", with "Opens a pull request that changes the station to this config." | "Pick" |
+| not picked | "Pick", with "Opens a pull request that changes the station to this config." A [marked](#only-on-seen-tasks) candidate also reads "Its gain showed only on the tasks the search could see. You can still pick it, but the gain may not carry over to new work." | "Pick" |
 | `opening` | Opening a pull request… | |
 | `opened` | Pull request opened, linked to it | |
 | `refused` | No pull request opened, the [reason](#config-pull-request-reasons) in words, Spotlight's message, and, for an attribute, `At <attribute>, computed by <expression>; set it to <value> by hand` | "Retry" |
@@ -300,7 +323,17 @@ the pull request against the default branch.
 | Branch | `spotlight/search-<first 8 characters of the search id>-<candidate name>` |
 | Title | `<station key>: <candidate name>` |
 | Commit message | The title, then `Picked from a Spotlight search of the <station key> station.` |
-| Body | What the search found and what the candidate changes, the agent's hypothesis, a table of its and the live config's success on the searched and held-out tasks, each with its range, and cost per run, a sentence for each gain, as in `On the held-out tasks it gained +12 points (+3 to +21) on the live config, more than the 5-point gain the line counts as real.`, how many tasks it regressed on against the live config, any attribute Spotlight could not check, and a link to the search. |
+| Body | What the search found and what the candidate changes, then a paragraph on its held-out result when there is one to give, the agent's hypothesis, a table of its and the live config's success on the searched and held-out tasks, each with its range, and cost per run, a sentence for each gain, as in `On the held-out tasks it gained +12 points (+3 to +21) on the live config, more than the 5-point gain the line counts as real.`, how many tasks it regressed on against the live config, any attribute Spotlight could not check, and a link to the search. |
+
+The paragraph on the held-out result says one of:
+
+| When | Says |
+| --- | --- |
+| The candidate has a held-out replay, and it or the live config's had not finished when the pull request opened | `Its held-out replay had not finished when this pull request opened, so Spotlight could not yet check whether its gain also shows on the held-out tasks the search never showed its agent.` |
+| The candidate is [marked](#only-on-seen-tasks) | `Its gain showed only on the tasks the search could see: +20 points on the searched tasks, but −3 points on the held-out tasks the search never showed its agent. It may fit the searched tasks rather than work better in general, so weigh that before merging.` |
+| It reads "Too few held-out tasks to tell" | `It gained +20 points on the searched tasks, but only 3 held-out tasks scored on both sides, too few to tell whether the gain also shows on tasks the search never showed its agent.` |
+
+Any other candidate's body has no such paragraph.
 
 The edit finds exactly one `resource "spotlight_line"` whose `key` is the
 line's, written as a plain string, preferring the one whose `team_id` refers to

@@ -88,12 +88,12 @@ The body is `setId` and `budget`, as above. The answer:
 
 ### Warnings
 
-Each warning is `{ kind, spread, minGain, neededRepeats, suggestedRepeats }`.
+Each warning is an object whose `kind` says which it is and which other fields it has.
 
 | `kind` | When | Other fields |
 | --- | --- | --- |
-| `noise-unmeasured` | No finished replay of the live config, at its current [config fingerprint](/docs/reference/glossary#config-fingerprint), replayed the set's runs more than once. See [Noise](/docs/reference/app/replays#noise). | All null. |
-| `noisy` | The set's success moves between copies so much that `budget.repeats` copies cannot bring it under `minGain`. | `spread`: how far the set's success moved between copies. `neededRepeats`: the copies it would take, the spread divided by `minGain`, squared and rounded up, however many; more than 5 means no search of the set can tell such a gain from noise. `suggestedRepeats`: `neededRepeats`, at most 5. |
+| `noise-unmeasured` | No finished replay of the live config, at its current [config fingerprint](/docs/reference/glossary#config-fingerprint), replayed the set's runs more than once. See [Noise](/docs/reference/app/replays#noise). | None. |
+| `noisy` | The set's success moves between copies so much that `budget.repeats` copies cannot bring it under `minGain`. | `spread`: how far the set's success moved between copies. `minGain`: the line's, as in the estimate. `neededRepeats`: the copies it would take, the spread divided by `minGain`, squared and rounded up, however many; more than 5 means no search of the set can tell such a gain from noise. `suggestedRepeats`: `neededRepeats`, at most 5. |
 
 The estimate assumes the choice of held-out tasks whose runs cost most.
 
@@ -111,7 +111,7 @@ Each item of a list, and the first fields of a search's detail:
 | `spent` | object | `{ amount, currency }`: its replays and its agent's runs so far, in the ceiling's currency. |
 | `iterationsRun` | number | How many times its agent ran, or is running. |
 | `proposed` | number | How many candidates its agent proposed. |
-| `best` | object or null | `{ candidateId, name, seed, searchScore, heldOutScore, costPerRun }`: the [best candidate](/docs/reference/app/searches#best-candidate). `seed` is `true` when it is the live config. |
+| `best` | object or null | `{ candidateId, name, seed, searchScore, searchInterval, heldOutScore, heldOutInterval, costPerRun, onlyOnSeenTasks }`: the [best candidate](/docs/reference/app/searches#best-candidate), with fields as on a [candidate](#candidate). `seed` is `true` when it is the live config. |
 | `startedAt`, `endedAt` | string, string or null | RFC 3339 times. |
 
 ## Search detail
@@ -123,6 +123,7 @@ Each item of a list, and the first fields of a search's detail:
 | `seed` | object | The live config the search started from, as a [candidate](#candidate). Its search score counts the searched runs only, its held-out score the held-out runs. |
 | `candidates` | array | Every candidate its agent proposed. |
 | `frontier` | array of strings | The candidates on the [frontier](/docs/reference/app/searches#frontier), by id, cheapest first, the seed always among them. |
+| `onlyOnSeenTasks` | number | How many frontier candidates' `onlyOnSeenTasks` is `marked`. See [Only on seen tasks](/docs/reference/app/searches#only-on-seen-tasks). |
 | `minGain` | number | The smallest gain over the seed the line counts as real: `replay_check.min_gain`, or `0.05` when the line has none. |
 
 ### Candidate
@@ -148,6 +149,7 @@ Each item of a list, and the first fields of a search's detail:
 | `costPerRun` | number or null | What it spent per scored searched run. Null while any of it went unpriced or was in another currency. |
 | `spent` | object | `{ amount, currency }`. |
 | `onFrontier` | boolean | Whether it is on the frontier. |
+| `onlyOnSeenTasks` | string or null | When `searchedGain.verdict` is `better`: `marked` when `heldOutGain.verdict` is not, over at least 5 tasks scored on both sides, so its gain showed only on the tasks the search could see; `too-few-held-out` when `heldOutGain.tasks` is under 5. Null otherwise, until `heldOutGain` is known, and for the seed. See [Only on seen tasks](/docs/reference/app/searches#only-on-seen-tasks). |
 | `pullRequest` | object or null | The [config pull request](#config-pull-request) picking it opened. Always null for the seed. |
 
 A searched candidate is not a [replay candidate](/docs/reference/api/replay-candidate)
