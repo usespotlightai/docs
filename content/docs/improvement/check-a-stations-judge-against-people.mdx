@@ -2,7 +2,7 @@
 type: how-to
 icon: SquarePen
 title: Check a station's judge against people
-description: Grade judged runs from the inbox, read the judge's agreement with people on the Station page, and change the rubric or trust when its scores stay hidden.
+description: Grade judged runs from the inbox, read the judge's agreement with people on the Station page, overall and claim by claim, and change the rubric, claims or trust when its scores stay hidden.
 ---
 
 Use this once a work station has a judge, to get its scores shown or to find
@@ -22,6 +22,10 @@ changes**.
 Under **Is this a good run?**, select **Yes** or **No**. On a 1 to 5 rubric,
 the question reads **How good is this run, from 1 to 5?**: select a number.
 To change your grade, select another answer.
+
+On a judge with claims, the question reads **Does the run meet each claim?**.
+Select **Yes** or **No** beside every claim, then **Save grade**. To change
+your grade, change any answer and select **Save grade** again.
 
 Nothing waits on your grade.
 
@@ -44,6 +48,12 @@ first line says whether the judge is trusted:
 **Both scores**, **Judge only**, **People only** and **Neither** count the
 station's recent runs by which scores they have.
 
+On a judge with claims, the agreement is Cohen's kappa over every claim's
+marks together. The **Current** rubric card lists each claim under
+**Agreement claim by claim**, with its own kappa, the share agreed and the
+runs it counts. If one claim's kappa is far below the others, reword that
+claim.
+
 ## Change the rubric or the trust
 
 The matrix on the **Current** rubric card sets the judge's scores, down,
@@ -51,9 +61,9 @@ against people's, across. If its counts off the diagonal lean one way, the
 judge is stricter or looser than people:
 
 - To make the judge read the station as people do, edit the rubric file, such
-  as `judges/core/delivery/implementation.md`, and run `terraform apply`. The
-  new rubric gets a card of its own and starts with no runs that have both
-  scores.
+  as `judges/core/delivery/implementation.md`, or reword the claim people
+  disagree with it on, and run `terraform apply`. The new rubric version gets
+  a card of its own and starts with no runs that have both scores.
 - To show the scores at a lower agreement, lower `trust` in the station's
   `judge` block and run `terraform apply`.
 

@@ -282,6 +282,14 @@ tasks, and the header reads **Cheapest** in place of **Best**: the cheapest of
 the live config and the candidates whose gain reads **Better** or **Within
 noise**.
 
+If the station has a judge, each gain is followed by the candidate's wins,
+losses and ties against the live config, once its replay has finished, as in
+`Side by side with the search's starting config: 4 wins, 1 loss, 2 ties`: on
+each task, whether the judge, not knowing
+which change was which, found the candidate's change or the live config's
+better. They do not change the scores, the frontier or **Best**. See
+[Side by side with the live config](/docs/reference/app/searches#side-by-side-with-the-live-config).
+
 Give the held-out score the most weight. A held-out gain that reads **Better**
 is the strongest sign a candidate helps. A candidate whose gain reads
 **Better** on the searched tasks but not on the held-out ones is marked **Only
@@ -323,8 +331,9 @@ Select it to open the pull request on GitHub.
 <Step>
 
 Review the pull request. Its description has the agent's hypothesis, the
-candidate's scores beside the live config's with their ranges, and whether
-each gain is more than noise. For a candidate marked **Only on seen tasks**,
+candidate's scores beside the live config's with their ranges, whether each
+gain is more than noise, and its side-by-side wins, losses and ties when it
+has any. For a candidate marked **Only on seen tasks**,
 a paragraph under the opening one warns that its gain showed only on the
 searched tasks and gives both gains. It says instead when too few held-out
 tasks were scored to tell, or when the held-out replays had not finished as

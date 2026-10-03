@@ -2,7 +2,7 @@
 type: concept
 icon: Lightbulb
 title: Why changes are replayed on past tasks
-description: Why Spotlight tests a station change by running past tasks again, what a replay starts from and what it may not touch, how it is scored against a baseline, why its results come with a range, how a replay set is checked before it is trusted, and what it costs.
+description: Why Spotlight tests a station change by running past tasks again, what a replay starts from and what it may not touch, how it is scored against a baseline, why its changes are also compared side by side, why its results come with a range, how a replay set is checked before it is trusted, and what it costs.
 ---
 
 A team changes a work station to make its runs better, with a sharper prompt
@@ -69,8 +69,9 @@ station drafts change stacks (`diffs: true`) and has a `check`, its change must
 pass that check. If it has a judge, the judge scores the change against its
 rubric. Where people accepted the original's change, by closing the task or
 approving after the run, the judge is also shown that change and scores the
-replay against it. A run passes the judge on a yes, or on 4 or more on a 1 to 5
-rubric. With both a check and a judge, a run must pass both.
+replay against it. A run passes the judge on a yes, on 4 or more on a 1 to 5
+rubric, or, for a judge with claims, on meeting at least its pass share of
+them. With both a check and a judge, a run must pass both.
 
 A replay's judge scores never count toward the judge's agreement with people,
 its standing, alerts or the Insights figures of the team's runs. They are only
@@ -104,6 +105,46 @@ meets. A task regresses when the baseline succeeded on it and the candidate
 did not, or when the judge scored the candidate lower. With more than one
 copy of each run, the rule changes a little; see
 [Copies of the same run](#copies-of-the-same-run).
+
+## Side by side with the baseline
+
+A judge's score is absolute: it says how good one change is, read on its own.
+Where there is a replay to compare with, the judge can instead be shown both
+changes and asked which is better, which makes its verdict steadier and easier
+to check. In the docs' view, two changes can both pass while one is plainly
+closer to what the task needed, and scores given to each on its own may not
+show it.
+
+So once a replay has finished, on each task where both it and the replay it is
+compared with changed something, and people accepted the original's change,
+the judge is shown the two changes together, labelled A and B, beside the
+accepted one, and asked which is better. It is not told which change is the
+candidate's, so it cannot favour it. It reads the pair twice, once each way
+round, and when the two readings disagree, the task counts as a tie. In the
+docs' view, a model can lean towards whichever change it saw first, and a
+preference that flips with the order was never a preference.
+
+The wins, losses and ties sit beside the success rate and never change it. The
+success rule, the gain and its verdict stay as they are. In the docs' view, a
+comparison that counts only tasks both sides changed and people accepted
+covers too few tasks to replace the rate, but where the rate reads Within
+noise, it can say which way the candidate leans.
+
+Each replay has one counterpart, chosen when it starts and kept: a proposed
+candidate the baseline standing then, a search's candidates the live config
+the search replayed when it started, and a stronger model the live config it
+is compared with. Its task-by-task rows, its gain and its wins and losses all
+use that one replay, so a baseline started later does not change what an
+earlier replay was compared with. In the docs' view, figures read against two
+different replays could not be read together. Pairs judged under different
+rubric versions are left out; in the docs' view, comparing them would mix two
+questions.
+
+The comparisons cost model calls. They count against the replay's ceiling,
+with room for two tries set aside before each is asked, and a pair that would
+pass the ceiling is not asked. They do not count toward the replay's spend or
+its cost per run, since they measure the change, not what running the
+candidate costs; that reason is the docs' own.
 
 ## Every result comes with a range
 

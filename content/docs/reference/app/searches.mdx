@@ -155,9 +155,9 @@ candidate instead:
 | Candidate | Its name, or "Live config", `frontier` for a frontier point, and its [reading](#only-on-seen-tasks) when it has one. |
 | Iteration | The iteration that proposed it, or `–` for the live config. |
 | Searched | Its search score with its range, `of <n> scored`, counting replay runs, copies included. |
-| Gain on searched | Its [gain](#gains) over the live config on the searched tasks, or `–` for the live config. |
+| Gain on searched | Its [gain](#gains) over the live config on the searched tasks, then its [side-by-side](#side-by-side-with-the-live-config) wins, losses and ties there, or `–` for the live config. |
 | Held out | Its held-out score with its range, "Replaying" while its held-out replay is queued or running, "Not held out" for a candidate that was not replayed there, or `–`. |
-| Gain on held out | Its gain over the live config on the held-out tasks, once its held-out replay has finished, else `–`. |
+| Gain on held out | Its gain over the live config on the held-out tasks, once its held-out replay has finished, then its side-by-side wins, losses and ties there, else `–`. |
 | Cost per run | What it spent per scored searched run, or "Unpriced". |
 
 ### Candidates
@@ -191,7 +191,8 @@ Each candidate shows:
 - `Searched <score> (<low>–<high>%) of <n> scored`, or "Not scored yet",
   `Held out` with its range, and `Cost per run`;
 - once it has them, `Gain over the live config, searched` and `Gain over the
-  live config, held out`, each with its [gain](#gains);
+  live config, held out`, each with its [gain](#gains) and its
+  [side-by-side](#side-by-side-with-the-live-config) wins, losses and ties;
 - "Its replay", linked to its replay on the searched tasks ("Its replay of the
   set" for the live config), and "Its held-out replay" when it has one;
 - what picking it does: see [Picking a candidate](#picking-a-candidate).
@@ -387,6 +388,15 @@ paired task by task, with its range and a verdict of Better, Worse or Within
 noise, as a [replay's gain](/docs/reference/app/replays#gains) is, against the
 line's `min_gain`. The frontier and the best candidate do not depend on it.
 
+### Side by side with the live config
+
+Each candidate's replays, on the searched and on the held-out tasks, are
+[set side by side](/docs/reference/app/replays#side-by-side) with the search's
+replay of the live config once they finish, when the candidate has a judge.
+Each reads `Side by side with the search's starting config: <n> wins, <n>
+losses, <n> ties`, counting the tasks of that replay, once any was compared. They never change its score, its
+gain, the frontier or the best candidate.
+
 ### Only on seen tasks
 
 Once a candidate's held-out gain is known, a candidate whose searched gain reads
@@ -486,7 +496,7 @@ the pull request against the default branch.
 | Branch | `spotlight/search-<first 8 characters of the search id>-<candidate name>` |
 | Title | `<station key>: <candidate name>` |
 | Commit message | The title, then `Picked from a Spotlight search of the <station key> station.` |
-| Body | What the search found and what the candidate changes, then a paragraph on its held-out result when there is one to give, the agent's hypothesis, a table of its and the live config's success on the searched and held-out tasks, each with its range, and cost per run, a sentence for each gain, as in `On the held-out tasks it gained +12 points (+3 to +21) on the live config, more than the 5-point gain the line counts as real.`, how many tasks it regressed on against the live config, any attribute Spotlight could not check, and a link to the search. |
+| Body | What the search found and what the candidate changes, then a paragraph on its held-out result when there is one to give, the agent's hypothesis, a table of its and the live config's success on the searched and held-out tasks, each with its range, and cost per run, a sentence for each gain, as in `On the held-out tasks it gained +12 points (+3 to +21) on the live config, more than the 5-point gain the line counts as real.`, a sentence for its side-by-side wins, losses and ties on the searched and on the held-out tasks once any was compared, as in `Set side by side with the live config's change on the searched tasks, without the judge knowing which was which, its change was better on 4 tasks, worse on 1 task and as good on 2 tasks.`, how many tasks it regressed on against the live config, any attribute Spotlight could not check, and a link to the search. |
 
 The paragraph on the held-out result says one of:
 
