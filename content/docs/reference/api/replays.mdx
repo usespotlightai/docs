@@ -22,9 +22,10 @@ through the [Replayed candidates API](/docs/reference/api/replayed-candidates).
 
 | Method and path | Returns |
 | --- | --- |
-| `GET /lines/{lineId}/stations/{stationId}/replay-sets` | The station's replay sets, each with its runs, whether each can still be replayed, `guardsChanges`, whether the set [guards the station's changes](/docs/reference/api/replay-checks), and its [`health` and `minGain`](#set-health). |
+| `GET /lines/{lineId}/stations/{stationId}/replay-sets` | The station's replay sets, each with its runs, whether each can still be replayed, `guardsChanges`, whether the set [guards the station's changes](/docs/reference/api/replay-checks), its [`health` and `minGain`](#set-health), and its [`composition`](#set-composition). |
 | `GET /replay-sets` | Every replay set of the team, including those whose station has left its line. With `line` and `station`, only one station's. |
 | `GET /lines/{lineId}/stations/{stationId}/replayable-runs` | The station's latest 50 ended task runs, newest first, each with its refusal and the reason, or none. |
+| `GET /replay-sets/{setId}/suggestions` | Up to 5 of the station's recent runs that would even out how the set's runs turned out, each as `replayable-runs` lists it, with its `outcome`. None is added. See [Suggested runs](/docs/reference/app/replays#suggested-runs). |
 | `POST /lines/{lineId}/stations/{stationId}/replay-sets` | `201` and `{ "id" }`: opens an empty set. |
 | `PATCH /replay-sets/{setId}` | `204`: renames the set, also once its station has left its line. |
 | `DELETE /replay-sets/{setId}` | `204`: deletes the set and its replays, and lets go of the archives it kept. |
@@ -187,6 +188,23 @@ A set's `health` is read for the station's live config at its current
 | `judge` | object or null | `{ replayId, compared, agreed, pending, agreement, unstable }`, from the newest finished [check of the set](#check-a-set). `compared` counts changes judged twice, both times with a verdict; `agreed` those passed or failed alike both times; `pending` the second judgings still to come; `agreement` is `agreed` out of `compared`, or null before any is compared. `unstable` is true when `agreement` is below 0.8. Null until a check asked for a second judging. |
 | `checks` | object or null | `{ replayId, rechecked, pending, flaky }`, from the same check. `rechecked` counts changes checked twice, both times passing or failing; `pending` the second checks still to come; `flaky` lists each change whose check passed once and failed once, as `{ taskId, originalRunId, runId, first, recheck }`, `first` and `recheck` each `passed` or `failed`. Null until a check asked for a second check. |
 | `sanity` | object or null | `{ replayId, candidateId, model, effort, repeats, state, againstReplayId, againstState, gain, rewardsStrongerModel, worse }`, from the newest [stronger model replay](#try-a-stronger-model) of the live config as it is now. `againstState` is the state of the replay it is compared with, or `gone`. `gain` is its [gain](#gain) over that replay once both finished. `rewardsStrongerModel` is true when the gain reads `better`, false when it does not, and null until compared. `worse` lists each task it did worse on, as `{ taskId, originalRunId, live, stronger }`, each side's success on the task. Null until one was started. |
+
+## Set composition
+
+A set's `composition` reads its original runs as they stand when the set is
+read. See [What a set is made of](/docs/reference/app/replays#what-a-set-is-made-of).
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `outcomes` | array | `{ outcome, count }` for each outcome, always all five, in the order `accepted`, `sent-back`, `asked`, `failed`, `other`. |
+| `origins` | array | `{ origin, count }` for each origin, the largest count first, ties in alphabetical order. `origin` is `person`, `station`, an integration's name, or `unknown`. |
+| `oldest` | string or null | When the set's oldest run ended. Null while no run's end can be read. |
+| `median` | string or null | The median of when its runs ended. |
+| `newest` | string or null | When its newest run ended. |
+| `balanceWarning` | object or null | `{ dominant, count, entries }` when the set holds 6 runs or more and one outcome other than `other` covers more than two thirds of them. |
+
+Each entry of the set also carries its run's `outcome`, one of the five above,
+and `origin`, as in `origins` but null where `origins` reads `unknown`.
 
 ## Who may read and change
 

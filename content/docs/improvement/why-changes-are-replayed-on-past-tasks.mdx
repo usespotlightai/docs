@@ -2,7 +2,7 @@
 type: concept
 icon: Lightbulb
 title: Why changes are replayed on past tasks
-description: Why Spotlight tests a station change by running past tasks again, what a replay starts from and what it may not touch, how it is scored against a baseline, why its changes are also compared side by side, why its results come with a range, how a replay set is checked before it is trusted, and what it costs.
+description: Why Spotlight tests a station change by running past tasks again, what a replay starts from and what it may not touch, how it is scored against a baseline, why its changes are also compared side by side, why its results come with a range, how a replay set is checked before it is trusted and what it should hold, and what it costs.
 ---
 
 A team changes a work station to make its runs better, with a sharper prompt
@@ -241,6 +241,16 @@ now, as its health, and a search warns about each before it starts.
   scoring off, and the tasks it did worse on are where to look first. In the
   docs' view, this is a check on the set, not on the model: a stronger config
   is the one change whose direction is known in advance.
+
+What the set holds matters as well. A set whose original runs were nearly all
+accepted, or nearly all sent back, says little about how runs that turned out
+other ways would go. In the docs' view, a candidate that wins on such a set
+may lose on the runs it lacks. So a set's page counts how its original runs
+turned out, where their tasks came from and when they ended, and warns when
+one outcome covers more than two thirds of a set of 6 runs or more. While you
+add runs, it suggests recent ones of the outcomes the set is short of, but
+never adds them itself. In the docs' view, which tasks a set should stand for
+is the team's choice.
 
 Checking a set replays the live config over it with 3 copies of each run,
 which also measures its noise, then judges and checks each change a second

@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Replays
-description: The Replays section of a Station page, the replay set and replay pages, replay states, results and their reasons, success with its range, gains, side-by-side wins, losses and ties, a set's health and the replays that check it, why a run cannot be replayed, spend and ceilings, and how a replay run differs from a task run.
+description: The Replays section of a Station page, the replay set and replay pages, what a set is made of and the runs suggested to even it, replay states, results and their reasons, success with its range, gains, side-by-side wins, losses and ties, a set's health and the replays that check it, why a run cannot be replayed, spend and ceilings, and how a replay run differs from a task run.
 ---
 
 A [replay](/docs/reference/glossary#replay) runs some of a work station's past
@@ -45,7 +45,7 @@ See [Searches](/docs/reference/app/searches#station-page).
 | --- | --- | --- |
 | Header | The set's name, `<n> runs · opened <when>`, and the "Guards config changes" switch (see [Guarding a station's changes](/docs/reference/app/searches#guarding-a-stations-changes)). When its station has left the line: `Its station is gone from its line, so it starts no replays, takes no more runs and keeps none of its runs' workspaces. It can still be renamed, have runs taken out, or be deleted.` | "Rename". "Delete", then "Delete set": the set and its replays and their results go, and its runs' workspaces are no longer kept for it. Delete is refused while a replay of the set is queued or running, or still has runs in flight, and while a search of the set is under way: "A replay or search of this set is running, so it can't be deleted until that ends or is stopped." Below the header, "Checks" lists the checks replayed on the set (see [Guarding a station's changes](/docs/reference/app/searches#guarding-a-stations-changes)). |
 | Health | `Whether this set can tell a better config from a worse one. Check it before you search on it.`, then one line per reading of the set's [health](#health). | "Check this set" opens the [Check dialog](#check-this-set), and "Try a stronger model" the [stronger model dialog](#try-a-stronger-model). Both are refused for the same reasons as "Start a replay"; "Try a stronger model" also when the station names no harness: "The station names no harness, so there is no model to choose." "Try a stronger model" is disabled while the station's config loads, and if it cannot be loaded reads "The station's model could not be loaded." with "Try again". |
-| Runs | Each run in the set: its task's title, linked to the run, its state, when it ended, and "Can be replayed" or [why it cannot be](#why-a-run-cannot-be-replayed). A task since deleted reads "A deleted task". | "Add runs" opens the station's latest 50 ended task runs, each with "Add", "In the set" or "Can't be replayed" and the reason. The X beside a run takes it out of the set. "Add runs" is not offered once the station is gone. While a search of the set is under way, runs can be neither added nor taken out. |
+| Runs | Each run in the set: its task's title, linked to the run, its state, when it ended, and "Can be replayed" or [why it cannot be](#why-a-run-cannot-be-replayed). A task since deleted reads "A deleted task". Above the runs, [What the set is made of](#what-a-set-is-made-of). | "Add runs" opens the station's latest 50 ended task runs, each with "Add", "In the set" or "Can't be replayed" and the reason, after any runs [suggested to even the mix](#suggested-runs). The X beside a run takes it out of the set. "Add runs" is not offered once the station is gone. While a search of the set is under way, runs can be neither added nor taken out. |
 | Replays | Each replay of the set, newest first: its candidate, "Baseline" for the set's baseline, its [state](#replay-states), when it started, its success with its range, its [gain](#gains) over the baseline and its [side-by-side](#side-by-side) wins, losses and ties, `<n> scored · <n> unscored`, `Spent <spent> of <ceiling>`, and `Each run <n> times` when it replays each run more than once. With none, it reads "Not replayed yet". | "Start a replay": see below. |
 
 "Start a replay" is refused with "Add runs to the set first." on an empty set,
@@ -72,6 +72,63 @@ or less with "Give a ceiling above nothing.", more than 1,000 with "A ceiling
 is at most 1,000.", a currency that is not three letters with "Name the
 currency in three letters, like USD.", and repeats out of bounds with "Give a
 whole number from 1 to 5."
+
+## What a set is made of
+
+A set that holds runs shows "What the set is made of" above them. It reads
+the set's original runs as they stand when the page loads.
+
+| Line | Shows |
+| --- | --- |
+| Ended | `Ended between <when> and <when>, half of them by <when>`: when the oldest and the newest run ended, and the median. `Ended <when>` when they all ended at the same moment. Left out while no run's end can be read. |
+| How its runs turned out | A bar split by [outcome](#outcomes), then each of the five outcomes with its count, 0 included. |
+| Where their tasks came from | Each [origin](#origins) with its count, the largest first, ties in alphabetical order. |
+| Warning | With 6 runs or more, when one outcome other than "Other" covers more than two thirds of them: `<n> of <n> runs <outcome>, so the set says little about how other runs go. Add runs that turned out other ways.`, the outcome read as "were accepted", "were sent back", "asked a person" or "failed". |
+
+### Outcomes
+
+How an original run turned out comes from the first thing a person did on its
+task after it, and from how it ended. The first row that applies decides.
+
+| Outcome | The run |
+| --- | --- |
+| Asked a person | A person granted or refused a tool call it asked approval for. |
+| Accepted | A person then closed the task or approved it. |
+| Sent back | A person then sent the task back or refused it. |
+| Failed | The run failed. |
+| Asked a person | A person then answered it, or it ended asking a person. |
+| Other | None of the above, such as a run no person has acted on since. |
+
+### Origins
+
+Where a run's task came from is recorded when the task is opened.
+
+| Origin | The task |
+| --- | --- |
+| A person | A person opened it at this station. |
+| Another station | It was opened at another station and reached this one later, whoever opened it. |
+| GitHub, Slack, Linear, or the integration's name | An integration opened it on something it heard. Tasks opened from `git` count as GitHub. |
+| Unknown | Its run or task can no longer be read, as for a deleted task. |
+
+### Suggested runs
+
+Once the set holds runs, the "Add runs" dialog lists up to 5 runs first,
+under "Suggested to even the mix", with `Recent runs that turned out ways the
+set has few of. Nothing is added until you add it.` Each shows its
+[outcome](#outcomes) and "Add". None is ever added without it.
+
+The suggestions come from the station's latest 50 ended task runs that can be
+replayed, taking the newest run of each task and leaving out tasks with a run
+in the set already. They are picked one at a time: the outcome among Accepted,
+Sent back, Asked a person and Failed that the set, with the runs picked so
+far, holds fewest of, and fewer of than its most common outcome. Ties go to
+Accepted, then Sent back, Asked a person and Failed. The newest run of that
+outcome is picked. Picking stops at 5, at the room left in the set below 50,
+or when no outcome is short. "Other" is never suggested.
+
+An empty set, a set whose station has left its line, and a set already even
+get no suggestions, and the part is not shown. Suggested runs are not listed
+again below it.
 
 ## Replay page
 
