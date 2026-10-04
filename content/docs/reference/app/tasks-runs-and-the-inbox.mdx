@@ -688,25 +688,68 @@ called, or when the harness profile's `ask` rules match a harness action. See
 | --- | --- |
 | `asked` | Waiting on a person, as an inbox item. |
 | `granted` | Approved. The grant is spent by the call it allows. |
-| `refused` | Rejected. The rejection stands. |
+| `refused` | Dismissed. The dismissal stands. |
 
 When a run asks, Spotlight looks for the latest approval of the same subject at
 the same station. The subject is the tool with the same inputs, or the same
-harness permission.
+harness permission. An approval granted with changed inputs also matches a
+call with the changed inputs.
 
 | Latest approval | Result |
 | --- | --- |
-| `refused` | The call fails with the recorded reason. Nothing is asked. |
-| `granted`, not spent | The call goes ahead, and the grant is spent. |
+| `refused` | The call fails with `<tool> was dismissed, so nothing was sent.`, followed by the recorded reason. Nothing is asked. |
+| `granted`, not spent | The call goes ahead, and the grant is spent. Where the person changed the inputs, the tool runs with the changed inputs, and the `tool.using` hook and the run's steps see them. |
 | none, or spent | The task is put to a person with an approval. A tool call fails with `<tool> needs a person's approval before it runs, and they have been asked in their inbox.`, followed by an instruction to hand over. A harness permission request cancels the turn, and the run waits for the decision. |
 
 - A grant is spent by one call. The next call asks again.
 - An approval asked at one station does not count at another.
-- Only a person can approve or reject. A workspace token cannot.
+- Only a person can approve or dismiss. A workspace token cannot.
 - An approval is decided once. A second decision is refused with `409`.
 - An answer without a decision answers the conversation and leaves the approval
   undecided.
-- A decision without words is recorded as `Approved.` or `Rejected.`.
+- A decision without words is recorded as `Approved.` or `Dismissed.`.
+
+### Changed inputs
+
+A person may approve a tool call with changed inputs, given as `inputs` with
+`approve: true` when answering the inbox item.
+
+- The changes name exactly the inputs the call was asked with. Inputs cannot
+  be added or removed.
+- Each value has the type of the input it replaces: any text for a `string`, a
+  finite number for a `number`, `true` or `false` for a `boolean`.
+- A value may not be blank where the call was asked with one.
+- A harness permission and a dismissal take no changes.
+- Changes that leave every input as it was are recorded as no change.
+
+A refused answer is `409`. See
+[Answering an approval](/docs/reference/errors-and-messages#answering-an-approval).
+
+The answer the agent reads is the person's words, or `Approved.`, followed by
+`I changed what it runs with. Call it again as you asked and it runs with these
+instead:` and every input of the changed call. A one-line value reads
+``<input>: `<value>` ``; a longer one follows its name in a code block. Values
+over 400 characters are cut, ending in `…`.
+
+### What the agent wants
+
+A tool that requires approval also takes `intent`, given as `--intent` to
+[`spotlight <tool>`](/docs/reference/cli/agent-commands#spotlight-tool): what
+the agent wants to do, as a phrase that completes "Spotlight would like to …".
+It is kept with the approval and never passed to the tool.
+
+- Spaces and line breaks become single spaces, and final full stops are
+  dropped.
+- It is cut to 200 characters, ending in `…`.
+- A tool that requires approval may not declare an input named `intent`.
+- A call made while a person still owes an answer keeps the first intent.
+- A harness permission has none.
+
+| Approval | Shown above the call |
+| --- | --- |
+| With an intent | `Spotlight would like to <intent>.` |
+| Without one | `Spotlight would like to use <name>. <because>` |
+| Granted with changed inputs | `Spotlight asked to <intent>, and you changed what it runs with.`, with `use <name>` in place of a missing intent. |
 
 ## Chats
 

@@ -39,19 +39,31 @@ If the task was opened from Slack, a reply in the thread where its question was
 posted answers the item too. See
 [Open tasks from Slack and post questions back](/docs/integrations/open-tasks-from-slack).
 
-## Approve or reject a request
+## Approve, edit or dismiss a request
 
-An approval item shows `<name> needs your approval`, the reason given for
-asking, and the inputs the agent wants to use. It comes from a tool that
-requires approval or from a harness permission a profile sets to ask.
+An approval item says what the agent would like to do, in its own words, above
+a card titled **Waiting for your approval**. The card shows the call itself:
+the inputs of a tool call, or the command of a harness permission. It comes
+from a tool that requires approval or from a harness permission a profile sets
+to ask.
 
-If the agent should know why, write it in **Reasoning**. Then select
-**Approve** or **Reject**.
+- To let the call run as it stands, select **Approve**.
+- To change it first, select the pencil icon, change the values in place, and
+  select **Approve**. Every input that had a value needs one. Only a tool call
+  can be edited; a harness permission is approved or dismissed as it stands.
+- To run it yourself instead, select the copy icon.
+- To refuse it, select **Dismiss**. If the agent should know why, write it in
+  the field that opens, then select **Dismiss** again.
 
-The item then reads "You approved this." or "You rejected this." and a new
-run starts at the same station and picks up the conversation. An approval
-covers one call; the next call asks again. A rejection stands: the same call
-with the same inputs at this station is refused without asking you.
+The card then reads "Approved.", "Approved, with changes." or "Dismissed.",
+and a new run starts at the same station and picks up the conversation. If you
+changed the call, the agent is told what you changed, and the tool runs with
+your values. An approval covers one call; the next call asks again. A
+dismissal stands: the same call with the same inputs at this station is
+refused without asking you.
+
+If Spotlight cannot take your answer, the card says why. See
+[Answering an approval](/docs/reference/errors-and-messages#answering-an-approval).
 
 If you write a reply instead of choosing, the run carries on with no decision
 and you are asked again when the agent next makes the call.

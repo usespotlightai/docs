@@ -30,14 +30,23 @@ tools = {
 }
 ```
 
+The agent says what it would like to do in its own words when it calls the
+tool, working from the tool's `description` and `because`. Write both so that
+a person reading that sentence knows what the call does and why it waits for
+them.
+
+Don't give the tool an input named `intent`. Spotlight keeps that name for the
+agent's sentence, and refuses the integration otherwise.
+
 Run `terraform apply`.
 
-## Approve or reject each call
+## Approve, edit or dismiss each call
 
-When an agent calls the tool, nothing is sent: the task's inbox item shows the
-tool, the reason and the inputs, with **Approve** and **Reject**, and the work
-resumes once someone decides. See
-[Answer the inbox](/docs/inbox/answer-the-inbox#approve-or-reject-a-request).
+When an agent calls the tool, nothing is sent: the task's inbox item shows
+what the agent would like to do and the call itself, with **Approve** and
+**Dismiss**. A person can change the call's inputs before approving it. The
+work resumes once someone decides. See
+[Answer the inbox](/docs/inbox/answer-the-inbox#approve-edit-or-dismiss-a-request).
 
 If agents should ask before commands or file changes instead of tool calls,
 use a harness profile's `ask` rules. See
