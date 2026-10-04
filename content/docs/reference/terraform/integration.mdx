@@ -347,7 +347,7 @@ request to another host is refused with `<host>: is not among the hosts this dep
 | --- | --- | --- | --- |
 | `does` | string | required | The action the tool runs. It must be defined in `actions`. |
 | `description` | string | required | When an agent should use the tool. May not be empty. |
-| `approval.because` | string | none | When set, each use first asks a person, who is shown this text. May not be empty. |
+| `approval.because` | string | none | When set, each use first asks a person, who is shown this text. May not be empty. The tool may not then have an input named `intent`. |
 | `inputs` | map of name to object | `{}` | The tool's inputs. |
 | `output` | string | none | An expression. What the tool returns. Sees `response`, `status`, `capture` and `inputs`. Without it, the `capture` map. |
 
@@ -361,7 +361,9 @@ Input:
 | `default` | string | none | The value when none is given. Sees `task`. May hold expressions. |
 | `piped` | boolean | `false` | The input may be piped to the tool command. At most one input per tool, and it must be a `string`. |
 
-An agent calls a tool as `<integration>.<tool>`. A tool whose request fails
+An agent calls a tool as `<integration>.<tool>`. A tool with `approval` also
+takes `intent` from the agent, which is shown to the person and never sent;
+see [What the agent wants](/docs/reference/app/tasks-runs-and-the-inbox#what-the-agent-wants). A tool whose request fails
 returns `the integration answered <status>: <body>`, with the body cut at 500
 characters. See [Approvals](/docs/reference/app/tasks-runs-and-the-inbox#approvals)
 and [Require approval before a tool runs](/docs/integrations/require-approval-before-a-tool-runs).

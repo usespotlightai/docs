@@ -35,7 +35,25 @@ pages for each command.
 | `The task cannot be moved from <from> to <to>: <reason>` | `422`. A person's move other than starting, parking or closing a task. | [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves), [Add a task and move it along a line](/docs/tasks/add-and-move-tasks#move-the-task) |
 | `The run said: <note>` | Follows the hook's reason when a hook on `handover.giving` refused the handover. | [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover), [Refusing an event](/docs/reference/terraform/hook#refusing-an-event) |
 | `This moved on. There is nobody left to tell here.` | Shown on a run page in place of the message box once the task has left the run's station. | [Steer or stop a run](/docs/runs/steer-or-stop-a-run#say-something-to-the-agent) |
-| `<name> needs your approval` | An approval item, from a tool that requires approval or a harness permission a profile sets to ask. | [Approvals](/docs/reference/app/tasks-runs-and-the-inbox#approvals), [Answer the inbox](/docs/inbox/answer-the-inbox#approve-or-reject-a-request) |
+| `Waiting for your approval` | An approval item, from a tool that requires approval or a harness permission a profile sets to ask. | [Approvals](/docs/reference/app/tasks-runs-and-the-inbox#approvals), [Answer the inbox](/docs/inbox/answer-the-inbox#approve-edit-or-dismiss-a-request) |
+| `Spotlight would like to <intent>.` | Above an approval item: what the agent said it wants to do. | [What the agent wants](/docs/reference/app/tasks-runs-and-the-inbox#what-the-agent-wants) |
+| `Spotlight would like to use <name>. <because>` | Above an approval item whose agent said nothing about what it wants to do, and above every harness permission. | [What the agent wants](/docs/reference/app/tasks-runs-and-the-inbox#what-the-agent-wants) |
+| `Spotlight asked to <intent>, and you changed what it runs with.` | Above an approval granted with changed inputs. | [Changed inputs](/docs/reference/app/tasks-runs-and-the-inbox#changed-inputs) |
+| `Approved.`, `Approved, with changes.` or `Dismissed.` | A decided approval item. | [Approvals](/docs/reference/app/tasks-runs-and-the-inbox#approvals) |
+
+### Answering an approval
+
+Each is a `409` from answering an approval item, shown in the card.
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `The conversation was already approved, so it cannot be decided again` | The approval was decided before. With `dismissed` where it was dismissed. | [Approvals](/docs/reference/app/tasks-runs-and-the-inbox#approvals) |
+| `The conversation asks about <inputs>, so changes must name exactly those, each a value of the kind asked and none left blank` | Changed inputs that add or leave out an input, give a value of another type, or leave a value blank. | [Changed inputs](/docs/reference/app/tasks-runs-and-the-inbox#changed-inputs) |
+| `The conversation waits on a harness, which only takes a yes or a no, so what it does cannot be changed` | Changed inputs on a harness permission. | [Changed inputs](/docs/reference/app/tasks-runs-and-the-inbox#changed-inputs) |
+| `The conversation is being dismissed, so there is nothing to run with changes` | Changed inputs with a dismissal. | [Changed inputs](/docs/reference/app/tasks-runs-and-the-inbox#changed-inputs) |
+| `The conversation only takes changes to what it runs alongside a decision to run it` | Changed inputs with no decision. | [Changed inputs](/docs/reference/app/tasks-runs-and-the-inbox#changed-inputs) |
+| `The conversation waits on nothing being approved, so there is nothing there to approve` | A decision on a conversation that asks for no approval. | [Approvals](/docs/reference/app/tasks-runs-and-the-inbox#approvals) |
+| `The conversation can only be approved or dismissed by a person` | A decision made with a workspace token. | [Approvals](/docs/reference/app/tasks-runs-and-the-inbox#approvals) |
 
 ### Run failure messages
 
@@ -231,6 +249,7 @@ Each command exits `1` and prints its message on standard error.
 
 | Message | Cause | See |
 | --- | --- | --- |
+| `<tool> was dismissed, so nothing was sent.` | A person dismissed this call at this station. Their reason follows. | [Approvals](/docs/reference/app/tasks-runs-and-the-inbox#approvals) |
 | `<tool> needs a person's approval before it runs, and they have been asked in their inbox.` | The tool requires approval, and no unspent grant covers the call. An instruction to hand over follows. | [Approvals](/docs/reference/app/tasks-runs-and-the-inbox#approvals), [Require approval before a tool runs](/docs/integrations/require-approval-before-a-tool-runs) |
 | `the integration answered <status>: <body>` | The tool's request failed. The body is cut at 500 characters. | [Tools](/docs/reference/terraform/integration#tools) |
 | `The pull request was held back by a hook, so none was opened.` | A hook on `pull-request.opening` refused the pull request. The hook's refusal follows. | [Check or block a pull request before it opens](/docs/integrations/check-a-pull-request-before-it-opens#check-a-refusal) |

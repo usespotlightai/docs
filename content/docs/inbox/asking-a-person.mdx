@@ -2,7 +2,7 @@
 type: concept
 icon: Lightbulb
 title: Asking a person
-description: Why Spotlight's inbox holds conversations and not tasks, who sees a question, how failures and approvals become questions, and why only a real decision counts as one.
+description: Why Spotlight's inbox holds conversations and not tasks, who sees a question, how failures and approvals become questions, why an approval shows the call itself and what a person may change, and why only a real decision counts as one.
 ---
 
 An agent in Spotlight works on its own until it needs someone. Then it asks,
@@ -80,7 +80,7 @@ harness rules are guardrails; what actually limits an agent is described in
 boundary](/docs/security/the-sandbox-is-the-security-boundary).
 
 When an agent reaches one of these, the task asks, and the approval appears in
-the assignee's inbox as a conversation with Approve and Reject on it. The agent
+the assignee's inbox as a conversation with Approve and Dismiss on it. The agent
 hears from its own call that a person has been asked and that it should stop
 and hand over. Its run then pauses, and carries on once the person answers. The approval lives on the task's own trail
 rather than in a separate list of pending approvals, because an approval is
@@ -102,12 +102,35 @@ the grant is given back. A refusal stands at the station that asked, which keeps
 an agent from wearing a person down by asking the same thing again; another
 station asks afresh. And a decision is made once.
 
+## An approval shows the call itself
+
+An approval item leads with the call itself: the comment as it will be posted,
+or the command as it will run. Above it, the agent says in a sentence what it
+would like to do, working from the tool's description and the reason the
+integration gives for asking. The sentence is the agent's own words, so it
+tells the person what the agent means to do; the call below it tells them what
+will actually happen, and only the call is approved.
+
+A person can change the call before approving it. Without that, a comment with
+one wrong word could only be refused, and the agent would try again with no
+better idea of what was wanted. The changes are bound by the same narrow rules
+as the approval: they replace the values of the inputs the agent asked with,
+keep each input's type, and cannot add or remove inputs, so what a person
+approves is still a call they can read in full. The agent is told what
+changed, because it otherwise could not explain what was sent. A harness
+permission cannot be changed, because the harness only takes a yes or a no.
+
+Every approval waits for its person; the agent cannot carry on until the
+person decides. A tool from an integration is called through the run's egress,
+which ends with the run, so a call approved after the run had moved on would
+have nothing to send it.
+
 ## A reply is not a decision
 
 A person can answer an approval in the inbox with words and no decision. The
 run carries on with those words, and the approval stays undecided. Words said
 to the run from its page while it waits for a decision are only noted, and do
-not resume it. Only the Approve or Reject action counts, and only when a person
+not resume it. Only the Approve or Dismiss action counts, and only when a person
 takes it.
 
 Free text makes a poor record of consent, in the docs' view. "Sure, but not on

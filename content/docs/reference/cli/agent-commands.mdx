@@ -491,6 +491,10 @@ spotlight acme comment --issue <string> [--body <string> (or piped in)]
 | `(or piped in)` | The input may come from standard input. |
 | `[...]` | Optional, or has a default. |
 
+A tool that requires approval lists `[--intent <string>]` after its own
+inputs, and its description ends with the reason a person approves it and
+`Say what you want to do with --intent; the person reads it first.`
+
 A run given no tools prints `This run was given no tools.`
 
 ## spotlight &lt;tool&gt;
@@ -512,6 +516,11 @@ for how an integration defines tools and their inputs.
 | `boolean` | `--<input>`, present or absent |
 | Piped | `--<input> <value>`, or `--<input> -`, or `--<input> /dev/stdin`, or omitted with standard input not a terminal. Empty piped input counts as not given. |
 
+For a tool that requires approval, `--intent <phrase>` says what the agent
+wants to do, completing "Spotlight would like to …". It is optional, shown to
+the person who decides, and never passed to the tool. See
+[What the agent wants](/docs/reference/app/tasks-runs-and-the-inbox#what-the-agent-wants).
+
 The tool's result is printed to standard output. When the tool returns
 `{"output": ...}`, a string output is printed as it is and any other output as
 indented JSON. Any other result is printed as it came.
@@ -530,4 +539,6 @@ Other failures are the tool's own error as Spotlight reports it.
 ```bash
 spotlight acme comment --issue <issue> --body "Deployed to staging."
 git diff | spotlight acme comment --issue <issue>
+spotlight acme comment --issue <issue> --body "Deployed to staging." \
+  --intent "post the staging deploy on the issue, publicly under the team's name"
 ```
