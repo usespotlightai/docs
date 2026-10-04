@@ -433,8 +433,9 @@ the judge has one. Then:
 
 With no judged runs, the section reads "No judged runs yet".
 
-Under "Alerts", each alert is one line, in the order written: the measure, then
-its threshold. See [Station alerts](#station-alerts) for when one goes off.
+Under "Alerts", each alert is one line, in the order written:
+`Alerts when the <measure>`, with the measure's label in lower case, then its
+threshold. See [Station alerts](#station-alerts) for when one goes off.
 
 | Measure | Label |
 | --- | --- |
@@ -447,16 +448,17 @@ its threshold. See [Station alerts](#station-alerts) for when one goes off.
 
 | Threshold | Reads |
 | --- | --- |
-| `risesBy` | `<Measure> up <change> in the last <over> runs, against the <over> before` |
-| `fallsBy` | `<Measure> down <change> in the last <over> runs, against the <over> before` |
-| `above` | `<Measure> above <amount> across the last <over> runs` |
-| `below` | `<Measure> below <amount> across the last <over> runs` |
+| `risesBy` | `rises <change> or more over <over> runs` |
+| `fallsBy` | `falls <change> or more over <over> runs` |
+| `above` | `goes above <amount> over <over> runs` |
+| `below` | `drops below <amount> over <over> runs` |
 
 A change in a rate is shown in points, and an amount of a rate as a
 percentage. Cost is shown as a number with no currency, to two decimals, or
-four under 0.01. With `over` set to 1, the line reads
-`the last run` and `the one before`. For example:
-`Sent-back rate up 20 points in the last 20 runs, against the 20 before`.
+four under 0.01. With `over` set to 1, `over <over> runs` reads
+`from one run to the next` for `risesBy` and `fallsBy`, and `in a single run`
+for `above` and `below`. For example:
+`Alerts when the sent-back rate rises 20 points or more over 20 runs`.
 
 ### Judge score
 
@@ -570,20 +572,19 @@ Nothing waits on it, and it cannot be answered.
 
 | Flag | Set when |
 | --- | --- |
-| unread | Its person has not opened it, and it is not settled. Opening it reads it. |
-| resolved | Its person selected "Dismiss". A settled notice shows under "Resolved" for 30 days after it was settled, then leaves the inbox. |
+| unread | Its person has not opened it, and it is not settled. |
+| resolved | Its person opened it, which settles it. A settled notice shows under "Resolved" for 30 days after it was settled, then leaves the inbox. |
 
 Its row shows a lightbulb, the headline, an unread dot, the day it was raised,
 and the first point. Its page, `/w/<slug>/inbox/notices/<noticeId>`, shows when
-it was raised, the headline, the points under "Details", a button that opens
-the link, and "Dismiss", or once settled, "Dismissed. There is nothing left
-to do here." A failed dismissal reads "It could not be dismissed. Try again."
+it was raised, the headline, the points under "Details", and a button that
+opens the link.
 
 A notice reaches only its person, and only while they are a member of its
 team's workspace. To anyone else, and once it has left the inbox, its page
-reads "Nothing here is waiting on you any more." Reading and settling are
-`POST /api/workspaces/{slug}/inbox/notices/{noticeId}/read` and `…/settle`,
-each answering `204`, or `404` for a notice not put to the caller. Disbanding
+reads "Nothing here is waiting on you any more." Settling is
+`POST /api/workspaces/{slug}/inbox/notices/{noticeId}/settle`, answering
+`204`, or `404` for a notice not put to the caller. Disbanding
 a team forgets its notices.
 
 ### Grades
@@ -595,14 +596,22 @@ grade, chosen from the run's id. The item reads
 
 It reaches the inbox of the task's assignee, or of everyone on the team when the
 task has no assignee. It never reaches a person who is neither on the team nor
-an owner or admin of the workspace. The item shows "Grade this run", the task, "What the run
-said last", "Its changes", and "Is this a good run?" with Yes and No, or
-"How good is this run, from 1 to 5?" with 1 to 5. On claims, it reads "Does
-the run meet each claim?" and lists each claim with Yes and No; "Save grade"
-saves once every claim is answered, and until then the item reads "Answer
-every claim to save your grade." A claim whose words changed since the judge
-marked it reads `Claim <n>`, with "Its words changed since the judge marked
-it, so it reads by its place." The judge's score is not shown on it.
+an owner or admin of the workspace. The item shows the run's conversation,
+then a card with the question, the judge's rubric when the station's judge
+has one, and the answers:
+
+| Scale | Question | Answers |
+| --- | --- | --- |
+| Yes or no, with a rubric | "Does this run meet the rubric?" | Yes, No |
+| Yes or no, without one | "Is this a good run?" | Yes, No |
+| 1 to 5, with a rubric | "How well does this run meet the rubric, from 1 to 5?" | 1 to 5 |
+| 1 to 5, without one | "How good is this run, from 1 to 5?" | 1 to 5 |
+| Claims | "Does the run meet each claim?" | Yes, No beside each claim |
+
+A grade saves as soon as it is chosen, and on claims once every claim is
+answered. While it saves, the card reads "Saving…"; a failed save reads "Your
+grade could not be saved. Try again." A claim whose words changed since the
+judge marked it reads `Claim <n>`. The judge's score is not shown on it.
 
 - Any person on the team, and any owner or admin of the workspace, can grade
   a run. Anyone else is answered `404`. One grade settles the item for
@@ -671,10 +680,10 @@ The item shows:
 
 | Part | Shows |
 | --- | --- |
-| Heading | `An alert went off at <station> on <day>`, then the alert as on the Station page, with cost in the currency of the station's runs. |
-| Reading | `It was <value> across the last <over> runs.`, or for `risesBy` and `fallsBy`, `It was <value> in the last <over> runs, against <value> in the <over> before.` |
-| Recovery | `Back within it since <day>.`, once the alert has recovered. |
-| Chart | "Run by run, over the last `<over>` runs each time": the measure over the `over` settled runs up to each run, from 2 × `over` runs before the run that crossed it to `over` runs after. It marks that run, and the threshold for `above` and `below` or the measure over the runs before for `risesBy` and `fallsBy`. It is drawn from the station's latest 500 runs; without that run among them, it reads `The runs around it are no longer kept, so there is nothing to chart.` |
+| Heading | `An alert went off at <station>`, with the day it went off. |
+| Reading | What the runs did, then the threshold, with cost in the currency of the station's runs. For a rate, `<value> of the last <over> runs <did>.`, where `<did>` is "were sent back", "were accepted", "were merged", "failed" or "failed their checks". For cost, `The last <over> runs cost <value> each on average.` For `risesBy` and `fallsBy`, the comparison follows before the full stop: `, up from <value> in the <over> before`, or `down from` or `the same as`. Then `The alert is set at a <change>-point rise.` (or `fall`), `a rise of <amount>` for cost, or `The alert is set at above <amount>.` (or `below`). With `over` set to 1, `the last run` and `the one before`. |
+| Recovery | `Back under the threshold since <day>.`, or `Back over the threshold since <day>.` for `fallsBy` and `below`, once the alert has recovered. |
+| Chart | The measure over the `over` settled runs up to each run, from 2 × `over` runs before the run that crossed it to `over` runs after. Its legend names "Alert level" with the amount, for `above` and `below`; "Before" with the measure over the runs before, for `risesBy` and `fallsBy`; and "The run it went off at". It is drawn from the station's latest 500 runs; without that run among them, it reads `The runs behind this alert have been deleted, so there's no chart to show.` |
 | Links | "Open the station"; "See it on Insights", which opens the [Stations tab](/docs/reference/app/insights#stations) at the station, over the shortest period that covers the day it went off; and "Improve this station". |
 
 ## Approvals
@@ -689,6 +698,11 @@ called, or when the harness profile's `ask` rules match a harness action. See
 | `asked` | Waiting on a person, as an inbox item. |
 | `granted` | Approved. The grant is spent by the call it allows. |
 | `refused` | Dismissed. The dismissal stands. |
+
+In the inbox, the card's title reads "Waiting for your approval" while it is
+`asked`, then "Request approved", "Request approved with changes" or "Request
+dismissed". An undecided card offers copy and, for a tool call with inputs,
+edit, beside "Dismiss" and "Approve".
 
 When a run asks, Spotlight looks for the latest approval of the same subject at
 the same station. The subject is the tool with the same inputs, or the same
