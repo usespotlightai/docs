@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: spotlight_integration
-description: Every key of an integration definition, the rules Spotlight checks when it is written, and the endpoints a definition gives a team.
+description: Every key of an integration definition, the API descriptions it can generate tools from, the rules Spotlight checks when it is written, and the endpoints a definition gives a team.
 ---
 
 The `spotlight_integration` resource, and the integration resource of the
@@ -79,22 +79,36 @@ Acme stands for any HTTP service. A station gives this tool as `acme.comment`.
 | `schedule` | object | none | An action Spotlight runs on a cron schedule. See [schedule](#schedule). |
 | `actions` | map of name to object | `{}` | Requests to the host. See [actions](#actions). |
 | `tools` | map of name to object | `{}` | Actions offered to agents and hooks. See [tools](#tools). |
+| `openapi` | object | none | An OpenAPI description to generate tools from. See [API descriptions](#api-descriptions). |
+| `graphql` | object | none | A GraphQL API to generate tools from. See [API descriptions](#api-descriptions). |
 | `on` | map of name to object | `{}` | Actions run when a task event happens. See [on](#on). |
 
 A definition must do something: it has a `webhook`, a `poll`, a `schedule`, at
-least one action, or at least one `on` binding. Otherwise it is refused with
-`must do something: a webhook, a poll, a schedule, or an action to run`.
+least one action, at least one `on` binding, an `openapi` or a `graphql`.
+Otherwise it is refused with
+`must do something: a webhook, a poll, a schedule, an action to run, or an API description to offer tools from`.
+A definition with both `openapi` and `graphql` is refused with
+`offers tools from one API description: an openapi or a graphql, not both`.
 
-A read adds two fields that cannot be set: `source`, equal
-to `integration`, and `tools`, a map from each tool's name in the definition to
-the name stations and hooks use, as in `{ "comment": "acme.comment" }`.
+A read adds three fields that cannot be set:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `source` | string | Equal to `integration`. |
+| `tools` | map of name to string | Each tool the integration offers, written or generated, by its name in the integration, to the name stations and hooks use, as in `{ "comment": "acme.comment" }`. |
+| `described` | object or null | The API description as Spotlight last read it. `null` when the definition names none. See [Described](#described). |
+
+In Terraform, `tools` is known only after apply when the definition has an
+`openapi` or a `graphql`. A station that names a generated tool through it that
+is not there fails the apply, not the plan.
 
 ## Names
 
 | Name | Pattern | Example |
 | --- | --- | --- |
 | `integration` | lowercase letters and digits, one word; not `catalog` | `acme` |
-| action, tool, tool input | lowercase words joined by dashes | `post-message` |
+| action, tool | lowercase words joined by dashes | `post-message` |
+| tool input | a letter or `_`, then letters, digits, `_` and `-`, at most 64 characters; not `json` | `issue`, `team_id` |
 | happening | the integration's own name, a dot, then dotted words of lowercase letters, digits, `_` and `-` | `acme.issue.updated` |
 | mark kind | a source name, a dot, then dotted words as for a happening | `acme.issue` |
 | secret reference | `secret.` and a secret name of capitals, digits and `_`, starting with a capital, at most 64 characters | `secret.ACME_API_KEY` |
@@ -334,7 +348,7 @@ before it is sent.
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `oauth2.connection` | boolean | `true` | Must be `true`. Sends the team's OAuth access token as `Authorization: Bearer`. |
-| `secrets` | array of strings | none | Secret references, `secret.<NAME>`, at least one when set. Each secret is put in its bound header on requests to the hosts it is bound to. A request to any other host goes without it. Redirects are not followed. |
+| `secrets` | array of strings | none | Secret references, `secret.<NAME>`, at least one when set. Each secret is put in its bound header on requests to the hosts it is bound to. A request to any other host goes without it, and so does a redirect to another host. |
 
 `auth` accepts no other way, and is refused with `authenticates a request by its oauth2 connection, or by the secrets it wears toward the hosts they are bound to`. See [Bindings](/docs/reference/terraform/secret#bindings).
 
@@ -355,11 +369,16 @@ Input:
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `type` | string | `string` | `string`, `number` or `boolean`. The input's type. Expressions see `number` as `dyn` and `boolean` as `bool`. |
+| `type` | string | `string` | `string`, `number`, `integer` or `boolean`. The input's type. Expressions see `boolean` as `bool`, and `number` and `integer` as `dyn`. |
+| `schema` | object | none | A JSON Schema for the input, in place of `type`, for a list, an object or a constrained value. An input with both `type` and `schema` is refused with `takes a type, or a JSON Schema as its schema, but not both`. Expressions see a `string` schema as `string`, a `boolean` one as `bool`, and any other as `dyn`. See [Input schemas](#input-schemas). |
 | `description` | string | none | Shown to the agent. |
 | `required` | boolean | `false` | Whether the agent must give it. |
 | `default` | string | none | The value when none is given. Sees `task`. May hold expressions. |
-| `piped` | boolean | `false` | The input may be piped to the tool command. At most one input per tool, and it must be a `string`. |
+| `piped` | boolean | `false` | The input may be piped to the tool command. At most one input per tool, and it must take text. |
+
+An input may not be named `json`: Spotlight keeps that name for handing a tool
+every input at once, and refuses the tool with
+`takes json, which Spotlight keeps for handing a tool every input at once`.
 
 An agent calls a tool as `<integration>.<tool>`. A tool with `approval` also
 takes `intent` from the agent, which is shown to the person and never sent;
@@ -370,6 +389,205 @@ and [Require approval before a tool runs](/docs/integrations/require-approval-be
 
 A tool that a station gives or a hook matches or calls cannot be withdrawn
 from the definition; the update is refused with `409`.
+
+### Input schemas
+
+Before a call reaches the host, Spotlight checks each input against its schema.
+These keywords are kept: `type` (one or a list of `string`, `number`,
+`integer`, `boolean`, `object`, `array`, `null`), `enum`, `const`,
+`properties`, `required`, `additionalProperties` (as a boolean), `items`,
+`anyOf`, `oneOf`, `allOf` (merged into one object), `description`, `default`,
+`examples`, `minimum`, `maximum`, `minLength`, `maxLength`, `pattern` and
+`format`. Others are dropped. `pattern` and `format` are kept for the agent to
+read and not checked. A schema is read 8 levels deep.
+
+A value given as text, as a command-line flag gives it, is read as the
+input's type first: a number from its decimal digits (not `0x10`), `true` or
+`false`, and a list or object from its JSON. A call whose input does not fit is refused before
+anything is sent, naming where:
+
+| Message | Cause |
+| --- | --- |
+| `<tool> needs <input>` | A required input was not given. |
+| `<tool> takes <input>, and <where> <why>` | An input does not fit its schema, as in `linear.issue-create takes input, and input.teamId is not text`. |
+
+`<why>` is one of `is not <type>`, `is not one of <values>`, `is not <value>`,
+`needs <field>`, `takes no <field>`, `is shorter than <n> characters`,
+`is longer than <n> characters`, `does not match <pattern>`,
+`is less than <n>`, `is more than <n>`, `is none of the shapes it may take`,
+and `is not JSON` for a value that is not JSON or nests more than 64 levels.
+
+A person who changes a call's inputs while approving it is checked against the
+same schemas. See
+[Changed inputs](/docs/reference/app/tasks-runs-and-the-inbox#changed-inputs).
+
+## API descriptions
+
+`openapi` and `graphql` name an API description: a document that lists an
+API's operations and what each takes. Spotlight reads it and offers one tool
+for each operation, beside the tools in `tools`. A definition has at most one
+of the two. See
+[Generate tools from an API description](/docs/integrations/generate-tools-from-an-api-description).
+
+```hcl
+openapi = {
+  url      = "https://petstore3.swagger.io/api/v3/openapi.json"
+  baseUrl  = "https://petstore3.swagger.io/api/v3"
+  revision = "1"
+  auth     = { secrets = ["secret.PETSTORE_KEY"] }
+  tools = {
+    include  = ["*pet*"]
+    exclude  = ["delete-*"]
+    approval = { "update-pet" = false }
+  }
+}
+```
+
+### openapi
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `url` | string | none | Where the description is read from, as JSON or YAML. Exactly one of `url` or `document`. |
+| `document` | object | none | The description written out in full. |
+| `baseUrl` | string | none | Where every generated call is sent. Without it, each operation's first server, else its path's, else the description's, with variables at their defaults and read relative to `url`; with no server at all, the root of `url`. |
+| `revision` | string | none | Any text. A change makes Spotlight read the description again. |
+| `auth` | object | none | As a request's [`auth`](#requests). Sent with every generated call, and with the fetch of the description when it is on the host of `baseUrl`. |
+| `tools` | object | `{}` | Which tools are generated, and which ask first. See [Choosing tools](#choosing-tools). |
+
+Spotlight reads OpenAPI 3.0 and 3.1. An `openapi` with both or neither of
+`url` and `document` is refused with
+`is read from a url, or written out in full as its document, but not both`.
+
+### graphql
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `url` | string | required | The endpoint. Generated calls are sent to it as `POST`. Without `document`, Spotlight reads the schema by asking the endpoint for it (introspection). |
+| `document` | string | none | The schema in GraphQL's schema language, read in place of asking the endpoint. |
+| `depth` | integer | `2` | 1 to 5. How many levels of fields a generated call selects in its answer. |
+| `revision` | string | none | Any text. A change makes Spotlight read the schema again. |
+| `auth` | object | none | As a request's [`auth`](#requests). Sent when Spotlight asks for the schema, and with every generated call. |
+| `tools` | object | `{}` | See [Choosing tools](#choosing-tools). |
+
+A generated call selects, at each level, every field that takes no required
+argument: scalar and enum fields at every level, and fields with fields of
+their own while `depth` allows. Input objects in arguments are followed 3
+levels deep; deeper ones read as any object.
+
+### Choosing tools
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `include` | array of strings | `[]` | Patterns. When set, only operations whose tool name matches one are offered. |
+| `exclude` | array of strings | `[]` | Patterns. Operations whose tool name matches one are not offered. |
+| `approval` | map of tool name to object or `false` | `{}` | An object with `because` makes that tool ask a person first, who is shown the text. `false`: the tool never asks. |
+
+A pattern is a tool name in lowercase letters, digits and `-`, where `*`
+matches any run of characters. Anything else is refused with
+`is a tool name in lowercase words joined by dashes, with * for any run of letters, as in *-issue*`.
+
+A tool in `tools` with the same name as a generated one is offered in its
+place. A key of `approval` that names no generated tool gives a warning:
+`names <key>, which no operation of its <OpenAPI description or GraphQL schema> is called`.
+
+At most 1,000 tools are generated, counted after `include`, `exclude` and the
+tools in `tools`. More is refused at `<openapi or graphql>.tools` with
+`offers <n> tools from its <OpenAPI description or GraphQL schema>, more than the 1000 a station can choose between; name the ones it offers in <openapi or graphql>.tools.include`.
+
+### Generated tools
+
+Each OpenAPI operation, and each GraphQL query and mutation field, becomes a
+tool:
+
+| Part | From |
+| --- | --- |
+| Name | The `operationId`, or the GraphQL field's name, in lowercase words joined by dashes: `findPetsByStatus` is `find-pets-by-status`, and `issueCreate` is `issue-create`. An operation without an `operationId` is named from its method and path: `GET /store/inventory` is `get-store-inventory`. |
+| Description | The operation's `summary`, else its `description`, else its method and path; for GraphQL, the field's description, else `query <field>` or `mutation <field>`. At most 1,000 characters. |
+| Inputs | The operation's path, query and header parameters, and the GraphQL field's arguments, each by its own name, as in `petId` or `team_id`, with its JSON Schema. A JSON request body is the input `body`. |
+| Approval | OpenAPI `POST`, `PUT`, `PATCH` and `DELETE`, and GraphQL mutations, ask a person first, with the reason `It changes data in <name>.`, where `<name>` is the definition's `name`, else `integration`. `tools.approval` overrides it. |
+| Output | For OpenAPI, the response's JSON. For GraphQL, `data.<field>` of the answer; an answer with `errors` fails the call. An answer over 4 MB fails the call with `it is larger than the 4 MB Spotlight reads from a tool`. |
+
+OpenAPI schemas are followed 8 levels deep, and each operation's input schemas
+are cut short after 4,000 schema nodes; deeper parts read as any value. Only
+`$ref`s inside the description are followed; any other reads as any value.
+Spotlight sends the `accept`, `content-type` and `authorization` headers
+itself, so header parameters by those names are not inputs. An optional
+parameter or body a tool cannot send is left out.
+
+Every request, written or generated, follows at most 5 redirects. Each goes only to a host on the
+deployment's outbound allow-list and never from `https` to `http`, and
+credentials are not sent to a host other than the request's own.
+
+An operation that gets no tool gives a warning at `openapi` or `graphql`, as
+`passes over <operation>, <reason>`:
+
+| Reason | Cause |
+| --- | --- |
+| `because another operation is also called <name>` | An earlier operation has the same tool name. The first is kept. |
+| `which has no name a tool can take` | Its `operationId`, method and path, or field name give no tool name. |
+| `because it needs its <in> parameter <name>, which a tool cannot send` | A required cookie parameter, a required `accept`, `content-type` or `authorization` header, or a required parameter whose name is not letters, digits, `_` and `-`, such as `$filter`. |
+| `because one of its parameters cannot be read` | A parameter is not an object with `name` and `in`, or its `$ref` points nowhere. |
+| `because it takes <name> twice` | Two parameters in different places share a name. |
+| `because it takes a parameter called body as well as a body` | A parameter named `body` beside a JSON request body. |
+| `because it sends a body that is not JSON, which a tool cannot send yet` | A required request body with no JSON media type. |
+| `because it takes <name>, which a tool cannot` | A GraphQL argument whose name a tool input cannot have. |
+| `because it takes "<name>", which a tool cannot` | An input named `json`, or not letters, digits, `_` and `-`. |
+| `because it calls <host>, and the connection is worn only toward the host the description came from or the one its baseUrl names` | With `auth.oauth2` and no `baseUrl`, the operation's server is on another host than the description. |
+| `which needs approval and takes intent, the input Spotlight keeps for the agent to say what it wants to do; switch its approval off in <openapi or graphql>.tools.approval to offer it` | The operation asks a person first and has an input named `intent`. With its `tools.approval` set to `false` it is offered. |
+
+### Reading the description
+
+Spotlight reads the description when the integration is created, and keeps
+what it read. It reads it again only:
+
+- when an update changes `url`, `document`, `baseUrl`, `revision`, `depth`, or
+  whether `auth` is `oauth2` or `secrets`;
+- on any update after a read that failed;
+- when someone connects the integration over OAuth.
+
+A tool call never reads it.
+
+The description is fetched with `GET`, and a GraphQL schema with an
+introspection `POST`. Spotlight sends `auth` with the fetch only to the API's
+own host: the host of `baseUrl` for `openapi`, and of `url` for `graphql`.
+Without `baseUrl`, an OpenAPI description is fetched without `auth`. The
+fetch and every redirect go only to hosts on the deployment's outbound
+allow-list. See [Limits and timeouts](/docs/reference/limits-and-timeouts#api-descriptions)
+for the size and time Spotlight allows.
+
+A description that cannot be read does not refuse the definition.
+`described.problem` says why, and the same reason is a warning at
+`<openapi or graphql>.url`, or at `.document` when that is given. The tools of
+the last read that succeeded stay offered; before any such read, none are.
+Problems include:
+
+| Problem | Cause |
+| --- | --- |
+| `could not be read: <host> answered <status>` | The fetch did not succeed. |
+| `could not be read: <host>: <code>` | The host could not be reached, as in `ECONNREFUSED` or `ENOTFOUND`. |
+| `could not be read: <host>: is not among the hosts this deployment allows outbound calls to` | The fetch, or a redirect, went to a host not on the allow-list. |
+| `could not be read: <host>: redirected more than 5 times` | Too many redirects. |
+| `could not be read: <host>: is where an https request was redirected to over plain http, which Spotlight does not follow` | A redirect from `https` to `http`. |
+| `is larger than the 64 MB Spotlight reads` | The description is too large. |
+| `took longer than 30 seconds to read` | The fetch was too slow. |
+| `took longer than 30 seconds to make sense of` | Reading the operations was too slow. At most 2 descriptions are read at once on each control plane server; one that waits for its turn waits within the same 30 seconds. |
+| `is a Swagger 2 description, which Spotlight does not read; convert it to OpenAPI 3` | `swagger: "2.0"`. |
+| `is not an OpenAPI 3 description, which says openapi: 3.0 or 3.1` | No `openapi: 3.x`. |
+| `names no server to call; give the openapi block a baseUrl` | No `baseUrl`, no server, and no `url`. |
+| `is not a GraphQL schema Spotlight can read: <error>` | The answer or `document` is not a GraphQL schema. |
+
+### Described
+
+| Field | Terraform | Type | Description |
+| --- | --- | --- | --- |
+| `kind` | `kind` | string | `openapi` or `graphql`. |
+| `hash` | `hash` | string or null | The SHA-256 of the last read that succeeded. `null` when none has. |
+| `readAt` | `read_at` | string | When the description was last read, in RFC 3339. |
+| `problem` | `problem` | string or null | Why the latest read failed. `null` when it succeeded. |
+| `tools` | `tools` | integer | How many of the integration's tools were generated from it. |
+
+An export writes the `openapi` or `graphql` block as part of the definition,
+and each secret its `auth` names as a reference to that `spotlight_secret`.
 
 ## On
 

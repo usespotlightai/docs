@@ -15,6 +15,10 @@ which the agent never sees. You need:
 - A Spotlight deployment that allows outbound calls to the API's host, since
   Spotlight calls the API from its own servers.
 
+If the API publishes an OpenAPI description or a GraphQL schema, see
+[Generate tools from an API description](/docs/integrations/generate-tools-from-an-api-description)
+instead.
+
 The example uses a placeholder API at `api.acme.example` that takes a comment
 as a JSON `POST` to `/comments`. Put your own API's host, path and body in its
 place.
@@ -90,6 +94,18 @@ resource "spotlight_integration" "acme" {
   }
 }
 ```
+
+An input is text unless you say otherwise. For a number, give it
+`type = "integer"` or `type = "number"`, and for a flag that is on or off,
+`type = "boolean"`. For a list or an object, give its JSON Schema as `schema`
+in place of `type`; the agent then passes it as JSON:
+
+```hcl
+labels = { schema = { type = "array", items = { type = "string" } } }
+```
+
+If the API names a field `team_id` or `teamId`, name the input the same way:
+an input name may hold letters, digits, `_` and `-`.
 
 ## Give the tool to a station
 

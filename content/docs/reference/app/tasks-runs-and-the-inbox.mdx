@@ -732,6 +732,9 @@ A person may approve a tool call with changed inputs, given as `inputs` with
   be added or removed.
 - Each value has the type of the input it replaces: any text for a `string`, a
   finite number for a `number`, `true` or `false` for a `boolean`.
+- A changed list or object is checked against the input's schema, and refused
+  naming where it does not fit. See
+  [Input schemas](/docs/reference/terraform/integration#input-schemas).
 - A value may not be blank where the call was asked with one.
 - A harness permission and a dismissal take no changes.
 - Changes that leave every input as it was are recorded as no change.

@@ -40,6 +40,37 @@ agent's sentence, and refuses the integration otherwise.
 
 Run `terraform apply`.
 
+## Tools generated from an API description
+
+Tools that an integration [generates from an API description](/docs/integrations/generate-tools-from-an-api-description)
+already wait for approval when they change data: every OpenAPI `POST`, `PUT`,
+`PATCH` and `DELETE` operation, and every GraphQL mutation. The reason a
+person reads is `It changes data in <name>.`, with the integration's `name`.
+
+To change that for one tool, add it under the block's `tools.approval`, by its
+generated name. Give `because` for another reason, which also makes a tool
+that only reads wait. Give `false` for a tool that should run without asking:
+
+```hcl
+openapi = {
+  url     = "https://petstore3.swagger.io/api/v3/openapi.json"
+  baseUrl = "https://petstore3.swagger.io/api/v3"
+  tools = {
+    approval = {
+      "delete-pet" = { because = "It deletes a pet for good." }
+      "update-pet" = false
+    }
+  }
+}
+```
+
+If the apply warns that it passes over an operation because it takes `intent`,
+that operation needs approval and has an input with the name Spotlight keeps
+for the agent's sentence. Set its approval to `false` to offer it, or leave it
+out.
+
+Run `terraform apply`.
+
 ## Approve, edit or dismiss each call
 
 When an agent calls the tool, nothing is sent: the task's inbox item shows

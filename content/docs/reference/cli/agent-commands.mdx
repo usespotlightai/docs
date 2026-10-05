@@ -19,7 +19,7 @@ spotlight remember --kind <kind> --body <text> [--path <path>]... [--reach <reac
 spotlight candidate --name <name> --hypothesis <text | @file> <station.json | ->
 spotlight cause --task <task> --cause config|task|judge|check|infra --evidence <text | @file> [--suggestion <text | @file>]
 spotlight tools
-spotlight <tool> [--<input> <value>...]
+spotlight <tool> [--<input> <value>...] [--json <object> | --json -]
 ```
 
 In a [search's](/docs/reference/app/searches#the-searchs-agent-run) agent run,
@@ -478,17 +478,20 @@ description, and a line for each input that has a description. For a tool
 `body`:
 
 ```text
-spotlight acme comment --issue <string> [--body <string> (or piped in)]
+spotlight acme comment --issue <string> [--body <string> (or piped in)] [--json <object> | --json -]
   <description>
     --issue  <input description>
 ```
 
 | Signature part | Meaning |
 | --- | --- |
-| `--<input> <type>` | An input that takes a value. The type is `string` or `number`. |
+| `--<input> <string>` | An input that takes text, or one of a list of values. |
+| `--<input> <number>` | An input that takes a number or a whole number. |
+| `--<input> <json>` | An input that takes a list, an object or anything else, written as JSON. |
 | `--<input>` | A boolean input, given as a bare flag. |
 | `(or piped in)` | The input may come from standard input. |
 | `[...]` | Optional, or has a default. |
+| `[--json <object> \| --json -]` | Every input at once, as one JSON object. Shown for a tool with inputs. |
 
 A tool that requires approval lists `[--intent <string>]` after its own
 inputs, and its description ends with the reason a person approves it and
@@ -499,21 +502,35 @@ A run given no tools prints `This run was given no tools.`
 ## spotlight &lt;tool&gt;
 
 ```text
-spotlight <integration> <tool> [--<input> <value>...]
-spotlight <integration>.<tool> [--<input> <value>...]
+spotlight <integration> <tool> [--<input> <value>...] [--json <object> | --json -]
+spotlight <integration>.<tool> [--<input> <value>...] [--json <object> | --json -]
 ```
 
 Calls a tool the run was given. A tool named `acme.comment` is called as
 `spotlight acme comment` or `spotlight acme.comment`. Its flags are its
-inputs. A built-in tool, such as `pull-request`, is called by its name alone,
-as in `spotlight pull-request`. See [`spotlight_integration`](/docs/reference/terraform/integration)
+inputs, by the names the tool gives them, as in `--team_id` or `--petId`. A
+built-in tool, such as `pull-request`, is called by its name alone, as in
+`spotlight pull-request`. See [`spotlight_integration`](/docs/reference/terraform/integration)
 for how an integration defines tools and their inputs.
 
 | Input | How it is given |
 | --- | --- |
-| `string` or `number` | `--<input> <value>` |
-| `boolean` | `--<input>`, present or absent |
+| Text or a number | `--<input> <value>`. A number is written in decimal, so `0x10` is refused. |
+| `boolean` | `--<input>`, present or absent, or `--<input>=false` |
+| A list, an object or anything else | `--<input> '<JSON>'`, as in `--filter '{"team": "ENG"}'` |
 | Piped | `--<input> <value>`, or `--<input> -`, or `--<input> /dev/stdin`, or omitted with standard input not a terminal. Empty piped input counts as not given. |
+
+`--json <object>` gives every input at once as one JSON object, keyed by input
+name, with each value in its JSON type. `--json -` or `--json /dev/stdin` reads
+the object from standard input. A flag given beside `--json` replaces that
+field of the object. When `--json` reads standard input, no piped input does:
+an input left out stays out, and naming one with `-` or `/dev/stdin` is
+refused.
+
+Spotlight checks the inputs against the tool's schemas before it calls the
+host, and refuses a call that does not fit, saying where, as in
+`linear.issue-create takes input, and input.teamId is not text`. See
+[Input schemas](/docs/reference/terraform/integration#input-schemas).
 
 For a tool that requires approval, `--intent <phrase>` says what the agent
 wants to do, completing "Spotlight would like to …". It is optional, shown to
@@ -529,6 +546,12 @@ indented JSON. Any other result is printed as it came.
 | `no such command "<name>"` | No granted tool has that name. The usage and the run's tools follow. |
 | `--<input> is required` | A required input without a default was not given. The tool's signature follows. |
 | `<command>: <flag error>` | A flag the tool does not take, or a missing value. The tool's signature follows. |
+| `<command>: "<value>" follows --<input>, which takes no value; write --<input>=<value>` | A value after a boolean flag, as in `--notify false`. The tool's signature follows. |
+| `<command>: "<argument>" is not a flag` | A word outside any flag. The tool's signature follows. |
+| `--json takes one JSON object, as --json '{"name": "value"}'` | The `--json` value, or what it read from standard input, is not a JSON object. The tool's signature follows. |
+| `read the --json piped in: <error>` | Standard input could not be read for `--json -`. |
+| `--<input> cannot be read from stdin when --json is` | A piped input was named with `-` or `/dev/stdin` while `--json` read standard input. The tool's signature follows. |
+| `<tool> takes <input>, and <where> <why>` | An input does not fit its schema. See [Input schemas](/docs/reference/terraform/integration#input-schemas). |
 | `this run was not given "<name>"; it was given: <tools>` | The tool is not granted to the run. |
 | `unreadable input: hand the tool JSON` | The input is over 8 MiB, or is not JSON. |
 | `could not read this run's tools to find "<name>": <error>` | The tool list could not be read. |
@@ -538,6 +561,10 @@ Other failures are the tool's own error as Spotlight reports it.
 ```bash
 spotlight acme comment --issue <issue> --body "Deployed to staging."
 git diff | spotlight acme comment --issue <issue>
+spotlight petstore find-pets-by-status --status sold
+spotlight linear issue-create --input '{"teamId": "<team id>", "title": "Flaky upload test"}'
+spotlight linear issue-create --json '{"input": {"teamId": "<team id>", "title": "Flaky upload test"}}'
+spotlight linear issue-create --json - < issue.json
 spotlight acme comment --issue <issue> --body "Deployed to staging." \
   --intent "post the staging deploy on the issue, publicly under the team's name"
 ```
