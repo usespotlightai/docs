@@ -87,6 +87,27 @@ Tools a team defines on an integration go further still. When an agent calls
 one, Spotlight makes the call on its behalf, outside the sandbox, so the
 credential is never near the agent at all.
 
+## Tools Spotlight calls for the agent
+
+A tool an integration offers, whether written out, generated from an API
+description or listed by a remote MCP server, is called by Spotlight, not by
+the agent. The credential stays with Spotlight, the call can wait for a
+person's approval, a hook can refuse it, and the run's journal records it.
+An MCP server the harness starts in the sandbox, from a harness profile's
+`mcpServers`, gets none of that: its calls never reach Spotlight. That is why
+a remote server belongs on an integration, and a profile's `mcpServers` is for
+servers that must run as a local process.
+
+What a remote server says still reaches the agent. Its tool descriptions are
+passed to agents as the server wrote them, and its answers are handed back
+as they came. Text in either can carry instructions aimed at the agent, which
+is prompt injection, and Spotlight does not filter it. In the docs' view, a
+server's descriptions deserve the same trust as its code. Offering a station
+only the tools it needs, with `tools.include`, and keeping approval on for any
+tool that changes data, limits what injected text can make an agent do. A tool the server marks as only reading runs without
+asking, so a server that marks a writing tool as reading is trusted to that
+degree. See [MCP servers](/docs/reference/terraform/integration#mcp-servers).
+
 ## The host decides where its keys may go
 
 Harness keys, such as an Anthropic or OpenAI key, belong to whoever runs the

@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: spotlight_integration
-description: Every key of an integration definition, the API descriptions it can generate tools from, the rules Spotlight checks when it is written, and the endpoints a definition gives a team.
+description: Every key of an integration definition, the API descriptions and MCP servers it can generate tools from, the rules Spotlight checks when it is written, and the endpoints a definition gives a team.
 ---
 
 The `spotlight_integration` resource, and the integration resource of the
@@ -81,14 +81,15 @@ Acme stands for any HTTP service. A station gives this tool as `acme.comment`.
 | `tools` | map of name to object | `{}` | Actions offered to agents and hooks. See [tools](#tools). |
 | `openapi` | object | none | An OpenAPI description to generate tools from. See [API descriptions](#api-descriptions). |
 | `graphql` | object | none | A GraphQL API to generate tools from. See [API descriptions](#api-descriptions). |
+| `mcp` | object | none | A remote MCP server whose tools Spotlight lists and calls. See [MCP servers](#mcp-servers). |
 | `on` | map of name to object | `{}` | Actions run when a task event happens. See [on](#on). |
 
 A definition must do something: it has a `webhook`, a `poll`, a `schedule`, at
-least one action, at least one `on` binding, an `openapi` or a `graphql`.
-Otherwise it is refused with
-`must do something: a webhook, a poll, a schedule, an action to run, or an API description to offer tools from`.
-A definition with both `openapi` and `graphql` is refused with
-`offers tools from one API description: an openapi or a graphql, not both`.
+least one action, at least one `on` binding, an `openapi`, a `graphql` or an
+`mcp`. Otherwise it is refused with
+`must do something: a webhook, a poll, a schedule, an action to run, or an API description or MCP server to offer tools from`.
+A definition with two of `openapi`, `graphql` and `mcp` is refused with
+`offers tools from one source: an openapi, a graphql or an mcp, not two`.
 
 A read adds three fields that cannot be set:
 
@@ -96,10 +97,10 @@ A read adds three fields that cannot be set:
 | --- | --- | --- |
 | `source` | string | Equal to `integration`. |
 | `tools` | map of name to string | Each tool the integration offers, written or generated, by its name in the integration, to the name stations and hooks use, as in `{ "comment": "acme.comment" }`. |
-| `described` | object or null | The API description as Spotlight last read it. `null` when the definition names none. See [Described](#described). |
+| `described` | object or null | The API description or MCP server as Spotlight last read it. `null` when the definition names none. See [Described](#described). |
 
 In Terraform, `tools` is known only after apply when the definition has an
-`openapi` or a `graphql`. A station that names a generated tool through it that
+`openapi`, a `graphql` or an `mcp`. A station that names a generated tool through it that
 is not there fails the apply, not the plan.
 
 ## Names
@@ -135,13 +136,20 @@ that name themselves in a cycle, produce a warning and are then ignored.
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `holder` | string | `team` | `team` or `requester`. Whose connection the integration's tools act with. See [Holder](#holder). |
-| `oauth2.authorize` | string | required | The host's authorization endpoint. |
-| `oauth2.token` | string | required | The host's token endpoint. |
+| `oauth2.discover` | boolean | `false` | Find the endpoints, the registration endpoint and the scopes from what the MCP server named in `mcp.url` publishes. See [Discovery](#discovery). |
+| `oauth2.authorize` | string | required unless `discover` | The host's authorization endpoint. |
+| `oauth2.token` | string | required unless `discover` | The host's token endpoint. |
 | `oauth2.scopes` | array of strings | `[]` | Scopes asked for, joined by spaces. |
 | `oauth2.identity` | string | none | An expression. Names the linked account, shown as "Connected as" in the web app. Sees `response`, the token endpoint's response. |
 | `oauth2.registration` | string | none | A URL. The host's dynamic client registration endpoint (RFC 7591). Used only when the deployment holds no OAuth client for the integration. See [Client registration](#client-registration). |
 | `oauth2.resource` | string | none | A URL. Sent as the `resource` parameter (RFC 8707) on the authorization URL and on every token request. |
 | `manual.secrets` | array of strings | `[]` | Secrets the connection uses, each a secret reference, `secret.<NAME>`. |
+
+Without `discover`, `oauth2` must name both `authorize` and `token`. With
+`discover = true` it takes only `scopes`, `identity` and `resource`; naming
+`authorize`, `token` or `registration` beside it is refused as an unrecognized
+key. `discover` without an `mcp` block is refused at `connection.oauth2` with
+`discovers how to connect from the MCP server it names in mcp.url, which it does not name`.
 
 `holder = "requester"` without `oauth2` is refused with
 `The <integration> integration takes each person's connection, and a person can only connect over oauth2`.
@@ -238,6 +246,46 @@ requests.
 
 The registration endpoint must be on the deployment's outbound allow-list, as
 the token endpoint must.
+
+### Discovery
+
+With `oauth2.discover`, Spotlight finds where to connect from the MCP server
+named in `mcp.url`, following the MCP authorization specification, when a
+connection begins, when its code is exchanged and when it is renewed:
+
+1. It sends the server an `initialize` request without credentials. A `401`
+   whose `WWW-Authenticate` names `resource_metadata` points at the server's
+   protected resource metadata (RFC 9728). Otherwise Spotlight reads
+   `/.well-known/oauth-protected-resource` with the server's path after it,
+   and then at the root.
+2. It reads the authorization server metadata (RFC 8414, then OpenID Connect
+   discovery) of the first of the metadata's `authorization_servers`, or of
+   the server's own origin when there is none.
+
+| Connection field | Comes from |
+| --- | --- |
+| `authorize` | `authorization_endpoint` |
+| `token` | `token_endpoint` |
+| `registration` | `registration_endpoint`, when the authorization server has one. See [Client registration](#client-registration). |
+| `scopes` | `oauth2.scopes` when set, else the protected resource metadata's `scopes_supported`. |
+| `resource` | `oauth2.resource` when set, else the protected resource metadata's `resource`, else `mcp.url`. |
+
+Discovery fails when the authorization server metadata's `issuer` is not the
+URL it was read for (RFC 8414), when its `code_challenge_methods_supported`
+does not list `S256`, or when the protected resource metadata names a
+`resource` that is neither `mcp.url` nor on its origin above its path. Then the
+integration does not link, and beginning a connection answers `404`. Every
+request goes only to hosts on the deployment's outbound allow-list, and each
+waits at most 15 seconds. What was found is kept for 10 minutes on each control
+plane server.
+
+The client a connection uses is bound to the authorization server it was made
+with: its issuer, authorization endpoint and token endpoint.
+
+| Client | Bound by |
+| --- | --- |
+| Registered at `registration_endpoint` | Spotlight keeps the three with the registration. When a later discovery finds others, the next connection registers again, and exchanging a code or renewing a token with the old client is refused. |
+| Held by the deployment for the integration | Its configured `issuer`. A deployment client without an `issuer`, or with another one, is not used for a discovered server, and the integration does not link. |
 
 ## Webhook
 
@@ -576,11 +624,11 @@ matches any run of characters. Anything else is refused with
 
 A tool in `tools` with the same name as a generated one is offered in its
 place. A key of `approval` that names no generated tool gives a warning:
-`names <key>, which no operation of its <OpenAPI description or GraphQL schema> is called`.
+`names <key>, which no operation of its <OpenAPI description, GraphQL schema or MCP server> is called`.
 
 At most 1,000 tools are generated, counted after `include`, `exclude` and the
-tools in `tools`. More is refused at `<openapi or graphql>.tools` with
-`offers <n> tools from its <OpenAPI description or GraphQL schema>, more than the 1000 a station can choose between; name the ones it offers in <openapi or graphql>.tools.include`.
+tools in `tools`. More is refused at `<openapi, graphql or mcp>.tools` with
+`offers <n> tools from its <OpenAPI description, GraphQL schema or MCP server>, more than the 1000 a station can choose between; name the ones it offers in <openapi, graphql or mcp>.tools.include`.
 
 ### Generated tools
 
@@ -670,14 +718,111 @@ Problems include:
 
 | Field | Terraform | Type | Description |
 | --- | --- | --- | --- |
-| `kind` | `kind` | string | `openapi` or `graphql`. |
+| `kind` | `kind` | string | `openapi`, `graphql` or `mcp`. |
 | `hash` | `hash` | string or null | The SHA-256 of the last read that succeeded. `null` when none has. |
 | `readAt` | `read_at` | string | When the description was last read, in RFC 3339. |
 | `problem` | `problem` | string or null | Why the latest read failed. `null` when it succeeded. |
 | `tools` | `tools` | integer | How many of the integration's tools were generated from it. |
 
-An export writes the `openapi` or `graphql` block as part of the definition,
-and each secret its `auth` names as a reference to that `spotlight_secret`.
+An export writes the `openapi`, `graphql` or `mcp` block as part of the
+definition, and each secret its `auth` names as a reference to that
+`spotlight_secret`.
+
+## MCP servers
+
+`mcp` names a remote MCP server. Spotlight lists the server's tools and offers
+one tool for each, beside the tools in `tools`, and makes every call itself.
+See [Call a remote MCP server](/docs/integrations/call-a-remote-mcp-server).
+
+```hcl
+connection = {
+  oauth2 = { discover = true }
+}
+mcp = {
+  url  = "https://mcp.acme.example/mcp"
+  auth = { oauth2 = { connection = true } }
+  tools = {
+    exclude  = ["delete-*"]
+    approval = { "create-comment" = false }
+  }
+}
+```
+
+### mcp
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `url` | string | required | The server's endpoint. Spotlight speaks MCP's streamable HTTP transport to it. |
+| `auth` | object | none | As a request's [`auth`](#requests). Sent when Spotlight lists the tools and with every call, only toward the host of `url`. |
+| `tools` | object | `{}` | Which tools are offered, and which ask first. See [Choosing tools](#choosing-tools). |
+
+### Server tools
+
+| Part | From |
+| --- | --- |
+| Name | The tool's name in lowercase words joined by dashes: `search_issues` is `search-issues`, and `createIssue` is `create-issue`. Spotlight calls the server's tool by its own name. |
+| Description | The tool's `description`, else its `title`, else `annotations.title`, else `Use <tool>`. At most 1,000 characters, passed to agents as written. |
+| Inputs | Each property of the tool's `inputSchema`, by its own name, with its JSON Schema. A property in `required` is a required input. |
+| Approval | None for a tool whose `annotations.readOnlyHint` is `true`, unless `destructiveHint` is also `true`. Every other tool asks a person first, with the reason `It changes data in <name>.`, including a tool with no annotations. `tools.approval` overrides it. |
+| Output | The result's `structuredContent`. Without it, a single text content, read as JSON when it is JSON and as text when not. Otherwise the whole `content` array. |
+
+A tool the server lists that gets no tool gives a warning at `mcp`, as for an
+API description: `passes over <tool>, <reason>`, where the reason is
+`which has no name a tool can take`, `because it takes <name>, which a tool cannot`,
+`because another operation is also called <name>`, or a reason its input
+schema cannot be read for. The server's resources and prompts are not offered.
+
+### Listing the tools
+
+Spotlight lists the tools when the integration is created, and again:
+
+- when an update changes `url`, or whether `auth` is `oauth2`;
+- on any update after a listing that failed;
+- when the team's connection to the integration is made over OAuth;
+- when the last listing is older than the deployment's `MCP_RELIST_SECONDS`,
+  600 by default, checked every minute. One control plane server claims each
+  such listing, moving `described.readAt` on as it does, and the integration's
+  `version` does not change.
+
+The listing carries the team's connection when `auth` is `oauth2`, even for a
+`requester` integration. A listing answered `401` renews the connection once
+and lists again with the new token, as in [Renewal](#renewal). A listing that fails keeps the tools of the last one that
+succeeded, as for a description; see [Reading the description](#reading-the-description).
+A listing that succeeds without a tool the integration offered stops offering
+it, and the workspace's
+[configuration changes](/docs/reference/api/resource-api#configuration-changes)
+record the change, with each tool no longer offered in `details.stranded`.
+
+Problems a failed listing gives in `described.problem` include:
+
+| Problem | Cause |
+| --- | --- |
+| `could not be read: <host> answered <status>` | The server answered with an HTTP error, as `401` before the team is connected. |
+| `could not be read: <host> answered: <error>` | The server answered with an MCP error. |
+| `could not be read: <host>: <code>` | The server could not be reached. |
+| `could not be read: <host>: is not among the hosts this deployment allows outbound calls to` | The server, or a redirect, is on a host not on the allow-list. |
+
+### Calling a tool
+
+Spotlight keeps MCP sessions for each server, team, integration, kind of
+`auth`, connection holder and access token, and never shares one between
+holders. A session carries one call at a time; calls made at once each get a
+session of their own. A session unused for 5 minutes is ended at the server
+and closed. When the server answers `404` because it has forgotten the
+session, Spotlight starts a new one and calls once more. Spotlight opens no
+stream for the server to send on outside a call: the `GET` stream of the
+streamable HTTP transport is not opened. A call
+answered `401` with `auth.oauth2` is renewed and retried once, as in
+[Renewal](#renewal).
+
+Spotlight declares no client capabilities and answers no request from the
+server other than `ping`. A server that asks a question in the middle of a
+call (MCP elicitation) is refused, and the call fails with
+`using <tool>: the MCP server asked a question in the middle of the call, which Spotlight does not pass on to a person, so the call was refused`.
+A result marked `isError` fails the call with
+`using <tool>: the MCP server answered with an error: <text>`, cut at 500
+characters. An answer over 4 MB fails the call with
+`it is larger than the 4 MB Spotlight reads from a tool`.
 
 ## On
 
