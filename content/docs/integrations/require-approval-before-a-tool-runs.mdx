@@ -75,6 +75,25 @@ out.
 
 Run `terraform apply`.
 
+## Let a person ask first or block a tool
+
+Where an integration acts as the person who started the task (its
+`connection.holder` is `requester`), each person can choose what to ask of
+calls made with their own connection. Open **Settings**, then **Connections**
+under the team's name. Under **Yours**, below each integration you have
+connected, pick a rule for each tool:
+
+- **Team's rule**: follow the team. This is the default.
+- **Ask me first**: wait for your approval.
+- **Blocked**: never run.
+
+The stricter of the team's rule and yours applies, and only to calls made
+with your own connection. When a call waits because you chose **Ask me
+first**, the task is put to you, and only you can approve the call. See
+[Person rules](/docs/reference/app/tasks-runs-and-the-inbox#person-rules) for
+each combination. To set rules over the API, see
+[OAuth connect and callback](/docs/reference/terraform/integration#oauth-connect-and-callback).
+
 ## Approve, edit or dismiss each call
 
 When an agent calls the tool, nothing is sent: the task's inbox item shows
