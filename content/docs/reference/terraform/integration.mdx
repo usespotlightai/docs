@@ -134,27 +134,110 @@ that name themselves in a cycle, produce a warning and are then ignored.
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
+| `holder` | string | `team` | `team` or `requester`. Whose connection the integration's tools act with. See [Holder](#holder). |
 | `oauth2.authorize` | string | required | The host's authorization endpoint. |
 | `oauth2.token` | string | required | The host's token endpoint. |
 | `oauth2.scopes` | array of strings | `[]` | Scopes asked for, joined by spaces. |
 | `oauth2.identity` | string | none | An expression. Names the linked account, shown as "Connected as" in the web app. Sees `response`, the token endpoint's response. |
+| `oauth2.registration` | string | none | A URL. The host's dynamic client registration endpoint (RFC 7591). Used only when the deployment holds no OAuth client for the integration. See [Client registration](#client-registration). |
+| `oauth2.resource` | string | none | A URL. Sent as the `resource` parameter (RFC 8707) on the authorization URL and on every token request. |
 | `manual.secrets` | array of strings | `[]` | Secrets the connection uses, each a secret reference, `secret.<NAME>`. |
+
+`holder = "requester"` without `oauth2` is refused with
+`The <integration> integration takes each person's connection, and a person can only connect over oauth2`.
+
+```hcl
+connection = {
+  holder = "requester"
+  oauth2 = {
+    authorize    = "https://acme.example/oauth/authorize"
+    token        = "https://acme.example/oauth/token"
+    registration = "https://acme.example/oauth/register"
+    resource     = "https://api.acme.example"
+    scopes       = ["issues:write"]
+  }
+}
+```
+
+### Holder
+
+| Holder | A tool acts with | Polls, schedules and `on` bindings act with |
+| --- | --- | --- |
+| `team` | The team's connection. | The team's connection. |
+| `requester` | The connection of the person who started the task: the task's Raised by. | The team's connection. |
+
+A team connection is made by an owner or admin of the workspace. A person's
+connection is made by that person, who must be on the team, and only for an
+integration whose `holder` is `requester`. See
+[Integration connections](/docs/reference/roles-and-permissions#integration-connections).
+
+When a tool of a `requester` integration is called, nothing is sent until
+Spotlight has that person's connection. It never uses the team's connection in
+its place.
+
+| Situation | Result |
+| --- | --- |
+| The person has connected. | The call is made with their access token. |
+| The person has not connected, or the host refused to renew their connection. | The task is assigned to them and put to them with a request to connect. The call fails with `<tool> acts as the person who started this task, and they haven't connected <integration>. They've been asked in their inbox. Nothing was sent. Stop here and end your turn: you're resumed once they connect.` When they connect, the request is answered with `Connected <integration>.` |
+| No person started the task. | The call fails with `<tool> was not used, so nothing was sent: nobody started this task, so there is nobody whose <integration> connection it could act with`. |
+| The person who started the task is no longer on the team. | The call fails with `<tool> was not used, so nothing was sent: the person who started this task is no longer on the team, so it cannot act with their <integration> connection`. |
+| The task already waits on a person for something else. | Nobody is asked. The call fails with `<tool> was not used, so nothing was sent: this task is already waiting on someone, so nobody can be asked to connect <integration> until they answer`. |
+
+`<integration>` is the integration's `name`. A [hook](/docs/reference/terraform/hook#steps)
+step that calls a tool of a `requester` integration fails with `not-allowed`.
 
 ### OAuth connect and callback
 
 An integration with `connection.oauth2` shows a `Connect to <name>` button,
 `Reconnect to <name>` once linked, on the team's Integrations settings page.
-It links only when the deployment holds an OAuth client for the integration's
-name.
+An integration whose `holder` is `requester` is also listed on the team's
+Connections settings page, where each person connects their own account. It
+links only when Spotlight has an OAuth client for it: one the deployment holds
+for the integration's name, or one registered at `oauth2.registration`.
 
 | Step | Endpoint | Behaviour |
 | --- | --- | --- |
-| Begin | `POST /api/teams/{teamId}/integrations/{source}/connect` | Needs a signed-in owner or admin of the workspace (the `administer` permission). Returns `{ "url": ... }`, the authorization URL with `client_id`, `redirect_uri`, `response_type=code`, `scope` and a signed `state`, and sets a one-time cookie. `404` when there is no such team, the person may not link it, or the host does not link over OAuth. |
-| Callback | `GET /api/integrations/oauth/callback` | Needs the same signed-in person, still an owner or admin, and the cookie. Exchanges the code and keeps the grant sealed. Redirects to `/w/<slug>/team/<teamId>/settings/integrations?connected=<source>`, or to `/?integration=failed`. |
+| Begin | `POST /api/teams/{teamId}/integrations/{source}/connect` | An optional body with `for` and `back`. `for` is `team`, the default, which needs a signed-in owner or admin of the workspace (the `administer` permission); `me`, the caller's own connection, needs a signed-in person on the team, and an integration whose `holder` is `requester`. `back` is where to land afterwards, a path under `/w/<slug>/inbox` or `/w/<slug>/settings`. Returns `{ "url": ... }`, the authorization URL with `client_id`, `redirect_uri`, `response_type=code`, `scope`, a signed `state`, `code_challenge` with `code_challenge_method=S256`, and `resource` when set, and sets a one-time cookie. `400` when `for` is neither. `404` when there is no such team, the person may not make that connection, the host does not link over OAuth, or there is no client. |
+| Callback | `GET /api/integrations/oauth/callback` | Needs the same signed-in person, still allowed to make the connection, and the cookie. Exchanges the code with its PKCE verifier and keeps the grant sealed. Redirects to `back` with `?connected=<source>`, or else to `/w/<slug>/settings/team/<teamId>/integrations?connected=<source>`, or to `/?integration=failed`. |
+| List | `GET /api/teams/{teamId}/connections` | Needs a signed-in person on the team. Returns `mine`, the caller's own connections, each with `source`, `handle` and `connectedAt`, and `people`, every person's connection in the team with `personId` and `name` as well, for an owner or admin, or `null` for anyone else. Never a token. |
+| Disconnect | `DELETE /api/teams/{teamId}/integrations/{source}/connections/mine` | Needs a signed-in person on the team. Removes the caller's own connection. Returns `204`. There is no endpoint to remove another person's connection. |
 
-The `state` expires after 10 minutes. Access tokens are refreshed with the
-grant's refresh token. A request with `auth.oauth2` sends the access token as
-`Authorization: Bearer`.
+The `state` expires after 10 minutes. A request with `auth.oauth2` sends the
+access token as `Authorization: Bearer`.
+
+### Renewal
+
+| When | What Spotlight does |
+| --- | --- |
+| An access token has less than 5 minutes left. | Renews it with the refresh token. |
+| A request with `auth.oauth2` is answered `401`. | Renews the token once and sends the request once more with the new one. Any other status, or a request authenticated by `secrets`, is not retried. |
+| A description fetch with `auth.oauth2` is answered `401`. | Renews the team's token once and fetches the description once more with the new one. |
+
+One renewal of a connection runs at a time, across every control-plane
+instance, under a claim held for 30 seconds. A request answered `401` while
+another renewal holds the claim waits for it, for up to 30 seconds, and is sent
+again with the new token. A refresh token the host rotates is kept. When the
+host refuses to renew, the connection is marked refused until it is made again.
+A person whose connection is refused is asked to connect again the next time a
+tool needs it.
+
+### Client registration
+
+When the deployment holds no OAuth client for the integration and
+`oauth2.registration` is set, Spotlight registers a client at that endpoint
+the first time someone in the team connects, once per team and integration.
+The registration is a `POST` of JSON with `client_name` `Spotlight`, the
+callback URL as the one `redirect_uris` entry, `grant_types`
+`authorization_code` and `refresh_token`, `response_types` `code` and
+`token_endpoint_auth_method` `client_secret_post`. The answer must hold a
+`client_id`; a `client_secret` is kept sealed, with its
+`client_secret_expires_at`. The client is reused until the registration
+endpoint or the callback URL changes or the client secret expires, and is then
+registered again. A client without a secret sends no `client_secret` on token
+requests.
+
+The registration endpoint must be on the deployment's outbound allow-list, as
+the token endpoint must.
 
 ## Webhook
 
@@ -347,7 +430,7 @@ before it is sent.
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `oauth2.connection` | boolean | `true` | Must be `true`. Sends the team's OAuth access token as `Authorization: Bearer`. |
+| `oauth2.connection` | boolean | `true` | Must be `true`. Sends the connection's OAuth access token as `Authorization: Bearer`: the team's, or for a tool of a `requester` integration, that of the person who started the task. See [Holder](#holder). |
 | `secrets` | array of strings | none | Secret references, `secret.<NAME>`, at least one when set. Each secret is put in its bound header on requests to the hosts it is bound to. A request to any other host goes without it, and so does a redirect to another host. |
 
 `auth` accepts no other way, and is refused with `authenticates a request by its oauth2 connection, or by the secrets it wears toward the hosts they are bound to`. See [Bindings](/docs/reference/terraform/secret#bindings).
@@ -386,6 +469,11 @@ see [What the agent wants](/docs/reference/app/tasks-runs-and-the-inbox#what-the
 returns `the integration answered <status>: <body>`, with the body cut at 500
 characters. See [Approvals](/docs/reference/app/tasks-runs-and-the-inbox#approvals)
 and [Require approval before a tool runs](/docs/integrations/require-approval-before-a-tool-runs).
+
+For an integration with `connection.oauth2`, the answer to a tool call carries
+`actingAs` beside `output`: whose connection the call used, as `holder`
+(`team` or `person`), `personId` (for a person) and `handle`, the account the
+host named. `spotlight <tool>` prints only the output. See [Holder](#holder).
 
 A tool that a station gives or a hook matches or calls cannot be withdrawn
 from the definition; the update is refused with `409`.
@@ -543,14 +631,16 @@ what it read. It reads it again only:
 - when an update changes `url`, `document`, `baseUrl`, `revision`, `depth`, or
   whether `auth` is `oauth2` or `secrets`;
 - on any update after a read that failed;
-- when someone connects the integration over OAuth.
+- when the team's connection to the integration is made over OAuth.
 
 A tool call never reads it.
 
 The description is fetched with `GET`, and a GraphQL schema with an
 introspection `POST`. Spotlight sends `auth` with the fetch only to the API's
 own host: the host of `baseUrl` for `openapi`, and of `url` for `graphql`.
-Without `baseUrl`, an OpenAPI description is fetched without `auth`. The
+Without `baseUrl`, an OpenAPI description is fetched without `auth`. With
+`auth.oauth2`, the fetch carries the team's connection, even for a `requester`
+integration. The
 fetch and every redirect go only to hosts on the deployment's outbound
 allow-list. See [Limits and timeouts](/docs/reference/limits-and-timeouts#api-descriptions)
 for the size and time Spotlight allows.

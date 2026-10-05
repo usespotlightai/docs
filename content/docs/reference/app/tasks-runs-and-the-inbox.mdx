@@ -53,13 +53,13 @@ trail, and a note's words never change.
 
 | Kind | Written when |
 | --- | --- |
-| `asked` | A station puts the task to a person: a `review` handover, a failed or stopped run, an approval to decide; or a happening stops the run (see [Moves](#moves)). |
+| `asked` | A station puts the task to a person: a `review` handover, a failed or stopped run, an approval to decide, a [request to connect](#requests-to-connect); or a happening stops the run (see [Moves](#moves)). |
 | `passed` | The task moves to another station or is finished. It closes the open conversation. |
 | `answered` | A person answers in the inbox or on the run's page, or a happening with words answers the open conversation. |
 | `said` | A person says something to a running run, a happening arrives that leaves the task where it is, or a different failure arrives while the task awaits review. |
 
 Each note has a voice, `station`, `person` or `world` (a happening), and a
-form: `words`, `setup`, `settled`, `approval` or `failure`.
+form: `words`, `setup`, `settled`, `approval`, `failure` or `connection`.
 
 A conversation runs from an `asked` note to the next `passed` note. It is open
 until that `passed` note is written.
@@ -685,6 +685,31 @@ The item shows:
 | Recovery | `Back under the threshold since <day>.`, or `Back over the threshold since <day>.` for `fallsBy` and `below`, once the alert has recovered. |
 | Chart | The measure over the `over` settled runs up to each run, from 2 × `over` runs before the run that crossed it to `over` runs after. Its legend names "Alert level" with the amount, for `above` and `below`; "Before" with the measure over the runs before, for `risesBy` and `fallsBy`; and "The run it went off at". It is drawn from the station's latest 500 runs; without that run among them, it reads `The runs behind this alert have been deleted, so there's no chart to show.` |
 | Links | "Open the station"; "See it on Insights", which opens the [Stations tab](/docs/reference/app/insights#stations) at the station, over the shortest period that covers the day it went off; and "Improve this station". |
+
+### Requests to connect
+
+When a run calls a tool of an integration whose `connection.holder` is
+`requester`, and the person who started the task has not connected it or the
+host refused to renew their connection, nothing is sent. The task is assigned
+to that person and put to them with an `asked` note of form `connection`:
+
+```text
+I need to use `<tool>`, which acts as you in <integration>, and you haven't connected <integration> yet.
+
+Connect <integration> and I will carry on. Nothing has been sent yet.
+```
+
+For a refused renewal, `<integration> refused to renew your connection, so it
+has to be made again` takes the place of `you haven't connected <integration>
+yet`. `<integration>` is the integration's `name`.
+
+Below the note, a card titled `Connect <integration>` offers "Connect" to that
+person only; anyone else sees `Waiting for <person> to connect <integration>.`
+Once they connect, the card reads `Connected <integration>`. Connecting answers it
+with `Connected <integration>.`, in their voice, on every task waiting on that
+connection in the team; the run resumes as for any answer. A request is never
+met with the team's connection. See
+[Holder](/docs/reference/terraform/integration#holder).
 
 ## Approvals
 
