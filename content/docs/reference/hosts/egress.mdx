@@ -88,7 +88,11 @@ key:
 
 A secret an MCP server's environment names, as `secret.<NAME>`, is added for
 the run. The MCP server gets `spotlight-egress:<NAME>`. Egress replaces the
-bound header on every request to the bound host. See
+bound header only on requests to the bound host whose header holds that
+stand-in, with or without the binding's prefix, as in
+`authorization: Bearer spotlight-egress:LINEAR_API_KEY`. The stand-in must be
+the whole value, or come right after the exact prefix. Other requests to the
+host go out without the secret. See
 [`spotlight_secret`](/docs/reference/terraform/secret) and
 [Give an MCP server a secret](/docs/security/give-an-mcp-server-a-secret).
 
@@ -105,6 +109,11 @@ secret:
 - `the host does not let egress read <secret id>`
 - `another secret is already worn in <Header> toward <host>`
 - `it holds more than one line, so it cannot be worn in a header`
+
+On a request to a host egress holds a secret or a harness key for, a header
+holding a stand-in it doesn't put a value in, such as a misspelt name, is
+removed before the request goes out, and egress logs `took a stand-in egress does not hold off a request`
+with the header's name.
 
 Reading a secret from AWS Secrets Manager fails with:
 

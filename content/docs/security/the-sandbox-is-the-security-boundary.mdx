@@ -60,15 +60,22 @@ Instead the sandbox gets a stand-in. An MCP server whose environment names the
 workspace secret `LINEAR_API_KEY` sees `spotlight-egress:LINEAR_API_KEY` where
 the value would be. Egress, which is outside the sandbox, holds the real value
 for the length of the run. When a request leaves for a host the secret is bound
-to, egress puts the value in the header, in place of whatever the header held.
+to, and its header holds the stand-in, egress puts the value in its place.
 The server's request works, and the agent never had the value to leak.
 
 Without the binding to a host, this would be unsafe. A proxy that swapped in
 a secret on any request would turn into a credential oracle: the agent could
 send the stand-in to a server it controls and receive the real value there.
 Egress adds a secret only to requests to the hosts it is bound to, only for the run
-that was granted it, and a request to anywhere else carries nothing egress
-added.
+that was granted it, and only in place of its stand-in. A request to anywhere
+else carries nothing egress added, and so does a request to the bound host
+that doesn't name the secret, such as a script the agent runs.
+
+The stand-in only names a secret; it isn't a password. Everything in the
+sandbox can read the MCP server's environment, so anything there can still
+write the stand-in and have the secret used toward its host. What the binding
+and the stand-in together prevent is the value leaving the sandbox's reach and
+being sent anywhere else.
 
 The values themselves stay out of reach on the way in too. Values Spotlight
 keeps are sealed to a key egress made for that run, so only that egress can
