@@ -184,6 +184,46 @@ See [Agent commands](/docs/reference/cli/agent-commands).
 | Request timeout | 2 minutes |
 | Tool input | 8 MiB |
 
+## API descriptions
+
+See [API descriptions](/docs/reference/terraform/integration#api-descriptions).
+
+| Item | Value |
+| --- | --- |
+| Description size | 64 MB |
+| Fetching a description | 30 seconds, redirects included |
+| Reading its operations once fetched | 30 seconds, waiting for a turn included |
+| Descriptions read at once | 2 on each control plane server |
+| Tools generated per integration | 1,000, counted after `include` and `exclude` |
+| OpenAPI schema depth followed | 8 levels |
+| GraphQL input object depth followed | 3 levels |
+| Schema nodes read for one operation's inputs | 4,000 |
+| Generated tool answer | 4 MB |
+| Redirects a request follows | 5 |
+| GraphQL selection `depth` | 1 to 5, default 2 |
+| Generated tool description | 1,000 characters |
+| Descriptions read | OpenAPI 3.0 and 3.1, in JSON or YAML, and GraphQL; not Swagger 2 |
+| `$ref`s followed | only those inside the description |
+
+## MCP servers
+
+See [MCP servers](/docs/reference/terraform/integration#mcp-servers).
+
+| Item | Value |
+| --- | --- |
+| Listing the tools again | every 600 seconds, set by `MCP_RELIST_SECONDS`, checked every minute |
+| Pages of tools read in one listing | 50 |
+| Each MCP request, listing or call | 60 seconds |
+| Tool answer | 4 MB |
+| Tools offered per integration | 1,000, counted after `include` and `exclude` |
+| Tool description | 1,000 characters |
+| Calls one session carries at once | 1 |
+| Session left unused | closed after 5 minutes |
+| Calls again after the server forgets a session | 1 |
+| Discovery requests | 15 seconds each |
+| What discovery found | kept 10 minutes on each control plane server |
+| Transport | streamable HTTP |
+
 ## Hooks
 
 See [`spotlight_hook`](/docs/reference/terraform/hook).
