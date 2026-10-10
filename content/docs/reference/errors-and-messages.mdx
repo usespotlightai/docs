@@ -53,6 +53,7 @@ Each is a `409` from answering an approval item, shown in the card.
 | `The conversation waits on a harness, which only takes a yes or a no, so what it does cannot be changed` | Changed inputs on a harness permission. | [Changed inputs](/docs/reference/app/tasks-runs-and-the-inbox#changed-inputs) |
 | `The conversation is being dismissed, so there is nothing to run with changes` | Changed inputs with a dismissal. | [Changed inputs](/docs/reference/app/tasks-runs-and-the-inbox#changed-inputs) |
 | `The conversation only takes changes to what it runs alongside a decision to run it` | Changed inputs with no decision. | [Changed inputs](/docs/reference/app/tasks-runs-and-the-inbox#changed-inputs) |
+| `The conversation is asked of the person whose connection the tool acts with, so only they can approve it` | An approval by someone other than the person whose own tool rule asked; the task goes to that person, who can approve or dismiss it. | [Person rules](/docs/reference/app/tasks-runs-and-the-inbox#person-rules) |
 | `The conversation waits on nothing being approved, so there is nothing there to approve` | A decision on a conversation that asks for no approval. | [Approvals](/docs/reference/app/tasks-runs-and-the-inbox#approvals) |
 | `The conversation can only be approved or dismissed by a person` | A decision made with a workspace token. | [Approvals](/docs/reference/app/tasks-runs-and-the-inbox#approvals) |
 
@@ -164,8 +165,10 @@ added, and requests go without it.
 | `it is empty or more than one line` | A harness key is empty or more than one line. | [Harness keys](/docs/reference/hosts/egress#harness-keys) |
 | `the host holds a key of its own for <host>` | A run secret is bound to a host a harness key already goes to. | [Run secrets](/docs/reference/hosts/egress#run-secrets) |
 | `the host does not let egress read <secret id>` | `SPOTLIGHT_EGRESS_READS` does not admit the AWS Secrets Manager secret. | [Run secrets](/docs/reference/hosts/egress#run-secrets), [Give an MCP server a secret](/docs/security/give-an-mcp-server-a-secret) |
-| `another secret is already worn in <Header> toward <host>` | Another secret already goes in that header to the host. | [Run secrets](/docs/reference/hosts/egress#run-secrets) |
-| `it holds more than one line, so it cannot be worn in a header` | A run secret's value is more than one line. | [Run secrets](/docs/reference/hosts/egress#run-secrets) |
+| `another secret is already worn in <slot> toward <host>` | Another secret already goes in that header or query parameter to the host. `<slot>` is the header's name, or `?<parameter>`. | [Run secrets](/docs/reference/hosts/egress#run-secrets) |
+| `it is worn in neither a header nor a query parameter` | A run secret's binding names neither a header nor a query parameter. | [Run secrets](/docs/reference/hosts/egress#run-secrets) |
+| `it names no query to be worn in` | A run secret is bound to a query parameter without a name. | [Run secrets](/docs/reference/hosts/egress#run-secrets) |
+| `it holds more than one line, so it cannot be worn in a request` | A run secret's value is more than one line. | [Run secrets](/docs/reference/hosts/egress#run-secrets) |
 | `find the host's AWS identity: <error>` | No AWS identity. | [Run secrets](/docs/reference/hosts/egress#run-secrets) |
 | `AWS Secrets Manager answered <code>` | An AWS error. | [Run secrets](/docs/reference/hosts/egress#run-secrets) |
 | `AWS Secrets Manager could not be asked: <error>` | AWS was not reached. | [Run secrets](/docs/reference/hosts/egress#run-secrets) |
@@ -262,6 +265,7 @@ Each command exits `1` and prints its message on standard error.
 | --- | --- | --- |
 | `<tool> was dismissed, so nothing was sent.` | A person dismissed this call at this station. Their reason follows. | [Approvals](/docs/reference/app/tasks-runs-and-the-inbox#approvals) |
 | `<tool> needs a person's approval before it runs, and they have been asked in their inbox.` | The tool requires approval, and no unspent grant covers the call. An instruction to hand over follows. | [Approvals](/docs/reference/app/tasks-runs-and-the-inbox#approvals), [Require approval before a tool runs](/docs/integrations/require-approval-before-a-tool-runs) |
+| `<tool> was not used, so nothing was sent: <name> blocks it on calls made with their connection.` | The person whose connection the tool acts with set the tool to **Blocked**. | [Person rules](/docs/reference/app/tasks-runs-and-the-inbox#person-rules) |
 | `the integration answered <status>: <body>` | The tool's request failed. The body is cut at 500 characters. | [Tools](/docs/reference/terraform/integration#tools) |
 | `<tool> acts as the person who started this task, and they haven't connected <integration>. They've been asked in their inbox. Nothing was sent. Stop here and end your turn: you're resumed once they connect.` | `409`. The tool's integration acts as the person who started the task, and they have not connected it, or the host refused to renew their connection. | [Holder](/docs/reference/terraform/integration#holder), [Connect an integration that signs in with OAuth](/docs/integrations/connect-an-integration#answer-a-request-to-connect) |
 | `<tool> was not used, so nothing was sent: nobody started this task, so there is nobody whose <integration> connection it could act with` | The tool's integration acts as the person who started the task, and no person did. | [Holder](/docs/reference/terraform/integration#holder) |
@@ -276,7 +280,8 @@ Each command exits `1` and prints its message on standard error.
 | `<host>: is not among the hosts this deployment allows outbound calls to` | An integration request, hook request or OAuth token exchange to a host not on the deployment's outbound allow-list. | [Requests](/docs/reference/terraform/integration#requests) |
 | `The workspace holds no secret named <NAME>; define it before anything uses it` | A secret is named but not defined. It fails where it is used. | [Where a secret is named](/docs/reference/terraform/secret#where-a-secret-is-named) |
 | `The <NAME> secret could not be read: this deployment does not read from AWS Secrets Manager` | An integration request made by Spotlight uses a secret from AWS Secrets Manager, and the deployment does not read from it. | [Sources](/docs/reference/terraform/secret#sources) |
-| `The <NAME> secret holds more than one line, so it cannot be worn in a request header` | The secret's value is more than one line. | [Bindings](/docs/reference/terraform/secret#bindings) |
+| `The <NAME> secret holds more than one line, so it cannot be worn in a request` | The secret's value is more than one line. | [Bindings](/docs/reference/terraform/secret#bindings) |
+| `The <A> and <B> secrets are both worn in <slot> toward that host, and a request carries one` | `409`. One call sends two secrets bound to the same header or query parameter of one host. `<slot>` is the header's name, or `?<parameter>`. | [Bindings](/docs/reference/terraform/secret#bindings) |
 
 ### Egress responses
 
@@ -285,10 +290,11 @@ Each command exits `1` and prints its message on standard error.
 | `egress answers only the sandbox it was started for` | `407`. No proxy credential, or the wrong one. | [Responses](/docs/reference/hosts/egress#responses) |
 | `egress is a proxy: ask it for an absolute URL, or CONNECT to a host` | `400`. A request that is neither `CONNECT` nor an absolute URL. | [Responses](/docs/reference/hosts/egress#responses) |
 | `egress does not let this sandbox reach <host>` | `403`. The allow-list does not admit the host. | [Responses](/docs/reference/hosts/egress#responses), [Limit where sandboxes can connect](/docs/security/limit-where-sandboxes-connect#find-refused-requests) |
-| `egress could not reach <target>: egress never opens a connection to <ip>` | `502`. An always-refused address. | [Refused addresses](/docs/reference/hosts/egress#refused-addresses) |
-| `egress could not reach <target>: egress opens a connection to the private address <ip> only for a host the allow-list names` | `502`. A private address the allow-list does not name. | [Refused addresses](/docs/reference/hosts/egress#refused-addresses), [Limit where sandboxes can connect](/docs/security/limit-where-sandboxes-connect#reach-a-private-host) |
-| `egress could not reach <target>: <error>` | `502`. Any other connection failure. | [Responses](/docs/reference/hosts/egress#responses) |
-| `egress could not stand in for <host>: <error>` | `502`. No certificate could be made for an intercepted host. | [Responses](/docs/reference/hosts/egress#responses) |
+| `egress could not reach <host:port>: egress never opens a connection to <ip>` | `502`. A tunnelled `CONNECT` to an always-refused address. | [Refused addresses](/docs/reference/hosts/egress#refused-addresses) |
+| `egress could not reach <host:port>: egress opens a connection to the private address <ip> only for a host the allow-list names` | `502`. A tunnelled `CONNECT` to a private address the allow-list does not name. | [Refused addresses](/docs/reference/hosts/egress#refused-addresses), [Limit where sandboxes can connect](/docs/security/limit-where-sandboxes-connect#reach-a-private-host) |
+| `egress could not reach <host:port>: <reason>` | `502`. Any other failure of a tunnelled `CONNECT`. | [Responses](/docs/reference/hosts/egress#responses) |
+| `egress could not reach <host:port>` | `502`. A plain-HTTP or intercepted request that could not be passed on, for any reason. The reason and the URL are left out. | [Responses](/docs/reference/hosts/egress#responses) |
+| `egress could not stand in for <host>: <reason>` | `502`. No certificate could be made for an intercepted host. | [Responses](/docs/reference/hosts/egress#responses) |
 
 ## Resource API and Terraform
 

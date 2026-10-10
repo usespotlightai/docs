@@ -18,7 +18,7 @@ server's URL in its place. You need:
 - A Spotlight deployment that allows outbound calls to the server's host, and
   for a server behind OAuth, to its authorization server's host.
 - If the server takes a key: the key kept as a secret bound to the server's
-  host, as in
+  host, in a header or a query parameter, as in
   [Give stations a tool from an HTTP API](/docs/integrations/give-stations-a-tool-from-an-http-api#keep-the-api-key-as-a-secret).
 
 ## Name the server
@@ -137,6 +137,14 @@ See [`spotlight tools search`](/docs/reference/cli/agent-commands#spotlight-tool
 
 Each call shows in the run's journal, and a
 [hook](/docs/integrations/hooks) on `tool.using` or `tool.used` sees it.
+Where the server echoes the key, its answer reads `[secret]` instead.
+
+What a tool answers is
+[learned](/docs/reference/cli/agent-commands#learned-output), as for any
+other integration's tool. Where the integration acts as each person, a
+person's own
+[tool rules](/docs/integrations/require-approval-before-a-tool-runs#let-a-person-ask-first-or-block-a-tool)
+apply to calls made with their connection.
 
 ## When the server changes its tools
 
