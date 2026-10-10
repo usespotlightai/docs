@@ -1,0 +1,166 @@
+---
+type: how-to
+icon: SquarePen
+title: Call a remote MCP server
+description: Point an integration at a remote MCP server, so Spotlight offers its tools to stations and calls them itself, with approvals, hooks and the run's journal.
+---
+
+The examples use a placeholder server, `mcp.acme.example`; put your own
+server's URL in its place. You need:
+
+- Terraform set up with the Spotlight provider, using a token that has the
+  `configure` scope, and the `secrets` scope if you keep a key. See
+  [Manage Spotlight with Terraform](/docs/configuration/manage-spotlight-with-terraform).
+- The server's URL. Spotlight speaks MCP's streamable HTTP transport; a server
+  that only offers the older SSE transport, or runs as a local process, is
+  given to the harness instead, in a
+  [harness profile](/docs/reference/terraform/harness-profile).
+- A Spotlight deployment that allows outbound calls to the server's host, and
+  for a server behind OAuth, to its authorization server's host.
+- If the server takes a key: the key kept as a secret bound to the server's
+  host, in a header or a query parameter, as in
+  [Give stations a tool from an HTTP API](/docs/integrations/give-stations-a-tool-from-an-http-api#keep-the-api-key-as-a-secret).
+
+## Name the server
+
+Add an `mcp` block to the integration's definition, with the server's `url`.
+For a server behind OAuth, add `connection.oauth2` with `discover = true`, and
+send the connection with `auth`:
+
+```hcl
+resource "spotlight_integration" "acme" {
+  team_id = data.spotlight_team.core.id
+  definition = {
+    integration = "acme"
+    name        = "Acme"
+    connection = {
+      oauth2 = { discover = true }
+    }
+    mcp = {
+      url  = "https://mcp.acme.example/mcp"
+      auth = { oauth2 = { connection = true } }
+    }
+  }
+}
+```
+
+For a server that takes a key, leave out `connection` and send the key with
+`auth`:
+
+```hcl
+mcp = {
+  url  = "https://mcp.acme.example/mcp"
+  auth = { secrets = ["secret.${spotlight_secret.acme_mcp_key.name}"] }
+}
+```
+
+An integration has one `mcp`, `openapi` or `graphql` block. Run
+`terraform apply`.
+
+## Connect the integration
+
+For a server behind OAuth, the apply warns that the server answered `401`:
+Spotlight cannot list the tools until the team is connected.
+[Connect the team](/docs/integrations/connect-an-integration#connect-the-team)
+from the integration's card. Spotlight finds where to sign in from what the
+server publishes, and registers itself with the server's authorization server
+when it allows that. Once the team is connected, Spotlight lists the tools.
+
+If **Connect to Acme** does not appear, or connecting fails, see
+[Discovery](/docs/reference/terraform/integration#discovery) for what the
+server has to publish.
+
+## Check which tools it offers
+
+```bash
+terraform state show spotlight_integration.acme
+```
+
+`tools` lists every tool, such as `"create-issue" = "acme.create-issue"`,
+and `described.tools` counts them. The apply's warnings name each tool
+Spotlight passed over, and why.
+
+To offer only some tools, add `tools.include` and `tools.exclude` to the `mcp`
+block, as in
+[Choose which tools it offers](/docs/integrations/generate-tools-from-an-api-description#choose-which-tools-it-offers).
+
+## Decide which calls wait for approval
+
+A tool the server marks as only reading runs without asking. Every other tool
+waits for a person to approve each call, including one the server says
+nothing about. To change that for one tool, add it under `tools.approval`:
+
+```hcl
+mcp = {
+  url  = "https://mcp.acme.example/mcp"
+  auth = { oauth2 = { connection = true } }
+  tools = {
+    approval = {
+      "create-comment" = false
+      "get-issue"      = { because = "It reads issues across every team." }
+    }
+  }
+}
+```
+
+Run `terraform apply`.
+
+## Give a tool to a station
+
+Name the tool through the integration's `tools` map:
+
+```hcl
+station {
+  key       = "triage"
+  name      = "Triage"
+  harness   = "claude-code"
+  tools     = [spotlight_integration.acme.tools["create-issue"]]
+  passes_to = ["implementation"]
+}
+```
+
+The agent calls it like any integration tool:
+
+```bash
+spotlight acme create-issue --title "Flaky upload test"
+```
+
+A station given many of a server's tools lets the agent find and read one
+first, with the server's own descriptions:
+
+```bash
+spotlight tools search "create issue"
+spotlight tools describe acme.create-issue
+```
+
+See [`spotlight tools search`](/docs/reference/cli/agent-commands#spotlight-tools-search).
+
+Each call shows in the run's journal, and a
+[hook](/docs/integrations/hooks) on `tool.using` or `tool.used` sees it.
+Where the server echoes the key, its answer reads `[secret]` instead.
+
+What a tool answers is
+[learned](/docs/reference/cli/agent-commands#learned-output), as for any
+other integration's tool. Where the integration acts as each person, a
+person's own
+[tool rules](/docs/integrations/require-approval-before-a-tool-runs#let-a-person-ask-first-or-block-a-tool)
+apply to calls made with their connection.
+
+## When the server changes its tools
+
+Spotlight lists the tools again every ten minutes, unless the deployment sets
+another interval. A tool the server stops offering is no longer offered, and a
+station given it can no longer call it. The workspace's
+[configuration changes](/docs/reference/api/resource-api#configuration-changes)
+record the change, naming each tool the integration no longer offers in
+`details.stranded`. Give the station another tool, or take the tool off it.
+
+## Related
+
+- [`spotlight_integration`](/docs/reference/terraform/integration#mcp-servers):
+  every field of the `mcp` block, and how its tools are named, approved and
+  answered.
+- [Connect an integration that signs in with OAuth](/docs/integrations/connect-an-integration)
+- [Limits and timeouts](/docs/reference/limits-and-timeouts#mcp-servers)
+- [The sandbox is the security boundary](/docs/security/the-sandbox-is-the-security-boundary#tools-spotlight-calls-for-the-agent):
+  what a server's tool descriptions can do to an agent.

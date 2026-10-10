@@ -42,7 +42,7 @@ resource "spotlight_secret" "acme_api_key" {
   workspace_id = data.spotlight_workspace.acme.id
   name         = "ACME_API_KEY"
   bindings = [
-    { host = "api.acme.example", header = "authorization", prefix = "Bearer " },
+    { host = "api.acme.example", carrier = "header", name = "authorization", prefix = "Bearer " },
   ]
   value_wo         = var.acme_api_key
   value_wo_version = 1
@@ -50,6 +50,28 @@ resource "spotlight_secret" "acme_api_key" {
 ```
 
 To rotate the key later, give the new value and raise `value_wo_version`.
+
+### If the API reads the key from the query
+
+Some APIs, such as Google Maps, take the key as a query parameter. Bind the
+secret with `carrier = "query"` and the parameter's `name`:
+
+```hcl
+resource "spotlight_secret" "maps_key" {
+  workspace_id = data.spotlight_workspace.acme.id
+  name         = "MAPS_KEY"
+  bindings = [
+    { host = "maps.googleapis.com", carrier = "query", name = "key" },
+  ]
+  value_wo         = var.maps_key
+  value_wo_version = 1
+}
+```
+
+Leave the key out of the request's `url` and name only the secret, as in
+`auth = { secrets = ["secret.MAPS_KEY"] }`. For how Spotlight sets the
+parameter and keeps the key out of what it records, see
+[Bindings](/docs/reference/terraform/secret#bindings).
 
 ## Define the action and the tool
 
@@ -135,6 +157,17 @@ spotlight acme comment --issue ACME-42 --body "Fixed in the linked pull request.
 `spotlight tools` lists the tools a run was given, with their flags.
 `spotlight tools describe acme.comment` prints one with its inputs and an
 example call.
+
+## See what a tool answers with
+
+After a call to the tool succeeds, Spotlight learns the shape of its answer:
+the field names and their types, never the values. In runs that start after
+that call, `spotlight tools describe` prints it under
+`Answers with (learned from earlier calls, may be incomplete):`, so the agent
+knows which fields to read. Each later successful call adds to it. Redefining
+or removing the integration, and disbanding the team, forgets what was
+learned. See
+[Learned output](/docs/reference/cli/agent-commands#learned-output).
 
 If a person should agree before each call, see
 [Require approval before a tool runs](/docs/integrations/require-approval-before-a-tool-runs).
