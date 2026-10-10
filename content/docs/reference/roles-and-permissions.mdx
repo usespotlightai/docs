@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Roles and permissions
-description: Workspace roles, the permissions they and workspace token scopes grant, and the rules for changing roles, inviting people and connecting GitHub.
+description: Workspace roles, the permissions they and workspace token scopes grant, and the rules for changing roles, inviting people to the workspace and connecting GitHub.
 ---
 
 A person's authority comes from their role in a workspace. A workspace token's
@@ -19,8 +19,9 @@ team's work turned out is narrower; see [Team outcomes](#team-outcomes).
 | `member` | 0 | `read`, `plan` |
 
 The web app shows the roles as Owner, Admin and Member. The person who creates
-a workspace is its owner. A person who accepts an invite joins as a member. A
-workspace always has at least one owner.
+a workspace is its owner. A person who accepts an invite joins with the role
+the invite gives, `admin` or `member`. A workspace always has at least one
+owner.
 
 A closed workspace grants nothing to anyone.
 
@@ -34,7 +35,7 @@ A closed workspace grants nothing to anyone.
 | `manage-secrets` | Create, change and delete secrets. | Owners, admins. Tokens with `secrets`. |
 | `manage-runners` | Create, change and delete runner pools, runner trusts and workspace runners. | Owners, admins. Tokens with `runners`. |
 | `manage-token-trusts` | Create, change and delete workspace token trusts. | Owners, admins. Tokens with `trusts`. |
-| `administer` | Issue, change and revoke workspace tokens; read [configuration changes](/docs/reference/api/resource-api#configuration-changes); close the workspace; invite people and take invites back; connect GitHub; connect an integration over OAuth. | Owners, admins. Never a token. |
+| `administer` | Issue, change and revoke workspace tokens; read [configuration changes](/docs/reference/api/resource-api#configuration-changes); close the workspace; invite people, list, resend and revoke invites, and add members to teams; connect GitHub; connect an integration over OAuth. | Owners, admins. Never a token. |
 | `open-workspaces` | Create a workspace. | Every signed-in person. Never a token. |
 
 A request for something the caller cannot see returns `404`. A request to
@@ -89,10 +90,18 @@ Anyone else is answered `404`, as for something that does not exist.
 | Replays | A work station's "Replays" section, its replay sets, replays and replay runs, the [Replays API](/docs/reference/api/replays), and the team's [replay candidates](/docs/reference/api/replay-candidate). Changing them also needs `plan`. A replay run, with its config and event stream, is readable only through the team it replayed for, even after its station is removed. See [Replays](/docs/reference/app/replays). |
 | Searches and replay checks | A work station's "Searches" section, its searches, the pull requests picked candidates open, and its replay checks: the [Searches API](/docs/reference/api/searches) and the [Replay checks API](/docs/reference/api/replay-checks). Estimating a search needs only `read`. Starting and stopping a search, picking a candidate, marking a guarding set and starting a check also need `plan`. See [Searches](/docs/reference/app/searches). |
 
+## Members
+
+`GET /api/workspaces/{slug}/members` lists everyone in the workspace, with
+their role, their teams and the roles the caller may give them. Every member
+of the workspace may read it. The web app's Members page (see
+[Web app](/docs/reference/app/web-app#workspace-pages)) is shown only to owners
+and admins; a member who opens it is sent to the workspace's own route.
+
 ## Changing roles
 
-Roles are changed in the "Members" list of any team's "General" settings page
-(see [Web app](/docs/reference/app/web-app#team-pages)), or with
+Roles are changed on the Members page, in the "Members" list of any team's
+"General" settings page, or with
 `PATCH /api/workspaces/{slug}/members/{userId}`. The role changed is the
 person's role in the workspace, and holds in every team.
 
@@ -107,46 +116,83 @@ these:
 
 | Status | Message | Cause |
 | --- | --- | --- |
-| `403` | `That role is not yours to give: they are not of this workspace` | The person is not a member of the workspace. |
-| `403` | `That role is not yours to give: only an owner or an admin may set roles` | The caller is not an owner or admin. |
-| `403` | `That role is not yours to give: they are not below you` | An admin changing an owner or another admin. |
-| `403` | `That role is not yours to give: your own is not yours to change` | An admin changing their own role. |
-| `403` | `That role is not yours to give: nobody hands out a rank they do not hold` | An admin giving the `owner` role. |
-| `409` | `This workspace would be left with nobody who owns it. Make somebody else an owner first` | The last owner given another role. |
+| `403` | `This person is not a member of this workspace.` | The person is not a member of the workspace. |
+| `403` | `Only an owner or an admin can set roles.` | The caller is not an owner or admin. |
+| `403` | `You can only set roles for people below you.` | An admin changing an owner or another admin. |
+| `403` | `You cannot change your own role.` | An admin changing their own role. |
+| `403` | `You cannot give a role above your own.` | An admin giving the `owner` role. |
+| `409` | `The workspace needs at least one owner. Please make someone else an owner first.` | The last owner given another role. |
 
 The web app offers a role menu only where more than one role can be given.
 
 ## Invites
 
-An invite asks one email address to join a team.
+An invite asks one email address to join the workspace with a role, and
+optionally names teams of the workspace to join.
 
-- Only a workspace owner or admin may invite, or take an invite back.
-- An invite lasts 14 days.
-- Accepting needs the person to be signed in with the invited email address.
-- Accepting adds the person to the team, and to the workspace as a member if
-  they are not in it already. A person already in the workspace keeps their
-  role.
-- Inviting an address with an open or expired invite to the same team sends it
-  again, with a new link and a fresh 14 days. Inviting an address whose invite
-  was taken back sends a new invite.
+| Action | Endpoint | Who may |
+| --- | --- | --- |
+| Invite | `POST /api/workspaces/{slug}/invites` | Owners and admins. |
+| List pending invites | `GET /api/workspaces/{slug}/invites` | Owners and admins. |
+| Send an invite again | `POST /api/workspaces/{slug}/invites/{inviteId}/resend` | Owners and admins. |
+| Revoke an invite | `DELETE /api/workspaces/{slug}/invites/{inviteId}` | Owners and admins. |
+| Read what an invite link offers | `GET /api/invites/{token}` | Anyone with the link, signed in or not. |
+| Accept an invite | `POST /api/invites/{token}/accept` | The person signed in with the invited address. |
+| Add a member to a team | `POST /api/teams/{teamId}/members` | Owners and admins. |
+
+Every action but reading an invite link needs a person signed in; a workspace
+token is answered `401`. A caller who is not an owner or admin of the workspace
+is answered `404` by the actions only they may take, as for a workspace that
+does not exist.
+
+- An invite gives the `admin` or `member` role. Nobody is invited as an
+  `owner`; owners and admins may both invite as `admin`.
+- One request invites 1 to 50 addresses, all with the same role and teams.
+  Addresses are compared without regard to case, and a repeated address is
+  invited once.
+- An address that belongs to a member of the workspace is sent nothing.
+- An address with an open or expired invite is sent it again, with a new link,
+  the role and teams of this request, and a fresh 14 days. An address whose
+  invite was revoked or accepted gets a new invite.
+- Sending an invite again replaces its link; the old link stops working. Only
+  an open or expired invite can be sent again.
+- Revoking an invite stops its link working. Revoking a revoked invite changes
+  nothing. An accepted invite cannot be revoked.
+- An invite lasts 14 days from when it was last sent.
+- Accepting needs the person to be signed in with the invited address,
+  compared without regard to case, and the invite to be open.
+- Accepting adds the person to the workspace with the invite's role, and to
+  each team it names that still belongs to the workspace. A person already in
+  the workspace keeps their role and is added to the teams.
+- The pending invites list holds only open invites, newest first.
+- Adding a member to a team needs the person to be in the workspace already.
+
+Each address in an invite request gets one outcome:
+
+| Outcome | Web app | Meaning |
+| --- | --- | --- |
+| `invited` | "Invited" | A new invite was emailed. |
+| `sent-again` | "Sent again" | An open or expired invite was emailed again. |
+| `already-a-member` | "Already a member" | The address belongs to a member. Nothing was sent. |
+| `not-sent` | "Not sent &mdash; please try again" | The invite was written but the email could not be sent. |
+
+The email's subject reads `<inviter> invited you to join <workspace> on Spotlight`,
+names the teams the invite joins, and links to `/invites/<token>` at the
+[Spotlight address](/docs/reference/glossary#spotlight-address). When the
+control plane has no mail server set (`SMTP_URL`), the message is written to
+its log instead of sent.
 
 | State | Meaning |
 | --- | --- |
-| `open` | Sent, not yet accepted, taken back or expired. |
+| `open` | Sent, not yet accepted, revoked or expired. |
 | `accepted` | Accepted. |
 | `revoked` | Taken back. |
-| `expired` | Not accepted within 14 days. |
+| `expired` | Not accepted within 14 days of being last sent. |
 
-| Status | Message | Cause |
-| --- | --- | --- |
-| `409` | `<email> is already on this team` | The address is already on the team. |
-| `403` | `This invite was sent to <email>. Sign in as them to accept it` | Signed in as another address. |
-| `409` | `This invite has already been accepted` | Already accepted. |
-| `409` | `This invite has been revoked` | Taken back. |
-| `409` | `This invite has run out. Ask for another` | Expired. |
-
-An accepted invite cannot be sent again or taken back. See
-[Invite people and change their roles](/docs/administration/invite-people-and-change-roles).
+[Errors and messages](/docs/reference/errors-and-messages#members-invites-and-github)
+lists the refusals. See
+[Invite people and change their roles](/docs/administration/invite-people-and-change-roles)
+and [Join a workspace from an invitation](/docs/getting-started/join-a-workspace-from-an-invitation).
 
 ## Actions only people can take
 

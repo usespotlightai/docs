@@ -2,64 +2,147 @@
 type: how-to
 icon: SquarePen
 title: Invite people and change their roles
-description: Bring someone into a team by email, and make a member an admin or owner of the workspace.
+description: Invite people to the workspace by email with a role and teams, follow up on pending invites, change a member's role, and add a member to a team.
 ---
 
-People are invited to a team, and their role applies across the whole
-workspace. You need to be an owner or admin of the workspace.
+You need to be an owner or admin of the workspace. People are invited to the
+workspace, as an admin or a member, and can be put on teams as they join.
+[Roles and permissions](/docs/reference/roles-and-permissions) lists what each
+role may do.
 
-## Invite someone
+## Invite people
 
 <Steps>
 <Step>
 
-In the sidebar, under **Your teams**, expand the team, then **Settings**, and
-click **General**.
+Open the workspace menu at the top of the sidebar and choose
+**Invite and manage members**. You can also choose **Settings**, then
+**Members** under **Workspace**.
 
 </Step>
 <Step>
 
-Click **Add a member**, enter the person's email address, and click
-**Send invitation**.
+Click **Invite people**.
+
+</Step>
+<Step>
+
+Under **Email addresses**, enter one or more addresses, separated by commas or
+new lines. You can invite up to 50 at once.
+
+</Step>
+<Step>
+
+Under **Invite as**, choose **Member** or **Admin**. Everyone in this round is
+invited with the same role. Nobody can be invited as an owner: invite them as
+an admin, then [change their role](#change-a-role) once they have joined.
+
+</Step>
+<Step>
+
+Under **Teams**, tick the teams they should join. Leave it as **No team** to
+invite them to the workspace only.
+
+</Step>
+<Step>
+
+Click **Send invites**.
 
 </Step>
 </Steps>
 
-The invitation appears under **Invited** while it waits to be accepted. It
-lasts 14 days.
+**Invites sent** lists each address with what happened to it:
 
-The person opens the link in the email and clicks **Continue with GitHub**,
-signing in with a GitHub account whose email address is the one you invited.
-They then click **Accept invitation** and land on the team. If they are signed
-in with another address, the page names both addresses and asks them to sign in
-as the invited one.
+| Outcome | What happened |
+| --- | --- |
+| **Invited** | An invite was emailed to the address. |
+| **Sent again** | The address already had a pending or expired invite. It was emailed again with a new link, the role and teams you chose this time, and another 14 days. |
+| **Already a member** | The address belongs to someone in the workspace. Nothing was sent. To put them on a team, [add them to it](#add-a-member-to-a-team). |
+| **Not sent &mdash; please try again** | The email could not be sent. Invite the address again. |
 
-A person new to the workspace joins it as a **Member**. Someone already in the
-workspace keeps their role.
+Click **Done**. The new invites appear under **Pending invites** on the
+**Members** page until they are accepted, revoked or expire.
 
-If their invitation has run out, send another.
+If an address under **Email addresses** is not an email address, the dialog
+names it under the field and sends nothing. Correct or remove it.
 
-## Take an invitation back
+## Follow up on a pending invite
 
-Under **Invited**, click the **Unsend** button beside the address, a small
-round icon that turns into an undo arrow when you point at it. The link stops
-working, and the page it opens says the invitation has been taken back.
+Under **Pending invites**, each row shows the address, its teams, who invited
+them and when the invite expires. Open the actions menu at the end of the row:
 
-## Change someone's role
+- **Resend invite** emails a new link with another 14 days. The old link stops
+  working.
+- **Revoke invite** takes the invite back. Its link stops working.
 
-Under **Members**, choose the role from the dropdown beside the person's name:
-**Owner**, **Admin** or **Member**. [Roles and permissions](/docs/reference/roles-and-permissions) lists
-what each role may do.
+An invite that expires leaves the list. To try again, invite the address
+again; the outcome reads **Sent again**.
 
-If there is no dropdown beside a person, you may not change their role:
+To see only the pending invites, open **Filter members** and set **Show** to
+**Pending invites**. The same filter shows only **Owners**, **Admins** or
+**Members**.
+
+## Change a role
+
+On the **Members** page, open the actions menu at the end of a person's row,
+choose **Change role**, then **Owner**, **Admin** or **Member**. You can also
+change a role from the role beside a person's name on a team's **General**
+page.
+
+If a person's row has no actions menu, you may not change their role:
 
 - An admin can change only members, and can make them admins but not owners.
 - An owner can change anyone, including other owners.
-- The last owner of a workspace cannot be given another role. Make someone else
-  an owner first.
+- The last owner of a workspace cannot be given another role. Make someone
+  else an owner first.
+
+## Add a member to a team
+
+<Steps>
+<Step>
+
+Open the workspace menu, choose **Settings**, and under the team's name click
+**General**.
+
+</Step>
+<Step>
+
+Click **Add a member**. Under **In the workspace**, choose the person.
+
+</Step>
+</Steps>
+
+The menu lists only people in the workspace who are not on the team. To bring
+in someone new, choose **Invite someone new** instead: the invite dialog opens
+with the team already ticked under **Teams**.
+
+## What the person you invite does
+
+The person gets an email from Spotlight whose subject names you and the
+workspace, with an **Accept the invitation** button. They open it, click
+**Continue with GitHub** if they are not signed in, then
+**Accept invitation**, and land in the workspace's inbox. They must sign in
+with the address you invited.
+[Join a workspace from an invitation](/docs/getting-started/join-a-workspace-from-an-invitation)
+walks them through it.
+
+When they accept, they join the workspace with the role you chose and the
+teams you ticked that still exist. Someone already in the workspace keeps their
+role and is added to the teams.
+
+An invite lasts 14 days. If it runs out, invite the address again or click
+**Resend invite** while it is still pending.
+
+<Callout>
+On a self-hosted Spotlight, invites are emailed through the mail server the
+deployment is set up with. Without one, the message is written to the control
+plane's log instead, and the outcome still reads **Invited**.
+</Callout>
 
 ## Related
 
-- [Roles and permissions](/docs/reference/roles-and-permissions)
+- [Roles and permissions](/docs/reference/roles-and-permissions#invites)
+- [Errors and messages](/docs/reference/errors-and-messages#members-invites-and-github)
 - [Issue a workspace token](/docs/administration/issue-a-workspace-token), which
-  gives scripts and CI access to the workspace.
+  gives scripts and CI access to the workspace. A workspace token cannot invite
+  people.
