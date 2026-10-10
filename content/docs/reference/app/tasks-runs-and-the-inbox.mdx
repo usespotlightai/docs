@@ -714,8 +714,10 @@ met with the team's connection. See
 ## Approvals
 
 A run asks for approval when a tool with `approval` in its integration is
-called, or when the harness profile's `ask` rules match a harness action. See
-[`spotlight_integration`](/docs/reference/terraform/integration) and
+called, when the person whose connection a tool acts with set it to "Ask me
+first", or when the harness profile's `ask` rules match a harness action. See
+[`spotlight_integration`](/docs/reference/terraform/integration),
+[Person rules](#person-rules) and
 [`spotlight_harness_profile`](/docs/reference/terraform/harness-profile).
 
 | Standing | Meaning |
@@ -727,7 +729,9 @@ called, or when the harness profile's `ask` rules match a harness action. See
 In the inbox, the card's title reads "Waiting for your approval" while it is
 `asked`, then "Request approved", "Request approved with changes" or "Request
 dismissed". An undecided card offers copy and, for a tool call with inputs,
-edit, beside "Dismiss" and "Approve".
+edit, beside "Dismiss" and "Approve". For a call that asks because of a
+person's own rule, everyone else sees `Only <Name> can approve this`, with
+"Approve" turned off and edit hidden.
 
 When a run asks, Spotlight looks for the latest approval of the same subject at
 the same station. The subject is the tool with the same inputs, or the same
@@ -743,10 +747,40 @@ call with the changed inputs.
 - A grant is spent by one call. The next call asks again.
 - An approval asked at one station does not count at another.
 - Only a person can approve or dismiss. A workspace token cannot.
+- A call that asks because of a person's own tool rule can be approved only
+  by that person. See [Person rules](#person-rules).
 - An approval is decided once. A second decision is refused with `409`.
 - An answer without a decision answers the conversation and leaves the approval
   undecided.
 - A decision without words is recorded as `Approved.` or `Dismissed.`.
+
+### Person rules
+
+A tool of an integration whose `connection.holder` is `requester` acts with
+the connection of the person who started the task, and follows that person's
+rule for it as well as the team's. Of the two, the stricter wins:
+
+| Team | Person | Result |
+| --- | --- | --- |
+| Runs without asking | Team's rule | The call runs. |
+| Runs without asking | Ask me first | The call waits, and only that person can approve it. The ask reads `<Name> asks to approve each call made with their <Integration> connection.` |
+| Needs approval | Team's rule | The call waits, and the task's assignee can approve it. |
+| Needs approval | Ask me first | The call waits with the team's reason, and only that person can approve it. |
+| Either | Blocked | The call never runs. The agent is told the person blocks it. |
+
+- When a call waits because of a person's rule, the task is put to that
+  person: they become its assignee.
+- Approving it by anyone else is refused with `409`. Whoever may answer the
+  task can still dismiss it.
+- A grant from someone else does not cover such a call. It asks that person
+  again.
+- A person's rule applies only to calls made with their own connection, never
+  to calls made with the team's. It stays when they disconnect and connect
+  again.
+- The run's list of tools shows the team's rule. The person's rule takes
+  effect when the tool is called.
+
+See [Let a person ask first or block a tool](/docs/integrations/require-approval-before-a-tool-runs#let-a-person-ask-first-or-block-a-tool).
 
 ### Changed inputs
 

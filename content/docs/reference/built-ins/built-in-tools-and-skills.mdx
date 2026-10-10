@@ -25,8 +25,9 @@ under [spotlight &lt;tool&gt;](/docs/reference/cli/agent-commands#spotlight-tool
 
 Opens a pull request for the task's branch, `spotlight/<taskId>`, into the
 repository's default branch (`main` if GitHub names none). If a pull request is
-already open for the branch, that one is returned. The task then holds the
-`git.pull-request` [mark](/docs/reference/events/github-events#marks).
+already open for the branch, that one is returned. It answers with
+`{"url": "<address>"}`. The task then holds the `git.pull-request`
+[mark](/docs/reference/events/github-events#marks).
 
 | Input | Type | Required | Piped | Description |
 | --- | --- | --- | --- | --- |
@@ -60,7 +61,8 @@ reviews.
 ### propose-task
 
 Proposes a task in the chat the run works for. Nothing is created until the
-person accepts the proposal. See
+person accepts the proposal. It answers with the task's title as `proposed`,
+the `line` and `station` keys it was given, and what happens `next`. See
 [Proposals](/docs/reference/app/tasks-runs-and-the-inbox#proposals).
 
 | Input | Type | Required | Piped | Description |
@@ -80,6 +82,18 @@ skill starting `spotlight-`.
 | `spotlight-handover` | Every run at a station. |
 | `spotlight-pull-request` | Runs given the `pull-request` tool. |
 | `spotlight-review` | Runs given the `review-comment` or `review` tool. |
+| `spotlight-tools` | Runs given a tool from an integration or the catalog that Spotlight can describe. Never a replay. |
+
+`spotlight-tools` says how to find a tool with `spotlight tools search`, read
+it with `spotlight tools describe`, give inputs as flags or as one JSON object,
+pipe a tool's JSON answer into the next call, use a tool that requires
+approval, and stop when a tool waits for a person to connect. It also explains
+learned answers: `describe` prints what a tool answered before as a learned
+type. See [Learned output](/docs/reference/cli/agent-commands#learned-output).
+Such a run's briefing also has a `## Tools` section naming each
+integration it was given tools from, with how many, and the `search` and
+`describe` commands. Catalog tools are named there as `the Spotlight catalog`.
+A replay is given no tools, so it gets neither the skill nor the section.
 
 A run is also given the tools listed in the `tools` of each team skill its
 station gives. See [`spotlight_skill`](/docs/reference/terraform/skill).

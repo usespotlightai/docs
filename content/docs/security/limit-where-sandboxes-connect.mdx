@@ -74,8 +74,11 @@ message:
 egress does not let this sandbox reach <host>
 ```
 
-A connection to an address egress never opens fails with `502` and a message
-starting `egress could not reach`. These reach whatever made the request, so
+A connection to an address egress never opens fails with `502`. Through a
+tunnelled `CONNECT`, the message is `egress could not reach <host:port>:` and
+the reason. A plain-HTTP request, or one to a host egress adds a secret to,
+gets only `egress could not reach <host:port>`. These reach whatever made the
+request, so
 look for them in the output of the agent's commands on the run page. Add the
 host to the list if the run needs it, and restart the host.
 
