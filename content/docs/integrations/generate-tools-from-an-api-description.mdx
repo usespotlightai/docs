@@ -78,8 +78,8 @@ resource "spotlight_integration" "linear" {
 If the endpoint does not answer schema questions, write the schema out as
 `document` in GraphQL's schema language, and keep `url` for the calls.
 
-An integration has one `openapi` or one `graphql` block, never both. Run
-`terraform apply`.
+An integration has one `openapi`, `graphql` or [`mcp`](/docs/integrations/call-a-remote-mcp-server)
+block. Run `terraform apply`.
 
 ## Check what was generated
 
@@ -102,8 +102,10 @@ the apply shows the same reason as a warning on the block's `url`, or on its
 [raise `revision`](#read-the-description-again). Then run `terraform apply`.
 
 If the integration signs in with OAuth and the API answers only with
-credentials, the first read fails. [Connect the integration](/docs/integrations/connect-an-integration),
-and Spotlight reads the description again.
+credentials, the first read fails. [Connect the team](/docs/integrations/connect-an-integration#connect-the-team),
+and Spotlight reads the description again. This holds for an integration whose
+`holder` is `requester` too: the description is read with the team's
+connection, and a person connecting their own account does not read it again.
 
 ## Choose which tools it offers
 

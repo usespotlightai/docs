@@ -2,7 +2,7 @@
 type: concept
 icon: Lightbulb
 title: Why agents talk back through a command line
-description: Why an agent reports its handover, replies and tool calls through the spotlight command in its sandbox, what an MCP server would have offered instead, and where MCP still fits.
+description: Why an agent reports its handover, replies and tool calls through the spotlight command in its sandbox, how it finds its tools there, what an MCP server would have offered instead, and where MCP still fits.
 ---
 
 An agent working a task has things to tell Spotlight. At the end of a run it
@@ -70,6 +70,30 @@ much the same place.
 The command line also keeps the surface in one place. When an agent needs to
 tell Spotlight something new, the answer is another subcommand of `spotlight`,
 not another server to run in every sandbox.
+
+## Finding tools without listing them
+
+The same cost of context applies to the tools a run is given. An integration
+generated from an API description can give a station hundreds of tools, and
+listing every one at the start of a run would spend the context MCP was set
+aside to save.
+
+So the briefing names only where the run's tools come from, as in "You were
+given tools from Linear (12) and Petstore (19)", and the two commands that
+reach them. `spotlight tools search` ranks the run's tools against a few
+words, and `spotlight tools describe` prints one tool's inputs as a
+TypeScript type with a call to start from. Our view is that a model reads a
+TypeScript type more readily than a JSON Schema, and it takes fewer words. The longer guide,
+on JSON inputs, piping one tool's answer into the next and approvals, is the
+`spotlight-tools` skill, which the agent reads when it reaches for a tool.
+Every tool answers in JSON, so the answer of one call can be handed to the
+next without guessing at its shape.
+
+Search is lexical: it matches words in tool names, integration names and
+descriptions, with no embeddings. A run's tools are known before it starts,
+and their names are made of the words an agent would search with, so a small
+scorer in the command finds them without another service. See
+[`spotlight tools search`](/docs/reference/cli/agent-commands#spotlight-tools-search).
 
 ## A floor with no dependencies
 
