@@ -473,22 +473,52 @@ list their own messages.
 
 ### Members, invites and GitHub
 
-The endpoints for roles, invites and the GitHub connection refuse with these.
+The endpoints for roles, invites, team members and the GitHub connection
+refuse with these. A caller who is not an owner or admin of the workspace gets
+`404` with no message from the invite and team member endpoints.
 
 | Message | Cause | See |
 | --- | --- | --- |
-| `That role is not yours to give: they are not of this workspace` | `403`. The person is not a member of the workspace. | [Changing roles](/docs/reference/roles-and-permissions#changing-roles), [Invite people and change their roles](/docs/administration/invite-people-and-change-roles) |
-| `That role is not yours to give: only an owner or an admin may set roles` | `403`. The caller is not an owner or admin. | [Changing roles](/docs/reference/roles-and-permissions#changing-roles) |
-| `That role is not yours to give: they are not below you` | `403`. An admin changing an owner or another admin. | [Changing roles](/docs/reference/roles-and-permissions#changing-roles) |
-| `That role is not yours to give: your own is not yours to change` | `403`. An admin changing their own role. | [Changing roles](/docs/reference/roles-and-permissions#changing-roles) |
-| `That role is not yours to give: nobody hands out a rank they do not hold` | `403`. An admin giving the `owner` role. | [Changing roles](/docs/reference/roles-and-permissions#changing-roles) |
-| `This workspace would be left with nobody who owns it. Make somebody else an owner first` | `409`. The last owner given another role. | [Changing roles](/docs/reference/roles-and-permissions#changing-roles) |
-| `<email> is already on this team` | `409`. The address is already on the team. | [Invites](/docs/reference/roles-and-permissions#invites) |
-| `This invite was sent to <email>. Sign in as them to accept it` | `403`. Signed in as another address. | [Invites](/docs/reference/roles-and-permissions#invites) |
-| `This invite has already been accepted` | `409`. The invite was already accepted. | [Invites](/docs/reference/roles-and-permissions#invites) |
-| `This invite has been revoked` | `409`. The invite was taken back. | [Invites](/docs/reference/roles-and-permissions#invites) |
-| `This invite has run out. Ask for another` | `409`. The invite expired. | [Invites](/docs/reference/roles-and-permissions#invites), [Invite people and change their roles](/docs/administration/invite-people-and-change-roles) |
+| `This person is not a member of this workspace.` | `403`. The person whose role is set is not a member of the workspace. | [Changing roles](/docs/reference/roles-and-permissions#changing-roles) |
+| `Only an owner or an admin can set roles.` | `403`. The caller is not an owner or admin. | [Changing roles](/docs/reference/roles-and-permissions#changing-roles) |
+| `You can only set roles for people below you.` | `403`. An admin changing an owner or another admin. | [Changing roles](/docs/reference/roles-and-permissions#changing-roles) |
+| `You cannot change your own role.` | `403`. An admin changing their own role. | [Changing roles](/docs/reference/roles-and-permissions#changing-roles) |
+| `You cannot give a role above your own.` | `403`. An admin giving the `owner` role. | [Changing roles](/docs/reference/roles-and-permissions#changing-roles) |
+| `The workspace needs at least one owner. Please make someone else an owner first.` | `409`. The last owner given another role. | [Changing roles](/docs/reference/roles-and-permissions#changing-roles), [Invite people and change their roles](/docs/administration/invite-people-and-change-roles#change-a-role) |
+| `Please give between 1 and 50 email addresses. Received: <count>` | `422`. An invite request with no address, or more than 50 different ones. | [Invites](/docs/reference/roles-and-permissions#invites) |
+| `Email address is not valid. Received: <address>` | `422`. An address in an invite request is not an email address. Nothing is sent. | [Invites](/docs/reference/roles-and-permissions#invites) |
+| `Role <role> does not exist. Valid roles: owner, admin, member` | `422`. An invite request with an unknown role. | [Invites](/docs/reference/roles-and-permissions#invites) |
+| `Nobody can be invited as an owner. Please invite them as an admin, then make them an owner.` | `403`. An invite request with the `owner` role. | [Invites](/docs/reference/roles-and-permissions#invites), [Invite people and change their roles](/docs/administration/invite-people-and-change-roles#invite-people) |
+| `Sorry, team <teamId> is not in this workspace.` | `422`. An invite request names a team that is not in the workspace. | [Invites](/docs/reference/roles-and-permissions#invites) |
+| `An invite to <email> was just sent for this workspace. Please try again.` | `409`. Another invite to the same address was being sent at the same moment. | [Invites](/docs/reference/roles-and-permissions#invites) |
+| `Invite <inviteId> changed since you loaded it. Please reload and try again.` | `409`. The invite changed while it was being sent again or revoked. | [Invites](/docs/reference/roles-and-permissions#invites) |
+| `This invite has already been accepted.` | `409`. Accepting, resending or revoking an accepted invite. | [Invites](/docs/reference/roles-and-permissions#invites) |
+| `This invite has been revoked.` | `409`. Accepting or resending a revoked invite. | [Invites](/docs/reference/roles-and-permissions#invites) |
+| `This invite has expired. Please ask for a new one.` | `409`. Accepting an invite more than 14 days after it was last sent. | [Invites](/docs/reference/roles-and-permissions#invites), [Join a workspace from an invitation](/docs/getting-started/join-a-workspace-from-an-invitation) |
+| `This invite was sent to <email>. Please sign in as <email> to accept it.` | `403`. Accepting while signed in with another address. | [Invites](/docs/reference/roles-and-permissions#invites), [Join a workspace from an invitation](/docs/getting-started/join-a-workspace-from-an-invitation) |
+| `<team> already includes this person.` | `409`. Adding a member to a team they are on. | [Invites](/docs/reference/roles-and-permissions#invites) |
+| `Sorry, this person is not a member of this workspace. Please invite them first.` | `422`. Adding someone to a team who is not in the workspace. | [Invite people and change their roles](/docs/administration/invite-people-and-change-roles#add-a-member-to-a-team) |
 | `This workspace is not yours to connect: only an owner or an admin may` | `403`. The person is not an owner or admin. | [GitHub connection](/docs/reference/roles-and-permissions#github-connection), [Connect GitHub to a workspace](/docs/integrations/connect-github) |
 | `That is not an installation you administer on GitHub` | `403`. The person does not administer the installation. | [GitHub connection](/docs/reference/roles-and-permissions#github-connection) |
 | `GitHub would not say whether that installation is yours. Sign in again, and if it keeps happening the sign-in is not authorised to list App installations.` | `403`. GitHub would not say. | [GitHub connection](/docs/reference/roles-and-permissions#github-connection) |
 | `GitHub installation <id> is already connected to another workspace. Disconnect it there first` | `409`. The installation is connected to another workspace. | [GitHub connection](/docs/reference/roles-and-permissions#github-connection) |
+
+### Members page and accepting an invite
+
+The web app shows these on the Members page, a team's General page and the
+page an invite link opens. When an invite request is refused, the invite dialog
+shows the message from the table above beneath its fields.
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `Not an email address: <addresses>` | Text under "Email addresses" in the invite dialog that is not an email address. Nothing is sent. | [Invite people](/docs/administration/invite-people-and-change-roles#invite-people) |
+| `Not sent — please try again` | The outcome for an address whose invite email could not be sent. | [Invites](/docs/reference/roles-and-permissions#invites) |
+| `Sorry, the invite couldn't be sent again.` | "Resend invite" failed. | [Follow up on a pending invite](/docs/administration/invite-people-and-change-roles#follow-up-on-a-pending-invite) |
+| `Sorry, the invite couldn't be revoked.` | "Revoke invite" failed. | [Follow up on a pending invite](/docs/administration/invite-people-and-change-roles#follow-up-on-a-pending-invite) |
+| `Sorry, the role couldn't be changed.` | "Change role" on the Members page failed. | [Changing roles](/docs/reference/roles-and-permissions#changing-roles) |
+| `Sorry, the member couldn't be added.` | "Add a member" on a team's General page failed. | [Add a member to a team](/docs/administration/invite-people-and-change-roles#add-a-member-to-a-team) |
+| `Invitation is for <invited address>, not <signed-in address>. Please sign in as <invited address> to accept.` | The invite page opened while signed in with another address. | [Join a workspace from an invitation](/docs/getting-started/join-a-workspace-from-an-invitation#if-the-page-says-something-else) |
+| `Invitation already accepted.` | The invite link of an accepted invite. | [Join a workspace from an invitation](/docs/getting-started/join-a-workspace-from-an-invitation#if-the-page-says-something-else) |
+| `Invitation withdrawn.` | The invite link of a revoked invite. | [Join a workspace from an invitation](/docs/getting-started/join-a-workspace-from-an-invitation#if-the-page-says-something-else) |
+| `Invitation expired. Please ask for a new one.` | The invite link of an expired invite. | [Join a workspace from an invitation](/docs/getting-started/join-a-workspace-from-an-invitation#if-the-page-says-something-else) |
+| `Invitation link doesn't work` | A link that matches no invite, or a link of an invite sent again since. | [Join a workspace from an invitation](/docs/getting-started/join-a-workspace-from-an-invitation#if-the-page-says-something-else) |
