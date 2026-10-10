@@ -95,13 +95,13 @@ Run `terraform apply`.
 <Step>
 
 Open **Settings** from the workspace menu, then **Integrations** under the
-team's name. Under **Hosts**, the integration's card reads "Not connected yet."
+team's name. The integration's row reads "Acts as the team".
 
 </Step>
 <Step>
 
-Select **Connect to `<Name>`**, where `<Name>` is the integration's `name`. The
-button reads **Opening…** and then takes you to the service.
+Select **Connect team account** on the row. The button reads **Opening…** and
+then takes you to the service.
 
 </Step>
 <Step>
@@ -113,10 +113,13 @@ yourself.
 </Step>
 </Steps>
 
-The service sends you back to the team's **Integrations** page. The card now
-reads `Connected as <account>.`, or "Connected." if the integration has no
-`identity`. Requests that use `auth = { oauth2 = { connection = true } }` now
-carry the team's grant.
+The service sends you back to the team's **Integrations** page. Open the row:
+**Team account** shows the account the service named, or "Connected" if the
+integration has no `identity`. Requests that use
+`auth = { oauth2 = { connection = true } }` now carry the team's grant.
+
+A member who is not an owner or admin sees "Waiting for an admin" on the row
+instead of the button.
 
 ## Connect yourself
 
@@ -125,25 +128,25 @@ For an integration with `holder = "requester"`:
 <Steps>
 <Step>
 
-Open **Settings** from the workspace menu, then **Connections** under the
-team's name. Each integration that acts as the person who started a task is
-listed under **Yours**, reading "Not connected".
+Open **Settings** from the workspace menu, then **Integrations** under the
+team's name. The integration's row reads "Acts as each person".
 
 </Step>
 <Step>
 
-Select **Connect** beside the integration, then sign in and approve at the
+Select **Connect your account** on the row, then sign in and approve at the
 service as above.
 
 </Step>
 </Steps>
 
-The service sends you back to **Connections**, where the integration reads
-`Connected as <account>`, or "Connected". From then on its tools act as you on
-the tasks you start. To stop that, select **Disconnect**.
+The service sends you back to **Integrations**. Open the row: **Your account**
+shows the account the service named, or "Connected". From then on its tools
+act as you on the tasks you start. To stop that, open the actions menu beside
+your account and select **Disconnect**.
 
-An owner or admin also sees **Who has connected**: each person's name, the
-integration and the account the service named, never their grant. Nobody can
+An owner or admin also sees **People**: who has connected, and under "Not
+connected", the team's members who have not, never their grants. Nobody can
 disconnect someone else.
 
 ## Answer a request to connect
@@ -161,14 +164,15 @@ For what happens when there is nobody to ask, see
 ## Reconnect
 
 To link a different account, or after the service withdrew Spotlight's access,
-select **Reconnect to `<Name>`** on the team's card, or **Reconnect** on
-**Connections** for your own, and authorize again. The new grant replaces the
-old one.
+open the actions menu beside **Team account** and select **Change account**,
+or for your own, select **Disconnect** and then **Connect your account**, and
+authorize again. The new grant replaces the old one.
 
 ## If it does not connect
 
-If you select **Connect** and the button returns to its label without taking
-you anywhere, Spotlight would not begin. Either you may not make that
+If you select **Connect team account** or **Connect your account** and the row
+shows "Could not connect. Try again." instead of taking you anywhere, Spotlight
+would not begin. Either you may not make that
 connection (the team's needs an owner or admin; your own needs you to be on the
 team and the integration to have `holder = "requester"`), or Spotlight has no
 OAuth client for the integration: the deployment holds none and the definition
@@ -179,7 +183,7 @@ the page you started from, the connection was refused, and Spotlight shows no
 message. Check that:
 
 - you may make the connection, as above;
-- you came back within 10 minutes of selecting **Connect**;
+- you came back within 10 minutes of starting to connect;
 - you did not sign in to Spotlight as someone else in the meantime;
 - you approved the request at the service rather than declining it.
 
