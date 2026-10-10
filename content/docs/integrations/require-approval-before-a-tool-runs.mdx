@@ -40,6 +40,60 @@ agent's sentence, and refuses the integration otherwise.
 
 Run `terraform apply`.
 
+## Tools generated from an API description
+
+Tools that an integration [generates from an API description](/docs/integrations/generate-tools-from-an-api-description)
+already wait for approval when they change data: every OpenAPI `POST`, `PUT`,
+`PATCH` and `DELETE` operation, and every GraphQL mutation. The reason a
+person reads is `It changes data in <name>.`, with the integration's `name`.
+
+To change that for one tool, add it under the block's `tools.approval`, by its
+generated name. Give `because` for another reason, which also makes a tool
+that only reads wait. Give `false` for a tool that should run without asking:
+
+```hcl
+openapi = {
+  url     = "https://petstore3.swagger.io/api/v3/openapi.json"
+  baseUrl = "https://petstore3.swagger.io/api/v3"
+  tools = {
+    approval = {
+      "delete-pet" = { because = "It deletes a pet for good." }
+      "update-pet" = false
+    }
+  }
+}
+```
+
+Tools from a [remote MCP server](/docs/integrations/call-a-remote-mcp-server)
+wait for approval unless the server marks them as only reading. Change one the
+same way, under the `mcp` block's `tools.approval`.
+
+If the apply warns that it passes over an operation because it takes `intent`,
+that operation needs approval and has an input with the name Spotlight keeps
+for the agent's sentence. Set its approval to `false` to offer it, or leave it
+out.
+
+Run `terraform apply`.
+
+## Let a person ask first or block a tool
+
+Where an integration acts as the person who started the task (its
+`connection.holder` is `requester`), each person can choose what to ask of
+calls made with their own connection. Open **Settings**, then **Connections**
+under the team's name. Under **Yours**, below each integration you have
+connected, pick a rule for each tool:
+
+- **Team's rule**: follow the team. This is the default.
+- **Ask me first**: wait for your approval.
+- **Blocked**: never run.
+
+The stricter of the team's rule and yours applies, and only to calls made
+with your own connection. When a call waits because you chose **Ask me
+first**, the task is put to you, and only you can approve the call. See
+[Person rules](/docs/reference/app/tasks-runs-and-the-inbox#person-rules) for
+each combination. To set rules over the API, see
+[OAuth connect and callback](/docs/reference/terraform/integration#oauth-connect-and-callback).
+
 ## Approve, edit or dismiss each call
 
 When an agent calls the tool, nothing is sent: the task's inbox item shows

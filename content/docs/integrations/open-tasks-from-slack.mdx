@@ -73,7 +73,7 @@ resource "spotlight_secret" "slack_bot_token" {
   workspace_id = data.spotlight_workspace.acme.id
   name         = "SLACK_BOT_TOKEN"
   bindings = [
-    { host = "slack.com", header = "authorization", prefix = "Bearer " },
+    { host = "slack.com", carrier = "header", name = "authorization", prefix = "Bearer " },
   ]
   value_wo         = var.slack_bot_token
   value_wo_version = 1

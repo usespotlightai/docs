@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Roles and permissions
-description: Workspace roles, the permissions they and workspace token scopes grant, and the rules for changing roles, inviting people to the workspace and connecting GitHub.
+description: Workspace roles, the permissions they and workspace token scopes grant, and the rules for changing roles, inviting people to the workspace, connecting GitHub and connecting integrations.
 ---
 
 A person's authority comes from their role in a workspace. A workspace token's
@@ -35,7 +35,7 @@ A closed workspace grants nothing to anyone.
 | `manage-secrets` | Create, change and delete secrets. | Owners, admins. Tokens with `secrets`. |
 | `manage-runners` | Create, change and delete runner pools, runner trusts and workspace runners. | Owners, admins. Tokens with `runners`. |
 | `manage-token-trusts` | Create, change and delete workspace token trusts. | Owners, admins. Tokens with `trusts`. |
-| `administer` | Issue, change and revoke workspace tokens; read [configuration changes](/docs/reference/api/resource-api#configuration-changes); close the workspace; invite people, list, resend and revoke invites, and add members to teams; connect GitHub; connect an integration over OAuth. | Owners, admins. Never a token. |
+| `administer` | Issue, change and revoke workspace tokens; read [configuration changes](/docs/reference/api/resource-api#configuration-changes); close the workspace; invite people, list, resend and revoke invites, and add members to teams; connect GitHub; connect the team to an integration over OAuth. | Owners, admins. Never a token. |
 | `open-workspaces` | Create a workspace. | Every signed-in person. Never a token. |
 
 A request for something the caller cannot see returns `404`. A request to
@@ -202,7 +202,7 @@ These need a person signed in to Spotlight. A workspace token is refused:
 | --- | --- |
 | Anything under `administer` | An owner or admin. |
 | Creating a workspace | Any signed-in person. |
-| Approving, editing or dismissing a tool call or harness permission | The assignee of the task that asks. |
+| Approving, editing or dismissing a tool call or harness permission | The assignee of the task that asks. A call that asks because of a person's own tool rule is put to that person, and only they can approve it. |
 
 Answering the inbox, saying something to a run and stopping a run are also
 reserved to the task's assignee.
@@ -226,3 +226,25 @@ Connecting a GitHub App installation to a workspace needs both:
 One installation connects one workspace. See
 [Installation callback](/docs/reference/events/github-events#installation-callback)
 and [Connect GitHub to a workspace](/docs/integrations/connect-github).
+
+## Integration connections
+
+An integration that links over OAuth holds a team connection, and, when its
+`connection.holder` is `requester`, a connection for each person who makes
+one. See [Holder](/docs/reference/terraform/integration#holder).
+
+| Action | Who may |
+| --- | --- |
+| Connect or reconnect the team | An owner or admin of the workspace. |
+| Connect, reconnect or disconnect their own account | Any person on the team, for an integration whose `holder` is `requester`. |
+| See who on the team has connected, with the account the host named | An owner or admin of the workspace. Nobody sees another person's token. |
+| Disconnect another person | Nobody. |
+| Set what to ask of each tool's calls made with their own connection | Any person on the team, for themselves only, for an integration whose `holder` is `requester`. |
+| Approve a call that asks because of a person's own rule | Only that person. The task is put to them. Whoever may answer the task can dismiss the call. |
+
+A tool of a `requester` integration acts only with the connection of the
+person who started the task, and only while they are on the team. Of the
+team's rule for a tool and that person's, the stricter wins. See
+[Person rules](/docs/reference/app/tasks-runs-and-the-inbox#person-rules)
+and
+[Connect an integration that signs in with OAuth](/docs/integrations/connect-an-integration).

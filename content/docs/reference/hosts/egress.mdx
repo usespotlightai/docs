@@ -69,7 +69,7 @@ removes `Proxy-Authorization` from every request it passes on.
 ## What egress adds to requests
 
 On requests to the host a secret is bound to, egress replaces a request header
-with the secret's value.
+or query parameter with the secret's value.
 
 ### Harness keys
 
@@ -88,7 +88,18 @@ key:
 
 A secret an MCP server's environment names, as `secret.<NAME>`, is added for
 the run. The MCP server gets `spotlight-egress:<NAME>`. Egress replaces the
-bound header on every request to the bound host. See
+bound header only on requests to the bound host whose header holds that
+stand-in, with or without the binding's prefix, as in
+`authorization: Bearer spotlight-egress:LINEAR_API_KEY`. The stand-in must be
+the whole value, or come right after the exact prefix. Other requests to the
+host go out without the secret.
+
+For a secret bound to a query parameter, egress replaces the parameter's value
+only where it is the stand-in, or the prefix followed by the stand-in, as in
+`?key=spotlight-egress:MAPS_KEY`. The other parameters keep their order and
+encoding. Egress never logs the full URL. It answers a plain-HTTP or
+intercepted request it could not pass on with only
+`egress could not reach <host:port>`, without the reason. See
 [`spotlight_secret`](/docs/reference/terraform/secret) and
 [Give an MCP server a secret](/docs/security/give-an-mcp-server-a-secret).
 
@@ -103,8 +114,26 @@ secret:
 - `the host holds a key of its own for <host>`
 - `the host's allow-list does not admit <host>`
 - `the host does not let egress read <secret id>`
-- `another secret is already worn in <Header> toward <host>`
-- `it holds more than one line, so it cannot be worn in a header`
+- `another secret is already worn in <Header> toward <host>`, or
+  `in ?<parameter> toward <host>` for a query parameter
+- `it is worn in neither a header nor a query parameter`
+- `it names no query to be worn in`
+- `it holds more than one line, so it cannot be worn in a request`
+
+On a request to a host egress holds a secret or a harness key for, a header
+or query parameter holding a stand-in it doesn't put a value in, such as a
+misspelt name, is removed before the request goes out, and egress logs
+`took a stand-in egress does not hold off a request` with the header's or
+parameter's name only.
+
+Egress takes the secret back out of what the bound host answers before the
+sandbox sees it. In the `Location`, `Content-Location`, `Link` and `Refresh`
+headers, and in a text-like body (JSON, `text/*`, HTML, XML and form-encoded),
+every spelling of the value is swapped back to its stand-in: as written,
+query-escaped, path-escaped and escaped with lowercase hex, each with and
+without the binding's prefix. A binary body, or one the host compressed, is
+passed on as it is. Egress asks the bound host for an uncompressed answer. A
+response it rewrites loses its `Content-Length` and is sent chunked.
 
 Reading a secret from AWS Secrets Manager fails with:
 
@@ -126,10 +155,11 @@ Egress logs each failure, and the request goes out without that secret.
 | `407` | `egress answers only the sandbox it was started for` | No proxy credential, or the wrong one. |
 | `400` | `egress is a proxy: ask it for an absolute URL, or CONNECT to a host` | A request that is neither `CONNECT` nor an absolute URL. |
 | `403` | `egress does not let this sandbox reach <host>` | The allow-list does not admit the host. |
-| `502` | `egress could not reach <target>: egress never opens a connection to <ip>` | An always-refused address. |
-| `502` | `egress could not reach <target>: egress opens a connection to the private address <ip> only for a host the allow-list names` | A private address the allow-list does not name. |
-| `502` | `egress could not reach <target>: <error>` | Any other connection failure. |
-| `502` | `egress could not stand in for <host>: <error>` | No certificate could be made for an intercepted host. |
+| `502` | `egress could not reach <host:port>: egress never opens a connection to <ip>` | A tunnelled `CONNECT` to an always-refused address. |
+| `502` | `egress could not reach <host:port>: egress opens a connection to the private address <ip> only for a host the allow-list names` | A tunnelled `CONNECT` to a private address the allow-list does not name. |
+| `502` | `egress could not reach <host:port>: <reason>` | Any other failure of a tunnelled `CONNECT`. |
+| `502` | `egress could not reach <host:port>` | A plain-HTTP or intercepted request that failed for any of these causes. The reason and the URL are left out. |
+| `502` | `egress could not stand in for <host>: <reason>` | No certificate could be made for an intercepted host. |
 
 Connections time out after 30 seconds, and TLS handshakes upstream after 15
 seconds.
