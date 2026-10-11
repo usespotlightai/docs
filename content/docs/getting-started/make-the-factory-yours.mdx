@@ -20,34 +20,50 @@ We need:
 
 - The workspace from the Start guide, with our computer still connected to it.
 - Terraform 1.11 or later, and `git`.
-- A GitHub repository with a README, and Spotlight's GitHub App installed on
-  it. Once it is installed, **Install the GitHub App** in **Set up your team**
-  has a check mark. [Connect GitHub](/docs/integrations/connect-github) covers
-  the install.
+- A GitHub repository, and Spotlight's GitHub App installed on it. Once it is
+  installed, **Install the GitHub App** in **Set up your team** has a check
+  mark. [Connect GitHub](/docs/integrations/connect-github) covers the install.
 
 ## Put the factory in a repository
 
 <Steps>
 <Step>
 
-In Spotlight, open the workspace menu at the top of the sidebar and choose
-**Download as Terraform**. The browser saves `<slug>-terraform.zip`, where
-`<slug>` is the workspace's short name from its URL.
+In Spotlight, open **Inbox** and then **Set up your team**. Under **Set up
+configuration as code**, choose our repository from **Repository**. Leave the
+folder as `spotlight`, and click **Start setup chat**.
 
 </Step>
 <Step>
 
-In a terminal, unzip it and make the folder a repository:
+The chat opens on the **Agent** page. The agent reads our repository and the
+team's tools, then says what it found and what it would change from the
+built-in lines. Reply:
 
-```bash
-unzip <slug>-terraform.zip
-cd <slug>-terraform
-git init
-printf '.terraform/\n*.tfstate*\n*.tfvars\n' > .gitignore
+```text
+Go ahead.
 ```
 
-Notice `main.tf`, with a `spotlight_line` resource for each line, and the
-`prompts/` folder, with one file for each station's prompt.
+</Step>
+<Step>
+
+The agent writes the team's Terraform into the `spotlight/` folder of our
+repository and opens a pull request. Its note ends with a link to it.
+
+Go back to **Set up your team**. **Set up configuration as code** now has a
+check mark. Expand it and click **Open pull request**. Notice `main.tf`, with a
+`spotlight_line` resource for each line, and the `prompts/` folder, with one
+file for each station's prompt. Merge the pull request on GitHub.
+
+</Step>
+<Step>
+
+In a terminal, clone our repository and open the folder:
+
+```bash
+git clone https://github.com/<owner>/<repository>.git
+cd <repository>/spotlight
+```
 
 </Step>
 <Step>
@@ -86,27 +102,20 @@ terraform init
 terraform apply
 ```
 
-The plan imports what the workspace already has and changes nothing. Type
-`yes`. The apply ends with:
+The plan imports what the workspace already has, and changes only what the
+agent adapted. Type `yes`. The apply ends with:
 
 ```text
-Apply complete! Resources: <n> imported, 0 added, 0 changed, 0 destroyed.
-```
-
-</Step>
-<Step>
-
-Commit:
-
-```bash
-git add .
-git commit -m "Put the Spotlight factory under Terraform"
+Apply complete! Resources: <n> imported, 0 added, <n> changed, 0 destroyed.
 ```
 
 </Step>
 </Steps>
 
 ## Give Delivery our code
+
+If the agent already gave Delivery our repository, `main.tf` names it in
+Delivery's `repository` block, and the apply below changes nothing.
 
 <Steps>
 <Step>

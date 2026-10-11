@@ -85,11 +85,15 @@ that work before anyone has written any configuration, and a team usually
 wants to change them once it has seen them run.
 
 Writing that configuration by hand, to match what Spotlight already holds,
-would be the tedious part. The workspace menu's Download as Terraform does it
-instead: it writes the workspace's whole configuration as a Terraform module,
-with each station's prompt as a file of its own and import blocks that adopt
-the resources Spotlight already has, so the team's first Terraform describes
-what is already running. [Manage Spotlight with Terraform](/docs/configuration/manage-spotlight-with-terraform) walks through it.
+would be the tedious part. The setup chat does it instead: the agent starts from
+the workspace's export, which writes the whole configuration as a Terraform
+module with each station's prompt as a file of its own and import blocks that
+adopt the resources Spotlight already has. It adapts that to the team's code
+and tools, and opens it as a pull request, so the team's first Terraform
+describes what is already running.
+[Let the agent write your team's first Terraform](/docs/configuration/let-the-agent-write-your-first-terraform)
+walks through it, and [Manage Spotlight with Terraform](/docs/configuration/manage-spotlight-with-terraform)
+covers the export on its own.
 
 ## Catching mistakes before they apply
 

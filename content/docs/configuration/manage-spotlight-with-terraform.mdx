@@ -2,7 +2,7 @@
 type: how-to
 icon: SquarePen
 title: Manage Spotlight with Terraform
-description: Adopt a workspace from its Terraform download, then change its configuration with the Spotlight provider.
+description: Adopt a workspace from its Terraform export, then change its configuration with the Spotlight provider.
 ---
 
 Once a workspace is under Terraform, its teams, lines, skills, integrations,
@@ -17,12 +17,30 @@ through `terraform apply`. You need:
   `runners` if it holds runner pools or runner trusts, and `trusts` if it holds
   workspace token trusts.
 
-## Download the workspace
+## Export the workspace
 
-In Spotlight, open the workspace menu at the top of the sidebar and choose
-**Download as Terraform**. The browser saves `<slug>-terraform.zip`, which holds
-a `<slug>-terraform` folder. Unzip it where the configuration will live, usually
-a repository of its own:
+To have the agent write the first Terraform for you, adapted to your code and
+tools, [let the agent write your team's first Terraform](/docs/configuration/let-the-agent-write-your-first-terraform)
+instead, then go on to [Point the provider at Spotlight](#point-the-provider-at-spotlight).
+
+Otherwise, write the workspace's [export](/docs/reference/api/resource-api#export)
+into the folder where the configuration will live, usually a repository of its
+own. You need `curl` and `jq`. Put the token in `SPOTLIGHT_API_TOKEN`, replace
+`<slug>` with the workspace's short name from its URL, and run this in that
+folder:
+
+```bash
+export SPOTLIGHT_API_TOKEN=<workspace token>
+api=https://app.usespotlight.ai/api/resources/workspaces
+id=$(curl -fsS -H "Authorization: Bearer $SPOTLIGHT_API_TOKEN" "$api/import?address=<slug>" | jq -r .id)
+curl -fsS -H "Authorization: Bearer $SPOTLIGHT_API_TOKEN" "$api/$id/export" \
+  | jq -c '.files[]' | while read -r file; do
+      path=$(jq -r .path <<<"$file"); mkdir -p "$(dirname "$path")"
+      jq -j .content <<<"$file" > "$path"
+    done
+```
+
+It writes:
 
 | File | Holds |
 | --- | --- |
@@ -31,8 +49,6 @@ a repository of its own:
 | `prompts/` | Each station's prompt, as `prompts/<team>/<line>/<station>.md`, read with `file()` |
 | `judges/` | Each station judge's rubric, as `judges/<team>/<line>/<station>.md`, read with `file()`; left out when no judge has a rubric. Claims are written in the `judge` block. |
 | `skills/` | Each skill's files, as `skills/<team>/<skill>/`, read with `file()` |
-
-If the menu item reads **Could not download. Try again**, choose it again.
 
 ## Point the provider at Spotlight
 
