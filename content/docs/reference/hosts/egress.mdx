@@ -148,6 +148,34 @@ Reading a secret from AWS Secrets Manager fails with:
 
 Egress logs each failure, and the request goes out without that secret.
 
+### The run's Spotlight token
+
+A run of a [setup chat](/docs/configuration/let-the-agent-write-your-first-terraform)
+reaches Spotlight's own API. When egress redeems the run, Spotlight mints a
+workspace token for that run's attempt alone and seals it to egress, like a
+secret it keeps.
+
+| Property | Value |
+| --- | --- |
+| Scopes | `plan`, which includes `read`. |
+| Issued by | The person who started the chat. Recorded in the audit as minted by Spotlight, with the run and its attempt. |
+| Expires | An hour after egress redeems the run. |
+| Revoked | When the run completes, is abandoned or withdrawn, when its attempt lapses or is parked, or when the runner loses the run while egress redeems it. |
+| Stand-in | `spotlight-egress:spotlight-api`, in `SPOTLIGHT_API_TOKEN`. See [The agent's environment](/docs/reference/hosts/sandbox#the-agents-environment). |
+| Worn | In `Authorization`, in place of the stand-in or `Bearer ` and the stand-in, on requests to the Spotlight address's host. |
+
+Egress wears it whatever the host's allow-list says, since the Spotlight
+address is always admitted. When the Spotlight address is plain HTTP, as in
+`http://control-plane:3000` inside the host's network, egress also wears it
+over plain HTTP, on that address's port only. No other secret is worn over
+plain HTTP. Egress does not hold the token when the host holds a key of its own
+for the Spotlight address, or another secret is worn in `Authorization` toward
+it, and logs `could not hold the run's Spotlight token` with the reason.
+
+The token is not listed among the workspace's
+[tokens](/docs/reference/api/workspace-token). A run that reaches Spotlight's
+API is never reserved for a runner a push pool provisions.
+
 ## Responses
 
 | Status | Message | Cause |
@@ -189,8 +217,8 @@ followed.
 ## Limitations
 
 - Egress cannot itself send through another proxy.
-- A runner a push pool provisions has no egress. A run that uses secrets is
-  never reserved for one; it waits for a host.
+- A runner a push pool provisions has no egress. A run that uses secrets, or
+  reaches Spotlight's API, is never reserved for one; it waits for a host.
 - `CURSOR_API_KEY` and any other variable not listed under
   [Harness keys](/docs/reference/hosts/host-configuration#harness-keys) enter the
   sandbox as they are.

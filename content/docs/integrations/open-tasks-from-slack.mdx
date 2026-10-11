@@ -234,6 +234,22 @@ delivery line, titled with the message. When the task asks a question, the
 question appears in the channel, and a reply in its thread answers it and
 resumes the work.
 
+## Word the setup task's row
+
+"Test your connections", in the team's setup task, lists Slack once the
+integration exists, and shows when the first task opened from Slack. To tell
+people what to do there, add `onboarding` to the definition, beside `name`:
+
+```hcl
+    onboarding = {
+      try   = "Mention @spotlight in any channel."
+      heard = "Message received"
+    }
+```
+
+Run `terraform apply`. See
+[onboarding](/docs/reference/terraform/integration#onboarding) for the fields.
+
 ## Related
 
 - [`spotlight_integration`](/docs/reference/terraform/integration): every field of a

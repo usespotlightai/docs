@@ -18,13 +18,14 @@ A line can name an image of its own, built `FROM` it. See
 | Part | Value |
 | --- | --- |
 | Base | `debian:bookworm-slim` |
-| Packages | `git`, `jq`, `curl`, `ca-certificates`, `bash`, Node.js 20 |
+| Packages | `git`, `jq`, `curl`, `ca-certificates`, `bash`, `unzip`, Node.js 20 |
+| Terraform | `1.16.4`, at `/usr/local/bin/terraform`, checked against HashiCorp's SHA-256 sums |
 | npm packages | `@anthropic-ai/claude-code`, `@agentclientprotocol/claude-agent-acp`, `@agentclientprotocol/codex-acp` |
 | Cursor | `cursor-agent`, installed under `/opt/cursor` and linked at `/usr/local/bin/cursor-agent` |
 | `spotlight` | `/usr/local/bin/spotlight` |
 | Agent user | `agent`, uid `2000`, shell `/bin/bash`, home `/home/agent` |
 | `/workspace` | owned by `agent`, mode `0700` |
-| `ENV` | `SPOTLIGHT_AGENT_USER=agent`, `SPOTLIGHT_WORKSPACE=/workspace` |
+| `ENV` | `SPOTLIGHT_AGENT_USER=agent`, `SPOTLIGHT_WORKSPACE=/workspace`, `CHECKPOINT_DISABLE=1` |
 | `USER` | `root` |
 | `ENTRYPOINT` | `["spotlight", "runner"]` |
 
@@ -86,6 +87,7 @@ with these changes:
 | Set to the agent user's | `HOME`, `USER`, `LOGNAME`, `SHELL` |
 | Set | `TERM=xterm-256color`, `COLORTERM=truecolor` |
 | Set for the run | `SPOTLIGHT_HANDOVER_URL`, `SPOTLIGHT_HANDOVER_TOKEN`, `SPOTLIGHT_STATE_DIR` |
+| Set for a run that reaches Spotlight's API | `SPOTLIGHT_URL`, the runner's Spotlight address, and `SPOTLIGHT_API_TOKEN=spotlight-egress:spotlight-api`. See [The run's Spotlight token](/docs/reference/hosts/egress#the-runs-spotlight-token). |
 | Set by the harness | The harness's own variables. See [Harnesses](/docs/reference/hosts/harnesses). |
 | Set for tracing | `TRACEPARENT` |
 

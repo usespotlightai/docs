@@ -83,6 +83,7 @@ Acme stands for any HTTP service. A station gives this tool as `acme.comment`.
 | `graphql` | object | none | A GraphQL API to generate tools from. See [API descriptions](#api-descriptions). |
 | `mcp` | object | none | A remote MCP server whose tools Spotlight lists and calls. See [MCP servers](#mcp-servers). |
 | `on` | map of name to object | `{}` | Actions run when a task event happens. See [on](#on). |
+| `onboarding` | object | none | How the setup task tells a person to try the integration. See [onboarding](#onboarding). |
 
 A definition must do something: it has a `webhook`, a `poll`, a `schedule`, at
 least one action, at least one `on` binding, an `openapi`, a `graphql` or an
@@ -846,6 +847,21 @@ Binding:
 
 A binding runs only when `target` holds a `channel` or a `thread`. Otherwise
 nothing is sent.
+
+## Onboarding
+
+"Test your connections", in the team's setup task, has a row for GitHub and
+for each integration with an event whose `raise` has `opens`. A row reads
+`Waiting` until a task the integration opened exists, then `heard` followed by
+how long ago the first one opened. `onboarding` words the integration's row.
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `try` | string | required | What to do to open a first task, as in `Mention @spotlight in any channel.` 1 to 200 characters. |
+| `heard` | string | `Task opened` | What the row reads once a first task has opened, before how long ago, as in `Message received`. 1 to 60 characters. |
+| `link` | object | none | A button the row shows until a first task opens: `label`, 1 to 40 characters, and `url`, an `https` address. Another scheme is refused with `is an https address, as in https://app.slack.com`. |
+
+Without `onboarding`, the row reads `Send anything from <name> that opens a task.`
 
 ## Secrets in expressions
 

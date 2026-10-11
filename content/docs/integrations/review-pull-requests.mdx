@@ -2,7 +2,7 @@
 type: how-to
 icon: SquarePen
 title: Have Spotlight review pull requests
-description: Have the Review line review a pull request when someone mentions Spotlight on it, or every pull request as it opens, and skip the ones you don't want reviewed.
+description: Have the Review line review a pull request when someone mentions Spotlight on it or adds the `spotlight` label, or every pull request as it opens, and skip the ones you don't want reviewed.
 ---
 
 A review runs on a host like any other work, against a pull request the
@@ -25,6 +25,16 @@ The built-in Review line already reviews a pull request when someone mentions
 A task for the pull request opens on the Review line, titled with the pull
 request's title. When its run finishes, the review appears on the pull request,
 with comments on the lines it concerns.
+
+## Ask for a review by label
+
+The built-in Review line also reviews a pull request when someone adds the
+`spotlight` label to it. Add the label from the pull request's **Labels** menu.
+If the repository has no `spotlight` label, create one on the repository's
+**Labels** page first. A label a bot adds asks for no review.
+
+A task for the pull request opens on the Review line, as it does for a
+mention.
 
 ## Change which pull requests are reviewed
 
@@ -60,6 +70,16 @@ reviews {
 }
 ```
 
+To have it respond to a different label, set `label`:
+
+```hcl
+reviews {
+  label = "ai-review"
+}
+```
+
+A label asks for a review whatever `start` is set to.
+
 To skip pull requests by certain authors, such as bots, list their GitHub
 logins in lower case:
 
@@ -75,8 +95,8 @@ reviews {
 
 To review pull requests Spotlight opened itself, set
 `skip { spotlight = false }`. To review drafts as they open with
-`start = "opened"`, set `skip { drafts = false }`. A mention on a draft asks
-for a review either way.
+`start = "opened"`, set `skip { drafts = false }`. A mention or a label on a
+draft asks for a review either way.
 
 Run `terraform apply`.
 
