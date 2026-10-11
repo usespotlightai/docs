@@ -15,6 +15,7 @@ read into happenings. Lines react to happenings with their reactions; see
 | GitHub event | Condition | Happening | Spoken |
 | --- | --- | --- | --- |
 | `pull_request` | action `opened`, `reopened` or `ready_for_review` | `github.pull_request.opened` | no |
+| `pull_request` | action `labeled`, with a label name | `github.pull_request.labelled` | no |
 | `pull_request` | action `closed`, merged | `github.pull_request.merged` | no |
 | `pull_request` | action `closed`, not merged | `github.pull_request.closed-unmerged` | no |
 | `pull_request_review` | review state `changes_requested` | `github.pull_request.changes-requested` | yes |
@@ -39,6 +40,7 @@ notes when the delivery carries no words:
 | `github.pull_request.changes-requested` | Changes requested | `Changes were requested on the pull request.` |
 | `github.pull_request.commented` | Pull request commented on | `The pull request was commented on.` |
 | `github.pull_request.mentioned` | Mentioned on a pull request | `Somebody mentioned Spotlight on the pull request.` |
+| `github.pull_request.labelled` | Labelled on a pull request | `Somebody labelled the pull request for Spotlight.` |
 | `github.checks.failed` | Checks failed | `The checks failed on the pull request.` |
 
 An `installation` delivery with action `deleted` disconnects the workspace from
@@ -48,7 +50,8 @@ GitHub.
 
 A delivery counts as a bot's when its sender, comment author or review author
 has GitHub user type `Bot`. The happenings a bot's delivery raises are dropped,
-except `github.pull_request.opened`.
+except `github.pull_request.opened` and `github.pull_request.labelled`.
+Spotlight adds no labels, so a label a bot adds is never Spotlight's own.
 
 ## Marks
 
@@ -68,7 +71,8 @@ A happening names what it concerns: a branch, marks, or both.
 | Branch `spotlight/<taskId>` | The pull request's head branch, or the check suite's head branch. | The task with that id. |
 | `git.pull-request` mark | The pull request's URL. | The task that opened the pull request. |
 
-Every happening except `opened` and `mentioned` that names a pull request is
+Every happening except `opened`, `mentioned` and `labelled` that names a pull
+request is
 also sent a second time, concerning the `github.review` mark of that pull
 request. The task that holds that mark hears it.
 
@@ -77,8 +81,10 @@ neither a branch nor a pull request is refused.
 
 ## Review tasks
 
-`github.pull_request.opened` and `github.pull_request.mentioned` ask for a
-review. Spotlight chooses a line that:
+`github.pull_request.opened`, `github.pull_request.mentioned` and
+`github.pull_request.labelled` ask for a review. A `labelled` happening carries
+the label's name, and a line takes it only if that name, without regard to case, is its
+review policy's `label`. Spotlight chooses a line that:
 
 - has role `review`;
 - has no repositories, or names the pull request's repository;

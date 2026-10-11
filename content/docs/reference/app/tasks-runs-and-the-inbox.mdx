@@ -843,6 +843,16 @@ the line's `spotlight_line` resource and of its prompt file,
 `Improving <station> on <line>`. If the station has left the team's lines,
 the agent is told so.
 
+A setup chat, started from the setup task's "Set up configuration as code",
+names a configuration repository and a folder in it. The repository joins the
+chat's repositories. The folder is 1 to 200 characters, from the repository
+root, each part made of letters, digits, `.`, `_` and `-`, and never `.` or
+`..`. Its agent is briefed to survey the repositories and the team's tools and
+to open a pull request with the team's Terraform there, with
+[`setup-pull-request`](/docs/reference/built-ins/built-in-tools-and-skills#setup-pull-request).
+The chat keeps the pull request. Its runs reach Spotlight's API with
+[the run's Spotlight token](/docs/reference/hosts/egress#the-runs-spotlight-token).
+
 Chat runs have priority over task runs.
 [Which run goes first](/docs/runs/which-run-goes-first) gives the
 reasons.

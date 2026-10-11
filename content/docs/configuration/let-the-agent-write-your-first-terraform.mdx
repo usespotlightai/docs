@@ -1,0 +1,91 @@
+---
+type: how-to
+icon: SquarePen
+title: Let the agent write your team's first Terraform
+description: Pick a repository and folder in the setup task, talk the setup through with the agent, and review the pull request it opens with your team's lines as Terraform.
+---
+
+You need:
+
+- The GitHub App installed on your code repositories and on the repository the
+  configuration goes in. If it isn't,
+  [connect GitHub](/docs/integrations/connect-github) first.
+- A host serving the workspace. If you don't have one,
+  [run a host](/docs/hosts/run-a-host). The setup chat runs only on a host,
+  never on a runner a push pool provisions.
+- If the host has an [egress allow-list](/docs/security/limit-where-sandboxes-connect),
+  `registry.terraform.io`, `github.com` and `release-assets.githubusercontent.com`
+  on it, so `terraform init` can download Spotlight's provider.
+
+## Start the setup chat
+
+1. In the **Inbox**, open **Set up your team**. **Set up configuration as
+   code** shows a form once the GitHub App is installed and a host serves the
+   workspace. A push pool alone isn't enough.
+2. From **Repository**, choose the repository the configuration goes in. Leave
+   the folder as `spotlight`, or type the path of another folder from the
+   repository root, as in `infra/spotlight`.
+3. Under **Repositories**, tick the code repositories the agent should read.
+4. Choose the agent, then click **Start setup chat**.
+
+The chat opens on the **Agent** page, with every repository you chose checked
+out. If the folder or repository is refused, the form says why under the
+button.
+
+A chat is seen only by the person who started it. If someone else on the team
+started the setup chat, the step says who, and the pull request link appears
+for everyone once it is open.
+
+## Talk it through
+
+Answer the agent in the chat. It reports what it found in each repository and
+tool and what it would change from the
+[built-in lines](/docs/reference/built-ins/built-in-lines), and asks about
+anything unclear. The agent is briefed to call only the tools' read calls, and
+to draft nothing until you agree. A tool that needs approval is refused in a
+chat.
+
+## Review the pull request
+
+The agent writes into the folder you chose:
+
+- `main.tf`, starting from the workspace's current configuration, with each
+  line's `source` naming that file
+- a prompt file for each station, `prompts/<team>/<line>/<station>.md`, adapted
+  to what it learned
+- each station's `setup` and `check` commands
+- skills adopted from the team's own rules files
+- a `reviews` policy from `CODEOWNERS`, and `match` hooks for risky paths
+
+It runs `terraform init`, `terraform fmt`, `terraform validate` and
+`terraform plan`, commits on a branch such as `spotlight-configuration`, and
+opens a pull request. The description lists each departure from the built-in
+lines with the files it rests on, followed by the plan. The plan should import
+what already exists and change only what the agent adapted.
+
+**Set up configuration as code** now has a check mark. Expand it and click
+**Open pull request**.
+
+The agent never applies anything. Review the pull request, merge it, then apply
+it with a token that may configure the workspace:
+[Make the factory yours](/docs/getting-started/make-the-factory-yours) applies
+it from a terminal, and
+[Run Terraform from GitHub Actions](/docs/configuration/run-terraform-from-github-actions)
+applies what is merged.
+
+## If the pull request has no plan
+
+The agent opens the pull request without a plan when `terraform init` cannot
+download the provider. Its note in the chat says so. Add the three hosts above
+to the host's allow-list,
+[restart the host](/docs/hosts/run-a-host#restart-the-host), and ask the agent
+in the chat to plan again.
+
+## Related
+
+- [Why configuration lives in Terraform](/docs/configuration/why-configuration-lives-in-terraform)
+- [Plan work with the agent](/docs/tasks/plan-work-with-the-agent)
+- [The run's Spotlight token](/docs/reference/hosts/egress#the-runs-spotlight-token),
+  the token the setup chat's run gets.
+- [`setup-pull-request`](/docs/reference/built-ins/built-in-tools-and-skills#setup-pull-request),
+  the tool the agent opens the pull request with.

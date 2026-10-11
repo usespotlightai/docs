@@ -7,12 +7,13 @@ description: The credentials that let a machine or a pipeline act in a Spotlight
 
 People reach a Spotlight workspace by signing in. Everything else that acts in
 it, a machine running agents or a pipeline applying Terraform, needs a
-credential of its own. Spotlight has five kinds, and they differ in who holds
+credential of its own. Spotlight has six kinds, and they differ in who holds
 them, how long they last, and what can be done with one that is stolen.
 
-The five split into two families. Pool tokens, runner trusts and one-run
+The six split into two families. Pool tokens, runner trusts and one-run
 credentials let machines do work: claim runs and carry them out. Workspace
-tokens and workspace token trusts let tools change configuration through the
+tokens, workspace token trusts and the token a setup chat's run gets let tools
+read or change configuration through the
 [resource API](/docs/reference/api/resource-api). The two families never overlap.
 A pool token cannot define a line, and a workspace token cannot claim a run.
 
@@ -79,7 +80,7 @@ which holds the GitHub App's credential and adds it on the way to GitHub. The
 app's credential is never sent to a runner. A run can reach only the
 repositories its own work names, and only while it still holds that work.
 
-## Tools that change configuration
+## Tools that read or change configuration
 
 ### Workspace tokens: stored and scoped
 
@@ -124,6 +125,19 @@ A trust is also tied to whoever stands behind it, and its tokens to the trust
 as it stood when they were minted; [`spotlight_workspace_token_trust`](/docs/reference/terraform/workspace-token-trust) lists those rules and the
 lifetimes. [Run Terraform from GitHub Actions without a stored token](/docs/configuration/run-terraform-from-github-actions) shows the whole setup.
 
+### A setup chat's token: held by egress, never by the agent
+
+The [setup chat](/docs/configuration/let-the-agent-write-your-first-terraform)
+plans Terraform against the workspace, so its run needs a token. A token in the
+agent's environment would be one the agent could print, or send anywhere the
+sandbox reaches.
+
+Spotlight mints a token for that run alone, which may read and plan and
+nothing more, and seals it to the run's egress. The agent holds a stand-in,
+and egress swaps the token in only on requests to Spotlight. The token expires
+within the hour and is revoked when the run or its attempt ends; see
+[The run's Spotlight token](/docs/reference/hosts/egress#the-runs-spotlight-token).
+
 ## Stored secrets and trusts compared
 
 The pattern across both families is the same. A stored secret, whether a pool
@@ -142,4 +156,6 @@ choice; every run gets one, however its host got in.
 
 The reference pages list the fields:
 [`spotlight_runner_pool`](/docs/reference/terraform/runner-pool),
-[`spotlight_runner_trust`](/docs/reference/terraform/runner-trust), [Workspace tokens](/docs/reference/api/workspace-token) and [`spotlight_workspace_token_trust`](/docs/reference/terraform/workspace-token-trust).
+[`spotlight_runner_trust`](/docs/reference/terraform/runner-trust), [Workspace tokens](/docs/reference/api/workspace-token),
+[`spotlight_workspace_token_trust`](/docs/reference/terraform/workspace-token-trust)
+and [The run's Spotlight token](/docs/reference/hosts/egress#the-runs-spotlight-token).

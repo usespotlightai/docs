@@ -162,6 +162,7 @@ A `reviews` block, on a line whose `role` is `review`:
 reviews {
   start   = "opened"
   mention = "@spotlight"
+  label   = "spotlight"
 
   skip {
     spotlight = true
@@ -379,8 +380,9 @@ is chosen and the task it opens.
 | --- | --- | --- | --- |
 | `start` | string | `mentioned` | `mentioned`: take a pull request when the `mention` handle appears in a comment or review on it. `opened`: also take every pull request as it opens. |
 | `mention` | string | `@spotlight` | The handle that asks for a review. Matches `^@[A-Za-z0-9][A-Za-z0-9_-]*(\[bot\])?$`. Matched as a whole word, without regard to case. |
+| `label` | string | `spotlight` | The pull request label that asks for a review, whatever `start` is. 1 to 50 characters. Matched without regard to case. |
 | `skip.spotlight` | boolean | `true` | Skip pull requests Spotlight opened: a head branch under `spotlight/`, or a pull request a task opened. |
-| `skip.drafts` | boolean | `true` | Skip draft pull requests when they open. A mention on a draft is still taken. |
+| `skip.drafts` | boolean | `true` | Skip draft pull requests when they open. A mention or a label on a draft is still taken. |
 | `skip.authors` | array of strings | `[]` | GitHub logins whose pull requests are skipped, as in `dependabot[bot]`. Compared, stored and sorted in lower case, each once. |
 
 ## Replay check fields [#replay-check-fields]

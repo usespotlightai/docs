@@ -17,6 +17,7 @@ Spotlight has tools and skills of its own. An agent calls a tool with
 | `review-comment` | Runs at a station that lists it in `tools`. | `spotlight-review` |
 | `review` | Runs at a station that lists it in `tools`. | `spotlight-review` |
 | `propose-task` | Every chat run. A station cannot give it. | none |
+| `setup-pull-request` | Every run of a setup chat. A station cannot give it. | none |
 
 In the input tables, a piped input may come from standard input, as described
 under [spotlight &lt;tool&gt;](/docs/reference/cli/agent-commands#spotlight-tool).
@@ -71,6 +72,23 @@ the `line` and `station` keys it was given, and what happens `next`. See
 | `station` | string | yes | no | The key of the station on that line to start it at. |
 | `title` | string | yes | no | What the task is, in a line. |
 | `description` | string | no | yes | What whoever works it needs to know, as Markdown. |
+
+### setup-pull-request
+
+Opens the pull request with the team's configuration, from a branch the agent
+pushed to the setup chat's configuration repository, into its default branch.
+It answers with `{"url": "<address>"}`. The chat keeps the pull request, and
+the setup task's "Set up configuration as code" step is then done. A second
+call answers the pull request the chat already opened. See
+[Let the agent write your team's first Terraform](/docs/configuration/let-the-agent-write-your-first-terraform).
+
+| Input | Type | Required | Piped | Description |
+| --- | --- | --- | --- | --- |
+| `branch` | string | yes | no | The branch pushed, as in `spotlight-configuration`. A branch under `spotlight/` is refused with `Branch <branch> is named like a task’s branch. Please name it outside spotlight/, as in spotlight-configuration.` |
+| `title` | string | yes | no | What it does. |
+| `body` | string | no | yes | The decisions and the plan, as Markdown. |
+
+The `pull-request.opening` [hook](/docs/integrations/hooks) does not run for it.
 
 ## Built-in skills
 
