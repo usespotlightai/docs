@@ -483,8 +483,12 @@ Each replay run's briefing ends with a section headed `## The answer`:
 | Accepted | `People accepted this change for the task. Make the same change.`, then the original run's change as a diff. |
 | Sent back | `A person sent an earlier attempt at this task back and said:`, then what people wrote on the task after the run, up to the task's next run, each quoted, then `Do the task so that it meets what they asked for.` |
 
-A run whose original change has no hunks, or whose sending back came with no
-words, is replayed without the section.
+Each run's answer is fixed when the replay starts. A run whose original change
+has no hunks, or whose sending back came with no words, is left out. If a
+run's answer is gone by the time it would start, the run is not replayed and
+reads `answer-gone` (see [Why a run cannot be replayed](#why-a-run-cannot-be-replayed)).
+If the station's config changes while it is queued or running, Spotlight stops
+it.
 
 ### Checking the set
 
@@ -580,6 +584,7 @@ unscored, with `It could not be replayed or started: <refusal>`.
 | `no-briefing` | The task as it was briefed was never kept |
 | `archive-gone` | The workspace it started from is no longer kept |
 | `attachments-gone` | Files it was briefed with are gone |
+| `answer-gone` | Its answer is gone |
 | `repository-gone` | A repository it worked in has left the line |
 | `not-at-the-station` | It did not run at this station |
 | `candidate-unfit` | The candidate cannot run it |
