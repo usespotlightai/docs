@@ -52,7 +52,7 @@ holds runs the station did well as well as runs it did badly.
 </Step>
 <Step>
 
-Turn on **Guards config changes**. If another set at the station guards its
+Under **Checks**, turn on **Guards config changes**. If another set at the station guards its
 changes already, turn it off there first.
 
 </Step>
@@ -95,8 +95,8 @@ resource "spotlight_line" "core_delivery" {
   against it too.
 
 A line without `replay_check` is not checked: the job fails for its stations
-and says so. The set's page shows the line's threshold under **Guards config changes**
-once it is applied. The threshold always comes from the line as it is applied, never
+and says so. Once it is applied, hover over the ⓘ beside **Checks** on the
+set's page to read the line's threshold. The threshold always comes from the line as it is applied, never
 from the plan, so a pull request cannot loosen its own check. In the same way,
 a change to a station's `check`, `judge`, `diffs` or `runners` is replayed with
 the live station's, and the output says which it kept. See

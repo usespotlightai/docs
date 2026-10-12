@@ -77,13 +77,13 @@ Under the estimate, the dialog may warn, from the set's
 
 | Warning | When |
 | --- | --- |
-| `Nobody has measured how much this set's success moves by chance, so a small gain may be luck. Use Check this set on the set page, or replay each run more than once.` | The set's noise is not measured. |
+| `Set's noise is unmeasured. A small gain may be luck. Replay each run more than once, or start a replay of a set of 5 or more runs to check it.` | The set's noise is not measured. |
 | `This set's success moved <n> pts between copies of the same runs, more than the +<n> pts the line counts as real. Replaying each run <n> times would bring that down.` | The copies needed to bring the noise under `min_gain` are more than "Repeats" and at most 5: the spread divided by `min_gain`, squared, rounded up. |
 | `This set's success moved <n> pts between copies of the same runs, more than the +<n> pts the line counts as real. Even replaying each run 5 times, the most allowed, won't bring it under that, so read small gains with care or raise the line's smallest real gain.` | The copies needed are more than 5. |
 | `The live config already succeeds on <share> of this set, so there is little room to succeed more. Aim for the same success for less, or add tasks the live config fails.` | The live config succeeds on more than 95% of the set. |
 | `Judging the same change twice, the judge gave the same verdict only <share> of the time over <n> changes, so its verdicts are partly chance. Make the rubric more specific before you search.` | The set's newest check found the judge agreeing with itself less than 80% of the time. |
 | `The check passed once and failed once on <n> of <m> changes it ran twice, so it may flip a candidate's result by chance. The set page lists them.` | The set's newest check found a flaky check. |
-| `A stronger model did not do clearly better on this set (<gain>, likely <low> to <high>) and did worse on <n> tasks, so its tasks may be unclear or its scoring off.` | The newest stronger model replay was compared and its gain is not Better. |
+| `Handed each run's answer, the live config gained only <gain>, likely <low> to <high>, on <n> runs. A better config has little room to show here. Add tasks the live config fails.` | The newest [replay with the answer](/docs/reference/app/replays#replay-with-the-answer) was compared and its gain is not Better. |
 
 Under either of the last two, unless "Repeats" is the suggestion already,
 `Replay each run <n> times` sets "Repeats" to the copies needed, at most 5. A warning does not stop the search from starting. "Start
@@ -564,27 +564,29 @@ Each comes with Spotlight's message, such as
 
 ## Guarding a station's changes
 
-A replay set's page has a "Guards config changes" switch. When it is on,
+A replay set's page has a "Guards config changes" switch, at the bottom left
+of its "Checks" panel. When it is on,
 [`spotlight replay check`](/docs/reference/cli/replay-command#spotlight-replay-check)
 replays a planned change of the station on this set. A station has at most one
-such set: turning it on while another set guards the station reads "Another
-replay set at this station guards its changes already. Turn it off there
-first." The switch cannot be changed once the set's station has left its
+such set: turning it on while another set guards the station is refused. The switch cannot be changed once the set's station has left its
 line. Turning it off leaves checks already started running.
 
-Under the switch, the set's page shows the line's
-[`replay_check`](/docs/reference/terraform/line#replay-check-fields), read-only:
-`Pull requests fail spotlight replay check past <n> regressions; each check may
-spend up to <ceiling>; a gain in success counts as real from <min_gain>.`, or, for a line without one, "The line sets no
-replay_check, so spotlight replay check refuses to check its pull requests."
+The "Checks" panel's ⓘ reads `spotlight replay check replays a pull
+request's change of this station on this set. One guarding set per station.`,
+then the line's
+[`replay_check`](/docs/reference/terraform/line#replay-check-fields),
+read-only: `Fails past <n> regressions. Ceiling per check: <ceiling> ·
+Minimum real gain: <min_gain>`, or, for a line without one, `Line sets no
+replay_check. Its pull requests aren't checked.`
 
-Under "Checks", the set's page lists the checks replayed on the set, newest
-first: the pull request (`Pull request #<n>`) or commit (`Commit <sha>`) that
-planned the change, or "A planned change", its
+The panel lists the checks replayed on the set, as Change, Verdict,
+Regressions and When. Change is the pull request (`Pull request #<n>`) or
+commit (`Commit <sha>`) that planned the change, or "A planned change", with
+`attempt <n>` from the second attempt on; the row opens the check's replay.
+Verdict is the check's
 [verdict](/docs/reference/api/replay-checks#verdicts) in words, such as
-`Undecided: its replay reached its ceiling`, when it started, `<n>
-regressions`, `attempt <n>` from the second attempt on, and "Its replay". With
-none, it reads "No checks yet". "Show older checks" loads more.
+`Undecided: replay reached its ceiling`. With none, it reads "No checks yet".
+"Show older checks" loads more.
 
 ## Search replays
 
@@ -595,8 +597,8 @@ the Run page of each of its replay runs, read `candidate <name> in its search`,
 or `the live config it started from in its search`, linked to the search.
 
 While a search is under way, its set takes no runs, gives none up, and cannot
-be deleted. The set's page disables "Add runs" and the X beside each run, with
-"A search of this set is under way, so its runs stay as they are until the
-search ends or is stopped.", and "Delete", with "A replay or search of this set
-is running, so it can't be deleted until that ends or is stopped."
+be deleted. The set's page shows "Frozen by a search", and disables "Add runs"
+and the X beside each run, with `Set is frozen while a search of it runs.` on
+hover, and "Delete", with `A replay or search of this set is running. Delete
+it once that ends or is stopped.` on hover.
 
