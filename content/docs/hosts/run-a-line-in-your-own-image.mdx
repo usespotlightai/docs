@@ -47,6 +47,38 @@ RUN git clone https://github.com/acme/api /workspace/api \
 USER root
 ```
 
+For a Python repository `acme/models`, install system packages as root first,
+then build the virtual environment as `agent`:
+
+```dockerfile
+FROM ghcr.io/usespotlightai/spotlight-runner:<release>
+RUN apt-get update && apt-get install -y --no-install-recommends python3-venv \
+    && rm -rf /var/lib/apt/lists/*
+USER agent
+RUN git clone https://github.com/acme/models /workspace/models \
+    && python3 -m venv /workspace/models/.venv \
+    && /workspace/models/.venv/bin/pip install -r /workspace/models/requirements.txt
+USER root
+```
+
+For a Rust repository `acme/engine`, set `CARGO_TARGET_DIR` outside the
+checkout, so build output survives the checkout being replaced by a restored
+workspace:
+
+```dockerfile
+FROM ghcr.io/usespotlightai/spotlight-runner:<release>
+USER agent
+RUN curl -fsSL https://sh.rustup.rs | sh -s -- -y --profile minimal
+ENV PATH=/home/agent/.cargo/bin:$PATH CARGO_TARGET_DIR=/home/agent/target
+RUN git clone https://github.com/acme/engine /workspace/engine \
+    && cd /workspace/engine && cargo fetch && cargo build
+USER root
+```
+
+If a station's [harness profile](/docs/reference/terraform/harness-profile)
+starts MCP servers with `npx`, install them in the image too, so runs don't
+fetch them each time.
+
 Clone a private repository with your build's own credentials. Push the image
 to your registry. If the registry is private, set up the hosts as in
 [Pull runner images from a private registry](/docs/hosts/pull-images-from-a-private-registry).

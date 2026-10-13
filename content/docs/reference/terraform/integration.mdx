@@ -201,7 +201,7 @@ button, and `Change account` once linked, on the team's Integrations settings
 page. An integration whose `holder` is `requester` also shows
 `Connect your account` there, where each person connects their own account. It
 links only when Spotlight has an OAuth client for it: one the deployment holds
-for the integration's name, or one registered at `oauth2.registration`.
+for the integration's name in [`OAUTH_CLIENTS`](/docs/reference/self-hosted-settings#calls-out-of-spotlight), or one registered at `oauth2.registration`.
 
 | Step | Endpoint | Behaviour |
 | --- | --- | --- |
@@ -484,7 +484,8 @@ before it is sent.
 
 `auth` accepts no other way, and is refused with `authenticates a request by its oauth2 connection, or by the secrets it wears toward the hosts they are bound to`. See [Bindings](/docs/reference/terraform/secret#bindings).
 
-Every request goes only to hosts on the deployment's outbound allow-list. A
+Every request goes only to hosts on the deployment's outbound allow-list,
+[`OUTBOUND_ALLOWED_HOSTS`](/docs/reference/self-hosted-settings#calls-out-of-spotlight). A
 request to another host is refused with `<host>: is not among the hosts this deployment allows outbound calls to`.
 
 ## Tools
