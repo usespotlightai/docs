@@ -63,13 +63,13 @@ of the kind `replay-candidate`.
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `name` | string | required | Tells the candidate from the station's other candidates. 1 to 100 characters, with no space at either end and no `/`. A name starting `Live config` or `Planned change`, in any case, is refused: they name the snapshots Spotlight takes to replay as a baseline and the changes [replay checks](/docs/reference/api/replay-checks) replay. Used once per station. |
+| `name` | string | required | Tells the candidate from the station's other candidates. 1 to 100 characters, with no space at either end and no `/`. A name starting `Live config`, `Planned change` or `With the answer`, in any case, is refused: they name the snapshots Spotlight takes to replay as a baseline, the changes [replay checks](/docs/reference/api/replay-checks) replay, and the [replays with the answer](/docs/reference/app/replays#replay-with-the-answer) Spotlight starts. Used once per station. |
 | `station` | object | required | The station block to replay under, in the shape of one entry of a line's `stations`. See [Station fields](/docs/reference/terraform/line#station-fields). Its `key` must be the station's key. |
 | `teamId` | string | read-only | The station's team. |
 | `lineId` | string | read-only | The station's line. |
 | `stationId` | string | read-only | The station, as the [Replays API](/docs/reference/api/replays) names it. |
 | `stationAddress` | string | read-only | The station as `<team key>/<line key>/<station key>`. |
-| `kind` | string | read-only | `proposed`. `live` marks a snapshot of the station's config Spotlight takes to replay as a baseline; the list and import never return one. Candidates a [search](/docs/reference/api/searches) proposes and planned changes a [replay check](/docs/reference/api/replay-checks) replays are not this resource: reading them is answered `404`. |
+| `kind` | string | read-only | `proposed`. `live` marks a snapshot of the station's config Spotlight takes to replay as a baseline; the list and import never return one. Candidates a [search](/docs/reference/api/searches) proposes, planned changes a [replay check](/docs/reference/api/replay-checks) replays, and the configs [replays with the answer](/docs/reference/app/replays#replay-with-the-answer) replay are not this resource: reading them is answered `404`. |
 | `fingerprint` | string | read-only | The [config fingerprint](/docs/reference/glossary#config-fingerprint) a replay under the candidate runs with. |
 | `changedFrom` | object | read-only | `fingerprint`: the station's live config fingerprint when the candidate was proposed. `changes`: what the candidate changes from it, each `{ part, name, kind, was, now }`, as the Run page's [Config](/docs/reference/app/tasks-runs-and-the-inbox#config) words changes. Fixed at proposal. |
 | `createdAt` | string | read-only | When it was proposed, as an RFC 3339 time. |
@@ -91,11 +91,12 @@ path `station.<field>`, as in `station.judge.rubric`.
 | `is a station block, as a line holds it` | `station` | `station` is not an object. |
 | `keeps the station's key, <key>` | `station.key` | `key` names another station. |
 | `names a harness a runner can start` | `station.harness` | The block runs no harness Spotlight can start. |
-| `is named in 1 to 100 characters` | `name` | `name` is empty or too long. |
-| `is named without spaces before or after` | `name` | `name` starts or ends with a space. |
-| `is named without /, since its name ends its address` | `name` | `name` holds `/`. |
-| `is named other than Live config, which names the snapshots Spotlight takes to replay as a baseline` | `name` | `name` starts with `Live config`. |
-| `is named other than Planned change, which names the changes Spotlight replays to check them` | `name` | `name` starts with `Planned change`. |
+| `name must be 1 to 100 characters` | `name` | `name` is empty or too long. |
+| `name cannot start or end with a space` | `name` | `name` starts or ends with a space. |
+| `name cannot contain /` | `name` | `name` holds `/`. |
+| `name cannot start with reserved prefix Live config` | `name` | `name` starts with `Live config`. |
+| `name cannot start with reserved prefix Planned change` | `name` | `name` starts with `Planned change`. |
+| `name cannot start with reserved prefix With the answer` | `name` | `name` starts with `With the answer`. |
 
 ## Errors
 

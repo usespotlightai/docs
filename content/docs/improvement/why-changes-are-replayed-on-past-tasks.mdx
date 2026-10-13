@@ -132,8 +132,8 @@ noise, it can say which way the candidate leans.
 
 Each replay has one counterpart, chosen when it starts and kept: a proposed
 candidate the baseline standing then, a search's candidates the live config
-the search replayed when it started, and a stronger model the live config it
-is compared with. Its task-by-task rows, its gain and its wins and losses all
+the search replayed when it started, and a replay with the answer the live
+replay whose finishing started it. Its task-by-task rows, its gain and its wins and losses all
 use that one replay, so a baseline started later does not change what an
 earlier replay was compared with. In the docs' view, figures read against two
 different replays could not be read together. Pairs judged under different
@@ -226,7 +226,9 @@ now, as its health, and a search warns about each before it starts.
 - Room to improve. When the live config already succeeds on more than 95% of
   the set, a candidate has almost no tasks left to win. A search of such a set aims, unless told otherwise, for the
   same success for less: it ranks the candidates whose gain over the live
-  config is not Worse by what a run costs.
+  config is not Worse by what a run costs. A set can also leave little room
+  well below 95%, when no config could do better on its tasks; see
+  [Why a set is replayed with the answer](#why-a-set-is-replayed-with-the-answer).
 - A judge that disagrees with itself. A judge is a model, and asked twice
   about the same change it can answer differently. When it passes or fails
   the same change alike less than 80% of the time, part of every score is
@@ -234,13 +236,6 @@ now, as its health, and a search warns about each before it starts.
 - Flaky checks. A test that passes on one run and fails on the next, on the
   same change, can flip a candidate's result by chance. Running the check a
   second time on the same change shows which tasks do it.
-- A set that does not reward a stronger model. On a set whose tasks are clear
-  and whose scoring is right, the live config with a stronger model or a higher
-  effort should do better. When its gain over the live config, replayed at
-  least as often, does not read Better, the tasks may be unclear or the
-  scoring off, and the tasks it did worse on are where to look first. In the
-  docs' view, this is a check on the set, not on the model: a stronger config
-  is the one change whose direction is known in advance.
 
 What the set holds matters as well. A set whose original runs were nearly all
 accepted, or nearly all sent back, says little about how runs that turned out
@@ -252,13 +247,54 @@ add runs, it suggests recent ones of the outcomes the set is short of, but
 never adds them itself. In the docs' view, which tasks a set should stand for
 is the team's choice.
 
-Checking a set replays the live config over it with 3 copies of each run,
-which also measures its noise, then judges and checks each change a second
-time. The second judgings cost model calls, so they count against the check's
-ceiling and stop once it would be spent; the rest are not judged again. A
+Nobody has to ask for these readings. The first baseline of the live config
+as it is now checks the set: it replays each run at least 3 times, which
+measures the noise, and once it finishes, each change is judged and checked a
+second time. Its ceiling grows with its copies, so it costs about three times
+a single replay. In the docs' view, a set is only worth reading once it has
+been checked, and the first baseline has to replay the live config anyway. A
+set of fewer than 5 runs is never checked, since it is too small to measure
+noise on. A search's starting replay and a pull request check's baseline are
+never the check. The second judgings cost model calls, so they count against
+the check's ceiling and stop once it would be spent; the rest are not judged
+again. A
 second judging or check never changes a run's result. In the docs' view, it
 measures the judge and the check, not the run. The second judgings also do not
 count toward what the check's runs cost.
+
+## Why a set is replayed with the answer
+
+A set is for telling a better harness from a worse one: a better prompt,
+skills, tools or setup. It should reward a better config around the model, not
+a better model. So the question for a set is how much a better config could
+gain on its tasks.
+
+Spotlight answers it with an upper bound. After a replay of the live config
+over the whole set finishes, it replays the live config again with each run's
+answer added to its briefing: for a run people accepted, the change they
+accepted; for a run a person sent back, what they wrote when they sent it
+back. Runs that failed, asked a person or turned out another way have no
+answer, so they are left out, and both sides are compared on the same runs.
+The gain the answer brings is the most a better config could gain on those
+runs. It is never the gain to expect: no config hands the agent the answer.
+
+When even the answer does not do clearly better, the live config already does
+about as well on these tasks as any config could show, and a search on the set
+would find little. What helps is adding tasks the live config fails. A search
+warns about it before it starts.
+
+The replay with the answer is a replay like any other. It has its own ceiling,
+the same as the live replay's, its own runs and its own row on the set's page.
+Its gain is read against the live replay that started it, task by task and
+with a range, and when the station has a judge, its changes are judged blind
+beside that replay's, as any candidate's are. In the docs' view, an upper
+bound that skipped the usual scoring would not be comparable with the gains
+it bounds.
+
+Spotlight starts one for each set and each config of the station, and only
+while the station still runs the config that was replayed. If it is stopped or runs over
+its ceiling, the next replay of the live config over the whole set starts
+another.
 
 ## What it costs
 

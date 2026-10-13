@@ -17,8 +17,9 @@ line's Terraform. You need:
 - To be on the team, or an owner or admin of the workspace.
 - A replay set at the station with runs of at least 5 different tasks. See
   [Pick the tasks to replay](/docs/improvement/replay-past-tasks-against-a-station-change#pick-the-tasks-to-replay).
-  [Check the set's health](/docs/improvement/replay-past-tasks-against-a-station-change#check-the-sets-health)
-  first, so you know whether its results can be trusted.
+  Replay it once first, so its first baseline checks it, and
+  [read the set's health](/docs/improvement/replay-past-tasks-against-a-station-change#read-the-sets-health)
+  to know whether its results can be trusted.
 - A host serving the workspace with the station's harness, and the harness you
   want the search's agent to run on. See [Install a host](/docs/hosts/run-a-host).
 - To open pull requests from it: the line's Terraform in a GitHub repository
@@ -136,8 +137,9 @@ candidates or repeats.
 Read any warning under the estimate:
 
 - If nobody has measured how much the set's success moves by chance,
-  [check the set](/docs/improvement/replay-past-tasks-against-a-station-change#check-the-sets-health)
-  first, or set **Repeats** above 1.
+  [start a replay](/docs/improvement/replay-past-tasks-against-a-station-change#start-a-replay)
+  of the set first, so its first baseline checks it, or set **Repeats**
+  above 1.
 - If the set's success moves more than the line counts as real, select the
   button under the warning, as in **Replay each run 3 times**, to set
   **Repeats** to what it suggests, and raise the ceiling if the estimate asks.
@@ -150,9 +152,10 @@ Read any warning under the estimate:
   twice, make its rubric more specific before you search.
 - If the check passed once and failed once on the same change, fix the flaky
   tests, or take those tasks' runs out of the set. The set's page lists them.
-- If a stronger model did not do clearly better on the set, look at the tasks
-  it did worse on, listed on the set's page: their rubric or checks may be
-  wrong.
+- If the live config, handed each run's answer, gained little on the set, a
+  better config has little room to show there. Add runs of tasks the live
+  config fails. See
+  [Read the room to improve](/docs/improvement/replay-past-tasks-against-a-station-change#read-the-room-to-improve).
 
 The search starts with a warning all the same, but a gain it finds may be
 chance.

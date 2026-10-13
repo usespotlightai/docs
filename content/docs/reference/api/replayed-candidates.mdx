@@ -42,8 +42,9 @@ A candidate is answered when it was replayed in the period:
 | `searched` | Its search started in the period. |
 | `proposed` | A replay of it over the set started in the period. With more than one, its newest finished replay in the period is answered, or else its newest. |
 
-Candidates of [replay checks](/docs/reference/api/replay-checks) are left
-out, and the live config is answered only as each set's `baseline`. A set's
+Candidates of [replay checks](/docs/reference/api/replay-checks) and of
+[replays with the answer](/docs/reference/app/replays#replay-with-the-answer)
+are left out, and the live config is answered only as each set's `baseline`. A set's
 `health` and `baseline` are as they stand now, whatever the period.
 
 The endpoint reads the team's newest 500 replays started in the period. When
@@ -67,7 +68,7 @@ Each item of a station's `sets`, the newest replayed first:
 | `name` | string | |
 | `stationGone` | boolean | Whether its station has left its line. |
 | `guardsChanges` | boolean | Whether it [guards its station's changes](/docs/reference/app/searches#guarding-a-stations-changes). |
-| `health` | object | `{ tasks, runs, oldestRunEndedAt, newestRunEndedAt, lastAddedAt, noise, saturation, judge, checks, sanity, minGain }`. `runs` counts the runs the set holds now, and `tasks` the different tasks they worked. The three times are when the oldest and the newest of its runs ended, and when a run was last added to it; each is null while there is none. `noise`, `saturation`, `judge`, `checks` and `sanity` are the set's health, as in the [Replays API](/docs/reference/api/replays#set-health); `minGain` the smallest gain its line counts as real. |
+| `health` | object | `{ tasks, runs, oldestRunEndedAt, newestRunEndedAt, lastAddedAt, noise, saturation, judge, checks, oracle, minGain }`. `runs` counts the runs the set holds now, and `tasks` the different tasks they worked. The three times are when the oldest and the newest of its runs ended, and when a run was last added to it; each is null while there is none. `noise`, `saturation`, `judge`, `checks` and `oracle` are the set's health, as in the [Replays API](/docs/reference/api/replays#set-health); `minGain` the smallest gain its line counts as real. |
 | `baseline` | object or null | Its newest baseline that is queued, running or finished, whatever the period. Null while it has none. See [Baseline](#baseline). |
 | `candidates` | array | The candidates replayed over it in the period, the newest replayed first. See [Candidate](#candidate). |
 

@@ -56,10 +56,10 @@ A run that cannot be replayed reads **Can't be replayed** and says why, such as
 Add runs the station did well as well as runs it did badly. While a run is in a
 set, Spotlight keeps the workspace it started from.
 
-Above the set's runs, **What the set is made of** counts how its runs turned
-out, where their tasks came from, and when they ended. If it warns that the
-set says little about how other runs go, most of its runs turned out one way:
-add runs that turned out other ways. See
+Above the set's runs, a bar shows how they turned out. Hover over the ⓘ
+beside **Runs** for where their tasks came from and when they ended. If a
+warning sign shows beside it, most of the set's runs turned out one way: add
+runs that turned out other ways. See
 [What a set is made of](/docs/reference/app/replays#what-a-set-is-made-of).
 
 ## Propose the change
@@ -138,8 +138,8 @@ block as JSON. See
 <Steps>
 <Step>
 
-On the Station page, under **Replay sets**, select the set, then **Start a
-replay**.
+On the Station page, under **Replay sets**, select the set. On the set's page,
+under **Replays**, select **Start a replay**.
 
 </Step>
 <Step>
@@ -151,7 +151,7 @@ Under **Replay under**, choose the candidate.
 
 Under **Repeats**, enter how many times to replay each run, from 1 to 5. More
 copies narrow the range around the result, and cost as many more runs. See
-[Check the set's health](#check-the-sets-health).
+[Read the set's health](#read-the-sets-health).
 
 </Step>
 <Step>
@@ -195,6 +195,13 @@ If the set has a baseline covering its runs, with at least as many copies of
 each as you asked for, a **Live config** replay runs beside it, and no new
 baseline starts. Otherwise a new baseline starts as above, with your number of
 repeats.
+
+The first baseline of the live config as it is now also checks the set, when
+the set holds 5 runs or more. It replays each run at least 3 times, and its
+ceiling grows in step: 1 repeat at `5.00` becomes 3 repeats at `15.00`. Once
+it finishes, each change is judged and checked a second time, within that
+ceiling. The dialog says so when this applies. A set of fewer than 5 runs is
+never checked.
 
 At most 2 of a team's replay runs run at once. See
 [Limits and timeouts](/docs/reference/limits-and-timeouts#replays).
@@ -265,58 +272,59 @@ losses beside the success rate; they never change it. See
 If the candidate did worse, propose another candidate and replay the same set.
 Each replay of a set is compared with the same baseline.
 
-## Check the set's health
+## Read the set's health
 
-Check whether a set can tell a better config from a worse one before you read
+Read whether a set can tell a better config from a worse one before you read
 small gains on it or [search](/docs/improvement/search-for-a-better-station-config)
-on it.
+on it. There is nothing to start: the set's first baseline checks it, then
+Spotlight replays the live config with each run's answer.
 
-<Steps>
-<Step>
-
-On the set's page, under **Health**, select **Check this set**. Enter a
-ceiling, then select **Start the check**. The check replays the live config
-over the set three times, then judges and checks each change a second time, so
-give it a little more than three times what one replay of the set costs.
-
-</Step>
-<Step>
-
-Select **Try a stronger model**. Under **Model and effort**, choose a model the
-harness offers, a higher effort than the live config's, or both. Enter
-**Repeats** and a ceiling, then select **Start replay**. If the set has no
-replay of the live config with as many repeats, one starts beside it with a
-ceiling of its own the same as yours.
-
-</Step>
-<Step>
-
-Once the replays finish, read the lines under **Health** on the set's page.
-A line marked with a warning sign found a problem:
+On the set's page, read the rows under **Health**. Hover over the ⓘ beside a
+reading for its advice. A reading marked with a warning sign found a problem:
 
 - **Noise** more than the gain the line counts as real: replay candidates
   with more repeats, add runs of more tasks, or
   [raise `min_gain`](#set-how-large-a-gain-must-be).
-- **Room to improve** reads **Almost none**: search for the same success for
-  less, or add runs of tasks the live config fails.
+- **Room to improve** reads **Little** or **Almost none**: add runs of tasks
+  the live config fails, or search for the same success for less. See
+  [Read the room to improve](#read-the-room-to-improve).
 - **Judge agreeing with itself** below 80%: make the judge's rubric more
   specific. See [Set a station's judge and alerts](/docs/improvement/set-a-stations-judge-and-alerts).
 - **Flaky checks** lists tasks whose check flipped: fix the flaky tests, or
   take those tasks' runs out of the set.
-- **Stronger model** did not do clearly better: start with the tasks listed
-  under it as done worse on, and check their rubric and checks.
-
-</Step>
-</Steps>
-
-If **Stronger model** reads **Could not be compared** or did not finish,
-select **Try again**.
 
 The readings belong to the station's config as it is now. Once an applied
 change gives the station a new config fingerprint, they read **Not
-measured**, **Not checked** or **Not tried** until the set is checked again. A replay of the live config with 2 or
-more repeats, started any other way, measures the noise too once it finishes.
+measured** or **Not checked** until the first baseline of the new config
+checks the set. A replay of the live config with 2 or more repeats, started
+any other way, measures the noise too once it finishes.
 See [Health](/docs/reference/app/replays#health) for every reading.
+
+### Read the room to improve
+
+There is nothing to start. Once a replay of the live config over the whole set
+finishes, such as the first baseline, Spotlight replays the live config once more on
+the set's accepted and sent-back runs, handed each run's answer: the change
+people accepted, or what a person said when they sent it back. It does this
+once for each config the station has. The replay is named **With the answer**
+and its date, and shows under **Replays** like any other. It has a ceiling of
+its own, the same as the live replay's.
+
+While it runs, **Room to improve** reads **Measuring with the answer**. Once
+it finishes:
+
+- `Up to <gain> with the answer`: the most a better config could gain on
+  these runs. Expect a search to find less.
+- `Little: <gain> with the answer`, marked: even the answer barely helps, so
+  a search on this set would find little. Add runs of tasks the live config
+  fails, or search for the same success for less.
+
+Hover over the ⓘ for the live config's success and the success with the
+answer. If it reads **Couldn't measure with the answer**, the replay with the
+answer or its live replay was stopped or ran over its ceiling; the next replay
+of the live config over the whole set starts another.
+
+See [Why a set is replayed with the answer](/docs/improvement/why-changes-are-replayed-on-past-tasks#why-a-set-is-replayed-with-the-answer).
 
 ## Set how large a gain must be
 
