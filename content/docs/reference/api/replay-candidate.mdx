@@ -71,7 +71,7 @@ of the kind `replay-candidate`.
 | `stationAddress` | string | read-only | The station as `<team key>/<line key>/<station key>`. |
 | `kind` | string | read-only | `proposed`. `live` marks a snapshot of the station's config Spotlight takes to replay as a baseline; the list and import never return one. Candidates a [search](/docs/reference/api/searches) proposes, planned changes a [replay check](/docs/reference/api/replay-checks) replays, and the configs [replays with the answer](/docs/reference/app/replays#replay-with-the-answer) replay are not this resource: reading them is answered `404`. |
 | `fingerprint` | string | read-only | The [config fingerprint](/docs/reference/glossary#config-fingerprint) a replay under the candidate runs with. |
-| `changedFrom` | object | read-only | `fingerprint`: the station's live config fingerprint when the candidate was proposed. `changes`: what the candidate changes from it, each `{ part, name, kind, was, now }`, as the Run page's [Config](/docs/reference/app/tasks-runs-and-the-inbox#config) words changes. Fixed at proposal. |
+| `changedFrom` | object | read-only | `fingerprint`: the station's live config fingerprint when the candidate was proposed. `changes`: what the candidate changes from it, each `{ part, name, kind, was, now }`, worded as in [Config](/docs/reference/app/tasks-runs-and-the-inbox#config). Fixed at proposal. |
 | `createdAt` | string | read-only | When it was proposed, as an RFC 3339 time. |
 
 `part` is one of `prompt`, `harness`, `model`, `effort`, `profile`, `image`,

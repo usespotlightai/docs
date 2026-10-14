@@ -36,7 +36,7 @@ whether it is finished.
 
 | State | Condition | Board label |
 | --- | --- | --- |
-| Awaiting review | The latest `asked` note has no later `answered` or `passed` note. | Awaiting review |
+| Awaiting review | The latest `asked` note has no later `answered` or `passed` note. | Waiting for you |
 | Running | A run holds the task, queued or claimed. | In progress |
 | Finished | The task was moved to the completed station, or its run declared `done`. | none |
 | Idle | None of the above. | none |
@@ -151,8 +151,22 @@ search's agent run, which proposes candidates, holds no task either; see
 | `failed` | Ended with a failure code. | yes |
 | `superseded` | Withdrawn before it started, or failed after its task had moved on. | yes |
 
-The web app labels a queued run "Queued", a superseded run "Superseded", and a
-waiting or parked run "Waiting for you".
+On the Runs list and on a task's "Activity", a queued run reads "Queued", a
+superseded run "Superseded", and a claimed run shows that it is in progress. A
+run reads "Waiting for you" while it is waiting or parked, and while the
+`asked` note it wrote has no later `answered` or `passed` note. On the Runs
+list, that label links to the run's inbox item. On a task's "Activity", such a
+run is led by a row that reads "Waiting for you", or "Answered" once a later
+`answered` or `passed` note is written, linked to the inbox item. The Runs
+list's "Waiting for you" view shows only the runs that read "Waiting for you";
+with none, it reads `Nothing is waiting for you. Switch to All to see every run.`
+
+The Run page of a waiting or parked run shows "Waiting for you" with "Answer
+in the inbox", or "Open in the inbox" when the open question is an approval.
+An approval can also be decided on the Run page itself, on the same card as
+in the inbox: copy the call, edit a tool call's inputs, "Approve", or
+"Dismiss", which first asks for a reason to tell the agent, `Tell the agent
+why (optional)`. See [Approvals](#approvals).
 
 ### Transitions
 
@@ -181,6 +195,25 @@ Only a claimed, waiting or parked run can be stopped. The web app offers Stop
 only while a run is claimed. Attempts a run spent parked do not count toward
 the 3. Only the task's assignee may stop a run or say
 something to it. See [Steer or stop a run](/docs/runs/steer-or-stop-a-run).
+
+### Run page composer
+
+| When | Placeholder | Accessible name |
+| --- | --- | --- |
+| The run waits on a person's answer to a question that is not an approval. | `Answer the question to continue the run…` | `Answer <Station>` |
+| The task stands at the run's station with nothing running and no open question, and the station has a harness. Words start a new run there. | `Say what to change. <Station> starts again…` | `Send it back to <Station>` |
+| Otherwise. | `Say something…` | `Say something to <Station>` |
+
+The "+" button, "Attach files", adds files, and so does dropping or pasting
+them on the composer. Images show above the text; other files show by name
+in the text. The composer shows the station's harness, model and effort and
+the line's repositories, and none of them can be changed there. While a
+runner holds the run and the composer is empty, "Send" becomes "Stop".
+
+Once the task has left the run's station, the composer is replaced by
+`The task has moved to another station. Messages here reach no one.` A replay
+run and a search's agent run have the composer turned off, with
+`The agent runs autonomously. It can't receive messages.`
 
 ### Failure codes
 
@@ -262,10 +295,15 @@ The run's [config fingerprint](/docs/reference/glossary#config-fingerprint) is
 a SHA-256 of these parts. The task's title, description and marks are not part
 of it.
 
-The Run page shows `Config` and the fingerprint's first 8 characters under the
-briefing. When the station's previous run with a recorded config ran another
-config, it adds `Changed since the station's previous run`, linked to that run,
-and one phrase for each change:
+The config in force at a station shows under "Config" on the station's
+"Overview" tab, and the station's view on Insights groups its runs by config
+under "Runs by config"; see [Station outcomes](#station-outcomes).
+`GET /api/teams/{teamId}/runs/{runId}/config` returns a run's config and its
+fingerprint, and, when the station's previous run with a recorded config ran
+another config, that run under `changedSince`, with the changes since it.
+
+The web app words each change as one phrase, in the names of the groups under
+"Runs by config" and in what a search candidate changes:
 
 | Change | Phrase |
 | --- | --- |
@@ -278,7 +316,7 @@ and one phrase for each change:
 | Decisions, memories | `Decisions on`, `Decisions off`, `Memories on`, `Memories off` |
 | Judge | `Judge added`, `Judge removed`, `Judge rubric changed`, `Judge sample <was> → <now>`, `Judge trust <was> → <now>`, with sample and trust as percentages |
 
-For example: `Prompt changed · Effort high → xhigh · Skill reviewing added`.
+For example: `Effort high → xhigh`.
 
 ### Starting point
 
@@ -294,22 +332,30 @@ The archive is kept for 30 days after the run started; see
 
 ### Spend
 
-Once a run has ended and its journal has been digested, the Run page shows
-`Spent`, the run's cost, and four token counts:
+Once a run has ended and its journal has been digested, Spotlight records
+what it spent. `GET /api/teams/{teamId}/runs/{runId}/conversation` returns it
+under `spend`:
 
-| Label | Counts |
+| Field | Holds |
 | --- | --- |
-| Input | Fresh input tokens. |
-| Output | Output tokens. |
-| Cache read | Input tokens read from the prompt cache. |
-| Cache write | Input tokens written to the prompt cache. |
+| `cost`, `currency` | What the run cost. |
+| `inputTokens` | Fresh input tokens. |
+| `outputTokens` | Output tokens. |
+| `cacheReadTokens` | Input tokens read from the prompt cache. |
+| `cacheWriteTokens` | Input tokens written to the prompt cache. |
 
 Each count is added up over every turn of the attempts the run kept. A count
-the harness did not report is unknown, not zero, and reads `not reported`; so
-does a cost that was not reported. A count under 1,000 is shown whole, a larger
-one in thousands (`3.1k`) or millions (`2.4M`) to one decimal. A cost in US
-dollars is shown as `$1.87`, or to four decimals under `$0.01`; a cost in
-another currency is shown with its currency code.
+or cost the harness did not report is unknown, not zero, and is `null`.
+
+The task trace shows a run's cost as "Cost" in the run's details, as `$1.87`,
+or to four decimals under `$0.01`.
+The Insights "Cost" tab adds the runs' costs up and gives each station's
+"Cache read", "Cache write" and "Input" tokens under "Read from cache", where
+a count the harness did not report reads `not reported`; see
+[Cost](/docs/reference/app/insights#cost). There, a count under 1,000 is shown
+whole, a larger one in thousands (`3.1k`) or millions (`2.4M`) to one decimal.
+In the task trace, a span that reports its own token use shows "Tokens", its
+input and output tokens together.
 
 What each harness reports:
 
@@ -519,15 +565,18 @@ example: `Alerts when the sent-back rate rises 20 points or more over 20 runs`.
 
 ### Judge score
 
-The Run page of a judged run shows "Judged" and the judge's score, `Yes`, `No`,
-`<n> of 5` or `<n> of <m> claims met`, when the station's current rubric is trusted and the score was
-given under it. Otherwise it shows `score hidden`. People's
-grades follow as `People said <grades>`, with `(you)` beside the reader's own.
-While the judge is not trusted, its standing is shown beneath. A shown score
-lists its reasons under it, each with the steps and hunks it cites, as
-`Step <n>` or the file's name and hunk header. Selecting a hunk opens the file
-at that hunk; selecting a step shows it. On claims, each claim is listed with
-"Met" or "Not met" and its own reasons under it.
+A judged run's score shows in the [task trace](/docs/reference/app/web-app#team-pages).
+The judge's score is `Yes`, `No`, `<n> of 5` or `<n> of <m> claims met`, and it
+is shown when the station's current rubric is trusted and the score was given
+under it. While it is shown, the run's row in the trace carries it. Selecting
+the row shows "Judged" in the run's details, then the judge's score, or
+`score hidden`. People's grades follow as `People said <grades>`, with `(you)`
+beside the reader's own. While the judge is not trusted, its standing is shown beneath. A
+shown score lists its reasons under it, each with the steps and hunks it
+cites, as `Step <n>` or the file's name and hunk header. Selecting a step shows
+`Step <n>` with its tool or kind, and its text; selecting a hunk shows its
+lines. On claims, each claim is listed with "Met" or "Not met" and its own
+reasons under it.
 
 A run's judge score and people's grades can be read only by people on the
 team, the workspace's owners and admins, and workspace tokens with the `read`
@@ -912,8 +961,23 @@ It is kept with the approval and never passed to the tool.
 
 A chat belongs to a team and to the person who started it. Only that person can
 list or read it. Each chat names its harness, and optionally a model, an
-effort, repositories and a work station it is improving. A chat message holds
-up to 20,000 characters and at most 20 traces.
+effort, repositories and a work station it is improving. The harness and the
+repositories are fixed when the chat starts. A message may name another model
+or effort. The agent answers that message, and the messages after it, with
+the model and effort it names. A chat message holds up to 20,000 characters and at most 20 traces.
+
+The Agent page's composer reads "What do you want to plan?", and a chat's
+composer reads "Reply…". One picker in the composer names the harness, then the
+model and effort when they are set. Under it, "Model" reads "Default" when no
+model is set, and is turned off for a harness that offers no models. "Effort"
+reads "Default" when no effort is set, and is left out for a harness that
+offers no efforts. A new chat takes the harness picked last, or the
+first one offered. In a chat, only the model and effort can be changed, and
+the web app sends them with each reply. Repositories are picked below the
+composer, which reads "No repositories", the repository's name, or
+`<n> repositories`; in a chat they are read-only. Files are attached as on the
+[Run page](#run-page-composer). While the agent works, the chat shows
+"The agent is working…", and with the composer empty "Send" becomes "Stop".
 
 A chat started from a station's "Improve", "Ask the agent" or "Review with
 the agent" names that station. Its agent is briefed to write the station's runs with
@@ -944,12 +1008,19 @@ The agent proposes a task with the
 [`propose-task`](/docs/reference/built-ins/built-in-tools-and-skills#propose-task) tool,
 naming a line and a station by key.
 
-| State | Label | Next |
+| State | Card title | Next |
 | --- | --- | --- |
-| `open` | Open | `accepted`, or `dismissed` |
-| `accepted` | Creating task | `created`, or back to `open` if the task cannot be created |
+| `open` | Waiting for your approval | `accepted`, or `dismissed` |
+| `accepted` | Creating the task | `created`, or back to `open` if the task cannot be created |
 | `created` | Task created | |
 | `dismissed` | Dismissed | |
+
+Each proposal shows in the chat as a card titled by its state. "Task" holds
+the proposed title, linked to the task once it is created. "Station" reads
+`<Line> › <Station>`, or "Station deleted" once the station is gone. "Details"
+holds the description, when there is one. "Dismiss" and "Create task" act
+only on an open proposal, and "Create task" is off while the station is
+deleted. `Copy <title>` copies the title and the description.
 
 An accepted proposal creates the task at the proposed station. A task created
 at a station with a harness starts a run at once.

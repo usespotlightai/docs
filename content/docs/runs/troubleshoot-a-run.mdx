@@ -19,11 +19,12 @@ menu, then **Runners**, and look for the first of these that applies:
   one that stopped answering.
 - A host reads `Running <n> of <capacity>` with every slot taken: it is full,
   and the run waits for a free slot. Raise the host's capacity or add a host.
-- No host's harness pills, under its images, include the station's harness
-  (the Run page shows that harness below the composer): use a runner image
-  that includes it. See [Harnesses](/docs/reference/hosts/harnesses).
-- An image row reads `Refused: <reason>`: the host will not start runs from
-  it. Fix the reason as in the table below.
+- No host's **Harnesses** include the station's harness (the Run page's
+  composer shows that harness): use a runner image that includes it. See
+  [Harnesses](/docs/reference/hosts/harnesses).
+- The host's **Images** reads `<n> refused`: the host will not start runs from
+  those images. Hover over it for each image and its reason, and fix the reason
+  as in the table below.
 - The line or station names `runners` or an image: only a host that matches
   that placement can claim the run. Compare the names on the Runners page
   (`Pool <key>`, `Trust <key>`, the images) with the line. See
@@ -39,8 +40,11 @@ menu, then **Runners**, and look for the first of these that applies:
 ## The run failed with a message
 
 A failed run puts an item in the assignee's inbox that starts "The run failed:"
-and gives the reason. If the Run page reads "This run failed before any work
-was done.", the run never reached the agent; the message is on the inbox item.
+and gives the reason, and its Run page shows the same note. When the same
+failure happens again while the item is open, no new note is written: the
+item's count goes up instead. If such a run never reached the agent, its Run
+page reads "The run failed before the agent started.", and the message is on
+the inbox item.
 [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages)
 lists every message and its code.
 
@@ -87,7 +91,8 @@ Refused runs are not retried. After changing the station, reply to the item.
 "Spotlight gave up on the run after N attempts. The run did not finish." means runners
 claimed the run and then stopped reporting, or ran it past the host's run time
 limit, N times in a row. Spotlight puts such a run back in the queue by itself
-before it gives up. The Run page shows its code: `runner-lost` or `timed-out`.
+before it gives up. On Insights, the **Runs** tab shows its code under
+**Failure**: `runner-lost` or `timed-out`.
 
 Read the log of the host that claimed it around the time of each attempt.
 Look for the host stopping or restarting, and for the warning
@@ -113,28 +118,27 @@ again.
 
 ## The agent ignored, missed or was misled by what the team knows
 
-Open the Run page and expand **Remembered** under the briefing. It lists:
+Open the Run page. Below the run's last step, select the **Remembered** icon
+in the toolbar. The toolbar shows once the run stops working, and the icon
+only when the run was given or proposed memories. The pane lists:
 
-- **Briefed**: the memories the run was told before it started.
-- **Cut by the cap**: memories that reached the run but were left out because
-  the briefing holds at most eight, or 3,000 characters. At most twenty are
-  listed, the nearest to making it first. The agent could still find them in
-  `.spotlight/memory` in its workspace.
-- **Recalled**: the memories the agent looked up with `spotlight recall`, or
-  read from `.spotlight/memory`. Each `spotlight recall` is also a
+- **Given to the agent**: the memories the run was briefed with before it
+  started, and the ones the agent looked up with `spotlight recall` or read
+  from `.spotlight/memory`. Each `spotlight recall` is also a
   `spotlight.recall` span in the task's trace, with the words or handle it
   asked for and how many it found.
-- **Proposed**: what the run put to the team to keep, and where each stands.
+- **Proposed by this run**: what the run put to the team to keep, and where
+  each stands.
 
 Then read it against what went wrong:
 
 | What you see | Cause | What to change |
 | --- | --- | --- |
-| The memory it needed is in no list, and not on the Memory page | Nobody kept it. | Write it on the team's Memory page, or turn on `memories` at the station. |
-| It is on the Memory page but in no list | It doesn't reach this run's line, station, repository or files. | Correct it to apply more widely. |
-| It is under **Cut by the cap** | Memories that are more specific, closer to the task's words, or warnings filled the briefing. | Retire memories that no longer help, narrow where others apply, or say the memory in words the task will use. |
-| It is under **Briefed** or **Recalled** and the agent acted against it | The agent didn't follow it. | Say it more plainly in a correction, or in the station's prompt. |
-| A listed memory is itself wrong | The memory is wrong. | Select **This was wrong** beside it and give a reason. It is retired, and later runs aren't told it. |
+| The memory it needed is not in the pane, and not on the Memory page | Nobody kept it. | Write it on the team's Memory page, or turn on `memories` at the station. |
+| It is on the Memory page but not in the pane, and it applies to this run's line, station, repository and files | The briefing holds at most eight memories, or 3,000 characters, and memories that are more specific, closer to the task's words, or warnings filled it. The agent did not look it up in `.spotlight/memory`. | Retire memories that no longer help, narrow where others apply, or say the memory in words the task will use. |
+| It is on the Memory page but not in the pane, and it does not apply to this run | It doesn't reach this run's line, station, repository or files. | Correct it to apply more widely. |
+| It is under **Given to the agent** and the agent acted against it | The agent didn't follow it. | Say it more plainly in a correction, or in the station's prompt. |
+| A listed memory is itself wrong | The memory is wrong. | Select **This was wrong** beside it, say why it no longer holds, and select **Retire**. Later runs aren't told it. |
 
 Each memory's handle links to it on the team's Memory page, which also shows
 how many runs were briefed with it or recalled it. A run counts as briefed once
