@@ -5,20 +5,20 @@ title: Make the factory yours
 description: Put your team's software factory in a repository as Terraform, point the Delivery line at your code, change what Triage's agent is told, and watch the next task follow the change.
 ---
 
-In this tutorial we will put the software factory of the workspace from the
+In this tutorial you put the software factory of the workspace from the
 [Start guide](/docs/getting-started/start-guide), the lines its team works on,
 into a repository as Terraform, a tool that keeps settings as files of code.
-Then we will give the Delivery line our code, change what Triage's agent is
-told, and watch Triage follow the change on a new task.
+Then you give the Delivery line your code, change what Triage's agent is told,
+and watch Triage follow the change on a new task.
 
 The web app only shows the factory; changes to it are made in Terraform
 ([why](/docs/configuration/why-configuration-lives-in-terraform)).
 
-## Before we start
+## Before you start
 
-We need:
+You need:
 
-- The workspace from the Start guide, with our computer still connected to it.
+- The workspace from the Start guide, with your computer still connected to it.
 - Terraform 1.11 or later, and `git`.
 - A GitHub repository, and Spotlight's GitHub App installed on it. Once it is
   installed, **Install the GitHub App** in **Set up your team** has a check
@@ -30,13 +30,13 @@ We need:
 <Step>
 
 In Spotlight, open **Inbox** and then **Set up your team**. Under **Set up
-configuration as code**, choose our repository from **Repository**. Leave the
+configuration as code**, choose your repository from **Repository**. Leave the
 folder as `spotlight`, and click **Start setup chat**.
 
 </Step>
 <Step>
 
-The chat opens on the **Agent** page. The agent reads our repository and the
+The chat opens on the **Agent** page. The agent reads your repository and the
 team's tools, then says what it found and what it would change from the
 built-in lines. Reply:
 
@@ -47,7 +47,7 @@ Go ahead.
 </Step>
 <Step>
 
-The agent writes the team's Terraform into the `spotlight/` folder of our
+The agent writes the team's Terraform into the `spotlight/` folder of your
 repository and opens a pull request. Its note ends with a link to it.
 
 Go back to **Set up your team**. **Set up configuration as code** now has a
@@ -58,7 +58,7 @@ file for each station's prompt. Merge the pull request on GitHub.
 </Step>
 <Step>
 
-In a terminal, clone our repository and open the folder:
+In a terminal, clone your repository and open the folder:
 
 ```bash
 git clone https://github.com/<owner>/<repository>.git
@@ -69,8 +69,8 @@ cd <repository>/spotlight
 <Step>
 
 Terraform needs a workspace token, a key that lets it change the workspace. In
-Spotlight, open **Tokens** in the sidebar and click **Create a token**. A form
-titled "Create a token" opens.
+Spotlight, open **Settings** from the workspace menu, then **Tokens**, and click
+**Create a token**. A form titled "Create a token" opens.
 
 </Step>
 <Step>
@@ -112,16 +112,16 @@ Apply complete! Resources: <n> imported, 0 added, <n> changed, 0 destroyed.
 </Step>
 </Steps>
 
-## Give Delivery our code
+## Give Delivery your code
 
-If the agent already gave Delivery our repository, `main.tf` names it in
+If the agent already gave Delivery your repository, `main.tf` names it in
 Delivery's `repository` block, and the apply below changes nothing.
 
 <Steps>
 <Step>
 
 In `main.tf`, find the `spotlight_line` resource with `key = "delivery"`, and
-add a `repository` block to it with our repository's owner and name:
+add a `repository` block to it with your repository's owner and name:
 
 ```hcl
 repository {
@@ -144,7 +144,7 @@ Type `yes`.
 <Step>
 
 In Spotlight, open **Delivery** and click **Triage**. The **Repositories** pill
-on the Station page names our repository. Before the apply it read **No
+on the Station page names your repository. Before the apply it read **No
 repositories**.
 
 </Step>
@@ -156,7 +156,7 @@ repositories**.
 <Step>
 
 Open `prompts/<team>/delivery/triage.md`, where `<team>` is the folder named
-after our team, and add this line at the end:
+after your team, and add this line at the end:
 
 ```text
 Write your note as three short bullet points: what is being asked, what is still unclear, and which station should take it next.
@@ -176,7 +176,7 @@ Type `yes`.
 </Step>
 <Step>
 
-Reload the Station page. The prompt now ends with our line.
+Reload the Station page. The prompt now ends with your line.
 
 </Step>
 <Step>
@@ -209,7 +209,7 @@ Click **Create task**. Tick the task, and click **Move to Triage**.
 
 Open the task and click the Triage row under **Activity**. Click what the
 agent was told, at the top of the run, to unfold it: Triage's instructions now
-end with our line, just before our task. Notice the agent reading our
+end with your line, just before your task. Notice the agent reading your
 repository as it works.
 
 </Step>
@@ -229,11 +229,11 @@ any agent still working on it.
 </Step>
 </Steps>
 
-## What we built
+## What you built
 
-Our team's factory is now a Terraform configuration in a repository, with a
-commit for each change. Delivery works on our code, and Triage writes the note
-we asked for.
+Your team's factory is now a Terraform configuration in a repository, with a
+commit for each change. Delivery works on your code, and Triage writes the note
+you asked for.
 
 From here:
 
