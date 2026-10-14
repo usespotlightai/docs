@@ -20,7 +20,7 @@ const docs = defineDocs({
   },
 });
 
-// See https://fumadocs.dev/docs/headless/source-api for more info
+// See https://fumadocs.dev/docs/headless/source-api for more information
 export const source = loader({
   baseUrl: docsRoute,
   source: docs.toFumadocsSource(),
