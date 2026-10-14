@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Searches
-description: The Searches section of a Station page, the Start a search dialog, its aims and its warnings, the search page, search and iteration states, stalls and why a search stalled, scores, gains, the frontier and candidates whose gain showed only on seen tasks, the pull request a picked candidate opens and why one is refused, and a replay set that guards a station's changes.
+description: The Searches card on a Station page, the Start a search dialog, its aims and its warnings, the search page, search and iteration states, stalls and why a search stalled, scores, gains, the frontier and candidates whose gain showed only on seen tasks, the pull request a picked candidate opens and why one is refused, and a replay set that guards a station's changes.
 ---
 
 A [search](/docs/reference/glossary#search) has an agent propose changed
@@ -17,20 +17,37 @@ beside the team's other replayed candidates.
 
 Only people on the team, the workspace's owners and admins, and workspace
 tokens with the `read` scope can read a team's searches. Anyone else is
-answered `404`, and the web app reads "Only the team's members can see its
-searches". Starting and stopping a search and picking a candidate also need
+answered `404`, and the web app reads `Only team members can see its
+searches`. Starting and stopping a search and picking a candidate also need
 `plan`. See [Team outcomes](/docs/reference/roles-and-permissions#team-outcomes).
 
 ## Station page
 
-A work station's page has a "Searches" section, after "Replays", headed
-"Searches of this station".
+A work station's "Improve" tab has a "Searches" card under "Try a change",
+beside "Replay sets", at `#searches`. It lists the station's searches, newest
+first, one row each:
 
-| Part | Shows |
+| Column | Shows |
 | --- | --- |
-| Searches | One row per search of the station, newest first: `Search <n>`, numbered from the station's first search and linked to its page, its [state](#search-states) (hover for its [ending](#search-endings)), `on <set> · started <when>`, and its [best candidate](#best-candidate) as `Best: <name> · <score> held out` or `· <score> searched`, `Cheapest:` in place of `Best:` for a search that aims for the same success for less, the score with its range, and its [reading](#only-on-seen-tasks) when it has one, or "No best candidate yet" (`No candidate holds its success yet` when it aims for the same success for less). Under it, `<n> of <m> iterations`, `<spent> of <ceiling>`, and the ending once it has one. With none, the part reads "No searches yet", with "Open a replay set first" when the station has no set, else "Start a search". |
-| Start a search | Opens the [Start a search](#start-a-search) dialog. Not offered, with the reason under it, while a search of the station is under way ("A search of this station is under way."), when the station has no set ("Open a replay set first."), or when no set covers runs of 5 different tasks ("No replay set covers 5 different tasks yet."). |
-| Source | `A picked candidate opens a pull request against <repository> at <path>`, from the line's [`source`](/docs/reference/terraform/line#source-fields), or "The line does not say where its Terraform lives, so a picked candidate cannot open a pull request. Give the line a source in Terraform." |
+| Search | `Search <n>`, numbered from the station's first search, linked to its page. |
+| State | Its [state](#search-states). Hovering over it shows its [ending](#search-endings), once it has one. |
+| Replay set | The set it searches on, or `–`. |
+| Best | Its [best candidate](#best-candidate)'s name, or "Live config", with its [reading](#only-on-seen-tasks) when it has one. Without one, "No best candidate yet", or `No candidate holds its success yet` for a search that aims for the same success for less. |
+| Success | The best candidate's score as a percentage, or `–`. Hovering over it shows `This score is from the held-out tasks.` or `This score is from the searched tasks.`, with `Likely range: <range>`. |
+| Iterations | `<run> / <budget>`. |
+| Spent | `<spent> / <ceiling>`. |
+| Started | When it started. |
+
+"Start a search" opens the [Start a search](#start-a-search) dialog. It is
+refused, with the reason on hover, while a search of the station is under way
+(`A search of this station is underway.`), when the station has no set
+(`Create a replay set first.`), or when no set covers runs of 5 different tasks
+(`No replay set covers 5 different tasks yet.`).
+
+With no searches, the card reads "No searches yet" and
+`An agent tries configs on a replay set to find a better, cheaper one.`, with
+"Start a search". With no searches and no replay set, it reads
+`Searches need a replay set to try configs on.`, with no action.
 
 ## Start a search
 

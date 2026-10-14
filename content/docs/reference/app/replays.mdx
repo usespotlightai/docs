@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Replays
-description: The Replays section of a Station page, the replay set and replay pages, what a set is made of and the runs suggested to even it, replay states, results and their reasons, success with its range, gains, side-by-side wins, losses and ties, a set's health, the replays that check it and the replay with the answer, why a run cannot be replayed, spend and ceilings, and how a replay run differs from a task run.
+description: The Replay sets card on a Station page, the replay set and replay pages, what a set is made of and the runs suggested to even it, replay states, results and their reasons, success with its range, gains, side-by-side wins, losses and ties, a set's health, the replays that check it and the replay with the answer, why a run cannot be replayed, spend and ceilings, and how a replay run differs from a task run.
 ---
 
 A [replay](/docs/reference/glossary#replay) runs some of a work station's past
@@ -21,20 +21,21 @@ replay, and proposing or deleting a candidate also need `plan`. See
 
 ## Station page
 
-A work station's page has a "Replays" section, after "How its runs turned
-out". It holds three parts.
+A work station's "Improve" tab, `…/stations/<stationId>/improve`, has a
+"Replay sets" card under "Try a change", at `#replays`. It lists the station's
+replay sets, one row each:
 
-| Part | Shows |
+| Column | Shows |
 | --- | --- |
-| Replay sets | One row per set of the station: its name, linked to the set's page, `<n> runs`, "Station gone" when its station has left the line, and its latest replay, as `Latest: <candidate>`, the replay's state, its [success](#success) against the baseline and its [side-by-side](#side-by-side) wins, losses and ties. A set never replayed reads "Not replayed yet". "Open a replay set" asks for a name, then opens the new set's page. With no sets, the part reads "No replay sets yet". |
-| Candidates | One row per proposed candidate of the station, newest first: its name, its short [config fingerprint](/docs/reference/glossary#config-fingerprint), when it was proposed, and `Changed from live <fingerprint>:` with one phrase per change, as the Run page's [Config](/docs/reference/app/tasks-runs-and-the-inbox#config) words them. A candidate that changes nothing reads "The same as the live config when it was proposed." With none, the part reads "No candidates yet". The live snapshots Spotlight takes for baselines are not listed; they show as "Live config" on the replays that ran them. |
-| Propose a candidate | The command that proposes one, with the station's address filled in, and "Copy command". |
+| Set | The set's name, linked to the set's page, and "Station gone" when its station has left the line. |
+| Runs | How many runs the set holds. |
+| Latest replay | The latest replay's [success](#success) as `<share> succeeded`, or `No score yet`, and its [state](#replay-states). Hovering over the success shows the replay's candidate, or "Live config", and its success against the baseline. A set never replayed reads "Not replayed yet". |
 
-To a person who may not read the team's replays, "Replay sets" reads "Only
-the team's members can see its replays".
-
-After "Replays" comes "Searches", the station's searches for a better config.
-See [Searches](/docs/reference/app/searches#station-page).
+"Create a replay set" asks for a name, then opens the new set's page. With no
+sets, the card reads "No replay sets yet" and
+`A replay set holds past runs to replay under a candidate. Create one to start comparing.`,
+with "Create a replay set". To a person who may not read the team's replays,
+the card reads `Only team members can see its replays`.
 
 ## Replay set page
 
@@ -158,7 +159,7 @@ again below it.
 
 To someone who may read the team's replays, an unknown replay, or one of
 another station, reads "Replay not found". To anyone else, the page reads
-"Only the team's members can see its replays".
+"Only team members can see its replays".
 
 The header shows the candidate's name, or "Live config", then
 `Replays <set> · started <when> · config <fingerprint>` and, for a queued,
