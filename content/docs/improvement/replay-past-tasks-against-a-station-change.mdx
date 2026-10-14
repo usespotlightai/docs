@@ -188,7 +188,9 @@ because it was never replayed or runs were added since:
 
 - Under **Live config**, the replay becomes the baseline.
 - Under a proposed candidate, a baseline starts beside it, with a ceiling of its
-  own the same as yours, so the two may spend up to twice the ceiling.
+  own the same as yours, so the two may spend up to twice the ceiling. At 1
+  or 2 repeats, they may spend more when that baseline also checks the set,
+  as below.
 
 If the set has a baseline covering its runs, with at least as many copies of
 each as you asked for, a **Live config** replay runs beside it, and no new
@@ -196,11 +198,14 @@ baseline starts. Otherwise a new baseline starts as above, with your number of
 repeats.
 
 The first baseline of the live config as it is now also checks the set, when
-the set holds 5 runs or more. It replays each run at least 3 times, and its
-ceiling grows in step: 1 repeat at `5.00` becomes 3 repeats at `15.00`. Once
-it finishes, each change is judged and checked a second time, within that
-ceiling. The dialog says so when this applies. A set of fewer than 5 runs is
-never checked.
+the set holds 5 runs or more. At fewer than 3 repeats, it replays each run 3
+times, and its ceiling can be larger than yours. Once it finishes, each change is
+judged and checked a second time, within its ceiling. A set of fewer than 5
+runs is never checked. Before you set the ceiling, see
+[Checking the set](/docs/reference/app/replays#checking-the-set) for that
+baseline's ceiling, and
+[Replay set page](/docs/reference/app/replays#replay-set-page) for what the
+replay and its baseline may spend together and which notes the dialog shows.
 
 At most 2 of a team's replay runs run at once. See
 [Limits and timeouts](/docs/reference/limits-and-timeouts#replays).
@@ -228,48 +233,36 @@ budget**: nothing more starts, and runs already running finish.
 
 **Success** gives the replay's success rate; hover over its ⓘ for the range it
 likely falls in. **Gain** gives its gain over the baseline in points, as in
-`+12 pts`, with a verdict, and its ⓘ gives the gain's range:
-
-- **Better**: the whole range is above no change, and the gain reaches the
-  smallest gain the line counts as real.
-- **Worse**: the whole range is below no change, and the loss reaches it.
-- **Within noise**: anything else. The difference may be chance.
+`+12 pts`, with a verdict of **Better**, **Worse** or **Within noise**, and
+its ⓘ gives the gain's range. See
+[Gains](/docs/reference/app/replays#gains) for when each verdict shows.
 
 Act on **Better** or **Worse**. If a result you expected to matter reads
 **Within noise**, add runs of more tasks to the set, or replay with more
-repeats. The smallest
-gain that counts is the line's `replay_check.min_gain`, 5 points unless set;
-see [Set how large a gain must be](#set-how-large-a-gain-must-be).
+repeats. To change the smallest gain that counts, see
+[Set how large a gain must be](#set-how-large-a-gain-must-be).
 
 Under **Tasks**, the replay's page lists each task, regressions first. A
-regressed task has a red warning sign beside its title: the station's judge
-scored the candidate's change lower, or the baseline succeeded on it and the
-candidate did not. With more than one copy, a task regresses when the share of
-the baseline's copies that succeeded is more than half above the candidate's,
-as when the baseline succeeded 3 times in 3 and the candidate once. Hover over
-a result for its reasons, such as `Checks failed`. With more than one copy, a
-task shows how many copies succeeded; hover over it for each copy's result.
+regressed task has a red warning sign beside its title. See
+[Regressions](/docs/reference/app/replays#regressions) for when a task
+regresses. Hover over a result for its reasons, such as **Checks failed**.
+With more than one copy, a task shows how many copies succeeded; hover over it
+for each copy's result.
 
 Select a task to open its details beside the list: each run's result, why it
 succeeded, failed or went unscored, its checks and what it changed. Select
 **Open the run** to open that replay run, or **Original run** for the run it
-replayed.
+replayed. See [Results](/docs/reference/app/replays#results) for every result,
+**Unscored** included, and every reason.
 
-A task is **Unscored** when nothing could score it, such as a run that changed
-nothing for the checks to run on, could not be replayed, or was cut short by a
-stop or the ceiling. Unscored tasks are left out of the success rate and are
-never regressions. See [Results](/docs/reference/app/replays#results) for every result and
-reason.
-
-If the station has a judge, a **Side by side** tile shows, once the replay
-has finished and any task was compared, its wins, then its losses and ties.
-For each task where both changed something and people had accepted the
-original change, the judge compared the two changes without knowing which was
-the candidate's. Under **Tasks**, the **Closer** column says which it found
+If the station has a judge, a **Side by side** tile shows its wins, then its
+losses and ties, once the replay has finished and any task was compared.
+Under **Tasks**, the **Closer** column says which change the judge found
 closer to the accepted change: **This one**, **The baseline** or **Neither**.
 Select the task to read the judge's reasons in its details. Read the wins and
-losses beside the success rate; they never change it. See
-[Side by side](/docs/reference/app/replays#side-by-side).
+losses beside the success rate. See
+[Side by side](/docs/reference/app/replays#side-by-side) for how the judge
+compares the changes.
 
 If the candidate did worse, propose another candidate and replay the same set.
 Each replay of a set is compared with the same baseline.
@@ -315,18 +308,17 @@ its own, the same as the live replay's.
 While it runs, **Room to improve** reads **Measuring with the answer**. Once
 it finishes:
 
-- `Up to <gain> with the answer`: the most a better config could gain on
-  these runs. Expect a search to find less.
-- `Little: <gain> with the answer`, marked: even the answer barely helps, so
-  a search on this set would find little. Add runs of tasks the live config
-  fails, or search for the same success for less.
-- `Too few runs to tell: <n> runs with an answer`: fewer than 5 tasks were
-  scored on both sides. Add runs that people accepted or sent back.
+- If it reads **Little**, add runs of tasks the live config fails, or search
+  for the same success for less.
+- If it reads **Too few runs to tell**, add runs that people accepted or sent
+  back.
+- If it reads **Couldn't measure with the answer** because the replay with the
+  answer was stopped or ran over its ceiling, replay the live config over the
+  whole set again.
 
 Hover over the ⓘ for the live config's success and the success with the
-answer. If it reads **Couldn't measure with the answer**, the replay with the
-answer or its live replay was stopped or ran over its ceiling; the next replay
-of the live config over the whole set starts another.
+answer. See [Room to improve](/docs/reference/app/replays#room-to-improve) for
+what each reading means.
 
 See [Why a set is replayed with the answer](/docs/improvement/why-changes-are-replayed-on-past-tasks#why-a-set-is-replayed-with-the-answer).
 

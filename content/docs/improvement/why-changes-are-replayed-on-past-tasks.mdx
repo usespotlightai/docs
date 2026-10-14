@@ -87,7 +87,7 @@ could not be made ready before the agent began (`unprepared`), no runner
 provisioned (`unprovisioned`), hooks unanswered (`hooks-unanswered`), a lost
 runner (`runner-lost`) or `superseded`.
 
-Only some runs count against the candidate, and only they can be regressions:
+Only some runs count against the candidate as failures:
 a run that failed with `exited`, with `timed-out` (it kept running past its
 host's time limit), with `refused` (Spotlight would not start it as configured,
 as for a missing harness profile or tools, MCP servers or secrets a replay is
@@ -185,10 +185,10 @@ more often does not weigh more, and the range is drawn over tasks. More copies
 make each task's score steadier, which narrows the range. They add no tasks: a
 set that is too small, or whose tasks are too alike, stays so.
 
-With copies, a task regresses only once every copy on both sides has settled,
-and only when the share of the baseline's copies that succeeded is more than
-half above the candidate's. One copy failing where the baseline succeeded
-every time is not enough. With one copy each, this is the rule above: the
+With copies, a task regresses only once every copy on both sides has settled.
+Counted by success, it regresses when the share of the baseline's copies that
+succeeded is higher than the candidate's share by more than 50 points. One copy
+failing where the baseline succeeded every time is not enough. With one copy each, this is the rule above: the
 baseline succeeded and the candidate did not. A judge's scores are compared as
 the average over each side's copies.
 
@@ -285,9 +285,9 @@ warns about it before it starts.
 
 The replay with the answer is a replay like any other. It has its own ceiling,
 the same as the live replay's, its own runs and its own row on the set's page.
-Its gain is read against the live replay that started it, task by task and
-with a range, and when the station has a judge, its changes are judged blind
-beside that replay's, as any candidate's are. In the docs' view, an upper
+The set's health reads its gain against the live replay that started it, task
+by task and with a range. Its changes are never judged blind beside that
+replay's. In the docs' view, an upper
 bound that skipped the usual scoring would not be comparable with the gains
 it bounds.
 
@@ -304,7 +304,10 @@ copies starts three times the runs. A person sets a ceiling on each replay,
 and once a replay's spend reaches it, nothing more of it starts. Runs already running finish, so a replay
 can end a little over its ceiling, and its page says by how much. The
 baseline started beside a proposed candidate has a ceiling of its own, the
-same as the replay that started it, so the two can spend twice that ceiling. A
+same as the replay that started it, so the two can spend twice that ceiling.
+When that baseline also checks the set, its ceiling can be larger, so at 1 or
+2 repeats the two can spend more; see
+[Checking the set](/docs/reference/app/replays#checking-the-set). A
 replay of the live config becomes the baseline itself when the set has none,
 or when the set's runs changed since the last one. Costs in another currency
 than the ceiling's, and costs never reported, do not count toward it. The
