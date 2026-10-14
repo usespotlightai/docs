@@ -398,41 +398,46 @@ one of these reasons.
 
 ### Replays
 
-A run that cannot be replayed shows one of these on a replay set's page, in the
-Add runs dialog, and after `It could not be replayed or started:` on a replay's result.
+A run that cannot be replayed shows one of these on a replay set's page, on
+hover over its warning sign, and in the Add runs dialog. On a replay's result,
+it follows `Couldn't be replayed or started:` in lower case.
 
 | Message | Cause | See |
 | --- | --- | --- |
-| `There is no such run` | `unknown-run`. The run is not in the workspace. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
-| `It worked no task of its own` | `not-a-task-run`. A chat's run, or a replay run. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
-| `Its task was deleted` | `task-gone`. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
-| `It has not ended yet` | `still-running`. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
-| `It never recorded where it started` | `no-starting-point`. The run ended before starting points were recorded, or its runner could not record one. | [Starting point](/docs/reference/app/tasks-runs-and-the-inbox#starting-point) |
-| `The task as it was briefed was never kept` | `no-briefing`. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
-| `The workspace it started from is no longer kept` | `archive-gone`. More than 30 days have passed since the run started, and it was in no replay set. | [Workspace archives](/docs/reference/limits-and-timeouts#workspace-archives) |
-| `Files it was briefed with are gone` | `attachments-gone`. An attachment the task was briefed with is no longer stored. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
+| `Run doesn't exist` | `unknown-run`. The run is not in the workspace. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
+| `Run has no task of its own` | `not-a-task-run`. A chat's run, or a replay run. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
+| `Task was deleted` | `task-gone`. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
+| `Run hasn't ended yet` | `still-running`. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
+| `Run recorded no starting point` | `no-starting-point`. The run ended before starting points were recorded, or its runner could not record one. | [Starting point](/docs/reference/app/tasks-runs-and-the-inbox#starting-point) |
+| `Task briefing wasn't kept` | `no-briefing`. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
+| `Starting workspace is no longer kept` | `archive-gone`. More than 30 days have passed since the run started, and it was in no replay set. | [Workspace archives](/docs/reference/limits-and-timeouts#workspace-archives) |
+| `Briefing files are gone` | `attachments-gone`. An attachment the task was briefed with is no longer stored. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
 | `Its answer is gone` | `answer-gone`. A replay with the answer could not hand this run its answer: the change people accepted, or what they said when they sent it back, is no longer there. | [Room to improve](/docs/reference/app/replays#room-to-improve) |
-| `A repository it worked in has left the line` | `repository-gone`. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
-| `It did not run at this station` | `not-at-the-station`. The line no longer has the station. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
-| `The candidate cannot run it` | `candidate-unfit`. The candidate was removed, or no longer fits the line as it is. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
-| `It could not be started` | `cannot-start`. The candidate runs no harness a runner can start. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
-| `It could not be checked just now` | `unchecked`. Spotlight could not read the run's facts. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
-| `It was never started` | `forgone`. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
-| `It failed to start after several tries` | `dispatch-failed`. Queuing the run failed 10 times. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
+| `Repository has left the line` | `repository-gone`. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
+| `Run wasn't at this station` | `not-at-the-station`. The line no longer has the station. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
+| `Candidate can't run it` | `candidate-unfit`. The candidate was removed, or no longer fits the line as it is. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
+| `Run couldn't be started` | `cannot-start`. The candidate runs no harness a runner can start. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
+| `Couldn't be checked just now` | `unchecked`. Spotlight could not read the run's facts. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
+| `Never started` | `forgone`. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
+| `Failed to start after several tries` | `dispatch-failed`. Queuing the run failed 10 times. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
 
 A replay's results give their reasons in words such as
-`It asked a person, which a replay cannot` or
-`Its checks could not run: the checks ran out of time`; see
+`Asked a person (replays can't)` or
+`Checks couldn't run: checks ran out of time`; see
 [Results](/docs/reference/app/replays#results) for each.
 
 | Message | Cause | See |
 | --- | --- | --- |
 | `Only team members can see its replays` | The reader is neither on the team nor an owner or admin of the workspace. | [Team outcomes](/docs/reference/roles-and-permissions#team-outcomes) |
-| `Add runs to the set first.` | "Start a replay" on an empty set. | [Replay set page](/docs/reference/app/replays#replay-set-page) |
-| `Its station is gone from its line.` | "Start a replay" on a set whose station has left its line. | [Replay set page](/docs/reference/app/replays#replay-set-page) |
-| `A replay or search of this set is running, so it can't be deleted until that ends or is stopped.` | "Delete" on a set with a replay or search under way. | [Replay set page](/docs/reference/app/replays#replay-set-page) |
-| `A search of this set is under way, so its runs stay as they are until the search ends or is stopped.` | "Add runs" or taking a run out of a set a search is using. | [Search replays](/docs/reference/app/searches#search-replays) |
-| `Give a ceiling above nothing.`, `A ceiling is at most 1,000.`, `Name the currency in three letters, like USD.` | The ceiling entered when starting a replay. | [Replay set page](/docs/reference/app/replays#replay-set-page) |
+| "Replay set not found", `This team has no replay set at that address. Someone may have deleted it.` | A replay set page for a set the team does not have at that station. | [Replay set page](/docs/reference/app/replays#replay-set-page) |
+| "Replay not found", `This team has no replay at that address. Someone may have deleted it.` | A replay page for a replay the team does not have at that station. | [Replay page](/docs/reference/app/replays#replay-page) |
+| `This team has no such run.` | A replay run's page the reader may not read, or no such run. | [Replay runs](/docs/reference/app/replays#replay-runs) |
+| `Please add runs to the set first.` | "Start a replay" on an empty set. | [Replay set page](/docs/reference/app/replays#replay-set-page) |
+| `The station is gone from its line.` | "Start a replay" on a set whose station has left its line. | [Replay set page](/docs/reference/app/replays#replay-set-page) |
+| `A replay or search of this set is running. Please delete the set after it ends.` | "Delete" on a set with a replay or search under way. | [Replay set page](/docs/reference/app/replays#replay-set-page) |
+| `A search of this set is running. Add or take out runs after the search ends or a person stops it.` | "Add runs" or taking a run out of a set a search is using. | [Replay set page](/docs/reference/app/replays#replay-set-page) |
+| `Please enter a ceiling above 0.`, `Maximum ceiling: 1,000`, `Please enter a three-letter currency code, like USD.` | The ceiling entered when starting a replay. | [Replay set page](/docs/reference/app/replays#replay-set-page) |
+| `Please enter a whole number from 1 to 5.` | The repeats entered when starting a replay. | [Replay set page](/docs/reference/app/replays#replay-set-page) |
 
 The [Replays API](/docs/reference/api/replays#errors) and
 [`spotlight replay`](/docs/reference/cli/replay-command) list their own
@@ -445,14 +450,18 @@ A refused pull request names its reason in words; see
 
 | Message | Cause | See |
 | --- | --- | --- |
-| `Only the team's members can see its searches` | The reader is neither on the team nor an owner or admin of the workspace. | [Team outcomes](/docs/reference/roles-and-permissions#team-outcomes) |
+| `Only team members can see its searches` | The reader is neither on the team nor an owner or admin of the workspace. | [Team outcomes](/docs/reference/roles-and-permissions#team-outcomes) |
 | `A search of this station is underway.` | "Start a search" while the station is being searched. | [Station page](/docs/reference/app/searches#station-page) |
 | `Create a replay set first.` | "Start a search" at a station with no replay set. | [Station page](/docs/reference/app/searches#station-page) |
 | `No replay set covers 5 different tasks yet.` | "Start a search" when no set covers runs of 5 tasks. | [Station page](/docs/reference/app/searches#station-page) |
-| `It covers <n> tasks; a search needs runs of at least 5 different tasks, to hold some out.` | A set too small to search on, in the Start a search dialog. | [Start a search](/docs/reference/app/searches#start-a-search) |
-| `Give a whole number from <least> to <most>.` | An iteration, candidate or at-once count out of bounds. | [Start a search](/docs/reference/app/searches#start-a-search) |
-| `It can be picked once its replay on the searched tasks finishes.` | "Pick" on a candidate whose replay has not finished. | [Picking a candidate](/docs/reference/app/searches#picking-a-candidate) |
-| `Another replay set at this station guards its changes already. Turn it off there first.` | "Guards config changes" on a second set at a station. | [Guarding a station's changes](/docs/reference/app/searches#guarding-a-stations-changes) |
+| `The set covers <n> tasks. A search holds some tasks out. Minimum different tasks: 5`, with `1 task` for one | A set too small to search on, in the Start a search dialog. | [Start a search](/docs/reference/app/searches#start-a-search) |
+| `Please enter a whole number from <least> to <most>.` | An iteration, candidate, at-once or repeats count out of bounds. |
+| `Please enter a ceiling above 0.`, `Maximum ceiling: 1,000`, `Please enter a three-letter currency code, like USD.` | The ceiling entered when starting a search. | [Start a search](/docs/reference/app/searches#start-a-search) |
+| `The station is gone from its line.` | A set whose station has left its line, in the Start a search dialog. | [Start a search](/docs/reference/app/searches#start-a-search) |
+| "Search not found", `No search at this address. It may belong to another station.` | A search page for a search the team does not have at that station. | [Search page](/docs/reference/app/searches#search-page) | [Start a search](/docs/reference/app/searches#start-a-search) |
+| `After its replay on the searched tasks finishes, you can pick this candidate.` | "Pick" on a candidate whose replay has not finished. | [Picking a candidate](/docs/reference/app/searches#picking-a-candidate) |
+| `You can't pick this candidate. Its replay stopped before it finished.`, `You can't pick this candidate. Its replay reached its ceiling before it finished.`, `You can't pick this candidate. Its replay is gone.` | "Pick" on a candidate whose replay was stopped, reached its ceiling, or is gone. | [Picking a candidate](/docs/reference/app/searches#picking-a-candidate) |
+| `Another replay set already guards config changes of station <stationId>. Only one replay set of a station can guard config changes.` | "Guards config changes" on a second set at a station. | [Guarding a station's changes](/docs/reference/app/searches#guarding-a-stations-changes) |
 
 The [Searches API](/docs/reference/api/searches#errors), the
 [Replay checks API](/docs/reference/api/replay-checks#errors) and

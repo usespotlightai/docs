@@ -2,11 +2,11 @@
 type: reference
 icon: BookText
 title: Replayed candidates API
-description: The read-only endpoint behind the Insights Candidates tab, its period, every field it answers, who may read it, and its errors.
+description: The read-only endpoint behind Candidates on the Insights Stations tab, its period, every field it answers, who may read it, and its errors.
 ---
 
-The [Candidates](/docs/reference/app/insights#candidates) tab of a team's
-Insights page is read through this endpoint. It answers JSON, and errors are
+[Candidates](/docs/reference/app/insights#candidates), on the Stations tab of
+a team's Insights page, is read through this endpoint. It answers JSON, and errors are
 `application/problem+json` as on the
 [resource API](/docs/reference/api/resource-api#errors).
 
@@ -70,7 +70,8 @@ Each item of a station's `sets`, the newest replayed first:
 | `guardsChanges` | boolean | Whether it [guards its station's changes](/docs/reference/app/searches#guarding-a-stations-changes). |
 | `health` | object | `{ tasks, runs, oldestRunEndedAt, newestRunEndedAt, lastAddedAt, noise, saturation, judge, checks, oracle, minGain }`. `runs` counts the runs the set holds now, and `tasks` the different tasks they worked. The three times are when the oldest and the newest of its runs ended, and when a run was last added to it; each is null while there is none. `noise`, `saturation`, `judge`, `checks` and `oracle` are the set's health, as in the [Replays API](/docs/reference/api/replays#set-health); `minGain` the smallest gain its line counts as real. |
 | `baseline` | object or null | Its newest baseline that is queued, running or finished, whatever the period. Null while it has none. See [Baseline](#baseline). |
-| `candidates` | array | The candidates replayed over it in the period, the newest replayed first. See [Candidate](#candidate). |
+| `chartCurrency` | string or null | The currency its cost and success chart is drawn in: the baseline's, or else that of its newest replayed candidate. Null with neither. |
+| `candidates` | array | The candidates replayed over it in the period, the greatest `againstLive.gain` first and those without one last, the newest replayed first among equals. See [Candidate](#candidate). |
 
 ### Baseline
 
@@ -85,6 +86,7 @@ Each item of a station's `sets`, the newest replayed first:
 | `costPerRun` | number or null | What it spent per scored run. Null while any of its spend went unpriced or was in another currency than its ceiling's. |
 | `currency` | string | Its ceiling's currency, which `costPerRun` is in. |
 | `endedAt` | string or null | |
+| `charted` | string | Whether it is drawn on the set's chart. See [Charted](#charted). |
 
 ### Candidate
 
@@ -115,8 +117,39 @@ Each item of a station's `sets`, the newest replayed first:
 | `compared` | number | The compared runs: how many of its runs the baseline replayed too. |
 | `againstLive` | object or null | Its gain over the baseline on the compared runs, paired run by run, against the line's `min_gain`. Null without a baseline. |
 | `onFrontier` | boolean or null | Whether it is on its search's [frontier](/docs/reference/app/searches#frontier). Null unless `searched`. |
-| `search` | object or null | `{ searchId, state, objective, startedAt, seed }`: the search that proposed it. `state` is `seeding`, `searching`, `holding-out`, `finished` or `stopped`. `objective` is `success` or `cost`, the search's [aim](/docs/reference/app/searches#aims), which decides `onFrontier`. `seed` is `{ successRate, interval, costPerRun, scored }`: the live config the search started from, scored on the same searched runs as its candidates, as the search page gives the live config's search score, with its cost per run in the candidate's `currency`. Null unless `searched`. |
+| `search` | object or null | `{ searchId, state, objective, startedAt, seed }`: the search that proposed it. `state` is `seeding`, `searching`, `holding-out`, `finished` or `stopped`. `objective` is `success` or `cost`, the search's [aim](/docs/reference/app/searches#aims), which decides `onFrontier`. `seed` is `{ successRate, interval, costPerRun, scored, charted }`: the live config the search started from, scored on the same searched runs as its candidates, as the search page gives the live config's search score, with its cost per run in the candidate's `currency`. Its `charted` counts it as finished. Null unless `searched`. |
 | `pullRequest` | object or null | `{ id, state, url, reason }`: the [config pull request](/docs/reference/api/searches#config-pull-request) picking it opened. Null until a person picks it, and for every proposed candidate. |
+| `charted` | string | Whether it is drawn on the set's chart. See [Charted](#charted). |
+| `shown` | object | The figures to set beside the live config. See [Shown](#shown). |
+
+### Charted
+
+`charted` says whether a baseline, a candidate or a search's `seed` is drawn
+on its set's chart, in the set's `chartCurrency`:
+
+| `charted` | When |
+| --- | --- |
+| `unfinished` | Its replay has not finished. |
+| `unscored` | It has no success rate. |
+| `unpriced` | It has no cost per run. |
+| `other-currency` | Its cost per run is in another currency than `chartCurrency`. |
+| `priced` | Otherwise: it is drawn. |
+
+The first that holds is answered.
+
+### Shown
+
+`shown` is `{ basis, costBasis, successRate, interval, liveSuccessRate, runs, costPerRun, liveCostPerRun }`:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `basis` | string | `compared` when the candidate has a `live` and `compared` is above 0, else `overall`. |
+| `costBasis` | string | `compared` when `basis` is and `live.currency` is the candidate's `currency`, else `overall`. |
+| `successRate`, `interval` | number or null, object or null | `successRateOnCompared` and `intervalOnCompared` on the `compared` basis, else `successRate` and `interval`. |
+| `liveSuccessRate` | number or null | `live.successRate` on the `compared` basis, else null. |
+| `runs` | number | `compared` on the `compared` basis, else `scored`. |
+| `costPerRun` | number or null | `costPerRunOnCompared` when `costBasis` is `compared`, else `costPerRun`. |
+| `liveCostPerRun` | number or null | `live.costPerRun` when `costBasis` is `compared`, else null. |
 
 ## Who may read
 
@@ -131,5 +164,5 @@ answered `404`. See
 | Status | Cause |
 | --- | --- |
 | `401` | No session or token, or an unknown token. |
-| `404` | The team is not one the caller may read: `There is no team <teamId> for this caller`. |
-| `422` | `period` is not `7d`, `30d` or `90d`, or is given twice: `Replayed candidates look back 7d, 30d or 90d`. |
+| `404` | The team is not one the caller may read: `Team <teamId> not found.` |
+| `422` | `period` is not `7d`, `30d` or `90d`, or is given twice: `Period must be 7d, 30d or 90d.` |
