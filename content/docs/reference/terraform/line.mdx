@@ -331,18 +331,18 @@ the station's runs end and settle. See
 
 | Message | Cause |
 | --- | --- |
-| `An alert watches one of sent_back_rate, accepted_rate, checks_failed_rate, failed_rate, merged_rate, cost_per_run` | `measure` is another value. |
-| `An alert sets exactly one of risesBy, above, fallsBy, below, to say when it goes off` | None, or more than one, is set. Returned at the path of the alert. |
-| `An alert rises by a share above 0 and at most 1` | `risesBy` on a rate is out of bounds. |
-| `An alert falls by a share above 0 and at most 1` | `fallsBy` on a rate is out of bounds. |
-| `An alert is above a share from 0 to 1` | `above` on a rate is out of bounds. |
-| `An alert is below a share from 0 to 1` | `below` on a rate is out of bounds. |
-| `An alert rises by an amount above 0` | `risesBy` on `cost_per_run` is 0 or less. |
-| `An alert falls by an amount above 0` | `fallsBy` on `cost_per_run` is 0 or less. |
-| `An alert is above an amount of 0 or more` | `above` on `cost_per_run` is below 0. |
-| `An alert is below an amount of 0 or more` | `below` on `cost_per_run` is below 0. |
-| `An alert compares a whole number of runs, at least 1` | `over` is not a whole number of at least 1. |
-| `An alert watches whether <measure> <rises by, is above, falls by or is below> an amount, which an alert before it at this station already watches` | An earlier alert at the station has the same `measure` and sets the same one of `risesBy`, `above`, `fallsBy` and `below`. Returned at the path of the later alert. |
+| `Alert measure must be one of sent_back_rate, accepted_rate, checks_failed_rate, failed_rate, merged_rate, cost_per_run.` | `measure` is another value. |
+| `Alert must set exactly one of risesBy, above, fallsBy, below.` | None, or more than one, is set. Returned at the path of the alert. |
+| `Alert "rises by" value must be a share above 0 and at most 1.` | `risesBy` on a rate is out of bounds. |
+| `Alert "falls by" value must be a share above 0 and at most 1.` | `fallsBy` on a rate is out of bounds. |
+| `Alert "is above" value must be a share from 0 to 1.` | `above` on a rate is out of bounds. |
+| `Alert "is below" value must be a share from 0 to 1.` | `below` on a rate is out of bounds. |
+| `Alert "rises by" value must be an amount above 0.` | `risesBy` on `cost_per_run` is 0 or less. |
+| `Alert "falls by" value must be an amount above 0.` | `fallsBy` on `cost_per_run` is 0 or less. |
+| `Alert "is above" value must be an amount of 0 or more.` | `above` on `cost_per_run` is below 0. |
+| `Alert "is below" value must be an amount of 0 or more.` | `below` on `cost_per_run` is below 0. |
+| `Alert must compare a whole number of runs, at least 1.` | `over` is not a whole number of at least 1. |
+| `Alert for "<measure> <rises by, is above, falls by or is below>" already exists on this station.` | An earlier alert at the station has the same `measure` and sets the same one of `risesBy`, `above`, `fallsBy` and `below`. Returned at the path of the later alert. |
 
 Each is returned with `422` at the path `stations[<n>].alerts[<n>]`, followed
 by `.<field>` where the message names one. Paths and messages use the API's

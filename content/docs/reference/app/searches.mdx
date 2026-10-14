@@ -354,9 +354,9 @@ workspace:
 
 | When | Form | Headline |
 | --- | --- | --- |
-| A reflection ended the search | `ended` | By outcome: `<search> stalled: nothing left the config can fix`, `<search> stalled: its best config already passes every task it searches, so there was nothing to look into`, `<search> stalled, and looking into why could not run`, or `<search> ran out of budget: it found what the config could fix, but could not try it`. |
-| A reflection went on and recorded a cause other than `config` | `advice` | `<search> goes on, but found failures outside the config` |
-| The search stalled with no room for a reflection | `ended` | `<search> stalled, with no budget left to look into why` |
+| A reflection ended the search | `ended` | By outcome: `<search> ended with nothing the config can fix`, `<search> ended with every searched task passing`, `<search> ended after its reflection failed`, or `<search> ran out of budget`. |
+| A reflection went on and recorded a cause other than `config` | `advice` | `<search> goes on after finding failures outside the config` |
+| The search stalled with no room for a reflection | `ended` | `<search> ended with no budget left to reflect` |
 
 `<search>` is `The search for a better <station> config`. The first point
 says what happened. After it, one point per cause other than `config`, as
@@ -364,8 +364,8 @@ says what happened. After it, one point per cause other than `config`, as
 suggestion: "Take the task out of the replay set, or reword it", "Fix the
 judge's rubric", "Fix the station's check" or "Fix what the run needed around
 the work". A task with no title reads "one of the searched tasks". A point is
-cut at 1,000 characters; past 20 points, the last reads `<n> more on the
-search's page`. A reflection that went on with only `config` causes sends no
+cut at 1,000 characters; past 20 points, the last reads `The search page shows <n>
+more.` A reflection that went on with only `config` causes sends no
 notice. Each reflection sends at most one.
 
 ## Scores
@@ -556,7 +556,7 @@ with `github-refused`.
 | `github-refused` | GitHub refused the change |
 
 Each comes with Spotlight's message, such as
-`` `prompt` is computed in Terraform (`local.build_prompt`); change it by hand``.
+``Terraform computes `prompt` from `local.build_prompt`. Please change it by hand.``.
 `block-not-found` also covers a station no longer on its line, and
 `file-missing` a file a `file()` reads that the repository does not hold.
 `file-unwritable` is a file that is a symbolic link in the repository.

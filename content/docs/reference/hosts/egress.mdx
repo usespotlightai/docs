@@ -99,7 +99,7 @@ only where it is the stand-in, or the prefix followed by the stand-in, as in
 `?key=spotlight-egress:MAPS_KEY`. The other parameters keep their order and
 encoding. Egress never logs the full URL. It answers a plain-HTTP or
 intercepted request it could not pass on with only
-`egress could not reach <host:port>`, without the reason. See
+`Egress couldn't reach <host:port>.`, without the reason. See
 [`spotlight_secret`](/docs/reference/terraform/secret) and
 [Give an MCP server a secret](/docs/security/give-an-mcp-server-a-secret).
 
@@ -180,21 +180,21 @@ API is never reserved for a runner a push pool provisions.
 
 | Status | Message | Cause |
 | --- | --- | --- |
-| `407` | `egress answers only the sandbox it was started for` | No proxy credential, or the wrong one. |
-| `400` | `egress is a proxy: ask it for an absolute URL, or CONNECT to a host` | A request that is neither `CONNECT` nor an absolute URL. |
-| `403` | `egress does not let this sandbox reach <host>` | The allow-list does not admit the host. |
-| `502` | `egress could not reach <host:port>: egress never opens a connection to <ip>` | A tunnelled `CONNECT` to an always-refused address. |
-| `502` | `egress could not reach <host:port>: egress opens a connection to the private address <ip> only for a host the allow-list names` | A tunnelled `CONNECT` to a private address the allow-list does not name. |
-| `502` | `egress could not reach <host:port>: <reason>` | Any other failure of a tunnelled `CONNECT`. |
-| `502` | `egress could not reach <host:port>` | A plain-HTTP or intercepted request that failed for any of these causes. The reason and the URL are left out. |
-| `502` | `egress could not stand in for <host>: <reason>` | No certificate could be made for an intercepted host. |
+| `407` | `Egress answers only the sandbox it was started for.` | No proxy credential, or the wrong one. |
+| `400` | `Egress is a proxy. Please ask it for an absolute URL, or CONNECT to a host.` | A request that is neither `CONNECT` nor an absolute URL. |
+| `403` | `Egress doesn't let this sandbox reach <host>.` | The allow-list does not admit the host. |
+| `502` | `Egress couldn't reach <host:port>. Error: Egress never opens a connection to <ip>.` | A tunnelled `CONNECT` to an always-refused address. |
+| `502` | `Egress couldn't reach <host:port>. Error: Egress opens a connection to private address <ip> only if the allow-list names the host.` | A tunnelled `CONNECT` to a private address the allow-list does not name. |
+| `502` | `Egress couldn't reach <host:port>. Error: <reason>` | Any other failure of a tunnelled `CONNECT`. |
+| `502` | `Egress couldn't reach <host:port>.` | A plain-HTTP or intercepted request that failed for any of these causes. The reason and the URL are left out. |
+| `502` | `Egress couldn't stand in for <host>. Error: <reason>` | No certificate could be made for an intercepted host. |
 
 Connections time out after 30 seconds, and TLS handshakes upstream after 15
 seconds.
 
 ## Egress start failures
 
-These fail the run with `The sandbox's egress did not start: <error>`:
+These fail the run with `The sandbox's egress didn't start. Error: <error>`:
 
 | Message | Cause |
 | --- | --- |

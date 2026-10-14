@@ -149,10 +149,10 @@ Without `discover`, `oauth2` must name both `authorize` and `token`. With
 `discover = true` it takes only `scopes`, `identity` and `resource`; naming
 `authorize`, `token` or `registration` beside it is refused as an unrecognized
 key. `discover` without an `mcp` block is refused at `connection.oauth2` with
-`discovers how to connect from the MCP server it names in mcp.url, which it does not name`.
+`discovers how to connect from its MCP server, but mcp.url names no MCP server`.
 
 `holder = "requester"` without `oauth2` is refused with
-`The <integration> integration takes each person's connection, and a person can only connect over oauth2`.
+`Integration <integration> takes each person's connection. A person can connect only over oauth2.`
 
 ```hcl
 connection = {
@@ -394,7 +394,7 @@ its `when` holds.
 | `attaches` | object | none | Files attached to the task. See below. |
 
 A raise must name a `branch` or at least one mark with `find: true`; otherwise
-it is refused with `needs a branch or a mark, or nothing could find a task from it`.
+it is refused with `needs a branch or a mark. Without one, no task can be found from it`.
 When neither evaluates to a value, reading the delivery fails.
 
 Mark:
@@ -511,7 +511,7 @@ Input:
 
 An input may not be named `json`: Spotlight keeps that name for handing a tool
 every input at once, and refuses the tool with
-`takes json, which Spotlight keeps for handing a tool every input at once`.
+`tool <integration>.<tool> cannot take reserved input json. That input hands a tool every input at once`.
 
 An agent calls a tool as `<integration>.<tool>`. A tool with `approval` also
 takes `intent` from the agent, which is shown to the person and never sent;
@@ -626,11 +626,11 @@ matches any run of characters. Anything else is refused with
 
 A tool in `tools` with the same name as a generated one is offered in its
 place. A key of `approval` that names no generated tool gives a warning:
-`names <key>, which no operation of its <OpenAPI description, GraphQL schema or MCP server> is called`.
+`names <key>, but no operation of its <OpenAPI description, GraphQL schema or MCP server> has that name`.
 
 At most 1,000 tools are generated, counted after `include`, `exclude` and the
 tools in `tools`. More is refused at `<openapi, graphql or mcp>.tools` with
-`offers <n> tools from its <OpenAPI description, GraphQL schema or MCP server>, more than the 1000 a station can choose between; name the ones it offers in <openapi, graphql or mcp>.tools.include`.
+`offers <n> tools from its <OpenAPI description, GraphQL schema or MCP server>. A station can choose between at most 1000 tools. Please name the tools to offer in <openapi, graphql or mcp>.tools.include`.
 
 ### Generated tools
 
@@ -657,21 +657,21 @@ deployment's outbound allow-list and never from `https` to `http`, and
 credentials are not sent to a host other than the request's own.
 
 An operation that gets no tool gives a warning at `openapi` or `graphql`, as
-`passes over <operation>, <reason>`:
+`passes over <operation>. <reason>`:
 
 | Reason | Cause |
 | --- | --- |
-| `because another operation is also called <name>` | An earlier operation has the same tool name. The first is kept. |
-| `which has no name a tool can take` | Its `operationId`, method and path, or field name give no tool name. |
-| `because it needs its <in> parameter <name>, which a tool cannot send` | A required cookie parameter, a required `accept`, `content-type` or `authorization` header, or a required parameter whose name is not letters, digits, `_` and `-`, such as `$filter`. |
-| `because one of its parameters cannot be read` | A parameter is not an object with `name` and `in`, or its `$ref` points nowhere. |
-| `because it takes <name> twice` | Two parameters in different places share a name. |
-| `because it takes a parameter called body as well as a body` | A parameter named `body` beside a JSON request body. |
-| `because it sends a body that is not JSON, which a tool cannot send yet` | A required request body with no JSON media type. |
-| `because it takes <name>, which a tool cannot` | A GraphQL argument whose name a tool input cannot have. |
-| `because it takes "<name>", which a tool cannot` | An input named `json`, or not letters, digits, `_` and `-`. |
-| `because it calls <host>, and the connection is worn only toward the host the description came from or the one its baseUrl names` | With `auth.oauth2` and no `baseUrl`, the operation's server is on another host than the description. |
-| `which needs approval and takes intent, the input Spotlight keeps for the agent to say what it wants to do; switch its approval off in <openapi or graphql>.tools.approval to offer it` | The operation asks a person first and has an input named `intent`. With its `tools.approval` set to `false` it is offered. |
+| `Another operation is also called <name>` | An earlier operation has the same tool name. The first is kept. |
+| `It has no name that a tool can take` | Its `operationId`, method and path, or field name give no tool name. |
+| `It needs its <in> parameter <name>, which a tool cannot send` | A required cookie parameter, a required `accept`, `content-type` or `authorization` header, or a required parameter whose name is not letters, digits, `_` and `-`, such as `$filter`. |
+| `One of its parameters cannot be read` | A parameter is not an object with `name` and `in`, or its `$ref` points nowhere. |
+| `It takes <name> twice` | Two parameters in different places share a name. |
+| `It takes a parameter called body as well as a body` | A parameter named `body` beside a JSON request body. |
+| `It sends a body that is not JSON. A tool cannot send such a body yet` | A required request body with no JSON media type. |
+| `It takes <name>, which a tool cannot take` | A GraphQL argument whose name a tool input cannot have. |
+| `It takes "<name>", which a tool cannot take` | An input named `json`, or not letters, digits, `_` and `-`. |
+| `It calls <host>. The connection is worn only toward the host of the description or the host that baseUrl names` | With `auth.oauth2` and no `baseUrl`, the operation's server is on another host than the description. |
+| `It needs approval and takes intent, an input that Spotlight keeps for the agent to say what it wants to do. To offer it, switch its approval off in <openapi or graphql>.tools.approval` | The operation asks a person first and has an input named `intent`. With its `tools.approval` set to `false` it is offered. |
 
 ### Reading the description
 
@@ -711,9 +711,9 @@ Problems include:
 | `is larger than the 64 MB Spotlight reads` | The description is too large. |
 | `took longer than 30 seconds to read` | The fetch was too slow. |
 | `took longer than 30 seconds to make sense of` | Reading the operations was too slow. At most 2 descriptions are read at once on each control plane server; one that waits for its turn waits within the same 30 seconds. |
-| `is a Swagger 2 description, which Spotlight does not read; convert it to OpenAPI 3` | `swagger: "2.0"`. |
-| `is not an OpenAPI 3 description, which says openapi: 3.0 or 3.1` | No `openapi: 3.x`. |
-| `names no server to call; give the openapi block a baseUrl` | No `baseUrl`, no server, and no `url`. |
+| `is a Swagger 2 description. Spotlight reads only OpenAPI 3. Please convert it to OpenAPI 3` | `swagger: "2.0"`. |
+| `is not an OpenAPI 3 description. An OpenAPI 3 description says openapi: 3.0 or 3.1` | No `openapi: 3.x`. |
+| `names no server to call. Please give the openapi block a baseUrl` | No `baseUrl`, no server, and no `url`. |
 | `is not a GraphQL schema Spotlight can read: <error>` | The answer or `document` is not a GraphQL schema. |
 
 ### Described
@@ -769,9 +769,9 @@ mcp = {
 | Output | The result's `structuredContent`. Without it, a single text content, read as JSON when it is JSON and as text when not. Otherwise the whole `content` array. |
 
 A tool the server lists that gets no tool gives a warning at `mcp`, as for an
-API description: `passes over <tool>, <reason>`, where the reason is
-`which has no name a tool can take`, `because it takes <name>, which a tool cannot`,
-`because another operation is also called <name>`, or a reason its input
+API description: `passes over <tool>. <reason>`, where the reason is
+`It has no name that a tool can take`, `It takes <name>, which a tool cannot take`,
+`Another operation is also called <name>`, or a reason its input
 schema cannot be read for. The server's resources and prompts are not offered.
 
 ### Listing the tools
@@ -820,7 +820,7 @@ answered `401` with `auth.oauth2` is renewed and retried once, as in
 Spotlight declares no client capabilities and answers no request from the
 server other than `ping`. A server that asks a question in the middle of a
 call (MCP elicitation) is refused, and the call fails with
-`using <tool>: the MCP server asked a question in the middle of the call, which Spotlight does not pass on to a person, so the call was refused`.
+`using <tool>: the MCP server asked a question in the middle of the call. Spotlight refused the call. It does not pass such questions on to a person`.
 A result marked `isError` fails the call with
 `using <tool>: the MCP server answered with an error: <text>`, cut at 500
 characters. An answer over 4 MB fails the call with
@@ -851,7 +851,7 @@ nothing is sent.
 ## Secrets in expressions
 
 No expression may read a secret. An expression containing `secret.` or
-`secret[` is refused with `reads a secret's value, which nothing may; name the secret in auth.secrets and Spotlight wears it toward the hosts it is bound to`.
+`secret[` is refused with `reads a secret's value. No expression may read a secret. Please name the secret in auth.secrets, and Spotlight wears it toward the hosts it is bound to`.
 
 Secret references are not checked against the workspace's secrets when the
 definition is written. A request that uses a missing secret fails with
