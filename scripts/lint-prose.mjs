@@ -95,6 +95,8 @@ for (const file of files) {
       report(file, n, 'bold in reference or explanation prose');
     }
     if (type === 'get-started' && /\byou will learn\b/i.test(prose)) report(file, n, 'tutorial promises learning');
+    const plural = type === 'get-started' && prose.match(/\b(we|us|our|ours|ourselves|let's)\b/i);
+    if (plural) report(file, n, `tutorial says "${plural[1]}"; address the reader as "you" and name Spotlight`);
   });
 }
 
