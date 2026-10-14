@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Tasks, runs and the inbox
-description: Task fields and states, notes, handovers and moves, run states, failure codes, configs, spend, a station's judge and alerts, station outcomes, the inbox and its notices, grades, station alerts, approvals, chats and attachments.
+description: Task fields and states, notes, handovers and moves, run states, failure codes, configs, spend, a station's judge and alerts, station outcomes, the inbox and its notices, grades, memory reviews, station alerts, approvals, chats and attachments.
 ---
 
 A task stands at one station of a line. Runs work it; people answer it from the
@@ -750,6 +750,60 @@ judge marked it reads `Claim <n>`. The judge's score is not shown on it.
   rubric, else yes or no. On claims, a grade marks every claim met or not, and
   counts as the share met.
 - Nothing waits on a grade. The task moves on as it would without one.
+
+### Memory reviews
+
+An item is raised for a run when it proposes at least one
+[memory](/docs/reference/glossary#memory): drafted after the run at a station
+with `memories: true`, or proposed by the agent with
+[`spotlight remember`](/docs/reference/cli/agent-commands#spotlight-remember).
+The item reads `A run proposed memories for the team.` It settles, and reads
+`Proposed memories decided.`, once no memory of the run is left to decide:
+every one is approved or rejected, or a later run's drafting has dropped the
+undecided ones.
+
+It reaches the inbox of the task's assignee, or of everyone who can see the
+team when the task has no assignee. The item shows the run's conversation,
+then a summary line that folds the cards and starts open. `<proposed>` is how
+many memories the run proposed, and `<open>` how many are still undecided:
+
+- `<agent> proposed <proposed> memories · <open> to review`, or
+  `<agent> proposed 1 memory · 1 to review`;
+- `<agent> proposed <proposed> memories · all decided`, or
+  `<agent> proposed 1 memory · all decided`.
+
+`<agent>` is the run's harness, or "The agent" when it is not known. Each
+memory is a card titled "Waiting for your approval" while undecided, then
+`Memory approved by <name>` or `Memory rejected by <name>`, or
+`Memory approved` or `Memory rejected` when the person who decided is not
+known:
+
+| Row | Shows |
+| --- | --- |
+| Memory | The memory. |
+| Kind | The kind, with what it means on hover. |
+| Applies to | "The whole team", "This line" or "This station". |
+| Files | `<paths> in <repository>`, or the repository alone for a memory about the whole repository. Only for a memory kept for a repository. |
+| Source | The notes and steps it was drawn from: each note with a person's name, "A teammate" or "From another tool", and each step with the run's harness or "The agent". |
+
+An undecided card has a copy icon, an edit icon, "Reject" and "Approve". The
+edit icon changes the memory in place, at most 1,000 characters. While it is
+edited, "Reject" becomes "Cancel", which puts the memory back, and "Approve",
+which keeps it as edited, is off while the text is empty. A decided card keeps
+the copy icon, with "Reject" and "Approve" off.
+
+- An approved memory stands, with a new handle. If it corrects a standing
+  memory, that one is retired in its favour.
+- A rejected memory is kept and never briefed. When a station drafts
+  memories, the drafter is shown the 20 newest memories the team rejected in
+  the last 90 days that apply where the run ran. `spotlight remember` does not
+  check rejected memories.
+- A memory from outside the team cannot be approved together with other
+  memories in one request. The web app approves one memory at a time.
+- When a later run's drafting finds something to draw on, it drops every
+  undecided drafted memory of the task's earlier runs, whether or not it
+  proposes any itself. Memories proposed with `spotlight remember` stay.
+- Nothing waits on a review. The task moves on as it would without one.
 
 ### Station alerts
 
