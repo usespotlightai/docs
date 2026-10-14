@@ -165,12 +165,12 @@ runner in a row beneath it. The runner reads **Starting** until it claims the
 work, then **Running**.
 
 If the run fails instead, its message begins
-`No runner was provisioned for it in N attempts; the last was`, followed by
+`No runner was provisioned after N attempts. Last failure:`, followed by
 the cause:
 
 | Cause | What to do |
 | --- | --- |
-| `refused: answered <status>` | Your endpoint answered with that status. Check its signature verification and its logs. |
+| `refused: Provision URL answered <status>. Response: <body>` | Your endpoint answered with that status. Check its signature verification and its logs. |
 | `unreachable` | Spotlight could not call the endpoint. Check the URL and that it answers within 10 seconds. |
 | `not-allowed` | Spotlight's deployment does not allow outbound calls to the endpoint's host, or the URL is not `https`. |
 | `lapsed` | The endpoint accepted, but no runner claimed the work in time. Check that the container started and can reach `spotlightUrl`. |

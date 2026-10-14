@@ -75,13 +75,13 @@ A request to a host the list leaves out fails with status `403` and this
 message:
 
 ```text
-egress does not let this sandbox reach <host>
+Egress doesn't let this sandbox reach <host>.
 ```
 
 A connection to an address egress never opens fails with `502`. Through a
-tunnelled `CONNECT`, the message is `egress could not reach <host:port>:` and
+tunnelled `CONNECT`, the message is `Egress couldn't reach <host:port>. Error:` and
 the reason. A plain-HTTP request, or one to a host egress adds a secret to,
-gets only `egress could not reach <host:port>`. These reach whatever made the
+gets only `Egress couldn't reach <host:port>.` These reach whatever made the
 request, so
 look for them in the output of the agent's commands on the run page. Add the
 host to the list if the run needs it, and restart the host.

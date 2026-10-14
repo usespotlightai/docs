@@ -107,7 +107,7 @@ that fails stops the steps after it.
 
 A step may not call a tool with `approval`, or a tool of an integration whose
 `connection.holder` is `requester`; the step fails with `not-allowed`. For the
-second, the reason is `names <tool>, which acts as the person who started a task, and a hook acts as nobody`.
+second, the reason is `names <tool>, which acts as the person who started a task. A hook acts as nobody`.
 
 `request`:
 
@@ -185,7 +185,7 @@ The request carries `Authorization: Bearer <token>`, an ES256 JWT:
 | Keys | `https://app.usespotlight.ai/api/.well-known/jwks.json` |
 
 A hook with `oidc` is refused when the deployment has no key to sign hook
-tokens with, in [`HOOK_SIGNING_KEY`](/docs/reference/self-hosted-settings#calls-out-of-spotlight): `asks for OIDC tokens, but this Spotlight has no key to sign them with; sign with a secret instead, or set HOOK_SIGNING_KEY`.
+tokens with, in [`HOOK_SIGNING_KEY`](/docs/reference/self-hosted-settings#calls-out-of-spotlight): `needs HOOK_SIGNING_KEY set to sign OIDC tokens`.
 
 ## Refusing an event
 

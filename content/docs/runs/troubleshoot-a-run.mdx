@@ -31,10 +31,10 @@ look for the first of these that applies:
 
 | Refusal reason | What to change |
 | --- | --- |
-| `this host's SPOTLIGHT_RUNNER_IMAGE does not admit it` | Add the image, or a prefix that covers it, to `SPOTLIGHT_RUNNER_IMAGE` on the host. See [Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image#let-the-hosts-serve-it). |
-| `could not pull it: …` | Check the image reference and the host's registry access. See [Pull runner images from a private registry](/docs/hosts/pull-images-from-a-private-registry). |
-| `could not look inside it: …` | Check that the image is built on the Spotlight runner image. See [Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image). |
-| `its runner is release …, older than the … this control plane needs` | Rebuild the image on a newer runner release. |
+| `The host's SPOTLIGHT_RUNNER_IMAGE doesn't admit this image.` | Add the image, or a prefix that covers it, to `SPOTLIGHT_RUNNER_IMAGE` on the host. See [Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image#let-the-hosts-serve-it). |
+| `Image can't be pulled. Error: …` | Check the image reference and the host's registry access. See [Pull runner images from a private registry](/docs/hosts/pull-images-from-a-private-registry). |
+| `Image can't be inspected. Error: …` | Check that the image is built on the Spotlight runner image. See [Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image). |
+| `Runner is on release <release>. Minimum version required: <release>` | Rebuild the image on a newer runner release. |
 
 ## The run failed with a message
 
@@ -46,17 +46,17 @@ lists every message and its code.
 
 | Message | What to change |
 | --- | --- |
-| `The runner image <image> could not be pulled: …` | The image reference or the host's registry credentials. See [Pull runner images from a private registry](/docs/hosts/pull-images-from-a-private-registry). |
-| `The runner image <image> is refused: …` | Fix the refusal reason as in the table above. |
-| `The runner image <digest> no longer holds <harness>, which this run needs` | Put the harness back in the image, or change the station's harness. |
-| `The sandbox's egress did not start: …` | Read the host's log. See [Egress](/docs/reference/hosts/egress). |
-| `prepare: git clone <path>: …` | Check that the GitHub App can read the repository and that the line names it correctly. See [Point a line at your repositories](/docs/lines/point-a-line-at-your-repositories). |
-| `prepare: preparing <path> did not finish within 10m0s` | Check the host's network to GitHub. See [Limits and timeouts](/docs/reference/limits-and-timeouts). |
-| `start agent: …`, `open a session: …` | If the rest of the message names authentication, check the harness key the host gives sandboxes. See [Give hosts your harness keys](/docs/hosts/give-sandboxes-your-harness-keys). |
-| `resume the session: …` | The harness could not reopen the task's earlier conversation. |
-| `fetch attachment <id>: …` | One of the task's attachments could not be fetched into the sandbox. |
-| `No runner was provisioned for it in N attempts; the last was …` | Check the push pool's provision endpoint. See [Provision call](/docs/reference/events/provision-call). |
-| `Its hooks could not be asked after N tries: …` | Check the hook named in the message. See [`spotlight_hook`](/docs/reference/terraform/hook). |
+| `Runner image <image> can't be pulled. Error: …` | The image reference or the host's registry credentials. See [Pull runner images from a private registry](/docs/hosts/pull-images-from-a-private-registry). |
+| `Runner image <image> is refused. …` | Fix the refusal reason as in the table above. |
+| `Runner image <digest> no longer holds the <harness> harness.` | Put the harness back in the image, or change the station's harness. |
+| `The sandbox's egress didn't start. Error: …` | Read the host's log. See [Egress](/docs/reference/hosts/egress). |
+| `The runner couldn't prepare the run. Error: prepare: git clone <path>: …` | Check that the GitHub App can read the repository and that the line names it correctly. See [Point a line at your repositories](/docs/lines/point-a-line-at-your-repositories). |
+| `The runner couldn't prepare the run. Error: prepare: preparing <path> did not finish within 10m0s` | Check the host's network to GitHub. See [Limits and timeouts](/docs/reference/limits-and-timeouts). |
+| `The runner couldn't start the agent. Error: start agent: …`, `The runner couldn't start the agent. Error: open a session: …` | If the rest of the message names authentication, check the harness key the host gives sandboxes. See [Give hosts your harness keys](/docs/hosts/give-sandboxes-your-harness-keys). |
+| `The runner couldn't start the agent. Error: resume the session: …` | The harness could not reopen the task's earlier conversation. |
+| `The runner couldn't prepare the run. Error: fetch attachment <id>: …` | One of the task's attachments could not be fetched into the sandbox. |
+| `No runner was provisioned after N attempts. Last failure: …` | Check the push pool's provision endpoint. See [Provision call](/docs/reference/events/provision-call). |
+| `Hooks did not answer after N tries. Last error: …` | Check the hook named in the message. See [`spotlight_hook`](/docs/reference/terraform/hook). |
 
 For a message that names neither a setting nor a guide, read the rest of it,
 then the host's log.
@@ -70,7 +70,7 @@ A station's run fails before it starts when the station asks for something
 the team or workspace does not have. The message after "The run failed:" says
 which:
 
-- `harness_profile_unknown: The <Station> station names the <profile> harness profile, which its team does not hold`:
+- `harness_profile_unknown: Harness profile <profile> is not in this team. Station: <Station>`:
   create that harness profile for the team, or remove it from the station. See
   [Limit what agents may do](/docs/agents/limit-what-agents-may-do).
 - `not_entitled: …` or `entitlement_lapsed: …`: the station gives a catalog
@@ -84,7 +84,7 @@ Refused runs are not retried. After changing the station, reply to the item.
 
 ## The run was given up on
 
-"The run was given up on after N attempts without finishing." means runners
+"Spotlight gave up on the run after N attempts. The run did not finish." means runners
 claimed the run and then stopped reporting, or ran it past the host's run time
 limit, N times in a row. Spotlight puts such a run back in the queue by itself
 before it gives up. The Run page shows its code: `runner-lost` or `timed-out`.
@@ -106,7 +106,7 @@ tables above and fix what it names before you reply again.
 A failing setup command does not fail the run; the agent starts without it.
 
 On the Run page, open the **Ran setup** step. Its output ends with
-`Setting up <path> failed: …`. Fix the repository's `setup` command in the
+`Setup failed for <path>. Error: …`. Fix the repository's `setup` command in the
 line, then reply to the item, or [send the work back to the
 station](/docs/runs/steer-or-stop-a-run#send-work-back-to-a-station) to run it
 again.

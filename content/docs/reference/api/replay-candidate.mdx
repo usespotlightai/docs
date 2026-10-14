@@ -91,12 +91,12 @@ path `station.<field>`, as in `station.judge.rubric`.
 | `is a station block, as a line holds it` | `station` | `station` is not an object. |
 | `keeps the station's key, <key>` | `station.key` | `key` names another station. |
 | `names a harness a runner can start` | `station.harness` | The block runs no harness Spotlight can start. |
-| `name must be 1 to 100 characters` | `name` | `name` is empty or too long. |
-| `name cannot start or end with a space` | `name` | `name` starts or ends with a space. |
-| `name cannot contain /` | `name` | `name` holds `/`. |
-| `name cannot start with reserved prefix Live config` | `name` | `name` starts with `Live config`. |
-| `name cannot start with reserved prefix Planned change` | `name` | `name` starts with `Planned change`. |
-| `name cannot start with reserved prefix With the answer` | `name` | `name` starts with `With the answer`. |
+| `Candidate name must be 1 to 100 characters.` | `name` | `name` is empty or too long. |
+| `Candidate name cannot start or end with a space.` | `name` | `name` starts or ends with a space. |
+| `Candidate name cannot contain /.` | `name` | `name` holds `/`. |
+| `Candidate name cannot start with the reserved prefix "Live config".` | `name` | `name` starts with `Live config`. |
+| `Candidate name cannot start with the reserved prefix "Planned change".` | `name` | `name` starts with `Planned change`. |
+| `Candidate name cannot start with the reserved prefix "With the answer".` | `name` | `name` starts with `With the answer`. |
 
 ## Errors
 
@@ -104,6 +104,6 @@ path `station.<field>`, as in `station.judge.rubric`.
 | --- | --- | --- |
 | `404` | `not-found` | No such line, station or candidate the caller may see. |
 | `409` | `already-exists` | The station already has a candidate by that name. Import it instead. |
-| `409` | `in-use` | Withdrawing a candidate while a replay of it is under way: `The candidate <id> is being replayed; stop its replays first`. Withdrawing a live snapshot: `The candidate <id> is the live config Spotlight replays as a baseline; it goes with its replay set`. Withdrawing a candidate a search or a replay check made: `The candidate <id> was made by Spotlight for a search or a change check; it goes with them`. |
+| `409` | `in-use` | Withdrawing a candidate while a replay of it is under way: `Candidate <id> is being replayed. Please stop its replays first.` Withdrawing a live snapshot: `Candidate <id> is the baseline of the live config. Deleting its replay set removes it.` Withdrawing a candidate a search or a replay check made: `Candidate <id> belongs to a search or a check. Spotlight removes it together with that search or check.` |
 | `409` | `moved-on` | `If-Match` names a version that is no longer current. |
-| `422` | `invalid` | A field is wrong. An import `address` not in its form: `A candidate is addressed by its team, line and station keys, then its name, as in core/delivery/build/Shorter prompt`. A list `station` not in its form: `A station is named by its team, line and station keys, as in core/delivery/build, not <value>`. |
+| `422` | `invalid` | A field is wrong. An import `address` not in its form: `Candidate address must be team, line and station keys, then name, as in core/delivery/build/Shorter prompt.` A list `station` not in its form: `Station address must be team, line and station keys, as in core/delivery/build. Received: <value>`. |
