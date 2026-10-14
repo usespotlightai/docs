@@ -117,7 +117,7 @@ Under the estimate, the dialog may warn, from the set's
 | `The live config already succeeds on <share> of this set. Aim for the same success for less, or add tasks that the live config fails.` | The live config succeeds on more than 95% of the set. |
 | `The judge gave the same verdict twice on only <share> of <n> changes. Make the rubric more specific before you search.` ("change" for 1) | The set's newest check found the judge agreeing with itself less than 80% of the time. |
 | `The check flipped on <n> of <m> changes that it ran twice. It can flip a candidate's result by chance. The set page lists these changes.` | The set's newest check found a flaky check. |
-| `With each run's answer, the live config gained only <gain> pts on <n> runs. The likely range is <low> to <high>. A better config has little room to show a gain here. Please add tasks that the live config fails.` ("run" for 1) | The newest [replay with the answer](/docs/reference/app/replays#replay-with-the-answer) was compared, its gain covers at least 5 tasks paired on both sides, and it is not Better. |
+| `With each run's answer, the live config gained only <gain> pts on <n> runs. The likely range is <low> to <high>. A better config has little room to show a gain here. Please add tasks that the live config fails.` ("run" for 1) | The newest [replay with the answer](/docs/reference/app/replays#replay-with-the-answer) was compared, its gain covers at least 5 tasks paired on both sides, and it is not `better`. |
 
 Under either `Success moved` warning, unless "Repeats" is the suggestion
 already, `Replay each run <n> times` sets "Repeats" to the copies needed, at
@@ -154,7 +154,7 @@ cost" card.
 
 ### Tiles
 
-An info icon beside a tile's label shows its note on hover.
+An ⓘ beside a tile's label shows its note on hover.
 
 | Tile | Shows | Note |
 | --- | --- | --- |
@@ -194,7 +194,7 @@ It is one table:
 | Candidate | Its name, or "Live config"; a dot for a [frontier](#frontier) point, whose hover reads `On the frontier: no other candidate succeeds more for the same cost or less.`; and its [reading](#only-on-seen-tasks) when it has one. Selecting the row opens its [details](#candidate-details), and selecting it again closes them. |
 | Searched | Its replay's [state](/docs/reference/app/replays#replay-states) until that replay has finished, "Not scored yet", or its [search score](#scores) as a percentage, with `Likely range: <range> · of <n> runs scored` on hover. |
 | Held out | Its held-out score, with its range on hover; "Replaying" while its held-out replay is queued or running; "Not held out" for a candidate that was not replayed there; else `–`. |
-| Gain | Its [gain](#gains) over the live config on the searched tasks, as in `+12 pts`, green when it reads Better and red when Worse. Hovering shows `Gain over the live config, searched: <gain>, likely <low> to <high> pts.`, then the same for `held out` once known. `–` without one. |
+| Gain | Its [gain](#gains) over the live config on the searched tasks, as in `+12 pts`, green when its verdict is `better` and red when `worse`. Hovering shows `Gain over the live config, searched: <gain>, likely <low> to <high> pts.`, then the same for `held out` once known. `–` without one. |
 | Cost per run | What it spent per scored searched run, or "Unpriced". |
 | Pull request | `–` until it is picked, "Opening…", "Opened", linked to the pull request on GitHub, or "Not opened" with a warning icon, "Why", whose hover reads `<reason>. <message>`: the [reason](#config-pull-request-reasons) in words, then Spotlight's message. |
 
@@ -244,7 +244,7 @@ finished. Under it:
   table; and "Cost per run";
 - once it has them, `Gain over the live config, searched` and `Gain over the
   live config, held out`, each its [gain](#gains) with its range, as in
-  `+12 pts (+3 to +21)`, its verdict, Better, Worse or within noise, and its
+  `+12 pts (+3 to +21)`, its verdict, "Better", "Worse" or "within noise", and its
   [side-by-side](#side-by-side-with-the-live-config) wins, losses and ties;
 - "Replay", linked to its replay on the searched tasks ("Replay of the set"
   for the live config), and "Held-out replay" when it has one;
@@ -376,8 +376,8 @@ the search's [aim](#aims) counts:
 
 | Aim | Better than the best before |
 | --- | --- |
-| More success | Its gain reads Better. |
-| The same success for less | Its gain does not read Worse, and it costs less per run, both costs known. |
+| More success | Its gain reads "Better". |
+| The same success for less | Its gain does not read "Worse", and it costs less per run, both costs known. |
 
 The best before is the first in the order of the aim among the live config
 and the candidates of earlier iterations whose replays finished. An iteration
@@ -479,8 +479,8 @@ Results and their reasons are a replay's: see
 Each candidate other than the live config reads its gain over the live
 config's replay twice: on the searched tasks, and on the held-out tasks once
 both its held-out replay and the live config's replay have finished. Each is
-paired task by task, with its range and a verdict of Better, Worse or Within
-noise, as a [replay's gain](/docs/reference/app/replays#gains) is, against the
+paired task by task, with its range and a verdict of "Better", "Worse" or "within
+noise", as a [replay's gain](/docs/reference/app/replays#gains) is, against the
 line's `min_gain`. The frontier and the best candidate do not depend on it.
 
 ### Side by side with the live config
@@ -495,19 +495,19 @@ gain, the frontier or the best candidate.
 ### Only on seen tasks
 
 Once a candidate's held-out gain is known, a candidate whose searched gain reads
-Better gets a reading from it:
+"Better" gets a reading from it:
 
 | Held-out gain | Shown | Note |
 | --- | --- | --- |
-| Better | Nothing | |
-| Within noise or Worse, over at least 5 tasks scored on both sides | "Only on seen tasks": the candidate is marked | `This candidate beat the live config on searched tasks but not on held-out tasks. The gain may not carry over to new work.` |
+| `better` | Nothing | |
+| `within-noise` or `worse`, over at least 5 tasks scored on both sides | "Only on seen tasks": the candidate is marked | `This candidate beat the live config on searched tasks but not on held-out tasks. The gain may not carry over to new work.` |
 | Over fewer than 5 tasks scored on both sides | "Too few held-out tasks to tell" | `This candidate beat the live config on searched tasks. Too few held-out tasks have a score to tell if the gain carries over.` |
 
 In the "Best" tile and the candidates table, the reading is a warning icon,
 amber when marked, named by the reading. In the candidate's details and the
 frontier table, a marked candidate shows an "Only on seen tasks" pill, and the
 other reading its words. Hovering over or focusing the reading opens its note. A candidate whose
-searched gain does not read Better has no reading, nor does one before its
+searched gain does not read "Better" has no reading, nor does one before its
 held-out gain is known, nor the live config. Only marked candidates are
 counted above the [chart](#success-against-cost) and warned about when
 [picked](#picking-a-candidate). A marked candidate stays on the frontier, can
@@ -521,7 +521,7 @@ life:
 | Aim | `objective` | Ranks |
 | --- | --- | --- |
 | More success | `success` | Every scored candidate, by score, then the cheaper. |
-| The same success for less | `cost` | The live config, and the candidates whose gain over the live config reads Better or Within noise, by cost per run, then by score. A candidate whose gain reads Worse, or is not known yet, is left out. |
+| The same success for less | `cost` | The live config, and the candidates whose gain over the live config reads "Better" or "within noise", by cost per run, then by score. A candidate whose gain reads "Worse", or is not known yet, is left out. |
 
 Left unset, a search aims for the same success for less when the newest finished replay of the live config, as it is now, over every
 run of the set, other than a search's, succeeded on more than 95% of it,
@@ -534,7 +534,7 @@ score that no other candidate beats on both counts: succeeding at least as
 often for no more cost per run, and better on one. An unpriced cost counts as
 the highest. The live config is always on the frontier. When the search aims
 for the same success for less, only candidates whose gain on the searched
-tasks reads Better or Within noise can be on it.
+tasks reads "Better" or "within noise" can be on it.
 
 When a search stops searching, the frontier's candidates, the live config
 aside, are replayed on the held-out runs, as many as "Candidates per
