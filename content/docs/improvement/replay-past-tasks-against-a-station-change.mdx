@@ -32,9 +32,9 @@ up to 50.
 <Steps>
 <Step>
 
-Open the line's board and select the station's name. Under **Replays**, select
-**Open a replay set**, name the set, and select **Open set**. The set's page
-opens.
+On the line's board, select the station's name to open the Station page, then
+select the **Improve** tab. Under **Replay sets**, select **Create a replay
+set**, enter a **Name**, and select **Open set**. The set's page opens.
 
 </Step>
 <Step>
@@ -47,7 +47,7 @@ Once the set holds runs, the dialog may list up to 5 of them first, under
 you would any other run. Nothing is added until you select **Add**.
 
 A run that cannot be replayed reads **Can't be replayed** and says why, such as
-**It never recorded where it started**. See
+**Run recorded no starting point**. See
 [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed).
 
 </Step>
@@ -58,8 +58,8 @@ set, Spotlight keeps the workspace it started from.
 
 Above the set's runs, a bar shows how they turned out. Hover over the ⓘ
 beside **Runs** for where their tasks came from and when they ended. If a
-warning sign shows beside it, most of the set's runs turned out one way: add
-runs that turned out other ways. See
+warning sign shows at the right of the panel's title, most of the set's runs
+turned out one way: add runs that turned out other ways. See
 [What a set is made of](/docs/reference/app/replays#what-a-set-is-made-of).
 
 ## Propose the change
@@ -118,9 +118,8 @@ spotlight replay propose --station core/delivery/implementation \
 ```
 
 The command prints the candidate's address and what it changes from the
-station's live config, the config the station runs with now. The Station page
-shows the same command with the station's address filled in, under **Propose a
-candidate**, and lists the candidate under **Candidates**.
+station's live config, the config the station runs with now. The candidate is
+then one of the choices under **Replay under** when you start a replay.
 
 </Step>
 </Steps>
@@ -138,8 +137,8 @@ block as JSON. See
 <Steps>
 <Step>
 
-On the Station page, under **Replay sets**, select the set. On the set's page,
-under **Replays**, select **Start a replay**.
+On the Station page's **Improve** tab, under **Replay sets**, select the set.
+On the set's page, under **Replays**, select **Start a replay**.
 
 </Step>
 <Step>
@@ -208,8 +207,8 @@ At most 2 of a team's replay runs run at once. See
 
 ## Follow the replay
 
-The replay's page shows its state, how many of its runs succeeded against the
-baseline, and what it has spent of its ceiling. From the command line:
+The replay's page shows its success, its gain over the baseline, and what it
+has spent of its ceiling. From the command line:
 
 ```bash
 spotlight replay watch --team core <replay id>
@@ -227,9 +226,9 @@ budget**: nothing more starts, and runs already running finish.
 
 ## Read the result
 
-**Success** gives the replay's success rate with the range it likely falls in,
-as in `62% (48–75%) succeeded`, then its gain over the baseline in points,
-with that gain's range and a verdict:
+**Success** gives the replay's success rate; hover over its ⓘ for the range it
+likely falls in. **Gain** gives its gain over the baseline in points, as in
+`+12 pts`, with a verdict, and its ⓘ gives the gain's range:
 
 - **Better**: the whole range is above no change, and the gain reaches the
   smallest gain the line counts as real.
@@ -242,15 +241,19 @@ repeats. The smallest
 gain that counts is the line's `replay_check.min_gain`, 5 points unless set;
 see [Set how large a gain must be](#set-how-large-a-gain-must-be).
 
-Under **Task by task**, the replay's page lists each task, regressions first.
-A task reads **Regressed** when the station's judge scored the candidate's
-change lower, or when the baseline succeeded on it and the candidate did not.
-With more than one copy, a task regresses when the share of the baseline's
-copies that succeeded is more than half above the candidate's, as when the
-baseline succeeded 3 times in 3 and the candidate once. Each result shows its
-first reason, such as **Its checks failed**; hover over it for the rest.
-Select **Run** beside a result to open that replay run. With more than one
-copy, each task shows how many copies succeeded, then each copy's result.
+Under **Tasks**, the replay's page lists each task, regressions first. A
+regressed task has a red warning sign beside its title: the station's judge
+scored the candidate's change lower, or the baseline succeeded on it and the
+candidate did not. With more than one copy, a task regresses when the share of
+the baseline's copies that succeeded is more than half above the candidate's,
+as when the baseline succeeded 3 times in 3 and the candidate once. Hover over
+a result for its reasons, such as `Checks failed`. With more than one copy, a
+task shows how many copies succeeded; hover over it for each copy's result.
+
+Select a task to open its details beside the list: each run's result, why it
+succeeded, failed or went unscored, its checks and what it changed. Select
+**Open the run** to open that replay run, or **Original run** for the run it
+replayed.
 
 A task is **Unscored** when nothing could score it, such as a run that changed
 nothing for the checks to run on, could not be replayed, or was cut short by a
@@ -258,14 +261,13 @@ stop or the ceiling. Unscored tasks are left out of the success rate and are
 never regressions. See [Results](/docs/reference/app/replays#results) for every result and
 reason.
 
-If the station has a judge, **Success** also reads, once the replay has
-finished and any task was compared, its wins, losses and ties, as in `Side by
-side with the baseline: 4 wins, 1 loss, 2 ties`.
+If the station has a judge, a **Side by side** tile shows, once the replay
+has finished and any task was compared, its wins, then its losses and ties.
 For each task where both changed something and people had accepted the
 original change, the judge compared the two changes without knowing which was
-the candidate's. Under **Task by task**, **Closer to the accepted change** says
-which it found better: **This one**, **The baseline** or **Neither**. Select
-**Run** to read the judge's reasons on the replay run's page. Read the wins and
+the candidate's. Under **Tasks**, the **Closer** column says which it found
+closer to the accepted change: **This one**, **The baseline** or **Neither**.
+Select the task to read the judge's reasons in its details. Read the wins and
 losses beside the success rate; they never change it. See
 [Side by side](/docs/reference/app/replays#side-by-side).
 
@@ -318,6 +320,8 @@ it finishes:
 - `Little: <gain> with the answer`, marked: even the answer barely helps, so
   a search on this set would find little. Add runs of tasks the live config
   fails, or search for the same success for less.
+- `Too few runs to tell: <n> runs with an answer`: fewer than 5 tasks were
+  scored on both sides. Add runs that people accepted or sent back.
 
 Hover over the ⓘ for the live config's success and the success with the
 answer. If it reads **Couldn't measure with the answer**, the replay with the
@@ -354,41 +358,43 @@ yours and those of any search, beside the live config.
 <Steps>
 <Step>
 
-In the sidebar, open the team and select **Insights**, then **Candidates**.
+In the sidebar, open the team and select **Insights**, then **Stations**.
 Choose a period that covers when the replays started.
 
 </Step>
 <Step>
 
-Find the station's card. Each replay set has a chart of its candidates, with
-replay success up the side and cost per run along the bottom. The diamonds are
-the live config replayed: one on each search's tasks, beside that search's
-candidates, and one on the whole set, beside the proposed candidates. A
-candidate above its diamond and no further right did better for no more cost.
+Under **Replayed candidates**, find the station and, under it, the replay
+set; both start unfolded, and selecting a station's or a set's row folds it.
+Each candidate's row sets its **Replay success** beside the live config's,
+**Against live** gives its gain over the live config in points, and **Cost per
+run** and **Live cost** give what each spent per run. Select **Changes** on a
+row to open its replay, its search or its pull request.
 
 </Step>
 <Step>
 
-Select **Show table**. Under each candidate, a line such as `72% vs live 56% on
-the same 18 runs` sets its success beside the live config's on the runs
-both replayed, and the line under it counts its regressions. Select **Baseline
-comparison**, or **Its changes and baseline comparison**, to read it task by
-task.
+To plot success against cost, choose **Chart**. Each replay set has a chart of
+its candidates, with replay success up the side and cost per run along the
+bottom. The diamonds are the live config replayed: one on each search's
+tasks, beside that search's candidates, and one on the whole set, beside the
+proposed candidates. A candidate above its diamond and no further right did
+better for no more cost.
 
 </Step>
 <Step>
 
-To see the candidates beside the setups the station's live runs used, open
-**Changes** and, on **Harness, model, effort and profile**, choose the station
-under **Station**. The replayed candidates are drawn hollow. Their height is
-replay success on past tasks, not how live runs turned out. They are not drawn
-while **Sent back** is charted.
+To see the candidates beside the setups the station's live runs used, go to
+**Harness, model, effort and profile** under **Config changes** and choose the
+station under **Station**. The replayed candidates are drawn hollow. Their
+height is replay success on past tasks, not how live runs turned out. They are
+not drawn while **Sent back** is charted.
 
 </Step>
 </Steps>
 
-See [Candidates](/docs/reference/app/insights#candidates) for every figure on
-the tab.
+See [Candidates](/docs/reference/app/insights#candidates) for every figure in
+the section.
 
 ## Make the change
 

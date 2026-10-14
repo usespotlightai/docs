@@ -67,10 +67,12 @@ See [`source`](/docs/reference/terraform/line#source-fields) for the rules.
 <Steps>
 <Step>
 
-Open the line's board and select the station's name. Under **Searches**,
-select **Start a search**.
+On the line's board, select the station's name. On the Station page, open
+the **Improve** tab. On the **Searches** card, select **Start a search**.
 
-If the button is greyed out, the line under it says why, such as **No replay
+If the station has no replay set and no searches yet, the card reads **No
+searches yet** and shows no **Start a search**: create a replay set first. If
+the button is greyed out, hover over it to see why, such as **No replay
 set covers 5 different tasks yet.** Add runs of more tasks to a set, or wait
 for the station's search under way to end.
 
@@ -125,9 +127,9 @@ candidates, not the station's own.
 Read the estimate under the fields. It gives how many tasks are searched and
 held out, how many copies of each run, the most runs the search may start,
 what each replay may spend, and roughly how long it takes, from how long the
-set's runs took. If the estimate says the ceiling is too low to give each
-replay run at least 0.01, raise the ceiling or lower the iterations,
-candidates or repeats.
+set's runs took. If **Ceiling** says the ceiling must allow at least 0.01
+for each replay run, raise the ceiling or lower the iterations, candidates or
+repeats.
 
 </Step>
 <Step>
@@ -148,8 +150,8 @@ Read any warning under the estimate:
   same success for less, or add runs of tasks the live config fails.
 - If the judge gave the same verdict too rarely when it judged the same change
   twice, make its rubric more specific before you search.
-- If the check passed once and failed once on the same change, fix the flaky
-  tests, or take those tasks' runs out of the set. The set's page lists them.
+- If the check flipped on changes it ran twice, fix the flaky tests, or take
+  those tasks' runs out of the set. The set's page lists them.
 - If the live config, handed each run's answer, gained little on the set, a
   better config has little room to show there. Add runs of tasks the live
   config fails. See
@@ -171,7 +173,7 @@ taken out, and the set can't be deleted. A station has one search at a time.
 
 ## Follow the search
 
-The search's page shows its state beside its name:
+On the station's **Searches** card, **State** shows where the search is:
 
 1. **Replaying the live config**: the station as it is now is replayed on
    every task of the set. The agent waits for this to finish.
@@ -182,14 +184,17 @@ The search's page shows its state beside its name:
    why instead. See [If the search stalls](#if-the-search-stalls).
 3. **Checking on held-out tasks**: once it stops searching, the best
    candidates are replayed on the tasks the agent never saw.
-4. **Finished**, or **Stopped**, with the reason under the name, such as **It
-   ran every iteration it was given**.
+4. **Finished**, or **Stopped**. Hover over the state to see why it ended,
+   such as **Ran every iteration it was given**.
 
-**Progress** counts the iterations run and candidates proposed, and **Spent**
-what the search has spent against its ceiling. Under **Candidates**, each
-iteration lists what its agent proposed, with the agent's hypothesis, what the
-candidate changes from the live config, and how it scored. Select **Its
-agent's run** to see what the agent read and did.
+Select the search to open its page. Beside its name, a pill such as
+**Stalled** shows how it ended, for most endings. The **Iterations** tile
+counts the iterations run and candidates proposed, and **Spent** what the
+search has spent against its ceiling. Under **Candidates**, each iteration's
+row is followed by the candidates its agent proposed. Select a candidate's
+name to see the agent's hypothesis, what the candidate changes from the live
+config, and how it scored. Select **Agent run** on an iteration's row to see
+what the agent read and did.
 
 To stop a search, select **Stop**, then **Stop search**. The agent's run
 stops and nothing more is replayed. Candidates whose replays finished keep
@@ -219,8 +224,8 @@ to fix. Select **Open the search**.
 </Step>
 <Step>
 
-On the search's page, under **Why it stalled, looked into in iteration
-`<n>`**, the tasks are grouped by cause. Each shows what in the runs showed
+On the search's page, under **Why it stalled (iteration `<n>`)**, the tasks
+are grouped by cause. Each shows what in the runs showed
 the cause and what the agent suggests. Select **Open the failed replay run**
 to check it yourself.
 
@@ -257,25 +262,26 @@ a new search with more iterations or a higher ceiling.
 Each score comes with the range it likely falls in, as in `72% (50–89%)`, and
 each candidate with its gain over the live config on the searched tasks and,
 once replayed there, on the held-out tasks: the gain in points, its range, and
-**Better**, **Worse** or **Within noise**. A gain reads **Better** only when
+**Better**, **Worse** or **within noise**. A gain reads **Better** only when
 its whole range is above no change and it reaches the gain the line counts as
-real, which the header gives under **Live config**. See
+real, which the note of the **Live config** tile gives. See
 [Every result comes with a range](/docs/improvement/why-changes-are-replayed-on-past-tasks#every-result-comes-with-a-range).
 
 **Success against cost** plots each candidate's success on the searched tasks
 against what it spent a run. The candidates joined by the line are the
 frontier: for each, no other candidate succeeded as often for less. The live
-config is always on it. Select **Show table** to read the same as a table.
+config is always on it. In the **Success against cost** card's header,
+select **Table** to read the same as a table.
 
-**Best**, in the header, is the candidate that succeeded most: by its score on
+The **Best** tile shows the candidate that succeeded most: by its score on
 the held-out tasks once it has one, else by its score on the searched tasks.
 It reads **Live config** when nothing beat the station as it is.
 
 If the search aims for the same success for less, the frontier holds only
-candidates whose gain over the live config reads **Better** or **Within
+candidates whose gain over the live config reads **Better** or **within
 noise**, only those cheaper than the live config are replayed on the held-out
-tasks, and the header reads **Cheapest** in place of **Best**: the cheapest of
-the live config and the candidates whose gain reads **Better** or **Within
+tasks, and the tile reads **Cheapest** in place of **Best**: the cheapest of
+the live config and the candidates whose gain reads **Better** or **within
 noise**.
 
 If the station has a judge, each gain is followed by the candidate's wins,
@@ -292,27 +298,31 @@ is the strongest sign a candidate helps. A candidate whose gain reads
 on seen tasks**: it has likely fitted the tasks the agent saw, and its gain may
 not carry over to new work. Above the chart, a note counts how many frontier
 candidates are marked. When fewer than 5 held-out tasks were scored for both
-the candidate and the live config, its held-out gain reads **Within noise**
+the candidate and the live config, its held-out gain reads **within noise**
 whatever it is, so such a candidate reads **Too few held-out tasks to tell**
-instead of being marked. **Best** in the header, and the search's row on the
-Station page, show either for the best candidate. A candidate not on the frontier when the search stopped
-reads **Not held out**. Select **Its replay** or **Its held-out replay** beside a
-candidate to see its result task by task. See
+instead of being marked. The **Best** tile, and the search's row on the
+**Searches** card, show either for the best candidate. A candidate not on the
+frontier when the search stopped reads **Not held out**. In a candidate's
+details, select **Replay** or **Held-out replay** to see its result task by
+task. See
 [Replays](/docs/reference/app/replays#replay-page).
 
 To set the search's candidates beside the station's other replayed candidates
-and the live config, open the team's **Insights** page at **Candidates**. See
+and the live config, open the team's **Insights** page at **Stations**, under
+**Candidates**. See
 [Compare the station's candidates](/docs/improvement/replay-past-tasks-against-a-station-change#compare-the-stations-candidates).
-There, **Pick on the search** beside a candidate opens this page at it.
+There, **Changes** on a searched candidate's row opens this page at it, or its
+pull request once picking it opened one.
 
 ## Pick a candidate
 
 <Steps>
 <Step>
 
-Beside the candidate, select **Pick**. You can pick any candidate whose replay
-on the searched tasks has finished, while the search runs or after, and more
-than one.
+Select the candidate's name. In its details, select **Pick**. You can pick
+any candidate whose replay on the searched tasks has finished, while the
+search runs or after, and more than one. If **Pick** is greyed out, the text
+beside it says why.
 
 If the candidate is marked **Only on seen tasks**, a warning above **Pick**
 says its gain may not carry over to new work. You can still pick it.
@@ -320,8 +330,9 @@ says its gain may not carry over to new work. You can still pick it.
 </Step>
 <Step>
 
-The candidate reads **Opening a pull request…**, then **Pull request opened**.
-Select it to open the pull request on GitHub.
+The candidate's details read **Opening a pull request…**, then **Pull
+request opened**. Select it to open the pull request on GitHub. Its row under
+**Pull request** reads **Opened**, linked to it too.
 
 </Step>
 <Step>
@@ -346,22 +357,25 @@ Merge it and apply it as you would any change to the line.
 </Step>
 </Steps>
 
-Picking a candidate again opens no second pull request; it shows the same one.
+Once a candidate has a pull request, its details show it in place of
+**Pick**, so it opens no second one.
 
 ## If no pull request opens
 
-The candidate reads **No pull request opened**, the reason, and what
-Spotlight found. Fix the cause, then select **Retry**.
+The candidate's row reads **Not opened** under **Pull request**; hover over
+the warning icon beside it for the reason. Its details read **No pull request
+opened**, the reason, and what Spotlight found. Fix the cause, then select
+**Retry**.
 
 | Reason | What to do |
 | --- | --- |
-| The line does not say which repository holds its Terraform | Give the line a `source` block. See [Name the file that holds the line](#name-the-file-that-holds-the-line). |
-| Spotlight's GitHub App cannot reach the line's repository | Install the GitHub App on that repository, or correct `source.repository`. |
-| The line's Terraform file is not in its repository | Correct `source.path`. Spotlight reads the file on the repository's default branch. |
-| The station's block was not found in the file, or was found more than once | Spotlight looks for exactly one `spotlight_line` resource whose `key` is the line's, and in it exactly one `station` block whose `key` is the station's, both written as plain text. Write them that way, or make the change by hand. |
-| An attribute it would change is computed in Terraform, so it must be set by hand | The attribute is built from a variable, a local or another expression. The reason names the attribute, the expression and the value to set: make the change by hand. |
-| The file changed since the search began | The station's block in the repository no longer matches the config the search started from, such as after another change was applied. Make the change by hand, or start a new search. |
-| The branch for the pull request is taken already | The branch `spotlight/search-<id>-<name>` holds commits Spotlight did not write. Delete the branch, then retry. |
+| Line names no repository for its Terraform | Give the line a `source` block. See [Name the file that holds the line](#name-the-file-that-holds-the-line). |
+| Spotlight's GitHub App can't reach the line's repository | Install the GitHub App on that repository, or correct `source.repository`. |
+| Line's Terraform file isn't in its repository | Correct `source.path`. Spotlight reads the file on the repository's default branch. |
+| Station's block isn't in the file, or Station's block appears more than once | Spotlight looks for exactly one `spotlight_line` resource whose `key` is the line's, and in it exactly one `station` block whose `key` is the station's, both written as plain text. Write them that way, or make the change by hand. |
+| Attribute is computed in Terraform. Please set it by hand. | The attribute is built from a variable, a local or another expression. The reason names the attribute, the expression and the value to set: make the change by hand. |
+| File changed since the search began | The station's block in the repository no longer matches the config the search started from, such as after another change was applied. Make the change by hand, or start a new search. |
+| Pull request branch already exists | The branch `spotlight/search-<id>-<name>` holds commits Spotlight did not write. Delete the branch, then retry. |
 
 [Config pull request reasons](/docs/reference/app/searches#config-pull-request-reasons)
 lists every reason.
