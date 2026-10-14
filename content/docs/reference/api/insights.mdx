@@ -176,8 +176,8 @@ On `/runs`, where `<filter>` names the parameter as `line`, `station`,
 | `taskIds` names more than 200 tasks. | `Run filter takes at most 200 tasks.` |
 | `outcome`, `delivery`, `next` or `asked` names a value it does not take. | `Run filter <filter> must be one of <values>, not <value>.`, as in `Run filter next act must be one of started, parked, closed, answered, sent-back, not approved.` |
 | A filter that takes one value is given more than once. | `Run filter takes one <filter>, not <count>.` |
-| `day` is not a day of the period written `YYYY-MM-DD`. | `Run filter day must be in the period, written YYYY-MM-DD, not <value>.` |
-| `week` is not a Monday written `YYYY-MM-DD`. | `Run filter week must be a Monday written YYYY-MM-DD, not <value>.` |
+| `day` is not a day of the period written `YYYY-MM-DD`. | `Run filter day must be a date in the period, in the form YYYY-MM-DD, not <value>.` |
+| `week` is not a Monday written `YYYY-MM-DD`. | `Run filter week must be a Monday in the form YYYY-MM-DD, not <value>.` |
 | A filter value other than a `taskIds` entry is longer than 200 characters. | `Run filter <filter> must be at most 200 characters.` |
 | `page` is past the last page with runs. | `Run page must be at most <last>, not <page>.` |
 | `page` is above 10,000. | `Run page must be at most 10000, not <page>.` |
@@ -190,7 +190,7 @@ On `/pull-requests/list`, where `<filter>` names the parameter as `author`,
 | `repository` names more than 50 repositories. | `Pull request filter takes at most 50 repositories.` |
 | `author`, `type`, `state`, `reverted`, `rounds` or `compared` names a value it does not take. | `Pull request filter <filter> must be one of <values>, not <value>.` |
 | A filter that takes one value is given more than once. | `Pull request filter takes one <filter>, not <count>.` |
-| `week` does not match `YYYY-MM-DD`, or cannot be read as a date. A day past the end of its month, as in `2026-02-31`, is read as a day of the next month. | `Pull request filter week must be a day written YYYY-MM-DD, not <value>.` |
+| `week` does not match `YYYY-MM-DD`, or cannot be read as a date. A day past the end of its month, as in `2026-02-31`, is read as a day of the next month. | `Pull request filter week must be a date in the form YYYY-MM-DD, not <value>.` |
 
 On `/setups`, a `size` other than `small`, `medium` or `large`:
 `Setup filter size must be one of small, medium, large, not <value>.`
