@@ -306,8 +306,8 @@ on its last line. With no match it prints
 `The team remembers nothing about "<words>". Try other words.`
 
 Every memory a recall returns is recorded against the run, and shows under
-"Recalled" on its Run page; the recall itself is a `spotlight.recall` span in
-the task's trace.
+"Given to the agent" in "Remembered" on its Run page; the recall itself is a
+`spotlight.recall` span in the task's trace.
 
 Given a handle, such as `M-12` or `m-12`, it prints that one memory in full: its
 kind, whether it stands or was retired, its body, where it applies, the steps
@@ -317,8 +317,8 @@ it replaced, and, once retired, why and what replaced it.
 | Message | Cause |
 | --- | --- |
 | `say what to look for` | No words. The usage follows. |
-| `There is no memory <handle> for this caller` | No memory has that handle in the run's team. |
-| `A memory is recalled by at most 500 characters of words it holds, or by its handle, like M-12` | The words are blank or too long. |
+| `Memory <handle> not found.` | No memory has that handle in the run's team. |
+| `A memory is recalled by at most 500 characters of words it holds, or by its handle, like M-12.` | The words are blank or too long. |
 
 ```bash
 spotlight recall upload retries
@@ -353,12 +353,13 @@ memory waits for a person's approval.
 | `--kind is required` | No `--kind`. The usage follows. |
 | `--body is required` | No body, and nothing on standard input. |
 | `put everything in flags, not "<word>"` | A word outside any flag. |
-| `A memory is one of rationale, rejected-approach, failure, environment, preference, correction, not <kind>` | `--kind` names no kind. |
-| `A memory reaches one of team, line, station, not <reach>` | `--reach` names no reach. |
+| `A memory kind must be one of rationale, rejected-approach, failure, environment, preference, correction, not <kind>.` | `--kind` names no kind. |
+| `A memory reach must be one of team, line, station, not <reach>.` | `--reach` names no reach. |
 | `<path> is outside the repositories this run checked out; name a path inside one of: <directories>` | A `--path` is outside every checkout. |
-| `A memory bears on paths of one repository at a time` | The paths are in different repositories. |
-| `A memory supersedes only a memory standing in the run's team, and <handle> is not one` | `--supersedes` names a retired memory, or one of another team. |
-| `A memory is remembered only from a task's run; in a chat, ask the person to write it on the team's Memory page` | The run is a chat's. |
+| `A memory bears on paths of one repository at a time.` | The paths are in different repositories. |
+| `A memory supersedes only a memory standing in the run's team, and <handle> is not one.` | `--supersedes` names a retired memory of the team. |
+| `Memory <handle> not found.` | `--supersedes` names no memory of the run's team. |
+| `A memory is remembered only from a task's run; in a chat, ask the person to write it on the team's Memory page.` | The run is a chat's. |
 
 ```bash
 spotlight remember --kind rationale --body "Uploads retry in the request, not from a queue." --path src/uploads
