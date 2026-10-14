@@ -2,30 +2,62 @@
 type: reference
 icon: BookText
 title: Insights
-description: The team's Insights page, its period and tabs, what each figure counts, how pull requests are recorded and typed, config changes and setups compared, replayed candidates beside the live config, which skills and MCP servers runs use, how memories are used, the Runs filters, the Traces tab, and the 20,000-run limit.
+description: The team's Insights page, its period and eight tabs, what each figure counts, how pull requests are recorded, typed and followed to merge, a station's own view, config changes and their impact, setups and replayed candidates compared, which skills, MCP servers and memories runs use, the Runs filters, the Traces tab, and the 20,000-run limit.
 ---
 
 The Insights page sums up how a team's runs, tasks and pull requests went over
 a period, against the period before it. It is "Insights" in the team's
 sidebar, at `/w/<slug>/team/<teamId>/insights`. The same figures are read
 through the [Insights API](/docs/reference/api/insights), and the Candidates
-tab through the [Replayed candidates API](/docs/reference/api/replayed-candidates).
+section of the Stations tab through the
+[Replayed candidates API](/docs/reference/api/replayed-candidates).
 
 Only people on the team, the workspace's owners and admins, and workspace
 tokens with the `read` scope can read Insights, on every tab. Anyone else is
-answered `404`. See [Team outcomes](/docs/reference/roles-and-permissions#team-outcomes).
+answered `404`, and the page reads "Only team members can see Insights". See
+[Team outcomes](/docs/reference/roles-and-permissions#team-outcomes).
+
+The tabs, in order:
+
+| Tab | `?tab=` |
+| --- | --- |
+| Overview | `overview`, the default |
+| Cost | `cost` |
+| People | `people` |
+| Productivity | `productivity` |
+| Stations | `stations` |
+| Tools and skills | `tools` |
+| Runs | `runs` |
+| Traces | `traces` |
 
 ## Period
 
-The period picker offers "Past 7 days", "Past 30 days" and "Past 90 days", and
-starts at 30 days. A period is whole UTC days, up to and including today. The
-period before is as long and ends where the period starts. The period and the
-tab are kept in the page's address, as `?tab=<tab>&period=<7d|30d|90d>`.
+The period picker, at the top of the page, offers "Past 7 days", "Past 30
+days" and "Past 90 days", and starts at 30 days. A period is whole UTC days,
+up to and including today. The period before is as long and ends where the
+period starts. The page's address keeps the tab and the period as
+`?tab=<tab>&period=<7d|30d|90d>`, leaving out either while it is the default.
+Changing the period keeps the tab and its filters.
 
-A figure with a change shows it as a whole percent with `vs last period`, or
-`No change`, or `Up from 0`. The change is green when it is good and red when
-it is bad. A change in "Spend", in a station's runs and in a station's tasks is
-neither.
+A figure with a change against the period before shows it beside the figure,
+with "Against the previous period" on hover:
+
+| Change | Reads |
+| --- | --- |
+| A count, time or amount | A whole percent, as in `+12%` or `-8%`. |
+| A rate | Points, as in `+5 pts`, with one decimal under 1 point, as in `+0.4 pts`. |
+| None | `No change`. |
+| From nothing | `Up from 0`. |
+
+An arrow beside a change is green when the change is good and red when it is
+bad. A change in "Spend" and "Cost", in a station's runs, and in a station's
+tasks is neither. A change in spend is shown only when both periods are priced
+in the same currency.
+
+Each tab's figures sit in cards. An info icon beside a card's title describes
+it on hover, and a card with a table under its chart has a "Chart" and "Table"
+switch. On People, Productivity, Stations and Tools and skills, the figures
+are grouped in sections whose heading folds them away.
 
 ## What is counted
 
@@ -36,8 +68,10 @@ started. Only task runs at a station are recorded; chat runs are not.
 | Term | Meaning |
 | --- | --- |
 | p50 | The median. With an even count, the rounded mean of the two middle values. |
-| p90 | The nearest-rank 90th percentile. |
-| Next act | The first thing a person did with the task after the run: the act names the run, or else it follows the task's last run at that station. |
+| p75, p90, p95 | The nearest-rank 75th, 90th and 95th percentiles. |
+| Next act | The first thing a person did with the task after the run: the act names the run, or else it follows the task's last run at that station. It is one of Started, Parked, Closed, Answered and Sent back. Of acts at the same moment, the first of Sent back, Closed, Answered, Parked and Started counts. Approving or refusing an approval is never a next act. |
+| Accepted | A run whose next act was Closed. |
+| Sent back | A run whose next act was Sent back. |
 | Person act | A person moving a task, answering, approving, refusing or sending a run back. |
 | Activity | A person opening a task, acting on one, or starting an agent chat on the team. |
 
@@ -45,65 +79,167 @@ Outcomes are recorded as runs end and as people act. Nothing that happened
 before recording began is counted. A deleted task's runs, pull request and acts
 are removed.
 
-The figures on every tab except Pull requests, Candidates and Runs are worked out from the team's latest
-20,000 runs that ended in the period and the period before, or the last 30
-days where that reaches further. The team's task pull requests, tasks people
-acted on, tasks with failures and agent chats over that time are each counted
-up to 20,000 too. When any of them was more, the page shows
-`Only the latest 20,000 runs over this period and the one before are counted.`
+The figures on every tab except Productivity's pull request figures, Stations'
+Candidates, and Runs are worked out from the runs that ended in the period
+and the period before, or the last 30 days where that reaches further: at most
+the 20,000 of them that started latest. The team's task pull requests, tasks people acted on, tasks
+with failures and agent chats over that time are each counted up to 20,000
+too. When any of them was more, Overview, Cost, People, "Where work waits",
+"Runs at each station", "Config changes", "Skills and tools" and "Memory" each
+show `Only the latest 20,000 runs over this period and the one before are counted.`
 
 A station that no longer exists shows as "A removed station", a person without
 an account as "A former member", and a task no person opened as "No one".
+
+With nothing to count in the period, these read "No runs in this period",
+with "Create a task", which opens the team's first line, and a line of their
+own:
+
+| Tab or section | Line |
+| --- | --- |
+| Overview | `Cost and delivery show here once stations run tasks.` |
+| Cost | `Cost by harness, model, station and repository shows here once stations run tasks.` |
+| People | `Load on people shows here once they open tasks, answer the inbox or chat with the agent.` |
+| Where work waits | `Where tasks wait shows here once they move through the stations.` |
+| Runs at each station | `Each station's runs show here once stations run tasks.` |
+| Config changes | `Config changes and results by harness, model and effort show here once stations run tasks.` |
+| Skills and tools | `Skills read and MCP servers called show here once stations run tasks.` |
+| Runs | `Runs that end in this period show here, newest first.` |
+
+A part that could not be read reads `<part> could not be loaded.`, with
+"Try again".
+
+Figures open the Runs tab, narrowed by the pills listed under [Runs](#runs),
+or narrow the Productivity tab's pull request list:
+
+| Selecting | Opens |
+| --- | --- |
+| A tile's figure | The Runs, Cost or People tab, or the pull request list, narrowed to what the tile counts where it can. |
+| A day's "Runs" in "Output against cost", `<n> runs` and `Runs with config` on Overview, a cost slice, a person's name in "What each person did", "Tasks" in "Where tasks wait", "Runs" and "Failed" in "By station", a failure reason, a skill's week, "Given", "Read" or station, an MCP server's counts, and a refused tool's count | The Runs tab, narrowed to those runs. |
+| A count in "Spotlight's share", "Week by week", "By repository", "Spotlight against people", "What Spotlight ships" and "Review depth" | The pull request list, narrowed to those pull requests. |
 
 ## Overview
 
 | Figure | Counts | A rise is |
 | --- | --- | --- |
-| Spend | The cost of the runs, when every priced run is in one currency. Otherwise it reads `Nothing was priced` or `Prices came in more than one currency`. | neither |
-| PRs merged | Task pull requests merged in the period, with how many closed unmerged. | good |
-| Merge rate | Merged, of the task pull requests merged or closed unmerged in the period. | good |
+| Spend | The cost of the runs, when every priced run is in one currency, with `Over <n> runs`. Otherwise it reads `–`, with `No priced runs` or `Prices in more than one currency`. | neither |
+| PRs merged | Task pull requests merged in the period, with `<n> closed unmerged`. | good |
+| Merge rate | Merged, of the task pull requests merged or closed unmerged in the period. Its change is in points. | good |
 | Cost per merged PR | Spend divided by PRs merged. | bad |
 | Task to merge | For pull requests merged in the period, the p50 time from the task opening to the merge, and the p90. | bad |
-| Human touches per task | Person acts in the period on the tasks the period's runs worked, per task. | bad |
+| Human touches per task | Person acts in the period on the tasks the period's runs worked, per task, with `<acts> over <tasks> tasks`. | bad |
 | Active people | People with an activity in the period. | good |
+
+"Spend" and "PRs merged" each draw their figure day by day under it. A tile's
+figure opens the Runs, Cost or People tab, narrowed to what it counts where it
+can be.
 
 "Output against cost" charts spend and merged pull requests per UTC day. Spend
 is charted only when every priced run in the period is in one currency;
-otherwise the card reads
-`Merged pull requests per day. <reason>, so spend is left out.`, with the
-reason `Nothing was priced` or `Prices came in more than one currency`. A
-diamond under a day marks a station's first run with a config it had not run
-before, when the station had run with another config earlier. Runs are taken in
-the order they started, and the diamond is dated from when that run started, or
-when it ended where it never started. A station's first config is not marked.
-Hovering over a diamond names each station, with "Before and after" (see
-[Before and after](#before-and-after)) and the station's runs with the new
-config.
+otherwise the card's description reads
+`Merged pull requests per day. Spend not shown. <reason>.`, with the reason
+`No priced runs` or `Prices in more than one currency`. Hovering over a day
+shows `<spend> spent over <n> runs`, `<n> PRs merged` and
+`Config changed at <station>` for each config change that day. Its table lists
+"Day", "Runs", "Spend", "PRs merged" and "Config changes".
+
+A diamond under a day, and a dashed line across it, marks a config change: a
+station's run that started with a config fingerprint other than that of the
+station's run started before it. Runs are taken in the order they started,
+and the diamond is dated from when the run started. A station's first config
+is not marked, and a return to an earlier config is marked like any other
+change. A run that never started marks nothing. Hovering over a diamond shows
+`Config changed on <day>` and, for each station, its name, linked to the
+station, "Impact" (see [Impact](#impact)), and
+`Runs with config <fingerprint>`, the first 8 characters, which opens the Runs
+tab at the station's runs with that config.
 
 "Stations worth improving" lists stations with at least 3 runs in the period
 where a signal is worse than the station's own in the period before, or worse
-than the whole team's in the period:
+than all stations' together in the period:
 
 | Signal | Rate |
 | --- | --- |
-| Sent back | Runs whose next act was Sent back or Refused, of runs. |
+| Sent back | Runs whose next act was Sent back, of runs. |
 | Checks failed | Failed checks, of passed and failed checks. |
 | Run failures | Failed runs, of runs. |
 | Task failures per run | Task failures raised at the station, per run. |
 | Cost per run | Spend, per run. Not compared across currencies. |
 
 A signal is worse when it is more than 1.25 times the value it is compared
-with and, for every signal but cost, also at least 5 percentage points higher.
+with and, for every signal but cost, also at least 0.05 higher: 5 percentage
+points for a rate, 0.05 failures per run for task failures.
 Stations are ordered by how many signals are worse, then by how far the worst
-exceeds its comparison, then by runs. Each row shows each worse signal as
-`<signal> <now> (was <before>, team <team>)` and "Improve this station", which
-opens the Agent page with the station attached. With none, the card reads
-`Nothing stands out this period.`
+exceeds its comparison, then by runs.
 
-## Flow
+Each station's row shows its name, linked to the station, its line,
+`<n> runs`, which opens the Runs tab at the station, and "Improve", which
+opens the Agent page with the station attached to a new chat. Unfolding a row
+lists each worse signal:
+
+| Column | Shows |
+| --- | --- |
+| Signal | The signal. |
+| Compared | A dot for this period, a ring for the period before, a line for all stations, and a dashed line where the station gets flagged. |
+| This period | The station's value. |
+| Period before | The station's value in the period before. |
+| All stations | The value over all stations in the period. |
+| Flagged above | The lowest line the signal crossed: 1.25 times the value it is compared with, or, for every signal but cost, 0.05 above it where that is higher. |
+
+A station whose spend came in more than one currency adds
+`Cost not compared: prices in more than one currency`. With none listed, the
+card reads `No station stands out this period.`
+
+## Cost
+
+| Figure | Counts |
+| --- | --- |
+| Spend | The cost of the runs, when every priced run is in one currency. Otherwise `–`, with `No priced runs` or `Prices in more than one currency`. |
+| Runs with no price | Runs whose harness reported no cost. |
+| Cache share | Cache-read tokens, of input, cache-read and cache-write tokens together, over the runs whose harness reported input and cache-read tokens. Otherwise `not reported`. |
+
+While the spend is in one currency, "By harness", "By model", "By station" and
+"By repository" split it, highest first, and "Where the spend goes" follows it
+from model to station to repository. A run on several repositories splits its
+cost evenly among them. "Read from cache" gives each station's "Cache share",
+"Cache read", "Cache write" and "Input" tokens, or reads
+`No station reported tokens in this period.` See
+[Spend](/docs/reference/app/tasks-runs-and-the-inbox#spend) for which
+harnesses report tokens.
+
+## People
+
+"What the work asks of people", over the tasks the period's runs worked:
+
+| Figure | Counts | A rise is |
+| --- | --- | --- |
+| Inbox asks per task | Times a station asked a person in the period, per task, with `<n> asks`. | bad |
+| Time to answer | The p50 time from an ask to its answer, with the p90 and `<n> unanswered`. | bad |
+| Sent-back rate | Runs whose next act was Sent back, of runs, with `<n> runs sent back`. Its change is in points. | bad |
+| Refused approvals | Approvals a person refused in the period, tool approvals and harness permissions alike. It opens the Runs tab at the tasks with a refusal, when there are at most 200. | bad |
+
+"Who is using Spotlight":
+
+| Figure | Counts |
+| --- | --- |
+| Active people | People with an activity in the period. |
+| New adopters | Active people whose first activity on the team falls in the period. |
+| Weekly active | People with an activity in the last 7 days, whatever the period. |
+| Monthly active | People with an activity in the last 30 days, whatever the period, and the share of them active weekly. |
+
+"What each person did" lists each active person's "Tasks opened", "Acts",
+"Chats" (agent chats they started), "First seen" and "Last active". A new
+adopter is marked "New".
+
+## Productivity
+
+The Productivity tab, `?tab=productivity`, has the sections "Where work
+waits", "What the agents ship", "Review and approval" and "Pull requests".
+
+### Where work waits
 
 "Where tasks wait" shows, for each station in the order its first run ended,
-the p50 and p90 of:
+the p50 of:
 
 | Wait | From | To |
 | --- | --- | --- |
@@ -111,8 +247,8 @@ the p50 and p90 of:
 | Running | The run starts in its image on a runner. | The run ends. |
 | In the inbox | The station asks a person. | The first person act on the task after the ask, at any station, before the task's next ask. |
 
-Its table adds "Tasks", "Runs", "Asks" (times the station asked a person) and
-"Unanswered".
+Its table adds the p90 of each on hover, "Tasks" with its change, "Runs",
+"Asks" (times the station asked a person) and "Unanswered".
 
 "Past the last station" follows each task's pull request:
 
@@ -122,30 +258,118 @@ Its table adds "Tasks", "Runs", "Asks" (times the station asked a person) and
 | First reviews | First reviews by a person in the period. Reviews by bots are not counted. | PR to review: from the pull request opening to its first review. |
 | PRs merged | Pull requests merged in the period. | Review to merge: from the first review, or from the opening where no person reviewed it, to the merge. |
 
-A task tracks one pull request at a time. A task that opens another pull
-request is tracked on the new one.
+Times show as p50 and p90. A task tracks one pull request at a time. A task
+that opens another pull request is tracked on the new one.
 
-## Pull requests
+### What the agents ship
+
+This section and "Review and approval" count the pull requests described under
+[Pull requests](#pull-requests), at most the newest 20,000 over the period and
+the one before, together with the team's runs. When the pull requests or the
+runs passed 20,000, the section shows
+`Only the newest 20,000 pull requests in this period are counted.` When none
+of Spotlight's pull requests and none of people's alone merged in the period,
+none waited on a review and no person reviewed one, it reads "No pull requests in this period", with "Connect a repository", which
+opens the team's Integrations settings, and "Review and approval" does not
+show.
+
+Spotlight's pull requests are set against people's alone: those people opened
+with no Spotlight review task, in the repositories Spotlight merged into in
+the period. Bots' pull requests are left out of both.
+
+"Flow through the pipeline", "Time to merge", "Time to merge by PR type" and
+"Time to first review" each have a percentile picker, "p50", "p75", "p90" or
+"p95", which starts at "p75". Each time shown is that percentile of its own
+times.
+
+#### Flow through the pipeline
+
+"Flow through the pipeline" follows Spotlight's pull requests merged in the
+period whose task opened in the period, the period before, or the last 30 days
+where that reaches further, from the task opening to the merge:
+
+| Stage | From | To |
+| --- | --- | --- |
+| Coding | The task opens. | The pull request opens. |
+| A station | The time the task spent at the station: the time its ended runs there were queued and running, and its waits in the inbox there, from ask to answer. | |
+| Awaiting review | The pull request is ready for review. | Its first review by anyone but its author, bots' included. Time as a draft is left out. |
+| In review | That first review. | Its first approval that was not dismissed, or its closing where that came first. |
+| Awaiting merge | The first approval, or the closing. | The merge. |
+
+"Show coding as" picks "Stations", the default, which shows each station the
+tasks ran at, in the order they were first used, in place of Coding; or
+"Stages", which shows Coding as one stage. The card's header reads
+`<n> PRs merged`. The legend lists each type of pull request; picking one
+shows that type's times alone and reads `<n> <type> PRs merged`, and picking
+it again shows every type.
+
+A stage's colour runs from "flows freely" to "jammed": its time against the
+longest stage's, at the percentile, for the same type. The longest stage is
+the worst jam: its name is red, a badge under it reads
+`Worst jam | <time>`, with `mostly <part>` at a station, and in the table a
+red dot marks it, "Worst jam" on hover. Hovering over a station's name shows its
+time queued, running and in the inbox. "Play" sets the chart moving, and
+"Pause" stops it. Its table groups the stages under "At the stations" and "On
+the pull request", with "Stage", "Time", and for stations "Queued", "Running"
+and "In the inbox".
+
+#### Time to merge
+
+"Time to merge" gives the time from opening to merge of Spotlight's pull
+requests, "Spotlight's", and of people's alone, "People's alone", merged in
+the period, each with its change against the period before, where a fall is
+good. The chart draws both day by day. Its "Smoothing" switch picks "7-day
+rolling", the default, which takes the pull requests merged in the 7 days
+ending each day, or "Daily", those merged that day. "Time to first review"
+has the same switch.
+
+"Time to merge by PR type" lists each [type](#types) with a pull request
+merged, as `<n> merged` over both groups, with Spotlight's time and people's,
+slowest first by Spotlight's time. A type Spotlight has no time for comes last.
+
+#### Review depth as throughput climbs
+
+"Review depth as throughput climbs" gives, for each week from Monday, UTC, the
+share of the two groups' pull requests merged that week in the period that
+took "No review", "One round", "Two rounds" and "Three or more"
+[review rounds](#spotlight-against-people), with "Merged that week" as a line.
+Beside the chart, each bucket's count and share over the period.
+
+### Review and approval
+
+"Review and approval" counts the team's pull requests, less those written by
+`bots`; a pull request a bot opened that has a Spotlight review task is
+counted:
+
+| Card | Shows |
+| --- | --- |
+| Time to first review | Day by day, the time from a pull request being ready for review to its first review by anyone but its author, bots' included, less any time as a draft, for those first reviewed that day ("Daily") or in the 7 days ending that day ("7-day rolling", the default). |
+| PRs awaiting first review | At the end of each day, the pull requests ready for review, not drafts and not closed, with no review yet by anyone but their author. |
+| AI review agents | Each bot that commented on or reviewed the team's pull requests, those bots opened included, that were open at any time in the period, most comments first: "Agent", "Comments" (inline and in the conversation, less those deleted), "Reviews", and "Resolved", the share of the review threads it started that are now resolved. |
+| Human reviews | Reviews people submitted each day. |
+
+### Pull requests
 
 Spotlight records every pull request in the repositories the GitHub App is
 installed on, as GitHub reports it opening, changing, being reviewed and
 closing. What a report says about a pull request is ignored when the pull
-request's address disagrees with the report's repository or number. The tab
-counts the pull requests a task of the team opened, and those
-in a repository one of the team's lines names. At most the newest 20,000 in a
-period are counted; past that, the tab shows
-`Only the newest 20,000 pull requests in this period are counted.`
+request's address disagrees with the report's repository or number. The
+section counts the pull requests a task of the team opened, and those in a
+repository one of the team's lines names. At most the newest 20,000 in a
+period are counted; past that, the section shows
+`Only the newest 20,000 pull requests in this period are counted.` With none,
+it reads "No pull requests in this period", with "Connect a repository".
 
 Each pull request is written by one of:
 
-| Written by | Label | The pull request |
+| `author` | "Written by" | The pull request |
 | --- | --- | --- |
-| `spotlight` | Made by Spotlight | A task opened it. |
-| `touched` | Reviewed by Spotlight | Someone else opened it, and a Spotlight review task was opened on it. |
+| `spotlight` | Spotlight | A task opened it. |
+| `touched` | Others, with a Spotlight review task | Someone else opened it, and a Spotlight review task was opened on it. |
 | `bots` | Bots alone | A bot opened it, with no Spotlight review task. |
 | `people` | People alone | Any other. |
 
-### Spotlight's share
+#### Spotlight's share
 
 | Figure | Counts |
 | --- | --- |
@@ -157,20 +381,22 @@ Each pull request is written by one of:
 "Week by week" splits the merged pull requests by who wrote them, for each
 week from Monday, UTC. "By repository" gives Spotlight's share week by week
 for each repository the team's lines name, and any other its tasks merged
-into, most merged first.
+into, most merged first, with "Merged" and "Share" over the period.
 
-### Spotlight against people
+#### Spotlight against people
 
 "Spotlight against people" sets Spotlight's pull requests merged in the period
 against people's alone, merged in the same period in the repositories
-Spotlight merged into. Bots' pull requests and those with a Spotlight review
-task are left out of people's.
+Spotlight merged into, which its description names. Bots' pull requests and
+those with a Spotlight review task are left out of people's. With nothing
+Spotlight merged, its description reads
+`Spotlight merged nothing in this period. Nothing to compare people's pull requests with.`
 
 | Row | Measures |
 | --- | --- |
 | Merged | How many merged. |
-| Time to merge | From opening to merge: p50 and p90. |
-| Time in review | From the first review by a person to merge: p50 and p90. Pull requests no person reviewed are left out. |
+| Time to merge | From opening to merge: p50, with the p90 on hover. |
+| Time in review | From the first review by a person to merge: p50, with the p90 on hover. Pull requests no person reviewed are left out. |
 | Review rounds | Mean rounds per pull request. |
 | Review comments | Mean inline review comments by people per pull request, less those deleted. |
 | Revert rate | Pull requests since reverted, of those merged. |
@@ -179,8 +405,8 @@ Each approval or request for changes by a person is a review round. Reviews by
 people after the last of them, such as reviews that only comment, make one more
 round, so a pull request with only comments has 1. Reviews by bots and
 dismissed reviews do not count.
-"Review depth" gives how many merged pull requests took no rounds, 1, 2, or 3
-or more, for the same two groups.
+"Review depth" gives how many merged pull requests took "No rounds", "1
+round", "2 rounds" and "3 or more rounds", for the same two groups.
 
 A pull request is a revert when its description has a line
 `Reverts <owner>/<repository>#<number>` naming a pull request of the same
@@ -189,13 +415,13 @@ the pull request it names, by number or by the latest merged one with that
 title, is marked reverted, and the list shows its state as
 `<state>, reverted`.
 
-### Types
+#### Types
 
 "What Spotlight ships" counts merged pull requests by type, Spotlight's against
 people's alone, with "Spotlight spent": what all the runs of the tasks behind
-Spotlight's pull requests cost. People's here are counted only in the
-repositories Spotlight merged into, as in "Spotlight against people" and
-"Review depth".
+Spotlight's pull requests cost, or `–` with the reason on hover. People's here
+are counted only in the repositories Spotlight merged into, as in "Spotlight
+against people" and "Review depth".
 
 A pull request's type is the first of these that gives one:
 
@@ -218,8 +444,8 @@ A pull request's type is the first of these that gives one:
    | First words | Type |
    | --- | --- |
    | `revert`, `bump`, `chore`, `upgrade`, `release`, `doc`, `docs` | Chore |
-   | `update dependencies`, `deps`, `lock` | Chore |
-   | `add`, `write` or `cover` then `test` or `tests`, as in `add unit tests` | Tests |
+   | `update` then a word starting `dependenc`, `deps` or `lock` | Chore |
+   | `add`, `write` or `cover`, then optionally `more`, then optionally `unit` or `e2e`, then `test` or `tests`, as in `add unit tests` | Tests |
    | `test`, `tests` | Tests |
    | `fix`, `fixes`, `fixed`, `hotfix`, `patch`, `resolve`, `correct`, `repair` | Fix |
    | `refactor`, `restructure`, `rename`, `extract`, `simplify`, `split`, `inline`, `tidy`, `clean up`, `move` | Refactor |
@@ -239,119 +465,211 @@ A pull request's type is the first of these that gives one:
 
 Prefixes and words are matched without regard to case.
 
-### The list
+#### The list
 
 "Pull requests" lists every pull request opened or closed in the period, or
-still open, the latest first, 50 to a page: its repository, who wrote it, type,
-state ("Merged", "Closed unmerged" or "Open"), when it opened, the time to merge
-and in review, review rounds and comments, its size as `+<added> −<deleted>`,
-and, for Spotlight's, cost. "Repository", "Written by", "Type" and "State"
-narrow it; following a figure elsewhere on the tab narrows it by week, reverted,
-review rounds or the repositories Spotlight merged into.
+still open, the latest first, 50 to a page:
 
-### Retention
+| Column | Shows |
+| --- | --- |
+| Pull request | Its title and `#<number>`, linked to it on GitHub. |
+| Repository | Its repository. |
+| Written by | "Spotlight", linked to the task, with "Runs", which opens the Runs tab at the task; or its author, or "Someone", with "Spotlight review", linked to the review task, when it has one. |
+| Type | Its type. |
+| State | "Merged", "Closed unmerged" or "Open". |
+| Opened | When it opened. |
+| To merge, In review | The time to merge and in review. |
+| Rounds, Comments | Its review rounds and comments. |
+| Size | `+<added> −<deleted>`. |
+| Cost | For Spotlight's, what its task's runs cost. |
+
+"Repository" ("Every repository"), "Written by" ("Anyone"), "Type" ("Every
+type") and "State" ("Every state") narrow it. Following a figure elsewhere on
+the tab narrows it further, shown as a pill: "Week of", "Reverted", "Review
+rounds" (as above) or "Repositories" ("Where Spotlight merged"). Narrowed to
+nothing, the list reads `No pull requests match.`, with "Show every pull
+request"; with none in the period, `No pull requests in this period.`
+
+#### Retention
 
 A pull request is forgotten 180 days after it closed, or, while open, 180 days
 after it last changed. One already past that when first heard of is not
 recorded. Spotlight's pull requests, and those with a Spotlight review task,
-stay counted on this tab after that. Removing the GitHub App's installation
-forgets every pull request of the workspace in the same way, trying again for
-any that could not be forgotten at once. Closing a workspace disconnects it
-from GitHub before its pull requests are removed.
+stay counted after that. Removing the GitHub App's installation forgets every
+pull request of the workspace in the same way, trying again for any that could
+not be forgotten at once. Closing a workspace disconnects it from GitHub
+before its pull requests are removed.
 
 A forgotten pull request is recorded again only when GitHub reports it updated
 later than the last update Spotlight had before forgetting it. Spotlight keeps
-that last update for 210 days.
+that last update until 210 days after it.
 
 ## Stations
 
-"The whole team" and "By station" show each station's tally, counted as on the
-Station page, with runs and failed runs per day. Rows are in the order each
-station's first run in the period ended. A station with task failures and no
-runs is listed too.
+The Stations tab, `?tab=stations`, has the sections "Runs at each station",
+"Config changes" and "Candidates". With `&stationId=<stationId>` it shows
+[one station](#one-station) instead.
 
-| Figure | Counts |
+### Runs at each station
+
+"The whole team" sums up the team's runs, counted as for
+[station outcomes](/docs/reference/app/tasks-runs-and-the-inbox#station-outcomes):
+
+| Tile | Counts | A rise is |
+| --- | --- | --- |
+| Runs | Runs that ran, drawn day by day. The other figures count only these. | neither |
+| Failed | Runs that ended Failed, with `<share> of runs`, drawn day by day. | bad |
+| Accepted | Runs whose next act was Closed. Shown when above 0 in the period or the period before. | good |
+| Sent back | Runs whose next act was Sent back. Shown in the same way. | bad |
+| Merged | Tasks among the runs whose pull request merged, at any time. Shown in the same way. | good |
+| Cost | The runs' cost, when all are in one currency. | neither |
+| Median run | The median time the runs took, with the p90. | bad |
+
+"By station" lists each station with a run ending in the period, in the order
+each one's first run ended, and each station with task failures and no runs.
+A station's name opens [its own view](#one-station). "Runs per day" draws its
+runs per day, failures in red, beside the change in its runs. Then:
+
+| Column | Counts |
 | --- | --- |
-| Runs | Runs that ran. The other figures count only these. |
+| Runs | Runs that ran. |
 | Failed | Runs that ended Failed. |
 | Stopped | Runs a person stopped. |
 | Checks passed, Checks failed | Runs whose check passed or failed. |
-| Accepted | Runs whose next act was Closed or Approved. |
-| Sent back | Runs whose next act was Sent back or Refused. |
+| Accepted | Runs whose next act was Closed. |
+| Sent back | Runs whose next act was Sent back. |
 | Handed on | Runs that passed their task to another station. |
 | Merged | Tasks among the runs whose pull request merged, at any time. |
 | Withdrawn | Runs withdrawn before they ran. |
 | Cost | The runs' cost, when all are in one currency. |
 | Median, p90 | The time the runs took. |
 
-Each row also lists its task failures, by source (`run` or `hook:<key>`) and
-code, as `<source> · <code> × <count>`, with `· <n> in a row` when one task
-raised it more than once; and its failed runs by reason, as `<reason> × <n>`.
-A hook the loop guard stopped shows only among task failures.
+A column from "Failed" to "Withdrawn" shows only when the whole team's count
+in the period is above 0. "Runs" and "Failed" open the Runs tab at the
+station's runs, or its failed ones. Each row has the anchor
+`#station-<stationId>`, which a station alert's "Open in Insights" opens.
 
-## Changes
+### One station
 
-"Config changes" lists the times a station started a new config in the period,
-the latest first, by the same rule as the diamonds under "Output against cost".
-Each row shows the day, the station, the [changes](/docs/reference/app/tasks-runs-and-the-inbox#config)
-from the config of the station's last run before it, or
-`No earlier config to compare with`, how many runs came before and after it as
-`<n> runs before · <n> runs after`, and "Before and after". With none, the card
-reads `No station changed its config in this period.`
-
-### Before and after
-
-"Before and after", on a row of "Config changes" or a diamond on Overview,
-opens a panel beside the page, titled `<station>: before and after`. It stays
-open across tabs.
-
-The panel counts the station's runs that ended in the period and the period
-before, or the last 30 days where that reaches further, by when each started,
-or ended where it never started:
-
-| Window | Runs that started |
-| --- | --- |
-| Before | From the station's previous config change, or its earliest counted run, up to this change, with the config the station ran last before it. |
-| After | From this change up to the station's next config change, with the new config. |
+`?tab=stations&stationId=<stationId>` shows one station, under the breadcrumb
+"Stations" and the station's name, with its line beside it. It is opened from
+a station's name under "By station", from judge links on this page, and from
+the station's page: "See in Insights", "History", and the judge's "How it
+agrees with people", which opens it at `#judge`.
 
 | Part | Shows |
 | --- | --- |
-| What changed | The changes, or `There is no earlier config to compare it with.`, and `Config <fingerprint>, first run on <day>`. |
-| Runs before and after | "Before", "After" and "Change" for the rows below. |
-| Judge | Only when the station has a judge. While it is trusted, "Before" and "After" each read `<score> over <n> judged`, or `Not judged`. Otherwise `Its scores stay hidden until it agrees with people often enough.` "How often the judge agrees with people" opens the Station page at its judge. |
+| Over this period | The tiles of "The whole team", for the station's runs alone. "Runs" and "Failed" open the Runs tab at the station's runs, or its failed ones. With task failures and no runs, the tiles read 0. With neither in the period, `No runs at this station in this period.` |
+| Why runs failed | Shown when the station has failed runs or task failures in the period. See below. |
+| Runs by config | The station's latest 50 runs, whatever the period, grouped by config. See below. |
+| How far to trust the judge | Shown when the station has a judge, at `#judge`. See below. |
+
+"Why runs failed" lists the station's failed runs by reason, the reason or
+`No reason given`, with how many runs, most first; and its task failures by
+source (`run` or `hook:<key>`) and code, as `<source> · <code>`, with how many
+times, and `· <n> in a row` when one task raised it more than once in a row.
+With both, they are headed "Run failures" and "Task failures". A reason with
+one run opens that run; another opens the Runs tab at the station's failed
+runs. A task failure that one task raised opens the Runs tab at that task. A
+hook the loop guard stopped shows only among task failures.
+
+"Runs by config" groups runs that started one after another with the same
+config, the newest group first; a config that returns after another starts a
+new group. A group is named by the first of its
+[changes](/docs/reference/app/tasks-runs-and-the-inbox#config) from the last
+config that ran before it, with `+<n> more`, or `Config <fingerprint>`, the first 8 characters;
+the group of runs before any recorded config reads
+`Before the first run with a config`. A group whose runs never started on its
+config is marked "Never started". Each group shows "Checks" as
+`<share> passed`, "Next" as `<share> accepted`, "Delivery" as
+`<share> merged`, "Took" (the median), "Cost" and "Ended", and "Impact" when
+it has changes (see [Impact](#impact)). Unfolding it lists its runs, with
+"Run", "Round", "Checks", "Next", "Delivery", "Took", "Cost" and "Ended". With
+no runs, the card reads "No runs yet".
+
+"How far to trust the judge" shows the judge's measure of agreement with
+people, with `Trusted, needs <trust>` or why its scores are hidden, then how
+many of the station's last runs have "Both scores", "Judge only", "People
+only" and "Neither". When the judge has judged runs under more than one rubric
+version, "Rubric" picks the version. Each version shows "Statistics"; "Score
+comparison" and "Distribution" when it has runs with both scores; "Trend over
+time" when it has a trend to draw; and "By claim" for a judge with claims. With no judged runs, it reads "No judged runs yet". See
+[Agreement](/docs/reference/app/tasks-runs-and-the-inbox#agreement) for how
+agreement is measured and when a judge is trusted.
+
+### Config changes
+
+"Config changes" lists the times a station started a new config in the period,
+by the same rule as the diamonds under "Output against cost", the latest
+first:
+
+| Column | Shows |
+| --- | --- |
+| First run | The day of the change's first run. Selecting it shows the whole row. |
+| Line | The station's line, linked, or "Removed line". |
+| Station | The station, linked. |
+| What changed | The [changes](/docs/reference/app/tasks-runs-and-the-inbox#config) from the config of the station's previous run, as a plan: `+` added, `-` removed, `~` changed. Otherwise `Config not on record`. |
+| Runs before, Runs after | The runs counted under [Impact](#impact). |
+
+Each row ends with "Impact". With none, the card reads
+`No station changed its config in this period.`
+
+#### Impact
+
+"Impact", on a row of "Config changes", a diamond on Overview or a group of
+"Runs by config", opens a panel beside the page, titled `<station>: impact`.
+It stays open across tabs until it is closed with its close button ("Close
+the change"), and closes when the Traces tab opens.
+
+The panel counts the station's runs that ended in the period and the period
+before, or the last 30 days where that reaches further, ordered by when each
+started, or ended where it never started:
+
+| Window | Runs |
+| --- | --- |
+| Before | Runs from the station's previous config change, or its earliest counted run, up to this change, with the config the station ran last before it. |
+| After | Runs from this change up to the station's next config change, with the new config. A run with the new config that never started counts here even when it ended before the change. |
+
+"What changed" shows the changes as under "Config changes", or
+`Config not on record.` "Runs before and after" gives "Before", "After" and
+"Change" for:
 
 | Row | Counts |
 | --- | --- |
 | Runs | Runs that ran. The other rows count only these. |
-| Sent-back rate | Runs whose next act was Sent back or Refused, of the runs whose next act is known. |
-| Accepted rate | Runs whose next act was Closed or Approved, of the runs whose next act is known. |
+| Sent-back rate | Runs whose next act was Sent back, of the runs whose next act is known. |
+| Accepted rate | Runs whose next act was Closed, of the runs whose next act is known. |
 | Checks-failed rate | Failed checks, of passed and failed checks. |
 | Failed rate | Runs that ended Failed, of runs. |
 | Merged rate | Tasks whose pull request merged, of the tasks of the runs whose pull request merged or closed unmerged. |
 | Cost per run | The cost of the priced runs, per priced run. |
+| Judge score | Only while the station's judge is trusted: the mean judge score on each side, or `–`. Hovering shows `Over <n> judged runs before and <m> after. Opens how often the judge agrees with people.`, and the label opens [the station's judge](#one-station). |
 
 Each row but "Runs" counts, on each side, the runs settled for it, as for
 [station alerts](/docs/reference/app/tasks-runs-and-the-inbox#station-alerts).
-"Change" gives each row's verdict: the change as a whole percent, green when
-it is better and red when it is worse, or `No change`. It reads `Too few runs`
-when either side has fewer than 5 settled runs, and for cost per run when the
-two sides are priced in different currencies.
+"Change" is green when the row got better and red when it got worse. A rate's
+change is in points and cost per run's a whole percent; with none, it reads
+`No change`. It reads `Too few runs` when either side has fewer than 5 settled
+runs, and for cost per run when the two sides are priced in different
+currencies. The judge score's change is in points, green when it rose.
 
 A judge score is the mean of the judge's scores on the station's current
 rubric, as a share of its scale: Yes is 100% and No 0%; on 1 to 5, 1 is 0% and
-5 is 100%; on claims, the share of claims met. See [Agreement](/docs/reference/app/tasks-runs-and-the-inbox#agreement)
-for when a judge is trusted.
+5 is 100%; on claims, the share of claims met.
 
-The panel ends with "Open the station" and "Improve this station". A change
-no longer in the period reads `This change is not in the period any
-more.`
+The panel ends with "Open the station" and "Improve". A change no longer in
+the period reads `This change is outside the period.`, with "Open the
+station".
 
-### Harness, model, effort and profile
+#### Harness, model, effort and profile
 
 This card sets how runs turned out against what they cost, for each setup: a
 harness, model, effort and [harness profile](/docs/reference/glossary#harness-profile)
 together, as each run recorded them. It counts the runs that ran and ended in
-the period; a run with no recorded setup is left out.
+the period; a run with no recorded setup is left out. Its description names
+the outcome charted, the fewest runs a setup needs for the frontier, and the
+size rules. The filters sit in a menu, "Filter the setups", which counts those
+applied.
 
 | Filter | Narrows to |
 | --- | --- |
@@ -361,18 +679,16 @@ the period; a run with no recorded setup is left out.
 
 | Outcome | Of a setup's runs |
 | --- | --- |
-| Accepted | Runs whose next act was Closed or Approved, of runs. |
-| Sent back | Runs whose next act was Sent back or Refused, of runs. Lower is better. |
-| Handed on | Runs that passed their task to another station, of runs. |
+| Accepted | Runs whose next act was Closed, of the runs whose next act is known. |
+| Sent back | Runs whose next act was Sent back, of the runs whose next act is known. Lower is better. |
+| Handed on | Runs that passed their task to another station, of the runs with a next act or a hand-on. |
 | Checks passed | Passed checks, of passed and failed checks. |
-| Merged | Tasks whose pull request merged, of the tasks the runs worked. |
-| Judge score | The mean judge score, as in [Before and after](#before-and-after). |
+| Merged | Tasks whose pull request merged, of the tasks of the runs whose pull request merged or closed unmerged. |
+| Judge score | The mean judge score, as under [Impact](#impact). |
 
 Judge scores are counted only with a station picked, and only while that
-station's judge is trusted. With "Every station", the card reads
-`Pick a station to compare judge scores.` With a station picked that has a
-judge and runs in the period, the card adds
-`Judge scores count only where a station's judge agrees with people often enough.`
+station's judge is trusted. With a station picked that has a judge and runs
+in the period, the card adds `Judge scores count only for judges that agree with people often enough.`
 and names the station, linked to its judge, as `trusted` or `hidden`.
 
 A setup's cost per run is the cost of its priced runs, per priced run, when
@@ -383,16 +699,19 @@ For each outcome, a setup is on the frontier when it has at least 3 runs, a
 cost per run in that currency and a value, and no other such setup costs no
 more and does as well or better, with either a lower cost or a better value.
 
-The chart plots each setup priced in that currency, cost per run across, the
-outcome up and its size by runs, and joins "On the frontier" with a dashed
-line. Hovering over a setup shows `<outcome> <value> · <cost> a run` and its
-runs. With no runs, the card reads
-`No runs match these filters in this period.`, and with none priced,
-`No priced runs to set against their cost. Show the table for the outcomes alone.`
-The table lists every setup, most runs first, with "Runs", "Cost per run" and
-each outcome; a setup on the frontier of the charted outcome is marked
-`frontier`. A setup reads as harness, model, `<effort> effort` and
-`<profile> profile`, as far as each is set.
+The chart plots each setup priced in that currency with a value for the
+outcome, cost per run across and the outcome up, as "On the frontier" or
+"Other setups". Each frontier setup is labelled with its name. A dot's size
+is its runs, with a "Runs" legend of sizes under the chart. Hovering over a
+setup shows its name, `<outcome> <value> · <cost> a run`, and `<n> runs`, with
+`· on the frontier` for a frontier setup. With no runs, the card reads
+`No runs match these filters in this period.`, and with no priced setup that
+has a value for the outcome,
+`No priced runs to chart. Show the table for outcomes alone.`
+The table groups the setups by harness, each as model, `<effort> effort` and
+`<profile> profile`, as far as each is set, with "Runs", "Cost per run" and
+each outcome; a trophy, "Best value", marks a setup on the frontier of the
+charted outcome.
 
 A run's size is told by the lines it changed: the lines taken out and put in
 across its file changes, each file compared from before its first change to
@@ -408,74 +727,45 @@ attempts it kept.
 A run whose cost was never worked out has no size and is left out when a size
 is picked.
 
-### Replayed candidates beside the setups
+#### Replayed candidates beside the setups
 
 With a station picked, the chart also draws the station's replayed candidates,
-the same points the [Candidates](#candidates-chart) tab draws, as a series of
-its own. They are drawn hollow and listed after `Replayed:` in the legend, by
-shape:
-
-| Shape | Point |
-| --- | --- |
-| Diamond | "Live config, replayed": the live config replayed, as on the Candidates tab. |
-| Circle | "Searched": a candidate a search proposed. |
-| Square | "Proposed": a [replay candidate](/docs/reference/api/replay-candidate) proposed by a person or Terraform. |
-
-A replayed point's height is its replay success: the share of the past runs
-it was scored on that succeeded, scored by the candidate's own checks and
-judge, whatever outcome the card charts. It is not the live outcome the setups
-show. While replayed points are drawn, the side of the chart is labelled
-`<outcome> · replay success`, the card's description adds `replayed points show
-replay success on past tasks instead`, and the note under the chart reads
-`Replayed points' height is replay success on up to <n> runs of past tasks,
-scored by each candidate's own checks and judge`, then says it is not the live
-outcome and that the task-size filter does not apply to them. `<n>` is the
-most runs any replayed point was scored on.
-
-A searched candidate's height is its search score. Its held-out score is never
-drawn; hovering over it shows `held out <share> of <n> held-out runs` once it
-has one. Hovering over a replayed point also shows `Replayed <name>`, `Replay
-success <share> of <n> scored runs · <cost> a run`, and the replay set as
-`over <set>`.
-
-Only replayed points whose replay has finished and that have a cost per run in
-the currency the setups are compared in are drawn. "Task size" does not narrow them, and they are not
-joined to the setups' frontier. While the card charts "Sent back", where lower
-is better, replayed points are not drawn.
+the same points [Candidates](#chart) draws, hollow, for the replay sets
+charted in the currency the setups are compared in; with no such currency,
+none are drawn. The legend names them "Searched", "Proposed" and "Live config,
+replayed", and the side of the chart reads `<outcome> · replay success`. A replayed point's height
+is its replay success, scored by the candidate's own checks and judge,
+whatever outcome the card charts; it is not the live outcome the setups show.
+Hovering over one shows it as under [Chart](#chart). "Task size" does not
+narrow replayed points, and they are not joined to the setups' frontier.
 
 | Note under the chart | When |
 | --- | --- |
-| `Pick a station to see its replayed candidates beside its live setups.` | "Every station" is picked and the team has replayed candidates in the period. |
-| `Replayed points show success, so they're hidden while the chart shows Sent back.` | "Sent back" is charted. |
-| `Not priced, so not shown: <names>` | Replayed points with no cost per run. |
-| `Priced in another currency, so not shown: <names>` | Replayed points priced in another currency than the setups. When the setups have no currency, it reads `Nothing here is priced to set them against, so not shown: <names>`. |
-| `Not finished, so not shown: <name> (<state>)` | Replayed points whose replay has not finished, with its state in lower case, as in `(running)` or `(over budget)`. |
-| `Not scored yet, so not shown: <names>` | Replayed points whose replay finished with no run scored. |
-| `This station's replayed candidates are not drawn, as no live setup here has a priced outcome to set them beside. The table lists them.` | No live setup at the station has a priced outcome to chart. |
-| `The replayed candidates could not be loaded.`, with a way to try again | Reading them failed. The rest of the tab still shows. |
+| `Replayed points show replay success on up to <n> runs of past tasks, not live outcomes. Scored by each candidate's own checks and judge. The task-size filter doesn't apply.` | Replayed points are drawn. `<n>` is the most runs any of them was scored on. |
+| `Replayed points show success only. They're hidden while the chart shows Sent back.` | "Sent back" is charted. |
+| `Replayed candidates aren't drawn: no live setup has a priced outcome. The table lists them.` | The station has replayed points to draw, and the setups have a currency, but no priced setup has a value for the outcome charted. |
+| `The replayed candidates could not be loaded.`, with "Try again" | Reading them failed. The rest of the tab still shows. |
 
-"Show table" adds a "Replayed" table under the setups', with "Replayed" (the
-candidate's name, or the live config's), "Kind", "Replay set", "Past tasks
-scored" (the runs scored), "Cost per run", "Replay success" and "Held out", for
-the points the chart draws.
+While replayed points are drawn, the card's description adds
+`Replayed points show replay success on past tasks.` Whenever the station has
+replayed points and the setups have a currency, except while "Sent back" is
+charted, the table adds a second table, one group per replay set reading
+`<set> replayed`, with "Config", "Source", "Runs scored", "Cost per run",
+"Replay success" and "Held out".
 
-With no config changes and no setups in the period, the tab reads
-`Once stations run tasks, their config changes and how each harness, model and effort did show here.`
+### Candidates
 
-## Candidates
-
-The Candidates tab sets the station configs the team replayed on past tasks
+"Replayed candidates" sets the station configs the team replayed on past tasks
 against the station's live config, replayed on the same tasks, before any of
-them is applied. Nothing on it was applied to a station. It counts
-[replays](/docs/reference/app/replays), not the team's runs, so the
-20,000-run limit does not apply, and it has no filters but the period.
+them is applied. It counts [replays](/docs/reference/app/replays), and it has
+no filters but the period.
 
 A replay set holds runs, and a task may have more than one run in it. Success
 rates average over the set's runs, and comparisons count them. Scored counts
 count replay runs, so a replay that replays each run 3 times scores up to three
 times the set's runs.
 
-### Which candidates show
+#### Which candidates show
 
 | Candidate | Shows when |
 | --- | --- |
@@ -485,183 +775,125 @@ times the set's runs.
 The live config shows only as the replays it was compared with, and the
 candidates of
 [replay checks](/docs/reference/app/searches#guarding-a-stations-changes) do
-not show: a check's verdict is on its pull request and under "Checks" on its
+not show: a check's verdict is on its pull request and on its
 [replay set page](/docs/reference/app/replays#replay-set-page). A set's health
 and baseline are as they stand now, whatever the period.
 
-The tab reads the newest 500 replays started in the period. When there were
-more, it shows
-`Only the latest replays over this period are counted; the oldest are left out.`
+The section reads the newest 500 replays started in the period. When there
+were more, it shows `Only the latest replays in this period are counted.`
 
-With none, the tab reads "No candidates replayed in this period", with "Open
-the line", which opens one of the team's lines.
+With none, it reads "No candidates replayed in this period", with "Open the
+line", which opens one of the team's lines.
 
-### Station cards
+#### Stations and sets
 
-One card per work station with a candidate in the period, the station with
-the newest replay first. A card is titled by the station, or "A removed
-station", and reads `<line> · Replay success on past tasks against cost per
-run, scored by each candidate's own checks and judge. Nothing here was applied
-to the station.` Within it, each replay set the candidates were replayed over
-has a part of its own, the newest replayed first, headed by its health:
+The card starts on "Table". It is one table: a row for each work station with a candidate in the
+period, the station with the newest replay first, named with its line, or "A
+removed station". Unfolding a station lists each replay set its candidates
+were replayed over, the newest replayed first:
 
 | Part | Shows |
 | --- | --- |
-| Name | The set's name, linked to its [page](/docs/reference/app/replays#replay-set-page). "Guards changes" when the set [guards the station's changes](/docs/reference/app/searches#guarding-a-stations-changes), and "Station gone" when its station has left the line. |
-| Health | `<n> tasks`, the different tasks its runs worked, with `(<m> runs)` when it holds more runs than tasks, then when its runs ended, then `last added <when>`, joined by `·`, as in `24 tasks (27 runs) · ended 3–41 days ago · last added 2 days ago`. "No tasks yet" for an empty set. |
-| Health lines | The set's [health](/docs/reference/app/replays#health) in one wrapped row: `Noise:`, `Room to improve:`, `Judge agreeing with itself:` and `Flaky checks:`, each followed by what the set's page shows on that line, marked the same way. Hovering over or focusing a reading opens its advice. |
-| No baseline | `The live config was never replayed over it, so nothing is compared with live.` when the set has no [baseline](/docs/reference/glossary#baseline). |
+| Name | The set's name, linked to its [page](/docs/reference/app/replays#replay-set-page). |
+| Size | `<n> tasks`, the different tasks its runs worked, with `(<m> runs)` when it holds more runs than tasks, or "No tasks yet". |
+| Warning icon | When a [health](/docs/reference/app/replays#health) reading is a warning, or a trust check was not run. Hovering lists each warning as `<reading>: <what it says>.`, then `<n> of <m> trust checks not run: <readings>.` |
+| Shield icon | When the set [checks the station's pull requests](/docs/reference/app/searches#guarding-a-stations-changes). Hovering explains it, starting `Checks pull requests:`. |
+| Station gone | When its station has left the line. |
+| No baseline | `The live config hasn't been replayed on this set. Nothing is compared with live.` when the set has no [baseline](/docs/reference/glossary#baseline). |
 
-When the runs ended reads `ended today`, `ended <n> days ago`,
-`ended today to <n> days ago`, or `ended <newest>–<oldest> days ago`, counted
-in UTC days, from the newest and oldest of the set's runs.
+#### Candidate rows
 
-### Candidates chart
+Unfolding a set lists its candidates, the greatest gain over the live config
+first, those with none last, then "Live config" when the set has a baseline.
+Each row ends with a "Changes" link, described below the table:
 
-Each set's chart plots its candidates and the live config, cost per run along
-the bottom and replay success up the side, from 0 to 100%. Replay success is
-a replay's [success](/docs/reference/app/replays#success), scored by the
-candidate's own checks and judge: with one copy of each run, the share of the
-runs it was scored on that succeeded:
+| Column | Shows |
+| --- | --- |
+| Config | The candidate's name, a trophy ("Best value") when it is on its search's [frontier](/docs/reference/app/searches#frontier), and its replay's [state](/docs/reference/app/replays#replay-states) until that replay has finished. Selecting it shows the whole row. |
+| What changed | How its config differs from the live config, as a plan. |
+| Source | "Search", "Proposed", or "Live" for the live config. Hovering over the heading explains each, and the trophy. |
+| Replay success | A bar from 0% to 100%: the candidate's success, with its 95% range on hover, against a mark for the live config's, coloured by the verdict against live. |
+| Candidate, Live | The candidate's success and the live config's, as percentages. |
+| Against live | Its [gain](/docs/reference/app/replays#gains) over the live config in points, as in `+16 pts`, with the verdict and the set's minimum real gain on hover; or "Not compared". |
+| Cost per run, Live cost | What each spent per run. When the live config is priced in another currency, the candidate's cost is over all its scored runs, as its hover says, and "Live cost" reads `–`. |
+| Held out | Only when a candidate has a held-out replay: its held-out score, "Replaying" while that replay is queued or running, or `–`. |
+| Runs | The runs the figures cover. |
+
+Once a candidate has runs compared with the baseline, "Replay success",
+"Candidate", "Live", "Cost per run" and "Runs" count those runs alone. Until
+then they count every run it was scored on, and "Live" reads `–`. A searched
+candidate's success is its [search score](/docs/reference/app/searches#scores);
+a proposed candidate's is its replay's
+[success](/docs/reference/app/replays#success) over the set.
+
+| "Changes" opens | When |
+| --- | --- |
+| The pull request on GitHub | Picking the candidate opened a pull request. |
+| Its search page, at the candidate | A searched candidate, otherwise. |
+| Its replay page | A proposed candidate, otherwise. |
+| The baseline's replay page | The "Live config" row. |
+
+The "Live config" row shows the baseline's success under "Live", its cost
+under "Live cost", and the runs it was scored on.
+
+#### Chart
+
+Choosing "Chart" draws one chart for each set in place of its candidate rows,
+cost per run along the bottom and "Replay success" up the side:
 
 | Shape | Point | Height |
 | --- | --- | --- |
-| Diamond | "Live config, replayed (the search's tasks)": the live config a search started from. One per search; with more than one search over the set, `(tasks of the search on <day>)`. | Its search score: the live config's success on that search's searched runs. |
-| Diamond | "Live config, replayed (whole set)": the set's baseline. Drawn only when the set has a proposed candidate. | Its success over the whole set. |
+| Diamond | `Live config, replayed (the search's tasks)`: the live config a search started from. One per search; with more than one search over the set, `Live config, replayed (tasks of the search on <day>)`. | Its search score: the live config's success on that search's searched runs. |
+| Diamond | `Live config, replayed (whole set)`: the set's baseline. Drawn only when the set has a proposed candidate. | Its success over the whole set. |
 | Circle | "Searched". | Its [search score](/docs/reference/app/searches#scores), on its search's searched runs. |
 | Square | "Proposed". | Its replay's success over the set. |
 
-So a searched candidate is drawn beside the live config on the same runs, and a
-proposed candidate beside the baseline. A searched candidate on its search's
-[frontier](/docs/reference/app/searches#frontier) is highlighted, as "On the
-search's frontier" in the legend. The frontier of each search, its live
-config diamond among them, is joined by a dashed line, one line per search. Which
-candidates are on it follows the search's
-[aim](/docs/reference/app/searches#aims).
+A searched candidate on its search's frontier is highlighted, as "On the
+search's frontier" in the legend; which candidates are on it follows the
+search's [aim](/docs/reference/app/searches#aims). A search's
+`Live config, replayed` diamond is always counted as finished and always
+marked on its search's frontier. Each point is labelled with its name, the
+baseline's as "Live config".
 
-Hovering over a point shows `Replayed <name>`, `Replay success <share> of <n>
-scored runs · <cost> a run`, the set as `over <set>`, its held-out score as
-`held out <share> of <n> held-out runs` once it has one, and `on the
-search's frontier` for a frontier candidate.
+Hovering over a point shows `Replayed <name>`,
+`Replay success <share> of <n> scored runs · <cost> a run`, and the set as
+`over <set>`, with its held-out score as
+`held out <share> of <n> held-out runs` once it has one, and
+`on the search's frontier` for a frontier candidate.
 
 The chart is in the set's currency: its baseline's, or else that of its newest
-candidate. Only candidates whose replay has finished are drawn. Points left out
-are listed under the chart: `Not priced, so not shown: <name> (<success>)` for
-those with no cost per run, because some of the replay's spend went unpriced;
-`Priced in another currency, so not shown: <name> (<success>)`;
-`Not finished, so not shown: <name> (<state>)`, with the replay's state in
-lower case; and `Not scored yet, so not shown: <name>` for a finished replay
-with no run scored. With nothing
-to draw, the chart reads `Nothing replayed over it has a priced score yet.
-Show the table for what there is.`
+candidate. Only points whose replay has finished, has a score, and is priced in
+that currency are drawn, the search diamonds counted as finished. With nothing to draw, the chart reads
+`Nothing on this set has a priced score yet. Show the table to see what's there.`
 
-### Candidates table
+## Tools and skills
 
-"Show table" lists each set's health, then its baseline and candidates. The
-first row, "Live config, replayed (whole set)", is linked to the baseline's
-[replay page](/docs/reference/app/replays#replay-page), with
-`<share> (<low>–<high>%) of <n> runs scored`, or "Not scored yet", and
-`<cost> a run`, or "Unpriced". Then
-each candidate, the newest replayed first, shows:
-
-- its name, "Searched" or "Proposed", "On the frontier" for a frontier point,
-  and its replay's [state](/docs/reference/app/replays#replay-states) until
-  that replay has finished;
-- for a searched candidate, its agent's hypothesis;
-- `Changed from live:` with one phrase per change, as the Run page's
-  [Config](/docs/reference/app/tasks-runs-and-the-inbox#config) words them, or
-  "The same as the live config.";
-- "Replayed": the tasks its replay covers, with the runs when there are more,
-  as for a set's health;
-- "Search score" for a searched candidate, "Replay success" for a proposed
-  one, as `<share> (<low>–<high>%) of <n> runs scored`, with its 95% range,
-  or "Not scored yet";
-- for a searched candidate, "Held out", apart from its search score:
-  `<share> (<low>–<high>%) of <n> held-out runs`, "Replaying" while its held-out replay is queued or running,
-  "Not held out" when it was not replayed on the held-out tasks, or `–`;
-- "Cost per run", or "Unpriced";
-- once it has runs compared with the baseline, its success against the live
-  config's on those runs alone, as
-  `72% (60–84%) vs live 56% (40–70%) on the same 18 runs`, then its
-  [gain](/docs/reference/app/replays#gains) over the live config on them, as
-  `+16 pts (+2 to +30) · Better`, and, when both are priced in the same
-  currency, their cost on those runs, as `cost $0.82 vs live $0.60 a run on the same 18 runs`;
-- `<n> regressions over <m> runs compared`, counting the runs it
-  [regressed](/docs/reference/app/replays#regressions) on of those compared
-  with the baseline, or "No runs compared yet", or "No baseline to compare
-  with";
-- links:
-
-| Link | When | Opens |
-| --- | --- | --- |
-| Pull request | Picking it opened a pull request. | The pull request on GitHub. |
-| Pick on the search | A searched candidate with no opened pull request. | Its search page, at the candidate, where it can be [picked](/docs/reference/app/searches#picking-a-candidate). |
-| Baseline comparison | A searched candidate compared with a baseline. | Its replay page, task by task against the baseline. |
-| Its changes and baseline comparison | A proposed candidate compared with a baseline. | Its replay page. |
-| Its changes | A proposed candidate with no baseline. | Its replay page. |
-
-## People
-
-"What the work asks of people", over the tasks the period's runs worked:
-
-| Figure | Counts | A rise is |
-| --- | --- | --- |
-| Inbox asks per task | Times a station asked a person in the period, per task. | bad |
-| Time to answer | The p50 time from an ask to its answer, with the p90 and how many asks are unanswered. | bad |
-| Sent-back rate | Runs whose next act was Sent back or Refused, of runs. | bad |
-| Refused approvals | Approvals a person refused in the period. | bad |
-
-"Who is using Spotlight":
-
-| Figure | Counts |
-| --- | --- |
-| Active people | People with an activity in the period. |
-| New adopters | Active people whose first activity on the team falls in the period. |
-| Weekly active | People with an activity in the last 7 days, whatever the period. |
-| Monthly active | People with an activity in the last 30 days, whatever the period, and the share of them active weekly. |
-
-"What each person did" lists each active person's "Tasks opened", "Acts",
-"Chats" (agent chats they started), "First seen" and "Last active". A new
-adopter is marked "New".
-
-## Cost
-
-| Figure | Counts |
-| --- | --- |
-| Spend | The cost of the runs, when every priced run is in one currency. |
-| Runs with no price | Runs whose harness reported no cost. |
-| Cache share | Cache-read tokens, of input, cache-read and cache-write tokens together, over the runs whose harness reported input and cache-read tokens. Otherwise `not reported`. |
-
-"By harness", "By model", "By station" and "By repository" split the spend,
-highest first. A run on several repositories splits its cost evenly among them.
-"Where the spend goes" follows the spend from model to station to repository.
-"Read from cache" gives each station's "Cache share", "Cache read", "Cache
-write" and "Input" tokens. When priced runs came in more than one currency, nothing is added up.
-See [Spend](/docs/reference/app/tasks-runs-and-the-inbox#spend) for which
-harnesses report tokens.
-
-## Tools
-
-The Tools tab counts the runs that ran and ended in the period.
+The Tools and skills tab, `?tab=tools`, has the sections "Skills and tools"
+and "Memory". "Skills and tools" counts the runs that ran and ended in the
+period. With no skills, unused skills, MCP servers or refusals to list, it
+reads "No skills or MCP servers used in this period", with "See the team's
+skills".
 
 ### Skills
 
 A run is given a skill when its station's config gave it. A run reads a skill
 when one of its tool calls does either of these:
 
-- Reads, searches or runs a command on a path to a file inside the skill's
-  folder, `.claude/skills/<key>/` or `.spotlight/skills/<key>/`, whatever the
-  run's harness. Listing a skills folder, writing or editing a skill's file,
-  and MCP calls do not count.
+- Reads, searches or runs a command on a path inside the skill's folder,
+  `.claude/skills/<key>/` or `.spotlight/skills/<key>/`, whatever the run's
+  harness. Listing that folder counts; a path to the skills folder itself,
+  writing or editing a skill's file, and MCP calls do not.
 - Asks Claude Code's `Skill` tool for the skill by its key.
 
 Spotlight's built-in skills are not counted. A key the team does not define is
 counted, and shown without a link.
 
-"Skills" shows, for each skill, most read first, the runs that read it out of
-all runs, week by week from Monday, UTC, with how many runs read it and how
-many were given it, in all and at each station. A skill's trend compares the
-share of all runs that read it in the last 2 weeks with the weeks before:
+"Skills" lists each skill, most read first, with "Read per week" (the share of
+all runs that read it, week by week from Monday, UTC), "Given", "Read" and
+"Trend"; its "Runs" is left empty. Unfolding a skill lists each station with
+"Runs", "Given", "Read" and "Trend", and no chart. A skill's trend
+compares the share of all runs that read it in the last 2 weeks with the weeks
+before:
 
 | Trend | When |
 | --- | --- |
@@ -686,14 +918,17 @@ Claude Code names `mcp__acp__Read`, `mcp__acp__Write`, `mcp__acp__Edit`,
 `mcp__acp__MultiEdit`, `mcp__acp__Bash`, `mcp__acp__BashOutput` and
 `mcp__acp__KillShell` belong to no server.
 
-| Figure | Counts |
+| Column | Counts |
 | --- | --- |
 | Runs | Runs that called the server. |
-| Calls per run | Calls to it, per run that called it. Refused calls are left out. |
-| p50, p95 | How long a finished call took, from when it started working until it completed or failed, so a wait for approval is left out, and so is any time the run was paused. Approximate: each call is counted in one of fixed time ranges, from under 10 ms to over 10,000 seconds, and the percentile is given as the geometric middle of its range. |
+| Calls per run | Calls to it, per run that called it. |
+| p50, p95 | How long a finished call took, from when it started working until it completed or failed, so a wait for approval is left out, and so is any time the run was paused. Approximate: each call is counted in one of fixed time ranges, from under 10 ms to 10,000 seconds and over, and the percentile is given as the geometric middle of its range; in the first range, under 10 ms, as 5 ms, and in the last as 10,000 seconds. |
 | Error rate | Failed calls, of calls. A call that never finished counts as failed. |
 | Failing runs | Runs that failed where the run's last call to the server failed or never finished. |
 | Refused | Runs in which a person refused to approve one of its tools. |
+
+Refused calls are left out of every column but "Refused". With no server
+called, the card reads `No run called an MCP server in this period.`
 
 A call is refused when the harness asked permission for it and Spotlight's
 answer was anything but allow: a refusal, the call being put to a person, or
@@ -702,57 +937,63 @@ output says does not make a call refused.
 
 ### Refused approvals
 
-"Refused approvals" counts, for each tool and server, the runs that ran in the
-period in which a person refused to approve it. A tool is named by its
-own name, as in `linear.comment`, or for a harness permission that names no
-tool, as `<harness> <kind>`.
+"Refused approvals" counts, for each tool and server, under "Tool", "Server"
+and "Refused", the runs that ran in the period in which a person refused to
+approve it. A tool is named by its own name, as in `linear.comment`, or for a
+harness permission that names no tool, as `<harness> <kind>`. A tool of no
+server reads `–` under "Server".
 
-## Memory
+### Memory
 
-| Figure | Counts |
+| Tile | Counts |
 | --- | --- |
 | Standing memories | The [memories](/docs/reference/glossary#memory) the team keeps now, whatever the period. |
-| Briefed | Memories briefed to the runs that ended in the period, each counted once, with how many of those runs they were briefed to. |
-| Read | Memories the runs that ended in the period read with [`spotlight recall`](/docs/reference/cli/agent-commands#spotlight-recall), each counted once, with how many of those runs read them. |
+| Briefed | Memories briefed to the runs that ended in the period, withdrawn runs included, each counted once, with `to <n> runs`, the runs that ran they were briefed to. |
+| Read | Memories the runs that ended in the period read with [`spotlight recall`](/docs/reference/cli/agent-commands#spotlight-recall), withdrawn runs included, each counted once, with `by <n> runs`, the runs that ran that read them. |
 | Flagged wrong | Memories a person retired in the period. A memory replaced by a correction is not counted. |
+| Solved with memories | `–`, with `No benchmark yet`. |
 
 "Runs with memories and without" sets the period's runs that were briefed or
 read a memory against its other runs, under "Without", "With" and "Change",
-with the rows of [Before and after](#before-and-after). Only runs that ran are
-counted.
+with the rows of [Impact](#impact) but "Judge score". Only runs that ran are
+counted. "Change" reads as under Impact, `Too few runs` and `No change`
+included.
 
-"Flagged wrong" lists each memory flagged wrong, the latest first: its handle,
-linked to the memory, its text, the reason in quotes or `No reason given`, who
-retired it, or "A former member", and the day. With none, it reads
-`Nobody flagged a memory wrong in this period.`
-
-"Memory benchmark" reads `No benchmark yet.` Spotlight does not run a memory
-benchmark yet.
+"Flagged wrong" lists each memory flagged wrong, the latest first: "Memory",
+its handle, linked to the memory, and its text; "Reason", or `–`; "Flagged
+by", or "A former member"; and "Date". With none, it reads
+`No memory flagged wrong in this period.`
 
 With no standing memories, and none briefed, read or flagged wrong in the
-period, the tab reads "No memories yet", with "Open the team's memory".
+period, the section reads "No memories yet", with "Open the team's memory".
 
 ## Runs
 
-The Runs tab lists every run that ended in the period, withdrawn runs included,
-newest first, 50 to a page. Each row shows the outcome, linked to the run, the
-failure, station, the person who opened the task, harness, model, how long the
-run took, cost and when it ended.
+The Runs tab, `?tab=runs`, lists every run that ended in the period, withdrawn
+runs included, newest first, 50 to a page:
 
-"Station" (work stations only) and "Outcome" (Completed, Failed, Stopped,
-Abandoned, Withdrawn, Superseded) narrow the list. Following a figure on
-another tab narrows it further, shown as a pill:
+| Column | Shows |
+| --- | --- |
+| Outcome | Completed, Failed, Stopped, Abandoned, Withdrawn or Superseded, linked to the run. |
+| Failure | The run's failure, or `–`. |
+| Station | The station. |
+| Person | Who opened the task, "No one", or "A former member". |
+| Setup | The harness and model, as `<harness> · <model>`, or `<harness> · Harness default` for a run with no model set. |
+| Took, Cost, Ended | How long the run took, what it cost, and when it ended. |
+
+"Station" (work stations only) and "Outcome" narrow the list. Following a
+figure on another tab narrows it further, shown as a pill that can be removed:
 
 | Pill | Narrows to runs |
 | --- | --- |
 | Line | On the line. |
 | Pull request | Whose task's pull request is now Merged, Closed unmerged or Open. |
-| Then | Whose next act was the one named. |
+| Then | Whose next act was Started, Parked, Closed, Answered or Sent back. |
 | Asked a person | Of tasks that asked a person in the period. |
 | Harness | Run by the harness. |
 | Model | Run with the model. "Harness default" is a run with no model set. |
 | Repository | On the repository. "No repository" is a run on none. |
-| Config | With the [config fingerprint](/docs/reference/glossary#config-fingerprint). |
+| Config | With the [config fingerprint](/docs/reference/glossary#config-fingerprint), shown by its first 8 characters. |
 | Task, Tasks | Of the task, or of up to 200 tasks. |
 | Person | Of tasks the person opened. |
 | Day | That ended on the UTC day. |
@@ -761,24 +1002,29 @@ another tab narrows it further, shown as a pill:
 | Called | That called the MCP server. |
 | A call failed on | With a failed call to the MCP server. |
 | Last call failed on | That failed where their last call to the MCP server failed. |
-| Refused, Refused on | Where a person refused the tool, or a tool of the MCP server. |
+| Refused, Refused on | Where a person refused the tool, or a tool of the MCP server; "No server" for a tool of none. |
 
 Every filter narrows the others. The skill, MCP server and refusal filters
-leave out withdrawn runs.
+leave out withdrawn runs. The address keeps the filters and the page. Under
+the list, the pager reads `<first>–<last> of <total>`, as in `1–50 of 230`.
+Narrowed to nothing, the list reads `No runs match.`, with "Show every run".
 
 ## Traces
 
-The Traces tab lists the team's task
-[traces](/docs/reference/glossary#trace), one for each task with a run started
-in the past 7, 30 or 90 days, as the period picker says. The span counts back
+The Traces tab, `?tab=traces`, lists the team's task
+[traces](/docs/reference/glossary#trace), one for each task with a run created,
+that is queued, in the past 7, 30 or 90 days, as the period picker says. The span counts back
 from now rather than in whole UTC days, and has no period before it. The
 traces are not part of the [Insights API](/docs/reference/api/insights).
 
 A chart of "Traces" and "Faults" over the span sits above the list. Each row
 shows "Started", "Stations", "Task", "Asked", "Answered", "Faults", "Took" and
 "Cost", and opens the task's trace at `/w/<slug>/team/<teamId>/tasks/<taskId>/trace`.
-Ticking rows and choosing "Discuss with the agent" opens the Agent page with
-those traces attached to a new chat.
+Each row starts with a checkbox. Ticking rows shows a bar reading
+`<n> selected`, with "Discuss with the agent", which opens the Agent page with
+those traces attached to a new chat, and "Clear selection".
 
-With nothing traced in the span, the tab reads "No traces", with "Create a
-task", which opens the team's first line.
+With nothing traced in the span, the tab reads "No traces" and
+`No traces in the <span>. Create a task to leave one.`, as in
+`No traces in the past 30 days.`, with "Create a task", which opens the
+team's first line.

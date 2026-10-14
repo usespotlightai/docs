@@ -5,10 +5,13 @@ title: Insights API
 description: The read-only endpoints behind a team's Insights page and its station alerts, their parameters, who may read them, and their errors.
 ---
 
-Every figure on the [Insights page](/docs/reference/app/insights) but those
-of the Candidates tab is read through these endpoints. All are `GET`, under
-`/api/teams/{teamId}/insights`, and answer JSON. The Candidates tab is read
-through the [Replayed candidates API](/docs/reference/api/replayed-candidates).
+Every figure on the [Insights page](/docs/reference/app/insights) is read
+through these endpoints, but for the Candidates section of the Stations tab,
+which is read through the
+[Replayed candidates API](/docs/reference/api/replayed-candidates), and a
+station's "Runs by config" and judge agreement, which are read through the
+station's own endpoints. All are `GET`, under `/api/teams/{teamId}/insights`,
+and answer JSON.
 
 ## Endpoints
 
@@ -18,6 +21,7 @@ through the [Replayed candidates API](/docs/reference/api/replayed-candidates).
 | `/flow` | Where tasks wait at each station, queued, running or in the inbox, and the time to pull request, first review and merge. |
 | `/pull-requests` | Spotlight's share of merged pull requests by week and repository, Spotlight's against people's, types, and review depth. |
 | `/pull-requests/list` | Every pull request opened or closed in the period, or still open, the latest first, a page at a time. |
+| `/shipping` | How fast Spotlight's pull requests ship against people's alone: time to merge by day and by type, review depth by week, time to first review, review bots, and how long merged pull requests spent at each stage. See [`/shipping`](#shipping). |
 | `/stations` | Each station's tally, per day and against the period before, with its task failures apart from its run failures. |
 | `/changes` | Every station config change in the period, with the station's runs before and after it, and the judge's scores where its judge is trusted. |
 | `/setups` | How runs went against what they cost on each harness, model, effort and harness profile, with the frontier marked for each outcome. |
@@ -50,7 +54,7 @@ as long.
 | `personId` | Of tasks this person opened. |
 | `day` | That ended on this UTC day, as `YYYY-MM-DD`. |
 | `delivery` | Of tasks whose pull request is now `merged`, `closed` or `open`. |
-| `next` | Whose next person act was `started`, `parked`, `closed`, `answered`, `approved`, `refused` or `sent-back`. |
+| `next` | Whose next person act was `started`, `parked`, `closed`, `answered` or `sent-back`. |
 | `asked` | `true`: of tasks that asked a person in the inbox during the period. `false` narrows nothing. |
 | `week` | That ended in the week starting this UTC Monday, as `YYYY-MM-DD`. |
 | `skillGiven` | Whose station config gave this skill. |
@@ -89,12 +93,60 @@ With both `taskId` and `taskIds`, only that task's runs are listed, and only if
 it is among `taskIds`.
 
 Every endpoint but `/runs`, the two pull request endpoints and
-`/alerts/{alertId}` counts at most the team's latest 20,000 runs over the
-period and the one before, and at most 20,000 each of its task pull requests,
+`/alerts/{alertId}` counts at most 20,000 of the team's runs that ended over
+the period and the one before, those that started latest, and at most 20,000 each of its task pull requests,
 tasks people acted on, tasks with failures and agent chats. It answers
 `truncated: true` when any of them was more. The pull request endpoints count
-at most the newest 20,000 pull requests in the period. `/alerts/{alertId}`
-reads the station's latest 500 runs.
+at most the newest 20,000 pull requests in the period, and `/shipping` the
+newest 20,000 over the period and the one before; `/shipping` also answers
+`truncated: true` when either limit was passed. `/alerts/{alertId}` reads the
+station's latest 500 runs.
+
+## `/shipping`
+
+`GET /api/teams/{teamId}/insights/shipping` takes `period` alone. It sets
+Spotlight's pull requests against people's alone, those people opened with no
+Spotlight review task, in the repositories Spotlight merged into in the
+period. Times are in milliseconds. See
+[What the agents ship](/docs/reference/app/insights#what-the-agents-ship) and
+[Review and approval](/docs/reference/app/insights#review-and-approval) for
+how each is measured.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `period` | object | `name`, `from`, `to`, `previousFrom`, `previousTo` and `days`, every UTC day in the period, oldest first. |
+| `truncated` | boolean | Whether only the latest pull requests or runs were counted. |
+| `toMerge` | by-author | Opened to merged, for pull requests merged in the period. |
+| `toMergeChanges` | object | `spotlight` and `people`, each with `p50`, `p75`, `p90` and `p95`: a change against the period before, or `null`. |
+| `mergeDays[]` | object | For each day of the period: `day`, `daily` (by-author, for pull requests merged that day) and `rolling` (by-author, merged in the 7 days ending that day). |
+| `types[]` | object | For each type with a pull request merged: `type`, `merged` (Spotlight's and people's alone) and `toMerge` (by-author). |
+| `slowestFirst` | object | `p50`, `p75`, `p90` and `p95`: the types in `types`, slowest first by Spotlight's time at that percentile, those with none last. |
+| `depth[]` | object | For each week, from its UTC Monday: `week`, `merged`, and `rounds[]`, a rounds count for each of `0`, `1`, `2` and `3+`. |
+| `depthTotals[]` | rounds count | The weeks in `depth` summed, for each number of review rounds. |
+| `reviewDays[]` | object | For each day of the period: `toFirstReviewDaily` and `toFirstReviewRolling` (percentiles, for pull requests first reviewed that day, or in the 7 days ending that day), `awaiting` (pull requests ready and not yet reviewed as the day ended) and `humanReviews` (reviews people submitted that day). |
+| `bots[]` | object | Each review bot, the most comments first: `login`, `comments`, `reviews` and `resolvedShare`, from 0 to 1, or `null` where it started no thread. |
+| `pipeline` | object | `merged` (Spotlight's pull requests merged in the period whose task opened in the period, the period before, or the last 30 days where that reaches further), `types[]` (`type` and `merged`) and `layouts`: `stations` (a stage for each station the tasks ran at, in order of first use, then the review stages) and `stages` (coding as one stage, then the review stages). |
+| `shippedAny` | boolean | Whether `pipeline.merged` is above 0, `types` is not empty, or any day of `reviewDays` has `awaiting` or `humanReviews` above 0. Pull requests written by `bots` or `touched` never count toward the first two, and people's count only in the repositories Spotlight merged into. |
+
+A percentiles object has `p50Ms`, `p75Ms`, `p90Ms` and `p95Ms`, each `null`
+when nothing was measured, and `count`. A by-author object has `spotlight` and
+`people`, each a percentiles object. A rounds count has `rounds`, `merged` and
+`share`, from 0 to 1, or `null` where nothing merged. A change has `unit`
+(`percent` or `points`), `by` (`null` when it rose from 0), `fromZero`,
+`direction` (`up`, `down` or `same`) and `tone` (`good`, `bad` or `flat`).
+
+A stage in `layouts` has `kind` (`coding`, `station`, `awaitingReview`,
+`inReview` or `awaitingMerge`), `lineId` and `stationId` (`null` but for a
+station), and `times`: `all`, and `types[]` with `type` and `times` for each
+type that went through it. Each times object has:
+
+| Field | Description |
+| --- | --- |
+| `total` | Percentiles of the stage's time. |
+| `parts` | At a station, `queued`, `running` and `inbox`, each percentiles; otherwise `null`. |
+| `jam` | `p50`, `p75`, `p90` and `p95`: the stage's time over the longest stage's in the same layout, for the same type, from 0 to 1. |
+| `worst` | `p50`, `p75`, `p90` and `p95`: whether this is the longest stage in the layout for the same type; the first on a tie. |
+| `longestPart` | At a station, `p50`, `p75`, `p90` and `p95`: the part that took longest, `queued` first on a tie, or `null` where no part took any time. Otherwise `null`. |
 
 ## Who may read
 
@@ -108,6 +160,37 @@ is answered `404`. See
 
 | Status | Cause |
 | --- | --- |
-| `401` | No session or token, or an unknown token. |
-| `404` | The team is not in the caller's workspace, or the caller is a person neither on the team nor an owner or admin of the workspace. For `/alerts/{alertId}`, also an alert of another team or none: `There is no alert <alertId> for this caller`. |
-| `422` | `period` is not `7d`, `30d` or `90d`, or is given twice: `Insights look back 7d, 30d or 90d`. `taskIds` names more than 200 tasks: `Runs are filtered by at most 200 tasks at once`. `outcome`, `delivery` or `next` on `/runs` names a value it does not take: `Runs are filtered by one <filter> of <values>, not <value>`, as in `Runs are filtered by one outcome of completed, failed, stopped, abandoned, withdrawn, superseded, not done`. A `/runs` filter that takes one value is given more than once: `Runs are filtered by one <filter> at a time, not <count>`. `day` is not a day of the period written `YYYY-MM-DD`: `Runs are filtered by a day of the period written YYYY-MM-DD, not <value>`. `asked` is not `true` or `false`: `Runs are filtered by one answer to whether the task asked of true, false, not <value>`. `page` is past the last page with runs, or above 10,000: `Runs are paged up to page <last>, not <page>`. A `/runs` filter value is longer than 200 characters: `Runs are filtered by a <filter> of at most 200 characters`. `week` on `/runs` is not a Monday written `YYYY-MM-DD`: a message ending `by a week that starts on a Monday written YYYY-MM-DD, not <value>`. A filter of `/pull-requests/list` names more than 50 repositories or a value it does not take: a message starting `Pull requests are filtered`, as in `Pull requests are filtered by at most 50 repositories at once`. `size` on `/setups` is another value: `Setups are compared by a size of small, medium, large, not <value>`. |
+| `401` | No session or token, or an unknown, expired or revoked token. |
+| `404` | There is no such team, the team is not in the caller's workspace, the caller is a token without the `read` scope, or the caller is a person neither on the team nor an owner or admin of the workspace: `Team <teamId> not found.` For `/alerts/{alertId}`, also an alert of another team or none: `Alert <alertId> not found.` |
+| `422` | On every endpoint but `/alerts/{alertId}`, `period` is not `7d`, `30d` or `90d`, or is given twice: `Period must be 7d, 30d or 90d.` See below for the filters. |
+
+On `/runs`, where `<filter>` names the parameter as `line`, `station`,
+`outcome`, `harness`, `model`, `repository`, `station config`, `task`,
+`person`, `day`, `week`, `skill given`, `skill used`, `server`,
+`server that failed`, `server failed after`, `refused tool`,
+`refused server`, `delivery`, `next act` or
+`answer to whether the task asked`:
+
+| Cause | Message |
+| --- | --- |
+| `taskIds` names more than 200 tasks. | `Run filter takes at most 200 tasks.` |
+| `outcome`, `delivery`, `next` or `asked` names a value it does not take. | `Run filter <filter> must be one of <values>, not <value>.`, as in `Run filter next act must be one of started, parked, closed, answered, sent-back, not approved.` |
+| A filter that takes one value is given more than once. | `Run filter takes one <filter>, not <count>.` |
+| `day` is not a day of the period written `YYYY-MM-DD`. | `Run filter day must be in the period, written YYYY-MM-DD, not <value>.` |
+| `week` is not a Monday written `YYYY-MM-DD`. | `Run filter week must be a Monday written YYYY-MM-DD, not <value>.` |
+| A filter value other than a `taskIds` entry is longer than 200 characters. | `Run filter <filter> must be at most 200 characters.` |
+| `page` is past the last page with runs. | `Run page must be at most <last>, not <page>.` |
+| `page` is above 10,000. | `Run page must be at most 10000, not <page>.` |
+
+On `/pull-requests/list`, where `<filter>` names the parameter as `author`,
+`type`, `state`, `week`, `reverted`, `count of review rounds` or `compared`:
+
+| Cause | Message |
+| --- | --- |
+| `repository` names more than 50 repositories. | `Pull request filter takes at most 50 repositories.` |
+| `author`, `type`, `state`, `reverted`, `rounds` or `compared` names a value it does not take. | `Pull request filter <filter> must be one of <values>, not <value>.` |
+| A filter that takes one value is given more than once. | `Pull request filter takes one <filter>, not <count>.` |
+| `week` does not match `YYYY-MM-DD`, or cannot be read as a date. A day past the end of its month, as in `2026-02-31`, is read as a day of the next month. | `Pull request filter week must be a day written YYYY-MM-DD, not <value>.` |
+
+On `/setups`, a `size` other than `small`, `medium` or `large`:
+`Setup filter size must be one of small, medium, large, not <value>.`
