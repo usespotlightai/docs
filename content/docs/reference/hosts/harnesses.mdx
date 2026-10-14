@@ -91,7 +91,15 @@ changes and no longer holds it, the run fails with
 ## Versions
 
 A harness's version is the one built into the runner image. The image digest
-pins it. The default image installs the latest release of each harness package
-when it is built. See
+pins it. The default image is built from `.docker/runner/Dockerfile` in the
+[Spotlight repository](https://github.com/usespotlightai/spotlight), with these
+build arguments. Cursor is installed at its latest release.
+
+| Argument | Default | Installs |
+| --- | --- | --- |
+| `CLAUDE_CODE_VERSION` | `latest` | `@anthropic-ai/claude-code` |
+| `CLAUDE_AGENT_ACP_VERSION` | `latest` | `@agentclientprotocol/claude-agent-acp` |
+| `CODEX_ACP_VERSION` | `latest` | `@agentclientprotocol/codex-acp` |
+| `TERRAFORM_VERSION` | `1.16.4` | Terraform | See
 [Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image)
 for an image with other versions.

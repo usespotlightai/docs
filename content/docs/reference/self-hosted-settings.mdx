@@ -1,0 +1,171 @@
+---
+type: reference
+icon: BookText
+title: Self-hosted Spotlight settings
+description: The environment variables a self-hosted Spotlight reads, the S3 bucket it needs, and how it sends mail.
+---
+
+A [self-hosted Spotlight](/docs/reference/glossary#spotlight-address) is
+configured through environment variables, read once when it starts. Hosts have
+settings of their own; see [Host settings](/docs/reference/hosts/host-configuration).
+
+## Validation
+
+Spotlight checks the variables when it starts. With any problem, it stops and
+lists each one:
+
+```text
+Invalid environment variables:
+  <variable>: <problem>
+```
+
+Neither `SPOTLIGHT_SECRETS_KEY` nor `SECRETS_KMS_KEY_ID` set gives
+`SPOTLIGHT_SECRETS_KEY: wraps each workspace data key when SECRETS_KMS_KEY_ID names no AWS KMS key; generate one with: openssl rand -base64 32`.
+
+## Service
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `DATABASE_URL` | required | A `postgres://` or `postgresql://` URL. |
+| `PORT` | `3000` | The port Spotlight listens on. |
+| `NODE_ENV` | `development` | `development`, `test` or `production`. |
+| `LOG_LEVEL` | `debug` in `development`, else `info` | `fatal`, `error`, `warn`, `info`, `debug`, `trace` or `silent`. |
+| `SPOTLIGHT_RELEASE` | none | The release the [install script](/docs/reference/cli/install-script) installs, and the runner image tag it pulls. Without it, `latest`. |
+| `SPOTLIGHT_INSTALLER_DIR` | `/opt/spotlight/installer` | The directory holding the `install.sh` served at `/api/install.sh`. |
+
+## Addresses and sign-in
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `BETTER_AUTH_URL` | required | The app's public URL, used for sign-in. |
+| `BETTER_AUTH_SECRET` | required | Signs sessions. At least 32 characters. |
+| `SPOTLIGHT_PUBLIC_URL` | `BETTER_AUTH_URL` | The [Spotlight address](/docs/reference/glossary#spotlight-address) in what Spotlight hands out: the install script's `SPOTLIGHT_URL`, invite links, links in Slack and on GitHub, the OAuth callback and the issuer of hook tokens. |
+| `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | required | The GitHub OAuth app people sign in with. |
+| `GITHUB_APP_ID` | required | The GitHub App that clones and pushes. |
+| `GITHUB_APP_PRIVATE_KEY` | required | The GitHub App's private key, in PEM. `\n` in the value is read as a line break. |
+| `GITHUB_WEBHOOK_SECRET` | empty | The GitHub App's webhook secret. While empty, every GitHub webhook is refused. |
+
+## Secrets
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `SPOTLIGHT_SECRETS_KEY` | none | 32 bytes, base64 encoded, as made by `openssl rand -base64 32`. Wraps each workspace's data key, which seals [secrets](/docs/reference/terraform/secret) and the other credentials Spotlight keeps, such as integration connection tokens. Required unless `SECRETS_KMS_KEY_ID` is set. |
+| `SECRETS_KMS_KEY_ID` | none | An AWS KMS key that wraps workspace data keys. When set, used in place of `SPOTLIGHT_SECRETS_KEY`. |
+| `SECRETS_AWS_SECRETS_MANAGER` | `false` | `true` lets Spotlight read a secret whose source is AWS Secrets Manager when it is used. |
+
+AWS KMS and AWS Secrets Manager are reached with the default AWS credential
+chain and region.
+
+<Callout type="warn">
+Never lose `SPOTLIGHT_SECRETS_KEY`. Without it, no sealed value can be opened:
+every secret has to be set again and every integration connected again.
+</Callout>
+
+## Calls out of Spotlight
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `OUTBOUND_ALLOWED_HOSTS` | empty | Comma-separated hosts Spotlight may call for integrations and their tools, OAuth token exchanges, hooks it sends itself, and push pools' provision calls. An entry admits the host and its subdomains, compared without regard to case. Empty allows none. |
+| `OAUTH_CLIENTS` | `{}` | The deployment's OAuth clients, as JSON mapping an integration's name to `{ "id", "secret" }`, with `issuer`, the authorization server, for an MCP server it discovers. Example: `{"slack":{"id":"...","secret":"..."}}`. |
+| `HOOK_SIGNING_KEY` | none | A P-256 private key, in PEM, that signs [hook OIDC tokens](/docs/reference/terraform/hook#oidc) with ES256. `\n` in the value is read as a line break. Without it, a hook with `oidc` is refused. |
+| `MCP_RELIST_SECONDS` | `600` | How often the tools of an integration's MCP server are listed again. |
+| `SPOTLIGHT_CATALOG_URL` | `https://catalog.usespotlight.ai` | Where [catalog](/docs/reference/glossary#catalog) tools are called. Always reached, whatever `OUTBOUND_ALLOWED_HOSTS` says. |
+| `SPOTLIGHT_CATALOG_TOKEN` | none | The token sent with each catalog call. |
+
+Register each OAuth client with the callback
+`<SPOTLIGHT_PUBLIC_URL>/api/integrations/oauth/callback`. See
+[OAuth connect and callback](/docs/reference/terraform/integration#oauth-connect-and-callback).
+
+`OAUTH_CLIENTS` that is not JSON, or not of this shape, stops Spotlight at
+start with `OAUTH_CLIENTS is not JSON: <error>` or
+`OAUTH_CLIENTS must map a source to { id, secret }, ...`.
+
+## Drafting
+
+Change stacks, decisions, memories and judges use models through OpenRouter.
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `OPENROUTER_API_KEY` | none | Without it, no decision or memory is drafted, no run is judged, and a change stack is refused with `Change stacks are not set up on this Spotlight deployment`. |
+| `CHANGE_STACK_MODEL` | `google/gemini-3.8-flash` | Drafts [change stacks](/docs/reference/app/change-stacks-and-decisions). |
+| `DECISIONS_MODEL` | `google/gemini-3.8-flash` | Drafts [decisions](/docs/reference/app/change-stacks-and-decisions#decisions). |
+| `MEMORIES_MODEL` | `google/gemini-3.8-flash` | Drafts [memories](/docs/reference/glossary#memory). |
+| `JUDGE_MODEL` | `google/gemini-3.8-flash` | The [judge](/docs/improvement/set-a-stations-judge-and-alerts). |
+
+## Storage
+
+Attachments and [workspace archives](/docs/runs/how-a-conversation-survives-between-runs)
+are kept in one S3 bucket. Browsers and runners never hold its keys: they
+upload and download through presigned URLs that last 15 minutes.
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `S3_BUCKET` | required | The bucket's name. |
+| `S3_REGION` | `us-east-1` | The bucket's region. |
+| `S3_ENDPOINT` | AWS | The S3 endpoint Spotlight itself calls. Set for storage other than AWS S3. |
+| `S3_FORCE_PATH_STYLE` | `false` | `true` addresses the bucket by path, for `S3_ENDPOINT` and `S3_RUNNER_ENDPOINT`. |
+| `S3_PUBLIC_ENDPOINT` | `S3_ENDPOINT` | The endpoint in URLs presigned for browsers, such as a CDN. |
+| `S3_PUBLIC_FORCE_PATH_STYLE` | `false` | `true` addresses the bucket by path in URLs presigned for browsers. |
+| `S3_RUNNER_ENDPOINT` | `S3_ENDPOINT` | The endpoint in URLs presigned for runners, for when `S3_ENDPOINT` is private. |
+| `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | none | The bucket user's keys. Without both, the default AWS credential chain. |
+
+[Egress](/docs/reference/hosts/egress#admitted-hosts) always admits the
+storage host runners reach: the host of `S3_RUNNER_ENDPOINT`, else of
+`S3_ENDPOINT`, else `<bucket>.s3.<region>.amazonaws.com`, or
+`s3.<region>.amazonaws.com` with `S3_FORCE_PATH_STYLE`.
+
+### Objects
+
+| Key | Holds |
+| --- | --- |
+| `pending/<workspace id>/<attachment id>` | A file a browser has uploaded but no task, answer or message has taken yet. |
+| `workspaces/<workspace id>/attachments/<attachment id>` | A file a task, answer or message has taken. |
+| `workspaces/<workspace id>/archives/<archive id>.tar.gz` | A [workspace archive](/docs/reference/limits-and-timeouts#workspace-archives). |
+
+A browser uploads to `pending/`. Once a task, answer or message that names the
+file is saved, Spotlight copies it under `workspaces/` and the pending copy is
+dropped. Spotlight never removes an attachment under `workspaces/`. It removes
+archives itself, on the schedule in
+[Limits and timeouts](/docs/reference/limits-and-timeouts#workspace-archives).
+
+### Bucket setup
+
+Spotlight does not create the bucket. It needs:
+
+- Public access blocked.
+- A CORS rule for the app's origin:
+
+  ```json
+  [
+    {
+      "AllowedOrigins": ["https://spotlight.acme.example"],
+      "AllowedMethods": ["PUT", "GET"],
+      "AllowedHeaders": ["content-type", "x-amz-meta-uploader", "x-amz-meta-name"],
+      "ExposeHeaders": [],
+      "MaxAgeSeconds": 3000
+    }
+  ]
+  ```
+
+- A lifecycle rule that expires objects under `pending/` after one day.
+
+<Callout type="warn">
+Never expire objects under `workspaces/`. An archive that expires takes its
+task's conversation with it.
+</Callout>
+
+The keys need only `s3:PutObject`, `s3:GetObject` and `s3:DeleteObject`, on
+`arn:aws:s3:::<bucket>/pending/*` and `arn:aws:s3:::<bucket>/workspaces/*`.
+
+## Mail
+
+Spotlight sends [invites](/docs/reference/roles-and-permissions#invites) by
+email.
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `SMTP_URL` | none | The mail server, as in `smtps://user:pass@smtp.example.com:465`. |
+| `MAIL_FROM` | `Spotlight <noreply@usespotlight.ai>` | The sender. Must be one the mail server permits. |
+
+With `SMTP_URL` unset, Spotlight sends nothing. It logs each message at `warn`
+with `No mail server configured, so this message was only written down`.

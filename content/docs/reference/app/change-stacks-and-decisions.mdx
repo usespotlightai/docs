@@ -16,7 +16,7 @@ its [station fields](/docs/reference/terraform/line#station-fields):
 | `decisions: true` | After each completed run, decisions are drafted from it. |
 
 Both are drafted by Spotlight after the run, not by the agent. Both need the
-deployment to have drafting set up; where it does not, a change stack is
+deployment to have [drafting](/docs/reference/self-hosted-settings#drafting) set up; where it does not, a change stack is
 refused with `Change stacks are not set up on this Spotlight deployment`, and
 no decisions are drafted.
 [Reviewing an agent's changes](/docs/runs/reviewing-an-agents-changes)
@@ -67,6 +67,9 @@ from the line's runner image, on a runner that meets the run's placement.
 | The whole change | The run's diff applied in full. Always first. |
 | Each `change` layer, in order | The incidental changes and every layer up to and including this one. |
 
+- Each checked tree borrows git objects from the host's
+  [mirror](/docs/reference/hosts/host-configuration#state) of the repository,
+  when the host has one.
 - Each repository's `setup` runs before the first step, and again before any
   step whose lockfile changes differ from the step before.
 - When the whole change fails, the layers are not checked.
