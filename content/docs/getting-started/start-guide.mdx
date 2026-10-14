@@ -5,34 +5,34 @@ title: Start guide
 description: Give Spotlight its first task, let an AI agent work on it on your own computer, and answer the question the agent asks you.
 ---
 
-In this tutorial we will give Spotlight its first piece of work and watch an AI
+In this tutorial you give Spotlight its first piece of work and watch an AI
 agent pick it up.
 
 In Spotlight, a piece of work is a task. A task moves through a series of
 steps, such as triage, then writing a spec, then building it. Spotlight calls
 the series a line and each step a station. At most stations an AI coding agent
-does the work, then passes the task on to the next station or stops to ask us a
+does the work, then passes the task on to the next station or stops to ask you a
 question.
 
-Spotlight keeps track of the work, and the agents run on a computer we
-provide. Here that will be our own computer, which Spotlight calls a host.
+Spotlight keeps track of the work, and the agents run on a computer you
+provide. Here that is your own computer, which Spotlight calls a host.
 
-By the end we will have:
+By the end you will have:
 
 - created a workspace
-- set up our computer so agents can run on it
+- set up your computer so agents can run on it
 - given a task to the first station of a line, and answered the question its
-  agent asks us
+  agent asks you
 
-We use Spotlight at `app.usespotlight.ai`. On a
+This tutorial uses Spotlight at `app.usespotlight.ai`. On a
 [self-hosted Spotlight](/docs/reference/glossary#spotlight-address), use the
 deployment's address wherever this tutorial shows `app.usespotlight.ai`.
 
-## Before we start
+## Before you start
 
-We need:
+You need:
 
-- A GitHub account. Spotlight signs us in with GitHub.
+- A GitHub account. Spotlight signs you in with GitHub.
 - A Mac or Linux computer with Docker Desktop, OrbStack, Colima or Podman
   installed and running. Spotlight runs each agent inside a container, so the
   agent can't reach the rest of the computer.
@@ -41,7 +41,7 @@ We need:
 
 ## Create a workspace
 
-A workspace holds everything Spotlight knows about our organisation: its
+A workspace holds everything Spotlight knows about your organisation: its
 people, its teams, and each team's lines and tasks.
 
 <Steps>
@@ -53,7 +53,7 @@ Open [app.usespotlight.ai](https://app.usespotlight.ai) and click
 </Step>
 <Step>
 
-Spotlight asks us to name the workspace. Notice that the URL field fills
+Spotlight asks you to name the workspace. Notice that the URL field fills
 itself in from the name. Click **Continue**.
 
 </Step>
@@ -70,43 +70,48 @@ lands, such as an agent's question. It already holds one item: **Set up your
 team**. Open it. It lists three steps, **Install the GitHub App**, **Connect a
 host** and **Set up configuration as code**, and none has a check mark yet.
 A host is a computer that runs agents. A harness is the AI coding tool an agent
-runs, Claude Code in this tutorial. We will come back to the second step.
+runs, Claude Code in this tutorial. You come back to the second step later.
 
-In the sidebar, under **Your teams**, expand our team, then **Lines**. The
+In the sidebar, under **Your teams**, expand your team, then **Lines**. The
 team already has two lines. **Delivery** takes a request from Triage through to
-Code Review, and **Review** looks over pull requests. We will use Delivery.
+Code Review, and **Review** looks over pull requests. This tutorial uses
+Delivery.
 
-## Let our computer take work from Spotlight
+## Let your computer take work from Spotlight
 
 Spotlight hands work to a
 [pool](/docs/administration/ways-in-pools-trusts-and-tokens), a group of
-computers that all prove who they are with the same secret token. We will
-create a pool with only our computer in it.
+computers that all prove who they are with the same secret token. Here you
+create a pool with only your computer in it.
 
 <Steps>
 <Step>
 
-In Spotlight, click **Runners** in the sidebar. This page lists the computers
-that run agents for the workspace. It has none yet.
+In Spotlight, open the workspace menu at the top of the sidebar, choose
+**Settings**, then **Runners**. This page lists the computers that run agents
+for the workspace. It has none yet, and reads **No hosts yet**. Click **Add the
+first host**.
 
 </Step>
 <Step>
 
-Under **Pool name**, leave `my-computer` and click **Create pool**. The page
-now shows a command that installs Spotlight on a computer, with the pool's
-token already in it. Spotlight shows the token only this once, so keep the
-page open.
+The **Add a host** page has three steps. Under **Create a pool**, **Pool name**
+already reads `my-computer-1`. Leave it and click **Create pool**.
+
+The next step, **Add the machine to the my-computer-1 pool**, now shows a
+command that installs Spotlight on a computer, with the pool's token already
+in it. Spotlight shows the token only this once, so keep the page open.
 
 </Step>
 </Steps>
 
-## Start running agents on our computer
+## Start running agents on your computer
 
 <Steps>
 <Step>
 
-Open a terminal. The agents use Claude, so they need our Anthropic key. Save it
-in the file Spotlight reads on our computer when it starts:
+Open a terminal. The agents use Claude, so they need your Anthropic key. Save
+it in the file Spotlight reads on your computer when it starts:
 
 ```bash
 mkdir -p ~/.spotlight
@@ -119,7 +124,7 @@ The commands print nothing.
 </Step>
 <Step>
 
-On the **Runners** page, click **Copy command** and run it in the terminal. It
+On the **Add a host** page, click **Copy command** and run it in the terminal. It
 looks like this, with the pool's token in place of `<pool token>`:
 
 ```bash
@@ -135,21 +140,23 @@ spotlight host: serving https://app.usespotlight.ai: this machine shows on the w
 ```
 
 If it stops with `no container runtime answered`, Docker, or whichever of the
-tools above we use, isn't running. Start it and run the command again.
+tools above you use, isn't running. Start it and run the command again.
 
 </Step>
 <Step>
 
-Watch the **Runners** page. Within a minute our computer appears in its own
-row, with **Pool my-computer** under **Serves**. Under **Harnesses** are the
-logos of the coding tools it can run, Claude Code among them. Its status reads
+Watch the last step, **Wait for the host to connect**. Within a minute of the
+command finishing, your computer connects and Spotlight opens the **Runners**
+page. Your computer appears in its own row, with **Pool my-computer-1** under
+**Serves**. Under **Harnesses** are the logos of the coding tools it can run,
+Claude Code among them. Its status reads
 **Idle**: it is connected and waiting for work.
 
 </Step>
 <Step>
 
 Go back to **Inbox** and open **Set up your team**. **Connect a host** now has
-a check mark: our computer is ready to take work.
+a check mark: your computer is ready to take work.
 
 </Step>
 </Steps>
@@ -186,7 +193,7 @@ Only I know who they are and what they'll work on.
 
 Click **Create task**.
 
-The task needs no code. It leaves out something only we know, and when a
+The task needs no code. It leaves out something only you know, and when a
 request leaves something open, Triage's instructions tell its agent to ask a
 person instead of guessing.
 
@@ -203,7 +210,7 @@ the bottom of the board. Click **Move to Triage**.
 <Step>
 
 Click **Active**. The task now stands at **Triage**, marked **In progress**: an
-agent is working on it. On the **Runners** page, our computer reads **Running 1
+agent is working on it. On the **Runners** page, your computer reads **Running 1
 of 1**, one agent running out of the one it has room for.
 
 </Step>
@@ -222,16 +229,16 @@ a station. Click it.
 <Step>
 
 At the top is what the agent was told, folded to its first few lines. Click it
-to see all of Triage's instructions, followed by our task. Below that, the
+to see all of Triage's instructions, followed by your task. Below that, the
 agent's steps appear as it works, each labelled with what it did, such as
-**Read** or **Thought**. For the first few moments nothing appears, while our
+**Read** or **Thought**. For the first few moments nothing appears, while your
 computer starts a fresh container for the agent.
 
 </Step>
 <Step>
 
 When the agent finishes, its note appears under what it was told. The note
-ends with a question for us, such as who the new teammates are and what they
+ends with a question for you, such as who the new teammates are and what they
 will work on, and the run now reads **Waiting for you**.
 
 If the agent passed the task on to Spec instead of asking, its note says why
@@ -241,8 +248,8 @@ station field under **Properties**, then choose **Triage** in the same field.
 </Step>
 </Steps>
 
-Go back to the board. The task is still at Triage, now marked **Awaiting
-review**. It stays there until we answer.
+Go back to the board. The task is still at Triage, now marked **Waiting for
+you**. It stays there until you answer.
 
 ## Answer the agent
 
@@ -250,7 +257,7 @@ review**. It stays there until we answer.
 <Step>
 
 Open **Inbox**. There is a new item, **Write a welcome note for new
-teammates**, in bold because we haven't read it. Open it. It shows the same
+teammates**, in bold because you haven't read it. Open it. It shows the same
 run, ending with the agent's question.
 
 </Step>
@@ -268,14 +275,14 @@ Press Enter.
 <Step>
 
 The agent works again, and the item shows its steps as they happen. When they
-stop, its new note shows how it used our answer.
+stop, its new note shows how it used your answer.
 
 </Step>
 </Steps>
 
 ## Close the task
 
-We have seen what we came to see, so we will close the task ourselves before it
+That is all this tutorial needs from the task, so close it yourself before it
 goes any further down the line.
 
 <Steps>
@@ -290,24 +297,24 @@ is wide enough.
 
 Choose **Completed** from it. If an agent is still working on the task,
 Spotlight stops it. The task moves to Completed, the end of the line, and the
-**Runners** page shows our computer **Idle** again.
+**Runners** page shows your computer **Idle** again.
 
 </Step>
 </Steps>
 
-## What we built
+## What you built
 
-We created a workspace and set up our own computer to run its agents. We gave
-a task to Triage. Spotlight sent the work to our computer, which started a
-fresh container, and Claude Code worked on the task inside it using our
-Anthropic key. The agent asked us a question through the inbox, took our
-answer, and we closed the task by moving it to Completed.
+You created a workspace and set up your own computer to run its agents. You
+gave a task to Triage. Spotlight sent the work to your computer, which started
+a fresh container, and Claude Code worked on the task inside it using your
+Anthropic key. The agent asked you a question through the inbox, took your
+answer, and you closed the task by moving it to Completed.
 
 From here:
 
 - [Make the factory yours](/docs/getting-started/make-the-factory-yours) puts
   the team's lines, which together make up its software factory, in a
-  repository as code, points Delivery at our code and changes how Triage works.
+  repository as code, points Delivery at your code and changes how Triage works.
 - [Lines, stations and tasks](/docs/getting-started/lines-stations-and-tasks)
   explains how a task moves from station to station, and who decides where it
   goes next.

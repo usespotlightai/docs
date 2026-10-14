@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Insights
-description: The team's Insights page, its period and tabs, what each figure counts, how pull requests are recorded and typed, config changes and setups compared, replayed candidates beside the live config, which skills and MCP servers runs use, how memories are used, the Runs filters, and the 20,000-run limit.
+description: The team's Insights page, its period and tabs, what each figure counts, how pull requests are recorded and typed, config changes and setups compared, replayed candidates beside the live config, which skills and MCP servers runs use, how memories are used, the Runs filters, the Traces tab, and the 20,000-run limit.
 ---
 
 The Insights page sums up how a team's runs, tasks and pull requests went over
@@ -765,3 +765,20 @@ another tab narrows it further, shown as a pill:
 
 Every filter narrows the others. The skill, MCP server and refusal filters
 leave out withdrawn runs.
+
+## Traces
+
+The Traces tab lists the team's task
+[traces](/docs/reference/glossary#trace), one for each task with a run started
+in the past 7, 30 or 90 days, as the period picker says. The span counts back
+from now rather than in whole UTC days, and has no period before it. The
+traces are not part of the [Insights API](/docs/reference/api/insights).
+
+A chart of "Traces" and "Faults" over the span sits above the list. Each row
+shows "Started", "Stations", "Task", "Asked", "Answered", "Faults", "Took" and
+"Cost", and opens the task's trace at `/w/<slug>/team/<teamId>/tasks/<taskId>/trace`.
+Ticking rows and choosing "Discuss with the agent" opens the Agent page with
+those traces attached to a new chat.
+
+With nothing traced in the span, the tab reads "No traces", with "Create a
+task", which opens the team's first line.
