@@ -2,7 +2,7 @@
 type: how-to
 icon: SquarePen
 title: Check a station's judge against people
-description: Grade judged runs from the inbox, read the judge's agreement with people on the Station page, overall and claim by claim, and change the rubric, claims or trust when its scores stay hidden.
+description: Grade judged runs from the inbox, read the judge's agreement with people on the station's Insights view, overall and claim by claim, and change the rubric, claims or trust when its scores stay hidden.
 ---
 
 Use this once a work station has a judge, to get its scores shown or to find
@@ -14,8 +14,8 @@ and see the judge's agreement.
 
 ## Grade judged runs
 
-Some judged runs reach the inbox as **Grade a judged run, so the team can check
-its judge.** They reach the task's assignee, or everyone on the team when the
+Some judged runs reach the inbox as **A judged run needs your grade. Grades
+check the judge.** They reach the task's assignee, or everyone on the team when the
 task has no assignee. Open one. It shows the run's conversation, then a card
 with the question and, when the judge has a rubric, the rubric itself.
 
@@ -33,39 +33,56 @@ Nothing waits on your grade.
 
 ## Read the judge's agreement with people
 
-Open the line's board and select the station's name. Under **Judge**, the
-first line says whether the judge is trusted:
+<Steps>
+<Step>
 
-- If it reads **Hidden until more runs have both a judge score and people's**,
-  grade more of the station's runs. At least 10 need both scores.
-- If it reads **Hidden: every score so far is the same**, grade more runs until
-  both scores vary.
-- If it reads **Hidden:** followed by the measure and **below the** trust it
-  needs, compare the judge's scores with people's in the matrix on the
-  **Current** rubric card, and follow the next section.
-- If it reads **Hidden: the station's rubric names a scale that cannot be
-  read**, correct the rubric's first line to `scores: yes-no` or
-  `scores: 1-5`.
+Open the line's board and select the station's name. On the **Overview** tab,
+under **Judge**, select **How it agrees with people**. The station's view on
+Insights opens at **How far to trust the judge**.
 
-**Both scores**, **Judge only**, **People only** and **Neither** count the
-station's recent runs by which scores they have.
+</Step>
+<Step>
 
-On a judge with claims, the agreement is Cohen's kappa over every claim's
-marks together. The **Current** rubric card lists each claim under
-**Agreement claim by claim**, with its own kappa, the share agreed and the
-runs it counts. If one claim's kappa is far below the others, reword that
-claim.
+If the judge has judged runs under more than one rubric version, pick the one
+to read under **Rubric**.
+
+</Step>
+<Step>
+
+Read the first tile, which says whether the judge is trusted:
+
+- If it reads **Hidden until more runs have scores from both the judge and
+  people**, grade more of the station's runs. At least 10 need both scores.
+- If it reads **Hidden. Agreement can't be measured while all scores are
+  identical.**, grade more runs until both scores vary.
+- If it reads **Hidden.** followed by the measure and **Minimum required**,
+  follow [Change the rubric or the trust](#change-the-rubric-or-the-trust).
+- If it reads **Hidden. The rubric names a scale that cannot be read.**,
+  correct the rubric's first line to `scores: yes-no` or `scores: 1-5`.
+
+</Step>
+<Step>
+
+On a judge with claims, look under **By claim**. If one claim's kappa is far
+below the others, reword that claim.
+
+</Step>
+</Steps>
+
+[Agreement](/docs/reference/app/tasks-runs-and-the-inbox#agreement) says what
+each tile, statistic and card shows.
 
 ## Change the rubric or the trust
 
-The matrix on the **Current** rubric card sets the judge's scores, down,
-against people's, across. If its counts off the diagonal lean one way, the
-judge is stricter or looser than people:
+Under **Score comparison**, compare the judge's scores, in rows, with
+people's, in columns. If the counts off the diagonal lean one way, the judge is
+stricter or looser than people:
 
 - To make the judge read the station as people do, edit the rubric file, such
   as `judges/core/delivery/implementation.md`, or reword the claim people
-  disagree with it on, and run `terraform apply`. The new rubric version gets
-  a card of its own and starts with no runs that have both scores.
+  disagree with it on, and run `terraform apply`. The new rubric version starts
+  with no runs that have both scores. Once the judge has judged runs under it,
+  it is the **Current version** under **Rubric**.
 - To show the scores at a lower agreement, lower `trust` in the station's
   `judge` block and run `terraform apply`.
 

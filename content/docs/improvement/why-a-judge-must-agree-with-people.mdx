@@ -28,9 +28,11 @@ score. Anyone on the team, or an owner or admin of the workspace, can grade
 it.
 
 The second needs no extra work. On a yes-or-no rubric, what people already do
-with a run says whether it was good: closing the task or approving after it is
-a yes, sending it back or refusing is a no, and failing those, a merged pull
-request is a yes and one closed unmerged is a no. A 1 to 5 rubric has no such
+with a run says whether it was good: closing the task after it is a yes,
+sending it back is a no, and failing those, a merged pull request is a yes and
+one closed unmerged is a no. Answering an approval counts as neither: it is
+the run asking a person, and a run that only paused for an approval would
+otherwise count as accepted. A 1 to 5 rubric has no such
 signal, because closing a task says nothing about whether the run was a 3 or a
 4, so it relies on grades alone. So do claims: closing a task says the run was
 good enough, not which of its claims held.
@@ -50,8 +52,8 @@ so such a judge scores near zero.
 For a 1 to 5 rubric, Spotlight uses Spearman's rank correlation: whether the
 runs the judge ranks higher are the ones people rank higher. A judge that
 scores every run one point lower than people do still ranks them the same way,
-and its scores still tell good runs from bad. The mean error, shown beside it,
-says how far apart the two scores sit.
+and its scores still tell good runs from bad. The mean absolute error, shown
+beside it, says how far apart the two scores sit.
 
 For claims, Spotlight sets each claim's mark from the judge beside the same
 claim's mark from people, pools those pairs across every claim, and measures
@@ -86,7 +88,8 @@ claims and the pass share together. Changing any of them changes what
 the judge is asked, so the agreement measured under the old text says nothing
 about the new one, and the judge is hidden again until it has agreed with
 people under the new text. A changed rubric is also a changed station config,
-so its runs start a new group on the Station page, like any other change. See
+so its runs start a new group under "Runs by config" on Insights, like any
+other change. See
 [Why each run records its station's config](/docs/improvement/why-each-run-records-its-stations-config).
 
 ## Reasons a person can check
