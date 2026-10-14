@@ -301,8 +301,16 @@ M-12 · rejected approach · line, in acme/api at src/uploads
   From a run on task <task id>, approved by Ada Lovelace on 2026-09-21
 ```
 
-A memory a person wrote on the Memory page reads `Written by <name> on <date>`
-on its last line. With no match it prints
+The last line says where the memory came from:
+
+| Last line | The memory |
+| --- | --- |
+| `From a run on task <task id>, approved by <name> on <date>` | Was drawn from a run of the task. |
+| `From what a person said on task <task id>, approved by <name> on <date>` | Was drawn only from what people said on the task, or was edited on the Memory page from one drawn from the task. |
+| `From a run on input from outside the team on task <task id>, approved by <name> on <date>` | Was drawn from a task that came from outside the team, or from what another tool said on the task. |
+| `Written by <name> on <date>` | Was written on the Memory page. |
+
+`<name>` is `someone` when the person is not known. With no match it prints
 `The team remembers nothing about "<words>". Try other words.`
 
 Every memory a recall returns is recorded against the run, and shows under
@@ -318,7 +326,7 @@ it replaced, and, once retired, why and what replaced it.
 | --- | --- |
 | `say what to look for` | No words. The usage follows. |
 | `Memory <handle> not found.` | No memory has that handle in the run's team. |
-| `A memory is recalled by at most 500 characters of words it holds, or by its handle, like M-12.` | The words are blank or too long. |
+| `A memory is recalled by at most 500 characters of words it holds, or by its handle, like M-12.` | The words are more than 500 characters. |
 
 ```bash
 spotlight recall upload retries
@@ -335,13 +343,13 @@ Proposes a memory from inside the run. It rests on the step the agent ran the
 command from; where that step can't be found, on the last thing the agent said.
 It waits in the inbox beside the run, with anything drafted from the run, until
 a teammate approves, edits or rejects it, and is kept only once approved. A
-memory from a task that came from outside the team is approved on its own. Proposing the same memory twice from one run keeps one.
+memory from a task that came from outside the team cannot be approved together with other memories. Proposing the same memory twice from one run keeps one.
 
 | Flag | Required | Description |
 | --- | --- | --- |
 | `--kind` | yes | `rationale`, `rejected-approach`, `failure`, `environment`, `preference` or `correction`. |
-| `--body` | yes | What to remember. Omitted, `-` or `/dev/stdin`: read from standard input. |
-| `--path` | no | A file or folder the memory bears on, relative to the current directory or absolute. It must be inside one of the run's checkouts, and every `--path` in one repository. Repeat for more. |
+| `--body` | yes | What to remember, at most 1,000 characters. Omitted, `-` or `/dev/stdin`: read from standard input. |
+| `--path` | no | A file or folder the memory bears on, relative to the current directory or absolute. It must be inside one of the run's checkouts, and every `--path` in one repository. Within its repository, at most 500 characters. Repeat for more, up to 20 different paths. |
 | `--reach` | no | Where it applies: `team`, `line` or `station`. Default: `line`. |
 | `--supersedes` | no | The handle of a standing memory of the team that this one corrects. Approving it retires that one. |
 
@@ -357,6 +365,9 @@ memory waits for a person's approval.
 | `A memory reach must be one of team, line, station, not <reach>.` | `--reach` names no reach. |
 | `<path> is outside the repositories this run checked out; name a path inside one of: <directories>` | A `--path` is outside every checkout. |
 | `A memory bears on paths of one repository at a time.` | The paths are in different repositories. |
+| `A memory must be at most 1000 characters.` | The body is more than 1,000 characters. |
+| `A memory path must be at most 500 characters.` | A `--path` is more than 500 characters within its repository. |
+| `A memory can cover at most 20 paths.` | More than 20 different paths. |
 | `A memory supersedes only a memory standing in the run's team, and <handle> is not one.` | `--supersedes` names a retired memory of the team. |
 | `Memory <handle> not found.` | `--supersedes` names no memory of the run's team. |
 | `A memory is remembered only from a task's run; in a chat, ask the person to write it on the team's Memory page.` | The run is a chat's. |
