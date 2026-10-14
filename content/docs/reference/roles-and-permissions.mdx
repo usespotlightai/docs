@@ -174,7 +174,7 @@ Each address in an invite request gets one outcome:
 | `invited` | "Invited" | A new invite was emailed. |
 | `sent-again` | "Sent again" | An open or expired invite was emailed again. |
 | `already-a-member` | "Already a member" | The address belongs to a member. Nothing was sent. |
-| `not-sent` | "Not sent &mdash; please try again" | The invite was written but the email could not be sent. |
+| `not-sent` | "Not sent. Please resend it from Pending invites." | The invite was written but the email could not be sent. |
 
 The email's subject reads `<inviter> invited you to join <workspace> on Spotlight`,
 names the teams the invite joins, and links to `/invites/<token>` at the
@@ -218,10 +218,10 @@ Connecting a GitHub App installation to a workspace needs both:
 
 | Status | Message | Cause |
 | --- | --- | --- |
-| `403` | `This workspace is not yours to connect: only an owner or an admin may` | Not an owner or admin. |
-| `403` | `That is not an installation you administer on GitHub` | Not the installation's administrator. |
-| `403` | `GitHub would not say whether that installation is yours. Sign in again, and if it keeps happening the sign-in is not authorised to list App installations.` | GitHub would not say. |
-| `409` | `GitHub installation <id> is already connected to another workspace. Disconnect it there first` | Connected to another workspace. |
+| `403` | `Only a workspace owner or admin can connect GitHub.` | Not an owner or admin. |
+| `403` | `You are not an admin of this GitHub installation.` | Not the installation's administrator. |
+| `403` | `GitHub could not confirm this installation is yours. Please sign in again.` | GitHub would not say. |
+| `409` | `GitHub installation <id> is connected to another workspace. Please disconnect it there first.` | Connected to another workspace. |
 
 One installation connects one workspace. See
 [Installation callback](/docs/reference/events/github-events#installation-callback)

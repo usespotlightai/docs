@@ -57,6 +57,50 @@ A stack is an ordered list of cohorts. A cohort is an ordered list of layers.
 
 A diff whose changes are all incidental gives a ready stack at once.
 
+### Languages read across files
+
+Before drafting, Spotlight reads the changed files in these languages, before
+and after the change. It reads only the lines the diff shows, the changed lines
+and their context, and leaves the other lines blank. Binary files are not read.
+Each side of a file is read only when that text is at most 524,288 characters.
+
+Spotlight links each change, a hunk of the diff, to the hunks that define a
+name it uses or imports, or a route it names. The hunks may be in the same
+file. A hunk is not linked to itself. Route links come only from the after
+side.
+
+| Language | Files |
+| --- | --- |
+| TypeScript | `.ts`, `.mts`, `.cts`, `.tsx` |
+| JavaScript | `.js`, `.mjs`, `.cjs`, `.jsx` |
+| Vue | `.vue`: the script blocks, and the component tags of the template |
+| Svelte | `.svelte`: the script blocks, and the component tags of the markup |
+| Python | `.py` |
+| Go | `.go` |
+| Java | `.java` |
+| Ruby | `.rb`, `.rake` |
+| Rust | `.rs` |
+| PHP | `.php` |
+| C# | `.cs` |
+| Terraform | `.tf` |
+
+Routes are read in every language above but Terraform:
+
+- from a call whose first argument starts with `/`, where the call is named
+  for an HTTP method (`get`, `post`, `put`, `patch`, `delete`, `head`,
+  `options`) or is `all`, `any`, `route`, `handle`, `handlefunc` or `match`,
+  in TypeScript, JavaScript, Vue, Svelte, Python, Ruby, Rust and Go;
+- from Nest decorators, with the controller's prefix, in TypeScript,
+  JavaScript, Vue and Svelte;
+- from route annotations in Java, attributes in PHP and C#, `Route::` and
+  other route calls in PHP, and `Map` calls such as `MapGet` in C#;
+- in Go, also from a pattern that starts with its method, as in
+  `"GET /tasks/{id}"`, given to `Handle`, `HandleFunc`, `route`, `match`, `any`
+  or `all`, with or without a host before the path.
+
+A route links only when its path has at least 2 segments that are not
+wildcards.
+
 ### Checks
 
 A station's `check` command is run against the stack in a sandbox of its own,
@@ -77,6 +121,14 @@ from the line's runner image, on a runner that meets the run's placement.
   and checked again.
 - A step may take 5 minutes, and a check 60 minutes in all. The last 16,000
   characters of each step's output are kept.
+- A runner holds a check under a 10-minute lease, which it renews while the
+  check runs, with
+  `POST /api/runs/{runId}/change-stack-checks/{stackId}/lease`. A renewal is
+  refused 65 minutes after the claim. The hold ends when the lease lapses, or
+  65 minutes after the claim.
+- A check is claimed at most 3 times.
+- A check that has waited more than 60 minutes is skipped with
+  `nobody-checked` while no runner holds it.
 
 | Check state | Meaning |
 | --- | --- |
@@ -93,7 +145,7 @@ from the line's runner image, on a runner that meets the run's placement.
 | `no-room` | The runner had no room to check the layers. |
 | `out-of-time` | There was no time left to check the layers. |
 | `no-image` | The host couldn't pull the runner image that the line names. |
-| `nobody-checked` | No runner checked the layers within 60 minutes. |
+| `nobody-checked` | No runner checked the layers in time. The check had waited more than 60 minutes, and no runner held it. |
 | `unprovisioned` | Spotlight couldn't provision a runner to check the layers. |
 
 A push pool receives a check as provision work of kind `check`. See

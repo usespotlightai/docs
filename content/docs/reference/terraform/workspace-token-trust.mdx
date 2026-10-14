@@ -62,7 +62,7 @@ before it must contain `/`.
 | `repo:*` | no |
 | `*` | no |
 
-A refused subject reads `names the owner it admits before any *, as in repo:acme/* or repo:acme/platform:*; a trust open to every owner would admit any workload its issuer signs a token for`.
+A refused subject reads `must name an owner before any *, as in repo:acme/* or repo:acme/platform:*`.
 
 Claim names are lowercase letters, digits and `_`, starting with a letter, at
 most 64 characters. `iss`, `sub`, `aud`, `exp`, `nbf`, `iat` and `jti` may not
@@ -84,9 +84,11 @@ be named. Only claims whose value is a string can match.
 Writing a trust needs the `manage-token-trusts` permission. See
 [Roles and permissions](/docs/reference/roles-and-permissions).
 
-A token may define a trust only with scopes it holds itself, and may change a
-trust only when it holds both the trust's current scopes and the new ones.
-Otherwise the write is refused with `The <key> token trust would grant scopes the token defining it does not hold`.
+A token may define a trust only with scopes it holds itself, may change a
+trust only when it holds both the trust's current scopes and the new ones, and
+may delete a trust only when it holds the trust's current scopes. Otherwise the
+write or delete is refused with `403`, as for a caller without
+`manage-token-trusts`. See [Permission titles](/docs/reference/errors-and-messages#permission-titles).
 A person who is an owner or admin is not limited this way.
 
 ## Exchange

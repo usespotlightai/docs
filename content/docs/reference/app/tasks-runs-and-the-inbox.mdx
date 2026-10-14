@@ -88,7 +88,7 @@ Any other ending is handled as `review`, with one of these notes:
 | A station the current one does not pass to | `The run asked for station "<key>". Work does not pass there from the task's station.` |
 | `done` where the line does not end | `The run said the work is done. The task is not at the end of its line.` |
 | The run failed | `The run failed: <message>`, with a failure. See [Failure codes](#failure-codes). |
-| The runner was lost on the last attempt | `Spotlight gave up on the run after <n> attempts. The run did not finish.`, with the failure `runner-lost`. |
+| The runner was lost, or the host stopped the sandbox at its run timeout, on the last attempt | `Spotlight gave up on the run after <n> attempts. The run did not finish.`, with the failure `runner-lost` or `timed-out`. |
 | The run was stopped | `A person stopped the run. The task is back with you.` |
 | A hook on `handover.giving` refused it | The hook's reason, then `The run said: <note>`. See [`spotlight_hook`](/docs/reference/terraform/hook). |
 
@@ -126,8 +126,8 @@ When a happening finds a task, the line decides one of these outcomes:
 | nothing | The task stands at the completed station, or none of the other outcomes applies. | None. |
 | moves | A reaction for the happening, from this station or from any, leads to another station, and no run holds the task. | The task moves there. |
 | held back | As for moves, but a run holds the task, queued, claimed, waiting or parked, and the station is not the completed station. | A `said` note `Heard while a run held the task. If the run does not pass the task on, the task moves to <Station> when the run ends.`, followed by what the happening said. The run is told, and keeps the task. A later `passed` note, or a later `asked` note other than an approval, drops held-back moves; a later `stays` outcome does not. |
-| interrupts | As for moves, but a run holds the task and the station is the completed station, and the task does not await a person's answer to a question (a pending approval does not count). | The run ends as for a person's move, and its later handover is ignored. The task is put to its assignee, or else the person who raised it, with an `asked` note in the world voice: `<What happened> while <Station> was working. Close the task, or reply to carry on.`, where `<What happened>` is the happening's text without its final full stop. |
-| notes while waiting | As for interrupts, but the task already awaits a person's answer to a question. | A `said` note in the world voice, `<What happened> while <Station> was waiting for an answer. Close the task, or reply to carry on.`, added to the open conversation. The run keeps the task, and earlier held-back moves are cancelled. |
+| interrupts | As for moves, but a run holds the task and the station is the completed station, and the task does not await a person's answer to a question (a pending approval does not count). | The run ends as for a person's move, and its later handover is ignored. The task is put to its assignee, or else the person who raised it, with an `asked` note in the world voice: `<What happened> while <Station> was working. Close the task, or reply to carry on.`, where `<What happened>` is the happening's text without its final full stop, and `its station` takes the place of `<Station>` when the station is not known. |
+| notes while waiting | As for interrupts, but the task already awaits a person's answer to a question. | A `said` note in the world voice, `<What happened> while <Station> was waiting for an answer. Close the task, or reply to carry on.`, added to the open conversation, with `its station` when the station is not known. The run keeps the task, and earlier held-back moves are cancelled. |
 | answers | No reaction leads to another station, the task awaits review, and the happening carries a person's words. | An `answered` note; the run that asked carries on, or else a run starts at the same station. |
 | stays | A reaction applies and leads to the station the task stands at, and the happening does not answer. | A `said` note. |
 
@@ -173,7 +173,7 @@ why (optional)`. See [Approvals](#approvals).
 | From | To | When |
 | --- | --- | --- |
 | | `queued` | A task or chat is handed to a run. |
-| `queued` | `claimed` | A runner that meets the run's placement claims it, and no other run for the same task and station is claimed or waiting. |
+| `queued` | `claimed` | A runner that meets the run's placement claims it, and no other run for the same task is claimed or waiting. |
 | `queued` | `failed` | The station gives what cannot be given: a catalog item that does not exist or that the plan does not include, or a harness profile the team does not hold (`refused`). A push pool could not provision a runner (`unprovisioned`). |
 | `queued` | `superseded` | The task moved to another station or was deleted. |
 | `claimed` | `queued` | The lease lapsed, or the host stopped the sandbox at its run timeout (`timed-out`), no stop was asked for, and the run has had fewer than 3 attempts. Or its `run.starting` hooks could not be asked, and the run is handed back to wait. |
@@ -248,7 +248,7 @@ for more than one reason, the reasons are joined with `; `.
 
 | Message | Cause |
 | --- | --- |
-| `Runner image <image> can't be pulled. Error: <error>` | The host could not pull the line's image and holds no copy of it. Code `unprepared`. |
+| `Runner image <image> can't be pulled. Error: <error>` | The host could not pull the line's image and holds no copy of it. Unreadable registry credentials fail the pull even when the host holds a copy, unless the image is named by digest or the copy has no registry digest. Code `unprepared`. |
 | `Runner image <image> is refused. <reason>` | The host does not serve the image. The reasons are those the Runners page shows for the image. Code `unprepared`. |
 | `Runner image <digest> no longer holds the <harness> harness.` | The image changed and lost the station's harness. Code `unprepared`. |
 | `The sandbox's egress didn't start. Error: <error>` | See [Egress start failures](/docs/reference/hosts/egress#egress-start-failures). Code `unprepared`. |
@@ -270,7 +270,10 @@ for more than one reason, the reasons are joined with `; `.
 
 A run whose runner is lost, or that times out, on its last attempt is noted
 `Spotlight gave up on the run after <n> attempts. The run did not finish.`, with the
-failure `runner-lost` or `timed-out`, as its last attempt ended. See [Inside a sandbox](/docs/reference/hosts/sandbox#run-phases) for
+failure `runner-lost` or `timed-out`, as its last attempt ended. The run's own
+outcome reads `No runner finished the run after <n> attempts.`, or
+`Sandbox stopped at the host's time limit. No runner finished the run after <n> attempts.`
+for a timeout, where `<n>` leaves out the attempts that were parked. See [Inside a sandbox](/docs/reference/hosts/sandbox#run-phases) for
 the phase each runner message comes from.
 
 ### Config
@@ -687,6 +690,10 @@ be answered. An answer writes an `answered` note. The run that asked carries
 on; if no run holds the task and the station has a harness, a run starts there,
 taking up the harness session where the last run left it.
 
+A resolved item shows no answer box. In its place it reads
+`The task is settled here. Nothing is left to answer.` while the task stands at
+the item's station, or `The task moved on to <Station>. Nothing is left to answer.`
+
 ### Notices
 
 A notice tells one person about their team's work, outside any task. Spotlight
@@ -712,7 +719,7 @@ opens the link.
 
 A notice reaches only its person, and only while they are a member of its
 team's workspace. To anyone else, and once it has left the inbox, its page
-reads "Nothing here is waiting on you any more." Settling is
+reads `No longer waiting for you.` Settling is
 `POST /api/workspaces/{slug}/inbox/notices/{noticeId}/settle`, answering
 `204`, or `404` for a notice not put to the caller. Disbanding
 a team forgets its notices.
@@ -743,7 +750,8 @@ answered. While it saves, the card reads "Saving…". A claim whose words change
 judge marked it reads `Claim <n>`. The judge's score is not shown on it.
 
 - Any person on the team, and any owner or admin of the workspace, can grade
-  a run. Anyone else is answered `404`. One grade settles the item for
+  a run. Anyone else is answered `404`, and the card reads
+  `Only team members can grade this run`. One grade settles the item for
   everyone.
 - A person's later grade of the same run replaces their earlier one.
 - A run is graded on its judge's scale, else on the scale of its station's
@@ -926,7 +934,7 @@ call with the changed inputs.
 | --- | --- |
 | `refused` | The call fails with `<tool> was dismissed, so nothing was sent.`, followed by the recorded reason. Nothing is asked. |
 | `granted`, not spent | The call goes ahead, and the grant is spent. Where the person changed the inputs, the tool runs with the changed inputs, and the `tool.using` hook and the run's steps see them. |
-| none, or spent | The task is put to a person with an approval. A tool call fails with `<tool> needs a person's approval before it runs, and they have been asked in their inbox.`, followed by an instruction to hand over. A harness permission request cancels the turn, and the run waits for the decision. |
+| none, or spent | The task is put to a person with an approval. A tool call fails with `<tool> needs a person's approval before it runs, and they have been asked in their inbox. Nothing was sent. Stop here and end your turn: their answer comes back to you in this conversation.` A harness permission request cancels the turn, and the run waits for the decision. |
 
 - A grant is spent by one call. The next call asks again.
 - An approval asked at one station does not count at another.
@@ -947,10 +955,10 @@ rule for it as well as the team's. Of the two, the stricter wins:
 | Team | Person | Result |
 | --- | --- | --- |
 | Runs without asking | Allow | The call runs. |
-| Runs without asking | Ask me first | The call waits, and only that person can approve it. The ask reads `<Name> asks to approve each call made with their <Integration> connection.` |
+| Runs without asking | Ask me first | The call waits, and only that person can approve it. The ask reads `<Name> asks to approve each call made with their <Integration> connection.`, with `The person` when the person has no name. |
 | Needs approval | Allow | The call waits, and the task's assignee can approve it. |
 | Needs approval | Ask me first | The call waits with the team's reason, and only that person can approve it. |
-| Either | Block | The call never runs. The agent is told the person blocks it. |
+| Either | Block | The call never runs. The call fails with `<tool> was not used, so nothing was sent: <person> blocks it on calls made with their connection.`, or `the person it acts as` in place of `<person>` when the person has no name. |
 
 - When a call waits because of a person's rule, the task is put to that
   person: they become its assignee.
@@ -1009,7 +1017,7 @@ It is kept with the approval and never passed to the tool.
 | --- | --- |
 | With an intent | `Spotlight would like to <intent>.` |
 | Without one | `Spotlight would like to use <name>. <because>` |
-| Granted with changed inputs | `Spotlight asked to <intent>, and you changed what it runs with.`, with `use <name>` in place of a missing intent. |
+| Granted with changed inputs | `Spotlight asked to <intent>. You edited its inputs.`, with `use <name>` in place of a missing intent. |
 
 ## Chats
 
@@ -1042,7 +1050,8 @@ the line's `spotlight_line` resource and of its prompt file,
 station as `<station> on <line>`, linked to the station. If the station has left the team's lines,
 the agent is told so.
 
-A setup chat, started from the setup task's "Set up configuration as code",
+A setup chat, started from the setup task's "Set up configuration as code"
+(see [Setup task](/docs/reference/built-ins/built-in-lines#setup-task)),
 names a configuration repository and a folder in it. The repository joins the
 chat's repositories. The folder is 1 to 200 characters, from the repository
 root, each part made of letters, digits, `.`, `_` and `-`, and never `.` or

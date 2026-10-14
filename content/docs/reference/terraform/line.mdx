@@ -286,17 +286,17 @@ change to the rubric, a claim or the pass share starts a new rubric version.
 
 | Message | Cause |
 | --- | --- |
-| `A judge's rubric must not be empty` | `rubric` is empty or only whitespace. |
-| `A judge's rubric must be at most 20000 characters` | `rubric` is longer. |
-| `A judge's sample is the share of runs judged, from 0 to 1` | `sample` is outside 0 to 1. |
-| `A judge's trust is how often the judge must agree with people, from 0 to 1` | `trust` is outside 0 to 1. |
-| `A judge's rubric names its scale as "scores: yes-no" or "scores: 1-5" on its first line` | The judge has no `claims`, and the `scores:` line names another scale, or the rubric opens a front matter block with `---` and never closes it. |
-| `A judge's rubric or its claims say what a good run is, and at least one of them is given` | Neither `rubric` nor `claims` is set. |
-| `A judge's claims lists 1 to 20 claims when it lists any` | `claims` is empty or has more than 20. |
-| `A judge's claims each must not be empty` | A claim is empty or only whitespace. |
-| `A judge's claims each must be at most 500 characters` | A claim is longer. |
-| `A judge's passShare is given only beside the claims it counts` | `passShare` is set without `claims`. |
-| `A judge's passShare is the share of claims a run must meet to pass, from 0 to 1` | `passShare` is outside 0 to 1. |
+| `Judge rubric must not be empty.` | `rubric` is empty or only whitespace. |
+| `Judge rubric must be at most 20000 characters.` | `rubric` is longer. |
+| `Judge sample must be a share from 0 to 1.` | `sample` is outside 0 to 1. |
+| `Judge trust must be a share from 0 to 1.` | `trust` is outside 0 to 1. |
+| `Judge rubric names its scale as "scores: yes-no" or "scores: 1-5" on its first line.` | The judge has no `claims`, and the `scores:` line names another scale, or the rubric opens a front matter block with `---` and never closes it. |
+| `Judge rubric or claims must be given.` | Neither `rubric` nor `claims` is set. |
+| `Judge claims must list 1 to 20 claims.` | `claims` is empty or has more than 20. |
+| `Judge claims each must not be empty.` | A claim is empty or only whitespace. |
+| `Judge claims each must be at most 500 characters.` | A claim is longer. |
+| `Judge passShare needs claims to count.` | `passShare` is set without `claims`. |
+| `Judge passShare must be a share from 0 to 1.` | `passShare` is outside 0 to 1. |
 
 Each is returned with `422` at the path `stations[<n>].judge.<field>`.
 
@@ -404,10 +404,10 @@ See [Replay checks API](/docs/reference/api/replay-checks).
 
 | Message | Path |
 | --- | --- |
-| `is how many tasks a planned change may regress on and still pass, a whole number from 0` | `replayCheck.mostRegressions` |
-| `is the most one check's replay may spend, above 0 and at most 1,000` | `replayCheck.ceiling` |
-| `is the smallest gain in success, as a share above 0 and at most 1, that counts as more than noise` | `replayCheck.minGain` |
-| `is the three-letter currency the ceiling is counted in, as in USD` | `replayCheck.currency` |
+| `Replay check mostRegressions must be a whole number from 0.` | `replayCheck.mostRegressions` |
+| `Replay check ceiling must be above 0 and at most 1,000.` | `replayCheck.ceiling` |
+| `Replay check minGain must be a share above 0 and at most 1.` | `replayCheck.minGain` |
+| `Replay check currency must be a three-letter currency code, as in USD.` | `replayCheck.currency` |
 
 ## Source fields
 
@@ -430,11 +430,11 @@ See [The pull request](/docs/reference/app/searches#the-pull-request).
 
 | Message | Path |
 | --- | --- |
-| `is the GitHub repository that holds the line's Terraform, as owner/name: <reason>` | `source.repository` |
-| `is the Terraform file that holds the line, of 1 to 1,024 characters` | `source.path` |
-| `is a path from the root of the repository, with forward slashes and no leading slash, as in teams/core/delivery.tf` | `source.path` |
-| `names each directory on the way to the file, with no empty, . or .. parts` | `source.path` |
-| `is a Terraform file, ending in .tf` | `source.path` |
+| `Config source repository must be a GitHub repository as owner/name, not <repository>.` | `source.repository` |
+| `Config source path must be 1 to 1,024 characters.` | `source.path` |
+| `Config source path must be a path from the repository root with forward slashes, as in teams/core/delivery.tf.` | `source.path` |
+| `Config source path must not contain empty, . or .. parts.` | `source.path` |
+| `Config source path must end in .tf.` | `source.path` |
 
 ## Placement
 
@@ -444,9 +444,17 @@ apply. A station without `runners` uses the line's. With neither, any runner of
 the workspace qualifies.
 
 A label is one a [runner pool](/docs/reference/terraform/runner-pool) or [runner trust](/docs/reference/terraform/runner-trust)
-gives the runners it admits. A pool's `key` is not a label. Each entry is
-shaped as a label is, lowercase words joined by dashes of at most 64
+gives the runners it admits. A pool's `key` is not a label. Each entry,
+trimmed of surrounding whitespace, is shaped as a label is, lowercase words joined by dashes of at most 64
 characters, and named once; any other entry is refused.
+
+| Message | Cause |
+| --- | --- |
+| `Runners must each name a pool or trust label in lowercase words joined by dashes, at most 64 characters, such as vpc-internal.` | An entry is not shaped as a label. |
+| `Runners must name <label> only once.` | An entry is given twice. |
+
+Each is returned with `422` at the path `runners`, or
+`stations[<n>].runners` for a station.
 
 Where the line's repositories name an `image`, the runner must also run that
 image. Where they name none, the runner must run its host's default image.
@@ -470,10 +478,12 @@ A line's stations are refused unless they follow every rule below.
   `setup`.
 - A line must name `reviews` only if its `role` is `review`.
 - Only a `work` station may have a `judge` or `alerts`. On a backlog the
-  reason given is `is a backlog, where nothing runs, so it has no runs to judge`,
+  refusal reads `Line <line> station <station> is a backlog and has no runs to judge.`,
   and on the completed station
-  `is where the line ends, where nothing runs, so it has no runs to judge`;
-  for alerts both end `so it has no runs to alert on`.
+  `Line <line> station <station> is the completed station and has no runs to judge.`;
+  for alerts both end `and has no runs to alert on.` `<line>` and `<station>`
+  are keys. The refusal is returned at `stations[<n>].judge` or
+  `stations[<n>].alerts`.
 
 ## Reserved station keys
 

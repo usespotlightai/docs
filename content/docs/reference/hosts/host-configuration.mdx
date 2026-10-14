@@ -95,9 +95,12 @@ other image is on Docker Hub.
 | `identitytoken` | A registry identity token, sent with the pull. |
 
 A missing file, or no entry for the registry, pulls anonymously. A file that
-cannot be read or parsed, or an `auth` that is not base64, makes the host log
-`could not read the registry credentials, so it pulls anonymously` and pull
-without credentials.
+cannot be read or parsed, or an `auth` that is not base64, fails the pull. The
+image is then refused with
+`Image can't be pulled. Error: read registry credentials <path>: <error>` or
+`Image can't be pulled. Error: registry credentials for <registry>: auth is not base64`,
+also when the host has a copy of it, unless the image is named by digest or
+the copy has no registry digest.
 
 ### Harness keys
 

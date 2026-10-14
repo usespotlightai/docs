@@ -313,7 +313,7 @@ POST https://app.usespotlight.ai/api/webhooks/w/<workspace slug>/t/<team key>/<i
 | --- | --- |
 | `200` with the `respond.body` text | The delivery is verified and `respond.when` holds. |
 | `204` | The delivery is verified and accepted. It is read afterwards. |
-| `401` | The signature does not verify, or there is no such workspace, team or integration. The response does not say which. |
+| `401` | The signature does not verify, the signing secret is missing or cannot be read, the delivery's `freshness.at` cannot be read or is further from now than `freshness.within`, the integration has no `webhook`, the delivery has no raw body, or there is no such workspace, team or integration. The response does not say which. |
 
 An accepted delivery whose processing fails is retried up to 8 attempts in
 all, from 2 seconds apart doubling to 1 hour.
@@ -486,7 +486,10 @@ before it is sent.
 
 Every request goes only to hosts on the deployment's outbound allow-list,
 [`OUTBOUND_ALLOWED_HOSTS`](/docs/reference/self-hosted-settings#calls-out-of-spotlight). A
-request to another host is refused with `<host>: is not among the hosts this deployment allows outbound calls to`.
+request to another host is refused with `Outbound call to <host> refused. Host is not on the allowed list.`
+A request is also refused with `Outbound call to <url> refused. URL is not valid.`,
+`Outbound call to <host> refused. redirected more than 5 times`, or
+`Outbound call to <host> refused. is where an https request was redirected to over plain http, which Spotlight does not follow`.
 
 ## Tools
 
@@ -705,15 +708,19 @@ Problems include:
 | --- | --- |
 | `could not be read: <host> answered <status>` | The fetch did not succeed. |
 | `could not be read: <host>: <code>` | The host could not be reached, as in `ECONNREFUSED` or `ENOTFOUND`. |
-| `could not be read: <host>: is not among the hosts this deployment allows outbound calls to` | The fetch, or a redirect, went to a host not on the allow-list. |
-| `could not be read: <host>: redirected more than 5 times` | Too many redirects. |
-| `could not be read: <host>: is where an https request was redirected to over plain http, which Spotlight does not follow` | A redirect from `https` to `http`. |
+| `could not be read: Outbound call to <host> refused. Host is not on the allowed list.` | The fetch, or a redirect, went to a host not on the allow-list. |
+| `could not be read: Outbound call to <host> refused. redirected more than 5 times` | Too many redirects. |
+| `could not be read: Outbound call to <host> refused. is where an https request was redirected to over plain http, which Spotlight does not follow` | A redirect from `https` to `http`. |
 | `is larger than the 64 MB Spotlight reads` | The description is too large. |
 | `took longer than 30 seconds to read` | The fetch was too slow. |
 | `took longer than 30 seconds to make sense of` | Reading the operations was too slow. At most 2 descriptions are read at once on each control plane server; one that waits for its turn waits within the same 30 seconds. |
+| `is not JSON or YAML Spotlight can read: <error>` | An OpenAPI description does not parse: as JSON when it starts with `{` after any leading whitespace, else as YAML with at most 100 aliases. |
+| `is not an OpenAPI description` | An OpenAPI description parses to something other than an object. |
+| `could not be made sense of: <error>` | Reading the operations of an OpenAPI description or a GraphQL schema failed with an unexpected error, or needed more than the 1,024 MB of memory it is given. |
 | `is a Swagger 2 description. Spotlight reads only OpenAPI 3. Please convert it to OpenAPI 3` | `swagger: "2.0"`. |
 | `is not an OpenAPI 3 description. An OpenAPI 3 description says openapi: 3.0 or 3.1` | No `openapi: 3.x`. |
 | `names no server to call. Please give the openapi block a baseUrl` | No `baseUrl`, no server, and no `url`. |
+| `names the server "<server>", which is not a web address. Please give the openapi block a baseUrl` | No `baseUrl`, and the description's server cannot be made a web address. |
 | `is not a GraphQL schema Spotlight can read: <error>` | The answer or `document` is not a GraphQL schema. |
 
 ### Described
@@ -802,7 +809,10 @@ Problems a failed listing gives in `described.problem` include:
 | `could not be read: <host> answered <status>` | The server answered with an HTTP error, as `401` before the team is connected. |
 | `could not be read: <host> answered: <error>` | The server answered with an MCP error. |
 | `could not be read: <host>: <code>` | The server could not be reached. |
-| `could not be read: <host>: is not among the hosts this deployment allows outbound calls to` | The server, or a redirect, is on a host not on the allow-list. |
+| `could not be read: Outbound call to <host> refused. Host is not on the allowed list.` | The server, or a redirect, is on a host not on the allow-list. |
+| `could not be read: Outbound call to <host> refused. redirected more than 5 times` | Too many redirects. |
+| `could not be read: Outbound call to <host> refused. is where an https request was redirected to over plain http, which Spotlight does not follow` | A redirect from `https` to `http`. |
+| `could not be read: <host> answered without a status` | The server's answer failed without an HTTP status. |
 
 ### Calling a tool
 
@@ -855,7 +865,7 @@ No expression may read a secret. An expression containing `secret.` or
 
 Secret references are not checked against the workspace's secrets when the
 definition is written. A request that uses a missing secret fails with
-`The workspace holds no secret named <NAME>; define it before anything uses it`.
+`Secret <NAME> not found. Please define it first.`
 
 ## Errors and warnings
 
