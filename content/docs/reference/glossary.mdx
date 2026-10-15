@@ -35,8 +35,10 @@ task waits at the backlog until a person or a reaction moves it. See
 
 ## Baseline
 
-The replay of a station's live config on a replay set's runs, which every
-other replay of the set is compared with. It starts the first time a set is
+The replay of a station's live config on a replay set's runs that the set's
+other replays are compared with, other than a
+[replay with the answer](/docs/reference/app/replays#replay-with-the-answer),
+which is compared with the live replay that started it. It starts the first time a set is
 replayed, again once runs are added after it or a replay asks for more copies
 of each run than it has, and when a [search](#search) of the set starts. See
 [Regressions](/docs/reference/app/replays#regressions).
@@ -131,6 +133,13 @@ The stretch of a task's notes from a station putting the task to a person
 (an `asked` note) to the task next being passed on (a `passed` note). It is open
 until then. Each conversation is one inbox item. See
 [Notes](/docs/reference/app/tasks-runs-and-the-inbox#notes).
+
+## Counterpart
+
+The replay a replay is compared with: its task-by-task rows, its gain and its
+regressions are measured against it. Usually its set's [baseline](#baseline);
+for a replay with the answer, the live replay that started it. See
+[Counterparts](/docs/reference/app/replays#counterparts).
 
 ## Decision
 
@@ -484,8 +493,8 @@ enters a sandbox. See
 
 A judging of two replays' changes to the same task together, without the
 judge being told which replay made which, against the change people accepted.
-A replay whose candidate has a judge, other than a baseline or a check of a
-set, is set side by side with the replay it is compared with once it
+A replay whose candidate has a judge, other than a baseline, a check of a
+set or a replay with the answer, is set side by side with the replay it is compared with once it
 finishes, and reads its wins, losses and ties beside its success.
 It never changes a run's result. See
 [Side by side](/docs/reference/app/replays#side-by-side).

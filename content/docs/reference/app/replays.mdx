@@ -29,13 +29,33 @@ replay sets, one row each:
 | --- | --- |
 | Set | The set's name, linked to the set's page, and "Station gone" when its station has left the line. |
 | Runs | How many runs the set holds. |
-| Latest replay | The latest replay's [success](#success) as `<share> succeeded`, or `No score yet`, and its [state](#replay-states). Hovering over the success shows the replay's candidate, or "Live config", and its success against the baseline. A set never replayed reads "Not replayed yet". |
+| Latest replay | The latest replay's [success](#success) as `<share> succeeded`, or `No score yet`, and its [state](#replay-states). Hovering over the success shows the replay's candidate, or "Live config", and its [success line](#success-line). A set never replayed reads "Not replayed yet". |
 
 "Create a replay set" asks for a name, then opens the new set's page. With no
 sets, the card reads "No replay sets yet" and
 `A replay set holds past runs to replay under a candidate. Create one to start comparing.`,
 with "Create a replay set". To a person who may not read the team's replays,
 the card reads `Only team members can see its replays`.
+
+### Success line
+
+The success line reads the replay's success with its range, as in
+`40% (20–60%) succeeded`, or `No score yet`, then:
+
+| Replay | Then |
+| --- | --- |
+| The set's baseline | `· the baseline` |
+| With a [gain](#gains) over its [counterpart](#counterparts) | The gain and its range, then `vs <counterpart> <share>`, then the verdict, as in `+10 pts (+2 to +18) vs live config 25% (10–40%) · Better`. |
+| With a counterpart but no gain | `· <counterpart> <share>`, as in `· live config 25%`. |
+| Compared with nothing | Nothing. |
+
+`<counterpart>` is the counterpart's label in lower case: `baseline`,
+`live config`, `search's starting config` or `earlier baseline`. `<share>` is
+the counterpart's success on the tasks both replays scored, with its range
+when known. Without that success, the label shows alone. Once any task was
+[set side by side](#side-by-side), the line ends with
+`· Side by side with <replay>: <n> wins, <n> losses, <n> ties`, `<replay>`
+being the counterpart as [shown](#counterparts), as in `the baseline`.
 
 ## Replay set page
 
@@ -62,7 +82,7 @@ is disabled and gives the reason on hover.
 
 | Panel | Shows | Can change |
 | --- | --- | --- |
-| Replays | ⓘ: `Each replay reruns the set under one config. The baseline is the latest replay of the live config. Gain: success compared with the baseline`. One row per replay of the set, newest first, as "Config", "State", "Success", "Gain", "Spent" and "Started". "Config" is the candidate's name, "Live config", or "A removed candidate", linked to the replay, with `Each run <n> times` when it replays each run more than once. "State" is its [state](#replay-states), with its note on hover. "Success" is its [success](#success), with `Likely range: <low>–<high>%` on hover, `–` while nothing is scored, and, when some of its copies are unscored, a warning sign with `<n> of its runs have no score yet.` on hover. "Gain" is "Baseline" on the set's baseline, `–` with no [gain](#gains), else the gain in points, coloured by verdict, with the verdict, `Likely range: <low> to <high> pts`, the baseline's success as `Baseline: <share>` and the [side-by-side](#side-by-side) tally as `Side by side with <counterpart>: <n> wins, <n> losses, <n> ties` on hover, joined by `·`. "Spent" is `<spent> / <ceiling>`. With none, it reads "Not replayed yet" and `Replay the live config first. It becomes the baseline.` | "Start a replay": see below. |
+| Replays | ⓘ: `Each replay reruns the set under one config. The baseline is the latest replay of the live config. Gain: the change in success over the replay it is compared with, on the tasks both scored`. One row per replay of the set, newest first, as "Config", "State", "Success", "Gain", "Spent" and "Started". "Config" is the candidate's name, "Live config", or "A removed candidate", linked to the replay, with `Each run <n> times` when it replays each run more than once. "State" is its [state](#replay-states), with its note on hover. "Success" is its [success](#success), with `Likely range: <low>–<high>%` on hover, `–` while nothing is scored, and, when some of its copies are unscored, a warning sign with `<n> of its runs have no score yet.` on hover. "Gain" is "Baseline" on the set's baseline, `–` with no [gain](#gains), else the gain in points, coloured by verdict. On hover, the gain reads `<verdict>. Likely range: <low> to <high> pts`, `<verdict>` being `Better`, `Worse` or `within noise`; then, once the [counterpart](#counterparts)'s success on the tasks both scored is known, `<Counterpart label>: <share>`, as in `Live config: 50%`; then, once any task was compared [side by side](#side-by-side), `Side by side with <counterpart>: <n> wins, <n> losses, <n> ties`; joined by ` · `. "Spent" is `<spent> / <ceiling>`. With none, it reads "Not replayed yet" and `Replay the live config first. It becomes the baseline.` | "Start a replay": see below. |
 | Health | One row per reading of the set's [health](#health), as "Reading" and "Result". | Nothing. |
 | Runs | A bar of how the set's runs [turned out](#outcomes), then one row per run, as "Run", "State" and "Ended". "Run" is its task's title, linked to the run; a task since deleted reads "A deleted task". A run that [cannot be replayed](#why-a-run-cannot-be-replayed) carries a red warning sign, with the refusal on hover. "State" is the run's state, such as "Completed" or "Failed", or "Unknown run". See [What a set is made of](#what-a-set-is-made-of). With none, it reads "No runs in this set" and `Add past runs of the station. If Spotlight kept a run's starting point, you can replay the run.` | "Add runs": see below. The X that shows on a row's hover takes the run out of the set. "Add runs" is not offered once the station is gone. While a search of the set is running, runs can be neither added nor taken out, and "Add runs" and the X read `A search of this set is running. Add or take out runs after the search ends or a person stops it.` on hover. |
 | Checks | The [checks](/docs/reference/app/searches#guarding-a-stations-changes) replayed on the set, newest first, as "Change", "Verdict", "Regressions" and "When". "Change" is `Pull request #<n>`, `Commit <first 7 characters>` or "A planned change", linked to the check's replay, with `attempt <n>` when the check was tried again. "Verdict" is "Checking", "Passed", "Too many regressions" or `Undecided: <reason>`, with the reasons of the [Replay checks API](/docs/reference/api/replay-checks#verdicts). "Show older checks" loads more. With none, it reads "No checks yet" and `This set checks pull requests that change this station.`, or `The set doesn't guard config changes.` when the set does not guard them. | The "Guards config changes" switch, disabled once the station is gone. |
@@ -253,7 +273,7 @@ Then come these tiles, each with an ⓘ that explains it on hover:
 | Tile | Shows | ⓘ |
 | --- | --- | --- |
 | Success | The [success](#success) as `<share>`, then `<n> scored · <what scores it>`, or `<n> scored, <n> not yet · <what scores it>` when some copies are unscored. What scores it reads `by checks and judge`, `by checks`, `by judge` or `nothing scores this station`. `–` and "No score yet" before any copy is scored. | `Likely range: <low>–<high>%.`, and `Each run <n> times.` when the replay replays each run more than once. |
-| Gain | Shown with a [gain](#gains) over the [counterpart](#counterparts): the gain as `+25 pts`, then the verdict and the success of the set's baseline, as in `Better · baseline 50%`. | `Likely range: <low> to <high> pts.`, then the verdict's note: `The gain on <n> tasks with a score on both sides is real. The likely range stays above zero and reaches the minimum.`, `The loss on <n> tasks with a score on both sides is real. The likely range stays below zero and reaches the minimum.`, or `The difference on <n> tasks with a score on both sides can be chance. The likely range crosses zero or falls short of the minimum.`, each ending `Minimum real gain: +<n> pts`. |
+| Gain | Shown with a [gain](#gains) over the [counterpart](#counterparts): the gain as `+25 pts`, then the verdict and the counterpart's success on the tasks both scored, its label in lower case, as in `Better · live config 50%`. Without that success, the verdict shows alone. | `Likely range: <low> to <high> pts.`, then the verdict's note: `The gain on <n> tasks with a score on both sides is real. The likely range stays above zero and reaches the minimum.`, `The loss on <n> tasks with a score on both sides is real. The likely range stays below zero and reaches the minimum.`, or `The difference on <n> tasks with a score on both sides can be chance. The likely range crosses zero or falls short of the minimum.`, each ending `Minimum real gain: +<n> pts`. |
 | Side by side | Shown once any task was [set side by side](#side-by-side): `<n> wins`, then `<n> losses · <n> ties`. | `A blind judge compares each task's change with <counterpart>'s change. It counts a win if this change is closer to the accepted change, and a loss if <counterpart>'s is closer. Otherwise, it counts a tie. Wins and losses don't change the success rate.` |
 | Spent | What the replay spent, then `of <ceiling>`, or `Over the ceiling by <amount>` when runs already running took the replay past it. | `Runs <amount> · Drafting <amount> · Judging <amount>.`, with `· Side by side <amount>` before the full stop once [side-by-side judging](#side-by-side) spent anything, in the ceiling's currency. Then, when they apply: `Side-by-side judging counts against the ceiling. It doesn't count toward cost per run.`; `Runs that are underway at the ceiling still finish. A replay can end slightly over its ceiling.`; `Also spent <amount> · <amount>. These amounts are in another currency. They don't count against the ceiling.`, one sum per currency; and `Not priced: <n> runs · <n> model calls.`, counting the runs whose cost was never reported and the drafting and judging model calls that came back with no price. |
 
@@ -263,16 +283,16 @@ The "Tasks" card has one row per task, regressions first, then in the set's
 order. Its ⓘ reads `Each task of the set, replayed and compared with
 <counterpart>. Regressions come first. Pick a task to see its runs and
 judging.`, or `Each task of the set, replayed. Pick a task to see its runs and
-judging.` with nothing to compare with. With a [counterpart](#counterparts) to
-compare with, named in the column headers as it is shown, such as "The
-baseline":
+judging.` with nothing to compare with. `<counterpart>` is the
+[counterpart](#counterparts) as shown, such as `the live config`. With a
+counterpart to compare with, the columns are:
 
 | Column | Shows |
 | --- | --- |
 | Task | The task's title, which opens the [task's details](#task-details), and a red warning sign when the task [regressed](#regressions), with `Regressed: fewer copies succeeded than in <counterpart>, or the judge scored it lower.` on hover. |
 | This replay | The [result](#results), with its reasons on hover, joined by `·`. With more than one copy, `<n> of <m> succeeded`, where `<m>` counts the scored copies, or "Not scored yet", with each copy as `Copy <n>: <result> (<reasons>)` on hover. |
-| `<Counterpart>` | The counterpart's result on the task, in the same form, or "Not replayed". |
-| Judge | This replay's judge score less the counterpart's, to two decimals, or why the two are [not compared](#score-comparisons). On hover: `This replay <scores> · <Counterpart> <scores>`. A score reads `Yes`, `No`, `<n>/5` or `<n> of <m> claims met`; with copies, each copy's score, joined by `·`, and the difference is between the two sides' averages. Shown once any copy was judged. |
+| `<Counterpart label>` | Headed by the counterpart's label: "Baseline", "Live config", "Search's starting config" or "Earlier baseline". The counterpart's result on the task, in the same form, or "Not replayed". |
+| Judge | This replay's judge score less the counterpart's, to two decimals, or why the two are [not compared](#score-comparisons). On hover: `This replay <scores> · <Counterpart> <scores>`, `<Counterpart>` being the counterpart as shown with a capital, as in `The live config`. A score reads `Yes`, `No`, `<n>/5` or `<n> of <m> claims met`; with copies, each copy's score, joined by `·`, and the difference is between the two sides' averages. Shown once any copy was judged. |
 | Closer | Which change the judge found closer to the accepted change [side by side](#side-by-side): "This one", the counterpart, as in "The baseline", or "Neither", and `–` for a task not compared. Its ⓘ reads `Closer to the accepted change, as a blind judge saw it`. Shown once any task was compared. |
 | Cost change | This replay's run cost less the counterpart's, each averaged over its copies, once every copy of both has settled. Only costs in the ceiling's currency count. |
 | Time change | This replay's run time less the counterpart's, averaged the same way. |
@@ -464,8 +484,9 @@ again gives the same range.
 
 ### Gains
 
-A replay with a [counterpart](#counterparts) reads its gain over it: on each
-task both scored, its success less the counterpart's, averaged, in points, with
+A replay compared with another, its [counterpart](#counterparts), reads its
+gain over it: on each task both scored, its success less the counterpart's,
+averaged, in points, with
 the 95% interval of that average from the same resampling of those tasks.
 
 | Verdict | Shown | When |
@@ -486,9 +507,9 @@ under.
 ## Side by side
 
 A replay whose candidate has a judge, and that keeps a
-[counterpart](#counterparts), is set beside it, task by task, once the replay
-has finished. Baselines and replays with the answer keep none, so they are
-never set side by side. A
+[counterpart](#counterparts) in `pairedWith`, is set beside it, task by task,
+once the replay has finished. Baselines keep no counterpart, and a replay with
+the answer keeps none in `pairedWith`, so neither is ever set side by side. A
 stopped or over-budget replay never finishes, so it is never set side by side.
 Each copy of a task is set beside the counterpart's copy with the same number,
 or else its first copy, as the counterpart's copies conclude, when all of these
@@ -677,10 +698,12 @@ like any other replay. It replays only the set's runs whose original was
 "Accepted" or "Sent back", among the runs that live replay replayed and that are
 still in the set, with the repeats and a ceiling of its own equal to those of
 the live replay whose finishing started it. Set [health](#room-to-improve)
-reads it against that live replay, on the runs it replayed. It keeps no
-[counterpart](#counterparts): on the replay page and in the API, its tasks and
-gain are compared with the set's baseline, and it is shown as compared with
-`the baseline`. It is never set [side by side](#side-by-side). A stopped one
+reads it against that live replay, on the runs it replayed. That live replay
+is also its [counterpart](#counterparts): on the replay page and in the API,
+its tasks and gain are compared with it, shown as `the live config`, or as
+`the baseline` while it is the set's baseline. When that live replay is gone,
+it is compared with nothing. It is never set [side by side](#side-by-side). A
+stopped one
 reads `A person stopped the replay. No more runs start.`, also when Spotlight
 stopped it.
 
@@ -733,27 +756,43 @@ replay of the live config over the whole set does.
 
 ## Counterparts
 
-Some replays keep a counterpart: one other replay of the set, chosen when the
-replay starts and kept (`pairedWith` in the API). Their task-by-task rows,
-their gain and their [side-by-side](#side-by-side) comparisons all use it.
+A replay's counterpart is the replay of the set it is compared with. Its
+task-by-task rows and its gain are measured against it, and the API names it
+in `comparedWith`. These replays keep a counterpart, chosen when the replay
+starts:
 
 | Replay | Counterpart |
 | --- | --- |
 | Under a proposed candidate, or under the live config when it does not become the baseline | The baseline that starts beside it, else the set's baseline standing when it starts that covers its runs with at least as many copies, a finished one first. |
 | A search's replay of a candidate, on the searched or the held-out tasks | The search's replay of the live config it started from. A search's replay of the live config is a baseline. |
 | A [replay check](/docs/reference/api/replay-checks) of a planned change | The baseline that starts beside it, else the set's standing baseline, as for a proposed candidate. |
+| A [replay with the answer](#replay-with-the-answer) | The replay of the live config whose finishing started it. |
 
-A replay that keeps none, such as a baseline or a
-[replay with the answer](#replay-with-the-answer), is compared with the set's
+The first three also hold it in `pairedWith`, the replay their changes are set
+[side by side](#side-by-side) with. A replay whose kept counterpart is gone has
+none, and is compared with nothing.
+
+A replay that keeps none, such as a baseline, has as its counterpart the set's
 baseline as it stands when it is read: the newest replay of the live config the
 set started as a baseline, while it is queued, running or finished. The
-baseline itself has nothing to compare with. A stopped or over-budget baseline
-is not compared with, and the next replay of the set starts a new one.
+baseline itself has none. A stopped or over-budget baseline is not compared
+with, and the next replay of the set starts a new one.
 
-The counterpart is shown as `the baseline` when it is the set's baseline now,
-else as `the search's starting config` for a search's replay and `an earlier
-baseline` for the others. Column headers and the "Closer" column capitalise
-it, as in "The baseline".
+The counterpart is shown, and labelled, as:
+
+| Counterpart | Shown | Label |
+| --- | --- | --- |
+| The set's baseline now, for any replay | `the baseline` | "Baseline" |
+| Another, for a replay with the answer | `the live config` | "Live config" |
+| Another, for a search's replay of a candidate | `the search's starting config` | "Search's starting config" |
+| Another, for any other replay | `an earlier baseline` | "Earlier baseline" |
+
+The shown form names it in running text, as in the "Tasks" ⓘ. The "Closer"
+column and the judge hover capitalise it, as in "The baseline". The label heads
+its column under "Tasks" and starts its success on the set page's "Gain"
+hover. In lower case, it follows the verdict on the "Gain" tile, and on the
+[success line](#success-line) it follows `vs` after the gain, or `·` without
+one.
 
 ## Regressions
 
