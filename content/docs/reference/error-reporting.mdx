@@ -1,0 +1,88 @@
+---
+type: reference
+icon: BookText
+title: Error reporting
+description: The variables that send Spotlight's errors to a Sentry server, what a report holds, and what it never holds.
+---
+
+Spotlight reports no error by default. It sends a report only when the
+operator sets `SENTRY_DSN`. The code, the published images, the release
+binaries and the web app hold no DSN.
+
+## Servers
+
+Any server that speaks the Sentry protocol: [sentry.io](https://sentry.io),
+self-hosted Sentry or GlitchTip. Reports hold errors only. Spotlight sends no
+traces, profiles or session replays to the server.
+
+## Spotlight
+
+Set these on Spotlight, with the other [self-hosted settings](/docs/reference/self-hosted-settings).
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `SENTRY_DSN` | none | Where Spotlight reports its errors. Without it, Spotlight starts no Sentry client and opens no connection to a server. |
+| `SENTRY_WEB_DSN` | `SENTRY_DSN` | Where the web app reports its errors. Spotlight gives it to the web app at `GET /api/error-reporting` when the app loads. Without a DSN, the web app starts no Sentry client. |
+| `SENTRY_ENVIRONMENT` | the Sentry SDK's default | The environment on each report of Spotlight and of the web app. |
+| `SPOTLIGHT_RELEASE` | none | The release on each report of Spotlight and of the web app. |
+
+## Hosts
+
+Set these on the host, with the other [host settings](/docs/reference/hosts/host-configuration).
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `SENTRY_DSN` | none | Where the host reports its errors. When it is set, the host gives it to each sandbox and egress it starts as `SPOTLIGHT_SENTRY_DSN`. Without it, no sandbox or egress gets one. |
+| `SENTRY_ENVIRONMENT` | the Sentry SDK's default | The environment on each report. The host gives it to each sandbox and egress as `SPOTLIGHT_SENTRY_ENVIRONMENT`. |
+
+The release on a host's report is the release of its `spotlight` binary.
+
+The agent and the code it runs in the sandbox do not get `SPOTLIGHT_SENTRY_DSN`.
+A `SENTRY_DSN` in the sandbox, for the code it runs, is not read by the runner.
+
+A sandbox reaches the server through its egress. When `SPOTLIGHT_EGRESS_ALLOW`
+is set and `SENTRY_DSN` is set, egress also admits the server's host.
+
+## What is reported
+
+| Part | Reported |
+| --- | --- |
+| Spotlight | An answer with a status of 500 or more, except a refusal of a service upstream such as GitHub. Owed work that Spotlight gives up: a draft or a judgment that failed for the last time, or that kept being interrupted. A domain event that Spotlight gives up delivering after 8 attempts. A review that Spotlight gives up posting to GitHub. An exception or a rejected promise that nothing handles. |
+| Web app | A page that cannot render. The page shows `This page could not be loaded.` An answer of 502, 503 or 504, which Spotlight did not send itself, as a `ServerFault`. An error that nothing handles. |
+| Host | A panic. A claim that Spotlight refuses for good. Work that cannot start: egress does not start, the sandbox does not start, or the work cannot be handed over. |
+| Sandbox | A panic. A run that the runner cannot prepare or start. A runner that stops with an error. |
+| Egress | A panic. An egress that stops with an error. |
+
+Spotlight does not report an answer with a status below 500. A failure that
+Spotlight tries again is written to the logs only. Only the last failure is
+reported. A failure that the person's own setup causes is not reported: an
+image that cannot be pulled, or an agent that stops with an error.
+
+## What a report holds
+
+| Field | Holds |
+| --- | --- |
+| Error | The type, the message and the stack trace. |
+| `release`, `environment` | As set above. |
+| Trace | The trace id of the request, from its `traceparent` header. The same id is the `reqId` of Spotlight's log lines. |
+| Tags | `source`: the HTTP layer, the owed work or the event subscriber. `workspace`, `team`, `task` and `run`: the ids of the work, when known. `host`, `runner` and `role` on reports from the data plane. |
+| User | The id of the person signed in to the web app. |
+| Request | The method, the path and the headers that remain after scrubbing. |
+
+## What a report never holds
+
+- The `Cookie`, `Authorization` and `Set-Cookie` headers.
+- A request body or a response body.
+- A query string. Query strings are also removed from breadcrumbs, and from
+  the URLs in the messages of the data plane.
+- The user name and password in a URL.
+- A person's email address, name or IP address.
+
+Spotlight puts no prompt, tool input, event payload or secret value into a
+report.
+
+## Source maps
+
+The web image build uploads source maps when it is given the build secret
+`sentry_auth_token` and the build arguments `SENTRY_ORG` and `SENTRY_PROJECT`.
+Without the secret, the build creates no source maps and does not fail.
