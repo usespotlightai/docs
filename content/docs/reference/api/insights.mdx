@@ -92,15 +92,7 @@ as long.
 With both `taskId` and `taskIds`, only that task's runs are listed, and only if
 it is among `taskIds`.
 
-Every endpoint but `/runs`, the two pull request endpoints and
-`/alerts/{alertId}` counts at most 20,000 of the team's runs that ended over
-the period and the one before, those that started latest, and at most 20,000 each of its task pull requests,
-tasks people acted on, tasks with failures and agent chats. It answers
-`truncated: true` when any of them was more. The pull request endpoints count
-at most the newest 20,000 pull requests in the period, and `/shipping` the
-newest 20,000 over the period and the one before; `/shipping` also answers
-`truncated: true` when either limit was passed. `/alerts/{alertId}` reads the
-station's latest 500 runs.
+`/alerts/{alertId}` reads the station's latest 500 runs.
 
 ## `/shipping`
 
@@ -115,7 +107,6 @@ how each is measured.
 | Field | Type | Description |
 | --- | --- | --- |
 | `period` | object | `name`, `from`, `to`, `previousFrom`, `previousTo` and `days`, every UTC day in the period, oldest first. |
-| `truncated` | boolean | Whether only the latest pull requests or runs were counted. |
 | `toMerge` | by-author | Opened to merged, for pull requests merged in the period. |
 | `toMergeChanges` | object | `spotlight` and `people`, each with `p50`, `p75`, `p90` and `p95`: a change against the period before, or `null`. |
 | `mergeDays[]` | object | For each day of the period: `day`, `daily` (by-author, for pull requests merged that day) and `rolling` (by-author, merged in the 7 days ending that day). |

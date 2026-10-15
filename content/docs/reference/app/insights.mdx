@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Insights
-description: The team's Insights page, its period and eight tabs, what each figure counts, how pull requests are recorded, typed and followed to merge, a station's own view, config changes and their impact, setups and replayed candidates compared, which skills, MCP servers and memories runs use, the Runs filters, the Traces tab, and the 20,000-run limit.
+description: The team's Insights page, its period and eight tabs, what each figure counts, how pull requests are recorded, typed and followed to merge, a station's own view, config changes and their impact, setups and replayed candidates compared, which skills, MCP servers and memories runs use, the Runs filters, and the Traces tab.
 ---
 
 The Insights page sums up how a team's runs, tasks and pull requests went over
@@ -67,7 +67,7 @@ started. Only task runs at a station are recorded; chat runs are not.
 
 | Term | Meaning |
 | --- | --- |
-| p50 | The median. With an even count, the rounded mean of the two middle values. |
+| p50 | The median. With an even count, the mean of the two middle values, rounded to a whole number, with a half rounded up. |
 | p75, p90, p95 | The nearest-rank 75th, 90th and 95th percentiles. |
 | Next act | The first thing a person did with the task after the run: the act names the run, or else it follows the task's last run at that station. It is one of Started, Parked, Closed, Answered and Sent back. Of acts at the same moment, the first of Sent back, Closed, Answered, Parked and Started counts. Approving or refusing an approval is never a next act. |
 | Accepted | A run whose next act was Closed. |
@@ -79,14 +79,12 @@ Outcomes are recorded as runs end and as people act. Nothing that happened
 before recording began is counted. A deleted task's runs, pull request and acts
 are removed.
 
-The figures on every tab except Productivity's pull request figures, Stations'
-Candidates, and Runs are worked out from the runs that ended in the period
-and the period before, or the last 30 days where that reaches further: at most
-the 20,000 of them that started latest. The team's task pull requests, tasks people acted on, tasks
-with failures and agent chats over that time are each counted up to 20,000
-too. When any of them was more, Overview, Cost, People, "Where work waits",
-"Runs at each station", "Config changes", "Skills and tools" and "Memory" each
-show `Only the latest 20,000 runs over this period and the one before are counted.`
+Overview and "Where work waits" count a task's pull request when the task had
+one of the team's runs that ended in the period, the period before, or the
+last 30 days where that reaches further. They also count the pull request of
+one of the team's tasks when it opened before the period ended and, in that
+time, it closed, or it is still open and it opened or had its first review by
+a person.
 
 A station that no longer exists shows as "A removed station", a person without
 an account as "A former member", and a task no person opened as "No one".
@@ -264,11 +262,8 @@ that opens another pull request is tracked on the new one.
 ### What the agents ship
 
 This section and "Review and approval" count the pull requests described under
-[Pull requests](#pull-requests), at most the newest 20,000 over the period and
-the one before, together with the team's runs. When the pull requests or the
-runs passed 20,000, the section shows
-`Only the newest 20,000 pull requests in this period are counted.` When none
-of Spotlight's pull requests and none of people's alone merged in the period,
+[Pull requests](#pull-requests) over the period and the one before, together
+with the team's runs. When none of Spotlight's pull requests and none of people's alone merged in the period,
 none waited on a review and no person reviewed one, it reads "No pull requests in this period", with "Connect a repository", which
 opens the team's Integrations settings, and "Review and approval" does not
 show.
@@ -355,10 +350,7 @@ installed on, as GitHub reports it opening, changing, being reviewed and
 closing. What a report says about a pull request is ignored when the pull
 request's address disagrees with the report's repository or number. The
 section counts the pull requests a task of the team opened, and those in a
-repository one of the team's lines names. At most the newest 20,000 in a
-period are counted; past that, the section shows
-`Only the newest 20,000 pull requests in this period are counted.` With none,
-it reads "No pull requests in this period", with "Connect a repository".
+repository one of the team's lines names. With none, it reads "No pull requests in this period", with "Connect a repository".
 
 Each pull request is written by one of:
 
@@ -468,7 +460,9 @@ Prefixes and words are matched without regard to case.
 #### The list
 
 "Pull requests" lists every pull request opened or closed in the period, or
-still open, the latest first, 50 to a page:
+still open, 50 to a page. The latest is first, by when it closed or, while it
+is open, when it opened. Pull requests with the same time are in order of
+their address, by character code:
 
 | Column | Shows |
 | --- | --- |
@@ -970,7 +964,8 @@ period, the section reads "No memories yet", with "Open the team's memory".
 ## Runs
 
 The Runs tab, `?tab=runs`, lists every run that ended in the period, withdrawn
-runs included, newest first, 50 to a page:
+runs included, newest first, 50 to a page. Runs that ended at the same time are
+in reverse order of their ID, by character code:
 
 | Column | Shows |
 | --- | --- |
