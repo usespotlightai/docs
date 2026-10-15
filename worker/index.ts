@@ -10,13 +10,11 @@ const { rewrite: rewriteSuffix } = rewritePath(
   `${docsContentRoute}{/*path}/content.md`,
 );
 
-interface Context {
-  request: Request;
-  next: () => Promise<Response>;
-  env: { ASSETS: { fetch: (input: URL) => Promise<Response> } };
+interface Env {
+  ASSETS: { fetch: (input: Request | URL) => Promise<Response> };
 }
 
-async function markdown(env: Context['env'], request: Request, path: string, vary: boolean) {
+async function markdown(env: Env, request: Request, path: string, vary: boolean) {
   const asset = await env.ASSETS.fetch(new URL(path, request.url));
   const response = new Response(asset.body, asset);
   response.headers.set('Content-Type', 'text/markdown; charset=utf-8');
@@ -25,16 +23,18 @@ async function markdown(env: Context['env'], request: Request, path: string, var
   return response;
 }
 
-export async function onRequest({ request, next, env }: Context) {
-  const { pathname } = new URL(request.url);
+export default {
+  async fetch(request: Request, env: Env) {
+    const { pathname } = new URL(request.url);
 
-  const suffix = rewriteSuffix(pathname);
-  if (suffix) return markdown(env, request, suffix, false);
+    const suffix = rewriteSuffix(pathname);
+    if (suffix) return markdown(env, request, suffix, false);
 
-  if (isMarkdownPreferred(request)) {
-    const docs = rewriteDocs(pathname);
-    if (docs) return markdown(env, request, docs, true);
-  }
+    if (isMarkdownPreferred(request)) {
+      const docs = rewriteDocs(pathname);
+      if (docs) return markdown(env, request, docs, true);
+    }
 
-  return next();
-}
+    return env.ASSETS.fetch(request);
+  },
+};
