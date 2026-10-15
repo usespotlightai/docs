@@ -1,6 +1,7 @@
 import { createGetUrl } from 'fumadocs-core/source';
 
 export const appName = 'Spotlight';
+export const siteUrl = 'https://docs.usespotlight.ai';
 export const docsRoute = '/docs';
 export const docsImageRoute = '/og/docs';
 export const docsContentRoute = '/llms.mdx/docs';

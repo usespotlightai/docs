@@ -1,17 +1,23 @@
 import { RootProvider } from 'fumadocs-ui/provider/next';
 import './global.css';
+import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import { siteUrl } from '@/lib/shared';
 
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
 });
 
+export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
+};
+
 export default function Layout({ children }: LayoutProps<'/'>) {
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
       <body className="flex flex-col min-h-screen">
-        <RootProvider theme={{ defaultTheme: 'dark' }}>{children}</RootProvider>
+        <RootProvider theme={{ defaultTheme: 'dark' }} search={{ options: { type: 'static' } }}>{children}</RootProvider>
       </body>
     </html>
   );
