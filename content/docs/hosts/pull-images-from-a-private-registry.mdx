@@ -61,13 +61,12 @@ Reinstalling drops this line from `host.env`; add it back afterwards.
 ## Check that it pulls
 
 Open **Settings** from the workspace menu, then **Runners**. If the host's
-**Images** reads `N refused`, hover over it for each refused image and its
+**Images** reads `<n> refused`, hover over it for each refused image and its
 reason. If the reason says `Image can't be pulled`, check
 the entry's key and the token's access to the image.
 
-If the credentials cannot be read, the host logs
-`could not read the registry credentials, so it pulls anonymously` and tries
-without them. If a pull fails but the host has a copy of the image, it runs the
+If the reason reads `Image can't be pulled. Error: read registry credentials`
+or ends `auth is not base64`, correct the credentials file. If a pull fails but the host has a copy of the image, it runs the
 copy and logs `could not pull the runner image, so it runs the copy it has`.
 
 ## Related

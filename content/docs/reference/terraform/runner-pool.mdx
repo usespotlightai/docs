@@ -85,10 +85,10 @@ names a workspace's pools by key.
   `Spotlight-Pool-Token` response header, never again.
 - Spotlight keeps only its hash.
 - A token is given once, ever. A token another pool holds is refused with
-  `is already another pool's token; give each pool its own`. A token rotated
+  `belongs to another pool. Please give each pool its own`. A token rotated
   away, or held by a pool since deleted or replaced, is refused to every pool,
   the pool that held it included, with
-  `was given to a pool before, and a pool token is given once, ever: one rotated away, or held by a pool since deleted or replaced, never works again; give a new one`.
+  `was used before. Pool tokens work once only`.
 - Rotating with a new `tokenVersion` refuses the old token at once. Runs
   already claimed keep their own one-run credentials.
 - `token` and `tokenVersion` on a push pool are refused.

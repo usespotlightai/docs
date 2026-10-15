@@ -14,7 +14,8 @@ Both are ordinary lines, with the fields described in
 [`spotlight_line`](/docs/reference/terraform/line). Neither names repositories. Every `work` station
 of both has `harness` set to `claude-code`, with no model, effort or profile.
 
-The same team gets a task titled `Set up your team` at Delivery's backlog.
+The same team gets a task titled `Set up your team` at Delivery's backlog. See
+[Setup task](#setup-task).
 
 ## Delivery
 
@@ -84,3 +85,38 @@ none.
 
 A built-in line is changed and deleted like any other line. See
 [Change a line's stations](/docs/lines/change-a-lines-stations).
+
+## Setup task
+
+In the inbox, the `Set up your team` task lists three steps, each ticked once
+done:
+
+| Step | Ticked when | Action |
+| --- | --- | --- |
+| "Install the GitHub App" | Spotlight's GitHub App is installed for the workspace. | "Install on GitHub", or "Configure on GitHub" once installed. |
+| "Connect a host" | A push pool exists, or a host seen in the last 24 hours serves an image that is not refused and holds a harness. | "Go to runners", which opens `/w/<slug>/settings/runners`. |
+| "Set up configuration as code" | The team's setup chat has opened its pull request. | The setup form. Once the chat started, "Open setup chat" for the person who started it. Once the pull request is open, "Open pull request" for everyone. |
+
+A ticked step hides its action until the step is selected. Once the task's
+inbox item is resolved, the actions of "Install the GitHub App" and "Connect a
+host" are greyed out and cannot be used.
+
+The setup form shows once the GitHub App is installed and a host seen in the
+last 24 hours serves an image that is not refused and holds a harness. Before then the step reads
+`The setup chat needs the GitHub App and a host. Push pools can't run a setup chat.`
+The form has:
+
+| Part | Holds |
+| --- | --- |
+| "Repository" | The repository the configuration goes in, from those the GitHub App reaches. |
+| Folder | The folder in it, `spotlight` at first. |
+| "Repositories" | The code repositories the chat checks out, "No repositories" at first. |
+| Agent | The harness, model and effort of the chat. The first harness at first, or the one last picked in this browser, here or in another chat. |
+| "Start setup chat" | Starts the chat, once a repository, a folder and a harness are chosen. |
+
+The chat's first message reads
+`Set up our configuration as code in <repository>, under <folder>/.` Where the
+chat cannot start, the form reads the reason, or
+`Sorry, the setup chat could not start.` Where another person started the chat,
+the step reads `<Name> is setting this up.`, or `A former member is setting this up.`
+See [Chats](/docs/reference/app/tasks-runs-and-the-inbox#chats).
