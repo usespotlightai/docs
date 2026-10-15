@@ -96,8 +96,9 @@ its check or judge. In
 the docs' view, this keeps a failure to measure from reading as a failure of
 the candidate.
 
-Every candidate is compared with a baseline: the station's live config
-replayed on the same runs, at about the same time. The original runs are not
+Every candidate is compared with the station's live config replayed on the
+same runs: most often the set's baseline, replayed at about the same time, and
+for a replay with the answer, the finished live replay that started it. The original runs are not
 the comparison. In the docs' view, they ran under conditions a replay cannot
 bring back, such as an earlier model release or a dependency that has since
 moved, and a baseline replayed now meets the same conditions the candidate
@@ -130,12 +131,13 @@ comparison that counts only tasks both sides changed and people accepted
 covers too few tasks to replace the rate, but where the rate reads Within
 noise, it can say which way the candidate leans.
 
-Each replay has one counterpart, chosen when it starts and kept: a proposed
-candidate the baseline standing then, a search's candidates the live config
-the search replayed when it started, and a replay with the answer the live
-replay whose finishing started it. Its task-by-task rows, its gain and its wins and losses all
-use that one replay, so a baseline started later does not change what an
-earlier replay was compared with. In the docs' view, figures read against two
+A replay other than a baseline keeps one counterpart, chosen when it
+starts: a proposed candidate the baseline standing then, a search's candidates
+the live config the search replayed when it started, and a replay with the
+answer the live replay whose finishing started it. Its task-by-task rows and
+its gain use that one replay, and so do its wins and losses, where it has
+them; a replay with the answer is never set side by side. A baseline started
+later does not change what an earlier replay was compared with. In the docs' view, figures read against two
 different replays could not be read together. Pairs judged under different
 rubric versions are left out; in the docs' view, comparing them would mix two
 questions.
@@ -285,8 +287,8 @@ warns about it before it starts.
 
 The replay with the answer is a replay like any other. It has its own ceiling,
 the same as the live replay's, its own runs and its own row on the set's page.
-The set's health reads its gain against the live replay that started it, task
-by task and with a range. Its changes are never judged blind beside that
+The set's health, the replay's own page and the API all read its gain against
+the live replay that started it, task by task and with a range. Its changes are never judged blind beside that
 replay's. In the docs' view, an upper
 bound that skipped the usual scoring would not be comparable with the gains
 it bounds.

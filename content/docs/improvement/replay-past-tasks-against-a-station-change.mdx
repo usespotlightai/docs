@@ -182,8 +182,8 @@ replay's id and the command to follow it.
 </Tab>
 </Tabs>
 
-Every replay of a set is compared with its baseline: the station's live config
-replayed on the same runs. If the set has no baseline covering all its runs,
+A replay you start is compared with the set's baseline: the station's live
+config replayed on the same runs. If the set has no baseline covering all its runs,
 because it was never replayed or runs were added since:
 
 - Under **Live config**, the replay becomes the baseline.
@@ -212,15 +212,15 @@ At most 2 of a team's replay runs run at once. See
 
 ## Follow the replay
 
-The replay's page shows its success, its gain over the baseline, and what it
-has spent of its ceiling. From the command line:
+The replay's page shows its success, its gain over the replay it is compared
+with, and what it has spent of its ceiling. From the command line:
 
 ```bash
 spotlight replay watch --team core <replay id>
 ```
 
-It prints progress every 15 seconds until the replay and its baseline have
-ended, then the result for each task. It exits `2` if the candidate regressed on
+It prints progress every 15 seconds until the replay and the replay it is
+compared with have ended, then the result for each task. It exits `2` if the candidate regressed on
 any task, so a CI job that runs it fails on a regression. See
 [`spotlight replay watch`](/docs/reference/cli/replay-command#spotlight-replay-watch).
 
@@ -232,9 +232,10 @@ budget**: nothing more starts, and runs already running finish.
 ## Read the result
 
 **Success** gives the replay's success rate; hover over its ⓘ for the range it
-likely falls in. **Gain** gives its gain over the baseline in points, as in
-`+12 pts`, with a verdict of **Better**, **Worse** or **Within noise**, and
-its ⓘ gives the gain's range. See
+likely falls in. **Gain** gives its gain in points over the replay it is
+compared with, as in `+12 pts`, with a verdict of **Better**, **Worse** or
+**Within noise** and that replay's success on the tasks both scored, as in
+`Better · baseline 50%`. Its ⓘ gives the gain's range. See
 [Gains](/docs/reference/app/replays#gains) for when each verdict shows.
 
 Act on **Better** or **Worse**. If a result you expected to matter reads
@@ -258,14 +259,17 @@ replayed. See [Results](/docs/reference/app/replays#results) for every result,
 If the station has a judge, a **Side by side** tile shows its wins, then its
 losses and ties, once the replay has finished and any task was compared.
 Under **Tasks**, the **Closer** column says which change the judge found
-closer to the accepted change: **This one**, **The baseline** or **Neither**.
+closer to the accepted change: **This one**, the replay it is compared with,
+as in **The baseline**, or **Neither**.
 Select the task to read the judge's reasons in its details. Read the wins and
 losses beside the success rate. See
 [Side by side](/docs/reference/app/replays#side-by-side) for how the judge
 compares the changes.
 
 If the candidate did worse, propose another candidate and replay the same set.
-Each replay of a set is compared with the same baseline.
+To see what a replay with a gain is compared with, hover over its **Gain** on
+the set's page. Once that replay's success is known, the hover names it, as in
+`Baseline: 50%` or `Earlier baseline: 50%`. A replay without a gain reads `–`.
 
 ## Read the set's health
 
