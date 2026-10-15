@@ -33,7 +33,10 @@ export function SidebarTitle() {
   return (
     <div className="sl-sidebar-title">
       <Link href="/docs" className="sl-brand" aria-label="Spotlight docs home">
-        <SpotlightMark className="sl-brand-mark" />
+        <span className="sl-brand-lockup">
+          <SpotlightMark className="sl-brand-mark" />
+          <span>Spotlight</span>
+        </span>
         <span className="sl-brand-divider" aria-hidden />
         <span>Docs</span>
       </Link>

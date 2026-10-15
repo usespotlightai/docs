@@ -11,6 +11,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
+  title: { default: 'Spotlight Docs', template: 'Docs | %s' },
 };
 
 export default function Layout({ children }: LayoutProps<'/'>) {
