@@ -402,8 +402,11 @@ Spotlight drops a record whose `status` or `reason` does not fit its
 `outcome`. A connection that the sandbox closes before egress opens it is not
 recorded.
 
-Spotlight keeps each record with the run's attempt for 30 days. It drops the
-records of a run that the runner no longer holds, and the records of a check.
+Spotlight keeps each record with the run's attempt for 30 days. Egress sends
+the records of a run before it forgets the run. Spotlight keeps a record when
+the run still names the runner of the proxy credential, and the runner stands
+or ended at most 2 minutes before. It drops all other records, and the records
+of a check.
 The task trace shows them; see
 [Run network](/docs/reference/app/tasks-runs-and-the-inbox#run-network) and
 [Connections in the trace](/docs/reference/app/tasks-runs-and-the-inbox#connections-in-the-trace).
