@@ -102,7 +102,7 @@ An error body has these fields.
 | `status` | integer | The HTTP status. |
 | `detail` | string | What went wrong. For `invalid`, each error as `<path>: <message>`, one per line. |
 | `errors` | array of objects | Present when the request was invalid. Each `{ path, message, severity }`. |
-| `currentVersion` | integer | Present on `moved-on`. The version the resource is at now. |
+| `currentVersion` | integer | Present on `version-conflict`. The version the resource is at now. |
 | `permission` | string | Present on `forbidden`. The permission the caller lacks. |
 
 | Status | Type | When |
@@ -115,7 +115,7 @@ An error body has these fields.
 | `403` | `forbidden` | The caller's role or token scopes do not allow this request. `permission` names what it lacks. |
 | `404` | `not-found` | No such resource that the caller may see. Anything the caller may not see returns `404`. |
 | `409` | `already-exists` | A create names an address already taken. The detail says to import it. |
-| `409` | `moved-on` | `If-Match` names a version that is no longer current. |
+| `409` | `version-conflict` | `If-Match` names a version that is no longer current. |
 | `409` | `in-use` | The write or delete would remove something another resource or a task still uses. |
 | `409` | `conflict` | Another conflict with the resource's state. |
 | `422` | `invalid` | One or more fields are wrong. |
