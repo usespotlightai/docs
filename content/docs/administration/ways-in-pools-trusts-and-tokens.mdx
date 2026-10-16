@@ -7,11 +7,12 @@ description: The credentials that let a machine or a pipeline act in a Spotlight
 
 People reach a Spotlight workspace by signing in. Everything else that acts in
 it, a machine running agents or a pipeline applying Terraform, needs a
-credential of its own. Spotlight has six kinds, and they differ in who holds
+credential of its own. Spotlight has eight kinds, and they differ in who holds
 them, how long they last, and what can be done with one that is stolen.
 
-The six split into two families. Pool tokens, runner trusts and one-run
-credentials let machines do work: claim runs and carry them out. Workspace
+The eight split into two families. Pool tokens, runner trusts, one-run
+credentials, egress tokens and run proxy credentials let machines do work:
+claim runs, carry them out, and add their secrets on the way out. Workspace
 tokens, workspace token trusts and the token a setup chat's run gets let tools
 read or change configuration through the
 [resource API](/docs/reference/api/resource-api). The two families never overlap.
@@ -79,6 +80,24 @@ The same thinking reaches git. A sandbox clones and pushes through Spotlight,
 which holds the GitHub App's credential and adds it on the way to GitHub. The
 app's credential is never sent to a runner. A run can reach only the
 repositories its own work names, and only while it still holds that work.
+
+### Egress tokens and run proxy credentials: a push pool's way out
+
+A push pool can name a shared egress, which adds the secrets of many runs to
+their requests. Two credentials split that job so that neither is worth much
+alone. The egress token is held by the egress process and stored by Spotlight
+as a hash. It is the only credential that can redeem a run's secrets, and it
+never enters a sandbox. Like a pool token, it is given once, ever, and
+rotating it refuses the old one at once.
+
+The run proxy credential is made for one runner, sent in the provision call,
+and held by the runner. It lets the run send its traffic through the egress
+its pool names, and nothing more: Spotlight's API does not accept it, and
+Spotlight admits it through the egress only while the runner has not ended. A
+stolen run proxy credential reaches no secret, since the secrets stay in the
+egress. A stolen egress token redeems secrets only together with the run proxy
+credential of a runner whose pool names that egress. [Send push pool runs through an
+egress](/docs/security/send-push-pool-runs-through-an-egress) sets both up.
 
 ## Tools that read or change configuration
 

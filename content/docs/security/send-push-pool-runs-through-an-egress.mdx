@@ -1,0 +1,158 @@
+---
+type: how-to
+icon: SquarePen
+title: Send push pool runs through an egress
+description: Give a push pool an egress, so that it can take runs that use secrets and setup chats, and check that each run's sandbox can connect only through it.
+---
+
+Use this page when a push pool must take runs that use secrets, or setup
+chats. A push pool without an egress never gets these runs; they wait for a
+host. The egress is a proxy outside the sandbox. It adds each run's secrets to
+the requests to their hosts, so the sandbox holds only stand-ins.
+
+You need:
+
+- A push pool, as in
+  [Provision runners from your own platform](/docs/hosts/provision-runners-from-your-own-platform).
+- Terraform 1.11 or later, with the provider set up using a token that has the
+  `runners` scope. See
+  [Manage Spotlight with Terraform](/docs/configuration/manage-spotlight-with-terraform).
+- A platform whose firewall can limit where the pool's containers connect.
+- To run the egress yourself: a machine or service that keeps a container
+  running, at an HTTPS address that the pool's containers can reach, and a
+  certificate for that address that the runner image trusts.
+
+If your Spotlight deployment runs a platform egress, you can use it instead of
+your own. Go to [Name the egress in the pool](#name-the-egress-in-the-pool),
+and name `spotlight`.
+
+## Create the egress
+
+Give the egress a token, and keep it where the egress can read it:
+
+```hcl
+data "spotlight_workspace" "acme" {
+  slug = "acme"
+}
+
+resource "random_password" "egress" {
+  length  = 48
+  special = false
+}
+
+resource "spotlight_egress" "shared" {
+  workspace_id  = data.spotlight_workspace.acme.id
+  key           = "shared"
+  url           = "https://egress.acme.example"
+  token         = random_password.egress.result
+  token_version = 1
+}
+
+output "egress_token" {
+  value     = random_password.egress.result
+  sensitive = true
+}
+```
+
+Run `terraform apply`. The value of `terraform output -raw egress_token` is
+the egress token. Only the egress gets it; runners never do.
+
+## Run the egress
+
+Start `spotlight egress serve` from the runner image, with your certificate
+and the egress token:
+
+```bash
+docker run -d --restart unless-stopped --name spotlight-egress \
+  -p 443:3128 \
+  -v /etc/spotlight/tls:/etc/spotlight/tls:ro \
+  -e SPOTLIGHT_URL="https://app.usespotlight.ai" \
+  -e SPOTLIGHT_EGRESS_TOKEN="<egress token>" \
+  -e SPOTLIGHT_EGRESS_TLS_CERT=/etc/spotlight/tls/cert.pem \
+  -e SPOTLIGHT_EGRESS_TLS_KEY=/etc/spotlight/tls/key.pem \
+  --entrypoint spotlight \
+  ghcr.io/usespotlightai/spotlight-runner:<release> egress serve
+```
+
+The egress logs `egress is the shared way out for sandboxes` when it listens.
+If it logs `egress stopped`, the message before it names the setting to fix;
+see [Settings](/docs/reference/hosts/egress#settings).
+
+- To limit where runs may connect, add `SPOTLIGHT_EGRESS_ALLOW`, as for a host.
+  See [Limit where sandboxes can connect](/docs/security/limit-where-sandboxes-connect#list-the-hosts).
+- If a station's secrets are in AWS Secrets Manager, give the egress an AWS
+  identity, and name the secrets in `SPOTLIGHT_EGRESS_READS`.
+- If you put a load balancer in front of the egress, use one that passes TCP
+  through. Runners send `CONNECT` requests to the egress, and a load balancer
+  that reads HTTP can refuse them.
+
+## Name the egress in the pool
+
+Add `egress` to the pool's `provision` block:
+
+```hcl
+resource "spotlight_runner_pool" "jobs" {
+  workspace_id = data.spotlight_workspace.acme.id
+  key          = "jobs"
+  labels       = ["jobs"]
+
+  provision = {
+    url            = "https://provision.acme.example/spotlight"
+    secret         = local.provision_secret
+    secret_version = 1
+    egress         = spotlight_egress.shared.id
+  }
+}
+```
+
+For the platform egress, set `egress = "spotlight"` instead. Run
+`terraform apply`. The pool is updated in place.
+
+## Pass the egress to each runner
+
+Each provision call now carries `data.runner.egress`. Start the container
+with its `url` as `SPOTLIGHT_EGRESS_URL` and its `credential` as
+`SPOTLIGHT_EGRESS_CREDENTIAL`, beside `SPOTLIGHT_URL` and `SPOTLIGHT_TOKEN`, as
+in [Start the runner](/docs/hosts/provision-runners-from-your-own-platform#start-the-runner).
+The credential is good for that one runner, and only through the egress.
+
+## Limit the container to egress
+
+Set your platform's firewall so that the pool's containers can connect only to
+the egress host. Do not admit the Spotlight address: the runner reaches
+Spotlight through the egress. If the firewall also filters name lookups, let
+the containers look up the egress host.
+
+Without this limit, the run still works and its secrets stay out of the
+sandbox, but a tool that ignores the proxy connects directly, past the
+allow-list and the egress's records.
+
+## Check that it works
+
+1. On **Runners**, the pool's row reads **Push pool · egress**.
+2. Start a task at a station whose work the pool takes, as in
+   [Add a task and move it along a line](/docs/tasks/add-and-move-tasks).
+3. On the task, select **View traces**, then select the run's row.
+4. The run's details show **Egress** followed by **Enforced**, and the
+   connections the run made. The runner in the sandbox reports this state;
+   the firewall setting is what makes it true.
+
+If you see something else:
+
+| What you see | What to change |
+| --- | --- |
+| **Not enforced** | The container could connect to the Spotlight address directly. Set the firewall as in [Limit the container to egress](#limit-the-container-to-egress). |
+| No **Egress** line | The runner had no `SPOTLIGHT_EGRESS_URL`. Pass `data.runner.egress` to the container. |
+| The run fails with `No runner was provisioned after N attempts. Last failure: not-allowed` and `Egress URL must be https.` | Give the egress an `https` URL. |
+| The runner's log shows `Egress does not know this sandbox.` | Check that the egress has the token of the egress the pool names. |
+
+## Related
+
+- [Shared egress](/docs/reference/hosts/egress#shared-egress): every setting,
+  record and response of a shared egress.
+- [`spotlight_egress`](/docs/reference/terraform/egress): the egress's fields
+  and token.
+- [Provision call](/docs/reference/events/provision-call#egress): what the call
+  carries when the pool names an egress.
+- [The sandbox is the security boundary](/docs/security/the-sandbox-is-the-security-boundary):
+  why secrets stay out of the sandbox.

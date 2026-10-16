@@ -6,7 +6,8 @@ description: The subcommands of the spotlight binary, what each reads, prints an
 ---
 
 `spotlight` is one binary. A host runs `spotlight host`. Each sandbox runs
-`spotlight runner` and `spotlight egress` from the runner image. An agent runs
+`spotlight runner` and `spotlight egress` from the runner image. A shared
+egress for push pools runs `spotlight egress serve`. An agent runs
 the [agent commands](/docs/reference/cli/agent-commands) inside its sandbox.
 A person or a CI job runs [`spotlight replay`](/docs/reference/cli/replay-command)
 from anywhere to replay a station's past tasks, or to check the station
@@ -20,6 +21,7 @@ spotlight host install
 spotlight runner
 spotlight runner harnesses <json>
 spotlight egress
+spotlight egress serve
 spotlight replay <subcommand>
 spotlight version
 spotlight help
@@ -170,8 +172,12 @@ Any other argument fails with `usage: spotlight runner [harnesses <json>]`.
 | `SPOTLIGHT_AGENT_USER` | none | The user the harness runs as. The default runner image sets `agent`. When set, the runner must run as root. |
 | `SPOTLIGHT_GIT_AUTHOR_NAME` | `Spotlight` | `user.name` in each checkout. |
 | `SPOTLIGHT_GIT_AUTHOR_EMAIL` | `noreply@usespotlight.ai` | `user.email` in each checkout. |
+| `SPOTLIGHT_EGRESS_URL` | none | With `SPOTLIGHT_TOKEN` only. The URL of the shared egress the runner sends its traffic through: `runner.egress.url` of the [provision call](/docs/reference/events/provision-call#egress). |
+| `SPOTLIGHT_EGRESS_CREDENTIAL` | none | With `SPOTLIGHT_EGRESS_URL`. The run proxy credential: `runner.egress.credential` of the provision call. |
+| `SPOTLIGHT_EGRESS_DIRECT` | `false` | With `SPOTLIGHT_EGRESS_URL`. `true` sends traffic to hosts that are not bound directly, not through egress. See [The runner's way out](/docs/reference/hosts/egress#the-runners-way-out). |
 
-Exactly one of `SPOTLIGHT_HANDED` or `SPOTLIGHT_TOKEN` must be set.
+Exactly one of `SPOTLIGHT_HANDED` or `SPOTLIGHT_TOKEN` must be set. The runner
+reads the `SPOTLIGHT_EGRESS_` variables only with `SPOTLIGHT_TOKEN`.
 
 ### Messages
 
@@ -183,6 +189,11 @@ Exactly one of `SPOTLIGHT_HANDED` or `SPOTLIGHT_TOKEN` must be set.
 | `the work it was handed carries no one-run credential` | The handed file holds no credential. |
 | `could not trust the egress authority, so TLS through egress may fail` | A warning. The egress authority could not be added to the image's bundles. |
 | `nothing was reserved for it in time` | With `SPOTLIGHT_TOKEN`, no work arrived within 5 minutes. The runner exits `0`. |
+| `SPOTLIGHT_EGRESS_URL and SPOTLIGHT_EGRESS_CREDENTIAL go together; give both or neither` | Only one of the two is set. |
+| `SPOTLIGHT_EGRESS_DIRECT: "<value>" is not true or false` | A value that is not a boolean. |
+| `SPOTLIGHT_EGRESS_URL "<value>" is not an address such as https://egress.example.com` | Not an `http` or `https` URL with a host. |
+| `could not open the way out, so the agent goes out without its run's secrets` | A warning. The way out did not open, and the agent gets no proxy. See [The runner's way out](/docs/reference/hosts/egress#the-runners-way-out). |
+| `could not trust the way out's authority, so TLS through it may fail` | A warning. The way out's authority could not be added to the image's bundles. |
 
 The runner logs JSON lines to standard output. See
 [Inside a sandbox](/docs/reference/hosts/sandbox) for what it does inside the sandbox.
@@ -225,10 +236,19 @@ spotlight runner harnesses '[]'
 spotlight egress
 ```
 
-The proxy a host starts beside each sandbox. It takes no arguments; any
-argument prints the usage and exits `1`. It reads what the host handed it from
-`/run/spotlight/egress.json` and deletes the file. See
+The proxy a host starts beside each sandbox. It takes no arguments other
+than `serve`; any other argument prints the usage and exits `1`. It reads what
+the host handed it from `/run/spotlight/egress.json` and deletes the file. See
 [Egress](/docs/reference/hosts/egress).
+
+```text
+spotlight egress serve
+```
+
+The shared egress: one long-lived process for the runs of the push pools that
+name it. It reads its settings from the environment and logs JSON lines to
+standard output. See [Shared egress](/docs/reference/hosts/egress#shared-egress)
+for its settings and messages.
 
 ### Exit codes
 

@@ -80,14 +80,44 @@ and the stand-in together prevent is the value leaving the sandbox's reach and
 being sent anywhere else.
 
 The values themselves stay out of reach on the way in too. Values Spotlight
-keeps are sealed to a key egress made for that run, so only that egress can
-open them. Values kept in AWS Secrets Manager are read by egress itself with
+keeps are sealed to a key egress made, for that run or, on a shared egress,
+when the egress process started, so only that egress can open them. Values kept in AWS Secrets Manager are read by egress itself with
 the host's own identity, so the control plane never sees them. The
 [`spotlight_secret`](/docs/reference/terraform/secret) reference and [Give an MCP server a secret](/docs/security/give-an-mcp-server-a-secret) have the details.
 
 Tools a team defines on an integration go further still. When an agent calls
 one, Spotlight makes the call on its behalf, outside the sandbox, so the
 credential is never near the agent at all.
+
+## A shared egress for push pools
+
+A push pool's runner starts on the team's own platform, not on a host, so
+there is no host to build a private network and an egress around it. Instead
+the pool can name a shared egress: one long-lived process that serves the
+runs of many runners. The runner sends all its traffic there. Inside the
+sandbox, a local proxy ends the TLS of requests to the hosts the run's secrets
+are bound to, and passes those requests to egress, which adds the secrets.
+Everything else goes to egress in tunnels it does not decrypt, and egress
+records each connection.
+
+Two credentials keep the secrets on the egress side. The egress token, which
+the egress holds, is the only way to redeem a run's secrets, and it never
+enters a sandbox. The run proxy credential, which the runner holds, lets the
+run send traffic through that one egress and nothing more. A sandbox that
+leaks its credential leaks nothing that opens a secret.
+
+What the platform decides is whether egress is the only way out. A shared
+egress cannot close the sandbox's other routes; only the platform's firewall
+can. So before the harness starts, the runner tries to connect to Spotlight
+directly, and the run's trace says what it reported. The report comes from
+inside the sandbox, so it is evidence, not proof: an agent that took over the
+sandbox could report Enforced. Enforced means the sandbox
+could not connect around egress: the allow-list holds for every client, and
+every connection is on record. Not enforced means it could: a tool that
+ignores the proxy goes out directly, past both. The secrets are safe in both
+cases, since the sandbox only ever holds stand-ins. Enforcement is about the
+allow-list and the record, and it comes from a firewall that lets the
+container connect only to egress.
 
 ## Tools Spotlight calls for the agent
 
@@ -147,9 +177,12 @@ tokens, such as Codex signed in with ChatGPT or Claude signed in through a
 browser, are not added by egress; an API key, or a token from `claude
 setup-token`, is. Egress cannot itself sit behind a corporate proxy.
 
-A runner that a push pool provisions has no egress at all. With no egress there
-is nothing to add a secret to requests, so a run that uses secrets is never
-offered to a push pool, and waits for a host.
+A push pool's sandbox is enforced only if the team's platform makes it so. The
+runner checks and the trace reports it, but a run that reads Not enforced
+still runs. A shared egress holds no harness keys, so on a push pool they
+enter the sandbox as they are. A push pool that names no egress has nothing
+to add a secret to requests, so a run that uses secrets is never offered to
+it, and waits for a host or for a pool that names an egress.
 
 ## What enters a sandbox can be read
 

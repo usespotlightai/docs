@@ -572,9 +572,9 @@ A judged run's score shows in the [task trace](/docs/reference/app/web-app#team-
 The judge's score is `Yes`, `No`, `<n> of 5` or `<n> of <m> claims met`, and it
 is shown when the station's current rubric is trusted and the score was given
 under it. While it is shown, the run's row in the trace carries it. Selecting
-the row shows "Judged" in the run's details, then the judge's score, or
-`score hidden`. People's grades follow as `People said <grades>`, with `(you)`
-beside the reader's own. While the judge is not trusted, its standing is shown beneath. A
+the row shows "Judge" in the run's details: "Score", the judge's score or
+`Hidden`, and "People", people's grades, with `(you)` beside the reader's
+own. While the judge is not trusted, its standing is shown beneath. A
 shown score lists its reasons under it, each with the steps and hunks it
 cites, as `Step <n>` or the file's name and hunk header. Selecting a step shows
 `Step <n>` with its tool or kind, and its text; selecting a hunk shows its
@@ -586,6 +586,70 @@ team, the workspace's owners and admins, and workspace tokens with the `read`
 scope. Anyone else is answered `404`.
 
 A run that was not judged shows none of this.
+
+### Run network
+
+A run on a push pool that names an egress records what its network did. The
+[task trace](/docs/reference/app/web-app#team-pages) shows it in the run's
+details, under the judge's score:
+
+| Part | Shows |
+| --- | --- |
+| "Egress" | "Enforcement": `Enforced`, `Not enforced` or `Not checked`. Hovering over `Enforced` or `Not enforced` explains it, starting `The runner reported that`. The state is what the runner in the sandbox reported, and a sandbox not under the runner's control can report `Enforced`. See [Enforcement](/docs/reference/hosts/egress#enforcement). "Connections": how many connections egress recorded. |
+| "Destinations" | One row for each destination and outcome: the host, with `:<port>` when the port is not `443`, and the bytes in and out together, or `Blocked` or `Failed`. Blocked and failed rows come first, then the rows with the most bytes. Hovering over a row shows the host, `Passed through`, `Secret added`, `Blocked` or `Failed`, the number of connections, and `<bytes> out · <bytes> in`. |
+
+| Outcome | Shown as | Meaning |
+| --- | --- | --- |
+| `tunnelled` | `Passed through` | Egress sent the traffic on and did not decrypt it. |
+| `forwarded` | `Secret added` | Egress decrypted the traffic, because a secret of the run is bound to the host, and added the secret. |
+| `blocked` | `Blocked` | Egress stopped the traffic. |
+| `failed` | `Failed` | Egress could not connect to the host. |
+
+A run with no egress check and no connections, such as a run on a host, shows
+neither part.
+
+```text
+GET /api/teams/{teamId}/runs/{runId}/network
+```
+
+| Field | Holds |
+| --- | --- |
+| `runId`, `attempt` | The run, and its current attempt, which the answer is for. |
+| `egress` | `enforced`, `not-enforced`, or `null` when the runner did not check. |
+| `connections` | The connections the shared egress recorded for the attempt, each with `host`, `port`, `bytesOut`, `bytesIn`, `ms`, `outcome`, `status`, `reason` and `at`. See [Connection records](/docs/reference/hosts/egress#connection-records). |
+
+#### Connections in the trace
+
+A connection that went wrong is also a row in the task trace, at the time it
+started. The row is under the step or span that was open at that time, else
+under the phase, else under the run. A connection went wrong when egress
+blocked it, could not open it, or forwarded a request that the host answered
+with `401`, `403` or a status of `500` or more.
+
+The row shows the host in red, with `:<port>` when the port is not `443`. The
+same failure to the same host under the same row shows once, with `×<n>`. The
+row starts at the first time and ends at the end of the last.
+
+Selecting the row shows:
+
+| Property | Shows |
+| --- | --- |
+| "Outcome" | `Blocked`, `Failed`, `Refused` (`401` or `403`) or `Server error` (`500` or more). |
+| "Status" | The status the host answered with, on a forwarded request. |
+| "Reason" | `Not on the allow-list`, `Private address`, `No bound secret`, `Unknown host`, `Timed out`, `TLS failed` or `No connection`. |
+| "Times" | How many times it went wrong, when more than once. |
+| "Cause" | What went wrong, in one or two sentences. For `Refused`: the secret egress added can be wrong, expired or without the necessary permission. |
+
+When the runner reported that egress was not enforced, the run's row shows a warning mark after its name. Hovering over the mark
+shows `Egress not enforced` and explains it.
+
+Connection rows do not count as "Faults". The trace reads at most 500 such
+connections for each run. The run's details still list all its connections,
+and show a refused request or a server error in red, as `Refused` or
+`Server error`.
+
+Connection records are kept for 30 days. A record's `at` is the time egress gave, or the time Spotlight got the record when the two are far apart; see [Connection records](/docs/reference/hosts/egress#connection-records). A run that the caller may not see is
+answered `404`.
 
 ### Station outcomes
 
@@ -1060,6 +1124,9 @@ to open a pull request with the team's Terraform there, with
 [`setup-pull-request`](/docs/reference/built-ins/built-in-tools-and-skills#setup-pull-request).
 The chat keeps the pull request. Its runs reach Spotlight's API with
 [the run's Spotlight token](/docs/reference/hosts/egress#the-runs-spotlight-token).
+A setup chat needs egress: a host that serves the workspace, or a push pool
+that names an egress. Without either, starting one is refused with `422` and
+`A setup chat needs egress. No host serves this workspace, and no push pool names an egress. Please connect a host, or name an egress in a push pool.`
 
 Chat runs have priority over task runs.
 [Which run goes first](/docs/runs/which-run-goes-first) gives the

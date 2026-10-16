@@ -151,6 +151,11 @@ environment, are prefixed `egress: `.
 | `could not trust the egress authority, so TLS through egress may fail` | A warning. The egress authority could not be added to the image's bundles. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
 | `nothing was reserved for it in time` | With `SPOTLIGHT_TOKEN`, no work arrived within 5 minutes. The runner exits `0`. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
 | `usage: spotlight runner [harnesses <json>]` | An argument other than `harnesses`. | [spotlight runner](/docs/reference/cli/spotlight-command#spotlight-runner) |
+| `SPOTLIGHT_EGRESS_URL and SPOTLIGHT_EGRESS_CREDENTIAL go together; give both or neither` | Only one of the two is set. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
+| `SPOTLIGHT_EGRESS_DIRECT: "<value>" is not true or false` | A value that is not a boolean. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
+| `SPOTLIGHT_EGRESS_URL "<value>" is not an address such as https://egress.example.com` | Not an `http` or `https` URL with a host. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
+| `could not open the way out, so the agent goes out without its run's secrets` | A warning. The runner's way out did not open, and the agent gets no proxy. | [The runner's way out](/docs/reference/hosts/egress#the-runners-way-out) |
+| `could not trust the way out's authority, so TLS through it may fail` | A warning. The way out's authority could not be added to the image's bundles. | [The runner's way out](/docs/reference/hosts/egress#the-runners-way-out) |
 | `Change stacks are not set up on this deployment.` | A station with `diffs: true` on a deployment without drafting set up. The runner logs the refusal, and the checkout gets no change stack. | [Change stacks and decisions](/docs/reference/app/change-stacks-and-decisions) |
 
 ### Egress log
@@ -177,6 +182,22 @@ added, and requests go without it.
 | `its value in AWS Secrets Manager holds no text at <field>` | The value has no text at `field`. | [Run secrets](/docs/reference/hosts/egress#run-secrets) |
 | `the control plane gave egress nothing to wear` | Spotlight refused to redeem the run's secrets. Egress starts with none to add. | [Egress start failures](/docs/reference/hosts/egress#egress-start-failures) |
 | `gave up redeeming the run's secrets; the sandbox goes out wearing none` | Egress could not reach Spotlight within 1 minute. | [Egress start failures](/docs/reference/hosts/egress#egress-start-failures) |
+
+### Shared egress
+
+`spotlight egress serve` logs each of these, then `egress stopped`, and exits
+`1`.
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `SPOTLIGHT_URL must be the address of the control plane, such as https://spotlight.example.com` | `SPOTLIGHT_URL` is not an absolute URL with a host. | [Settings](/docs/reference/hosts/egress#settings) |
+| `SPOTLIGHT_EGRESS_TOKEN is required; it is the token the control plane issued for this egress` | No egress token. | [Settings](/docs/reference/hosts/egress#settings), [Send push pool runs through an egress](/docs/security/send-push-pool-runs-through-an-egress#run-the-egress) |
+| `SPOTLIGHT_EGRESS_ALLOW: <problem>` | An allow-list entry that cannot be read. | [Settings](/docs/reference/hosts/egress#settings) |
+| `SPOTLIGHT_EGRESS_TLS_CERT and SPOTLIGHT_EGRESS_TLS_KEY go together; give both or neither` | Only one of the two is set. | [Settings](/docs/reference/hosts/egress#settings) |
+| `SPOTLIGHT_EGRESS_TLS_CERT and SPOTLIGHT_EGRESS_TLS_KEY: <error>` | The certificate or the key cannot be read. | [Settings](/docs/reference/hosts/egress#settings) |
+| `SPOTLIGHT_EGRESS_RATE: "<value>" is not a number of requests each second, or 0 for no limit` | A rate that is not a number, or is below `0`. | [Settings](/docs/reference/hosts/egress#settings) |
+| `SPOTLIGHT_EGRESS_CONNECTIONS: "<value>" is not a number of open connections, or 0 for no limit` | A count that is not a whole number, or is below `0`. | [Settings](/docs/reference/hosts/egress#settings) |
+| `listen for sandboxes: <error>` | Egress cannot listen on `SPOTLIGHT_EGRESS_LISTEN`. | [Settings](/docs/reference/hosts/egress#settings) |
 
 ### Install script
 
@@ -305,6 +326,31 @@ Each command exits `1` and prints its message on standard error.
 | `Egress couldn't reach <host:port>.` | `502`. A plain-HTTP or intercepted request that could not be passed on, for any reason. The reason and the URL are left out. | [Responses](/docs/reference/hosts/egress#responses) |
 | `Egress couldn't stand in for <host>. Error: <reason>` | `502`. No certificate could be made for an intercepted host. | [Responses](/docs/reference/hosts/egress#responses) |
 
+### Shared egress responses
+
+A push pool's runner gets these from its shared egress, through the runner's
+way out.
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `Egress answers only a sandbox that gives its proxy credential.` | `407`. No run proxy credential. | [Shared egress responses](/docs/reference/hosts/egress#shared-egress-responses) |
+| `Egress does not know this sandbox.` | `407`. Spotlight did not admit the run proxy credential: the egress token is wrong, the runner has ended, or its pool does not name this egress. | [Shared egress responses](/docs/reference/hosts/egress#shared-egress-responses), [Send push pool runs through an egress](/docs/security/send-push-pool-runs-through-an-egress#check-that-it-works) |
+| `Egress could not ask the control plane about this sandbox. Please try again.` | `502`. Spotlight could not be asked. | [Shared egress responses](/docs/reference/hosts/egress#shared-egress-responses) |
+| `Egress could not get the run's secrets from the control plane. Please try again.` | `502`. The run's secrets could not be redeemed. | [Shared egress responses](/docs/reference/hosts/egress#shared-egress-responses) |
+| `Egress takes a CONNECT, a request that names its target in Spotlight-Egress-Target, or GET /.well-known/spotlight/bound.` | `400`. Any other request. | [Shared egress responses](/docs/reference/hosts/egress#shared-egress-responses) |
+| `Egress does not let this sandbox reach <host>.` | `403`. The allow-list does not admit the host, or the runner holds no run yet. | [Shared egress responses](/docs/reference/hosts/egress#shared-egress-responses) |
+| `Egress could not reach <host:port>. Error: <reason>` | `502`. A tunnel could not be opened. | [Shared egress responses](/docs/reference/hosts/egress#shared-egress-responses), [Refused addresses](/docs/reference/hosts/egress#refused-addresses) |
+| `Egress tunnels only over HTTP/1.1. Please CONNECT over HTTP/1.1.` | `505`. A `CONNECT` over HTTP/2. | [Shared egress responses](/docs/reference/hosts/egress#shared-egress-responses) |
+| `Spotlight-Egress-Target must be a host and port 443, such as api.example.com:443.` | `400`. A forwarded request to another port. | [Shared egress responses](/docs/reference/hosts/egress#shared-egress-responses) |
+| `Egress forwards a request only to a host that a secret of this run is bound to, and <host> is not one. Please CONNECT to other hosts.` | `403`. A forwarded request to a host that is not bound. | [Shared egress responses](/docs/reference/hosts/egress#shared-egress-responses) |
+| `Egress could not reach <host>.` | `502`. A forwarded request that could not be sent on. | [Shared egress responses](/docs/reference/hosts/egress#shared-egress-responses) |
+| `Sorry, this workspace sends more than <rate> requests each second through egress. Please send fewer requests.` | `429`. Over `SPOTLIGHT_EGRESS_RATE`. | [Limits](/docs/reference/hosts/egress#limits) |
+| `Sorry, this workspace has more than <n> connections open through egress. Please close some connections.` | `429`. Over `SPOTLIGHT_EGRESS_CONNECTIONS`. | [Limits](/docs/reference/hosts/egress#limits) |
+| `The way out is a proxy. Please ask it for an absolute URL, or CONNECT to a host.` | `400`. From the runner's way out: a request that is neither `CONNECT` nor an absolute URL. | [The runner's way out](/docs/reference/hosts/egress#the-runners-way-out) |
+| `The way out could not reach <host:port>. Error: <reason>` | `502`. From the way out: egress could not be reached, or a direct connection failed. | [Shared egress responses](/docs/reference/hosts/egress#shared-egress-responses) |
+| `The way out could not stand in for <host>. Error: <reason>` | `502`. From the way out: no certificate could be made for a bound host. | [Shared egress responses](/docs/reference/hosts/egress#shared-egress-responses) |
+| `The way out could not reach <host>.` | `502`. From the way out: a request could not be sent on. | [Shared egress responses](/docs/reference/hosts/egress#shared-egress-responses) |
+
 ## Resource API and Terraform
 
 ### Problem types
@@ -351,6 +397,12 @@ slugs.
 | `belongs to another pool. Please give each pool its own` | A pool token another pool holds. | [Pool token](/docs/reference/terraform/runner-pool#pool-token), [Create a pull pool and get its token](/docs/hosts/create-a-pull-pool) |
 | `was used before. Pool tokens work once only` | A pool token rotated away, or held by a pool since deleted or replaced. | [Pool token](/docs/reference/terraform/runner-pool#pool-token) |
 | `is not https. Its calls carry a one-run token. A production deployment refuses to make them` | A warning on a push pool's `provision.url`. | [Warnings](/docs/reference/terraform/runner-pool#warnings) |
+| `names spotlight. This deployment has no platform egress. Please name an egress of this workspace, or leave provision.egress out` | A push pool's `provision.egress` names the platform egress on a deployment without one. | [Egress](/docs/reference/terraform/runner-pool#egress) |
+| `names <id>. Egress <id> doesn't exist in this workspace` | A push pool's `provision.egress` names no egress of the workspace. | [Egress](/docs/reference/terraform/runner-pool#egress) |
+| `belongs to another egress. Please give each egress its own` | An egress token another egress holds. | [Egress token](/docs/reference/terraform/egress#egress-token) |
+| `was used before. Egress tokens work once only` | An egress token rotated away, or held by an egress since deleted or replaced. | [Egress token](/docs/reference/terraform/egress#egress-token) |
+| `is not https. Runners send their proxy credential to it. A production deployment refuses to provision runners that use it` | A warning on an egress's `url`. | [Warnings](/docs/reference/terraform/egress#warnings) |
+| `Egress <key> is in use. Runner pools that name it: <pool keys>. Please remove provision.egress from these pools first.` | `409` `in-use`. A delete of an egress a runner pool names. | [Delete](/docs/reference/terraform/egress#delete) |
 | `names <key>. Runner pool <key> doesn't exist in this workspace` | A warning on `spotlight_workspace_runners` `pools`. | [`spotlight_workspace_runners`](/docs/reference/terraform/workspace-runners#warnings) |
 | `names <key>. Runner trust <key> doesn't exist in this workspace` | A warning on `spotlight_workspace_runners` `trusts`. | [`spotlight_workspace_runners`](/docs/reference/terraform/workspace-runners#warnings) |
 | `must do something: a webhook, a poll, a schedule, an action to run, or an API description or MCP server to offer tools from` | An integration definition with nothing to do. | [Top level](/docs/reference/terraform/integration#top-level) |
@@ -391,6 +443,13 @@ slugs.
 | `Candidate <id> is being replayed. Please stop its replays first.` | `409` `in-use`. Withdrawing a candidate a replay is running. | [Replay candidates](/docs/reference/api/replay-candidate#errors) |
 
 ## Web app
+
+### Setup task
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `The setup chat needs the GitHub App and egress. Connect a host, or name an egress in a push pool.` | The setup step, before the GitHub App is installed and before a host serves the workspace or a push pool names an egress. | [Setup task](/docs/reference/built-ins/built-in-lines#setup-task) |
+| `A setup chat needs egress. No host serves this workspace, and no push pool names an egress. Please connect a host, or name an egress in a push pool.` | `422`. Starting a setup chat with neither a host nor a push pool that names an egress. | [Chats](/docs/reference/app/tasks-runs-and-the-inbox#chats), [Let the agent write your team's first Terraform](/docs/configuration/let-the-agent-write-your-first-terraform) |
 
 ### Runners page
 

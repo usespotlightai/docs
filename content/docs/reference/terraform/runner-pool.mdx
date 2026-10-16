@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: spotlight_runner_pool
-description: The fields of a runner pool, how a pull pool's token is issued and rotated, and what deleting a pool does.
+description: The fields of a runner pool, the egress a push pool can name, how a pull pool's token is issued and rotated, and what deleting a pool does.
 ---
 
 The `spotlight_runner_pool` resource, and the runner pool resource of the API:
@@ -48,6 +48,7 @@ resource "spotlight_runner_pool" "k8s_jobs" {
     url            = "https://provision.example.com/runs"
     secret         = "whsec_${base64encode(random_password.provision.result)}"
     secret_version = 1
+    egress         = "spotlight"
   }
 }
 ```
@@ -71,6 +72,7 @@ removing `provision` replaces the pool.
 | `provision.url` | string | none | An absolute `http` or `https` URL with no credentials and no fragment, at most 2,048 characters. Required with `provision`. |
 | `provision.secret` | string | none | Write-only. `whsec_` followed by 24 to 64 base64-encoded bytes. Required with `provision`: on create and whenever `secretVersion` changes. |
 | `provision.secretVersion` | integer | none | At least `0`. A change, with a new `secret`, rotates the secret. |
+| `provision.egress` | string or null | `null` | The egress the pool's runners send their traffic through: `spotlight` for the platform egress, or the `id` of a [`spotlight_egress`](/docs/reference/terraform/egress) in the workspace. A change updates the pool in place. See [Egress](#egress). |
 | `mode` | string | read-only | `pull` or `push`. |
 
 In Terraform, `token` and `provision.secret` are write-only and need Terraform
@@ -78,6 +80,30 @@ In Terraform, `token` and `provision.secret` are write-only and need Terraform
 
 [`spotlight_workspace_runners`](/docs/reference/terraform/workspace-runners)
 names a workspace's pools by key.
+
+## Egress
+
+A push pool that names an egress gets runs that use secrets or Spotlight's
+API, and [setup chats](/docs/configuration/let-the-agent-write-your-first-terraform)
+can run on it. A push pool without `provision.egress` gets neither: those runs
+wait for a host, or for another pool that names an egress. For each runner,
+Spotlight puts the egress's URL and a run proxy credential in the
+[provision call](/docs/reference/events/provision-call#egress).
+
+`spotlight` names the platform egress: the egress that the Spotlight
+deployment names in `SPOTLIGHT_PLATFORM_EGRESS_URL` and
+`SPOTLIGHT_PLATFORM_EGRESS_TOKEN`. A pool that names `spotlight` counts as
+having an egress only while the deployment sets both. See
+[Self-hosted Spotlight settings](/docs/reference/self-hosted-settings#platform-egress).
+
+A run that uses secrets or Spotlight's API fails with `unusable` if, when
+Spotlight provisions its runner, the pool no longer names an egress:
+`The pool names no egress now. A run that uses secrets or the Spotlight API needs one.`
+
+| Message | Cause |
+| --- | --- |
+| `names spotlight. This deployment has no platform egress. Please name an egress of this workspace, or leave provision.egress out` | `spotlight` on a deployment without a platform egress. |
+| `names <id>. Egress <id> doesn't exist in this workspace` | An id that is not an egress of the pool's workspace, or names a deleted egress. |
 
 ## Pool token
 
