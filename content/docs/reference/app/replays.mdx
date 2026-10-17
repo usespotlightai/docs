@@ -128,7 +128,7 @@ GitHub or any inbox.`:
 | Repeats | How many times to replay each run, 1 to 5. `1` at first. Its hint: `Spotlight replays each run this many times, from 1 to 5. More copies measure noise and narrow the ranges. They also add runs and spend.` |
 | Ceiling | The most the replay may spend, every copy of each run included, above 0 and at most 1,000, and a three-letter currency, `USD` unless changed. |
 
-A new baseline is needed when the set has no standing baseline (queued,
+A new baseline is needed when the set has no valid baseline (queued,
 running or finished) that contains every run now in the set, replays each run at
 least as many times as asked, and was scored the way the live config scores
 now. So a baseline is needed when the set has none, when a run was added since
@@ -182,7 +182,7 @@ live config.`
 
 ## What a set is made of
 
-The "Runs" panel reads the set's original runs as they stand when the page
+The "Runs" panel reads the set's original runs as they are when the page
 loads.
 
 | Part | Shows |
@@ -381,7 +381,7 @@ as the first thing they did on it after the run, the judge is also given the
 original's change, and scores the replay against it. A replay's judge score is
 not a run's
 [judge score](/docs/reference/app/tasks-runs-and-the-inbox#judge-score): it
-counts toward no agreement, standing, alert or Insights figure of the team's
+counts toward no agreement, calibration, alert or Insights figure of the team's
 runs. It counts only toward the replay's [success](#success), which the
 [Candidates](/docs/reference/app/insights#candidates) section of the Insights Stations tab shows.
 
@@ -541,7 +541,7 @@ order drawn from the two runs, and once the other way round. When the two
 readings name the same change, or both a tie, that is the outcome; otherwise
 the outcome is a tie. Reasons that cite no hunk, or cite the accepted change,
 are dropped, and a reading is `ungrounded` when half its reasons or fewer
-stand. The replay's change winning is a win, the counterpart's a loss. At most
+remain. The replay's change winning is a win, the counterpart's a loss. At most
 4 pairs are judged at once, and a pair whose judging fails is tried once more
 at most; one that failed `no-evidence`, `interrupted` or `unavailable` is not
 tried again.
@@ -765,9 +765,9 @@ starts:
 
 | Replay | Counterpart |
 | --- | --- |
-| Under a proposed candidate, or under the live config when it does not become the baseline | The baseline that starts beside it, else the set's baseline standing when it starts that covers its runs with at least as many copies, a finished one first. |
+| Under a proposed candidate, or under the live config when it does not become the baseline | The baseline that starts beside it, else the set's baseline that is current when it starts and covers its runs with at least as many copies, a finished one first. |
 | A search's replay of a candidate, on the searched or the held-out tasks | The search's replay of the live config it started from. A search's replay of the live config is a baseline. |
-| A [replay check](/docs/reference/api/replay-checks) of a planned change | The baseline that starts beside it, else the set's standing baseline, as for a proposed candidate. |
+| A [replay check](/docs/reference/api/replay-checks) of a planned change | The baseline that starts beside it, else the set's current baseline, as for a proposed candidate. |
 | A [replay with the answer](#replay-with-the-answer) | The replay of the live config whose finishing started it. |
 
 The first three also have it in `pairedWith`, the replay their changes are set
@@ -775,7 +775,7 @@ The first three also have it in `pairedWith`, the replay their changes are set
 none, and is compared with nothing.
 
 A replay that keeps none, such as a baseline, has as its counterpart the set's
-baseline as it stands when it is read: the newest replay of the live config the
+current baseline when it is read: the newest replay of the live config the
 set started as a baseline, while it is queued, running or finished. The
 baseline itself has none. A stopped or over-budget baseline is not compared
 with, and the next replay of the set starts a new one.
@@ -920,7 +920,7 @@ A replay run differs from a task run:
 | Task | Has no task. The task's state, notes, board and inbox do not change. |
 | Workspace | The exact archive the original run restored, or none if it restored none. A replay that cannot restore it fails. |
 | Checkouts | Each repository at the commit the original run started from. |
-| Briefing | The task as briefed to the original run, with its notes, attachments and decisions then. The memories it was briefed with are looked up again when the replay run is queued: a memory deleted since is left out, and each one reads as it stands now. `spotlight history` and `spotlight recall` read as of the original run's start. A [replay with the answer](#replay-with-the-answer) adds the answer. |
+| Briefing | The task as briefed to the original run, with its notes, attachments and decisions then. The memories it was briefed with are looked up again when the replay run is queued: a memory deleted since is left out, and each one reads as it is now. `spotlight history` and `spotlight recall` read as of the original run's start. A [replay with the answer](#replay-with-the-answer) adds the answer. |
 | Agent commands | `spotlight trace`, `spotlight remember` and answering a pull request's remarks are refused. |
 | Git | Fetch only. A push is refused with `this run may only fetch`. |
 | Tools, MCP servers, secrets | None. |

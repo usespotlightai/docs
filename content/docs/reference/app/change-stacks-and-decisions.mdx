@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Change stacks and decisions
-description: How a run's diff becomes a change stack of cohorts and layers, how its layers are checked, and the decisions Spotlight draws from a run, with their kinds, standing and disputes.
+description: How a run's diff becomes a change stack of cohorts and layers, how its layers are checked, and the decisions Spotlight draws from a run, with their kinds, status and disputes.
 ---
 
 A change stack is a run's diff arranged for review. A decision is a choice an
@@ -192,15 +192,15 @@ A drafted decision that breaks these limits is dropped.
 - Drafting is attempted as for a change stack. When every attempt fails, the
   task keeps the decisions it had.
 
-### Standing
+### Status
 
-| Standing | Meaning |
+| Status | Meaning |
 | --- | --- |
 | `proposed` | Drafted, and open to disputes. Later runs may replace it. |
-| `stands` | The task's pull request merged. Nothing is drafted for the task again. |
+| `merged` | The task's pull request merged. Nothing is drafted for the task again. |
 
 When the pull request is closed without merging, the decisions are discarded.
-Decisions that stand are listed by
+Merged decisions are listed by
 `GET /api/workspaces/{slug}/decisions`, filtered by `repository`, `path`,
 `since` and `until` (merge times).
 

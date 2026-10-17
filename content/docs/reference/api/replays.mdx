@@ -152,7 +152,7 @@ See [Side by side](/docs/reference/app/replays#side-by-side).
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `pairedWith` | string or null | The replay its changes are set beside, judged blind, once it finishes, chosen when it started: the baseline standing then, or its search's replay of the live config. It is then also its [counterpart](/docs/reference/app/replays#counterparts), in `comparedWith`. Null for a baseline, a check of the set, a replay with the answer, or a replay that had none. |
+| `pairedWith` | string or null | The replay its changes are set beside, judged blind, once it finishes, chosen when it started: the baseline that was current then, or its search's replay of the live config. It is then also its [counterpart](/docs/reference/app/replays#counterparts), in `comparedWith`. Null for a baseline, a check of the set, a replay with the answer, or a replay that had none. |
 | `pairsAgainstBaseline` | object or null | `{ wins, losses, ties }`, counting tasks. Null where `pairedWith` is. |
 | `entries[].pair` | object or null | `{ state, againstRunId, outcome, model, unpaired, readings }`. `state` is `asked`, `judged` or `unpaired`. `againstRunId` is the run of the same task in `pairedWith` it was set beside. `outcome` is `win`, `loss` or `tie` once judged. `unpaired` is the [reason](/docs/reference/app/replays#side-by-side) when not compared, including `other-rubric` and `budget`. `readings` contains the two readings, each `{ ownShownFirst, outcome, reasons }`, each reason `{ text, ownHunks, theirHunks }`, the hunks it cites of this change and of the other. Null until asked. |
 | `entries[].pairingSpent` | object or null | What the side-by-side judging cost. It counts against the ceiling, but not toward `totals.spent`. |
@@ -188,7 +188,7 @@ A set's `health` is read for the station's live config at its current
 
 ## Set composition
 
-A set's `composition` reads its original runs as they stand when the set is
+A set's `composition` reads its original runs as they are when the set is
 read. See [What a set is made of](/docs/reference/app/replays#what-a-set-is-made-of).
 
 | Field | Type | Description |

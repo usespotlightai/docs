@@ -17,7 +17,7 @@ and [Station alerts](/docs/reference/app/tasks-runs-and-the-inbox#station-alerts
 
 A person's decision on one tool call, or one harness permission, that a run
 asked to use. A person may change a tool call's inputs before approving it. A
-grant is spent by the call it allows; a dismissal stands at the station that
+grant is spent by the call it allows; a dismissal stays valid at the station that
 asked. See [Approvals](/docs/reference/app/tasks-runs-and-the-inbox#approvals).
 
 ## Attachment
@@ -52,7 +52,7 @@ happened when its hooks run. See [Events](/docs/reference/terraform/hook#events)
 ## Board
 
 A line's page in the web app. It shows the line's stations and the tasks
-standing at them, in the views Backlog, Active and Completed. See
+at them, in the views Backlog, Active and Completed. See
 [Web app](/docs/reference/app/web-app#team-pages).
 
 ## Bound host
@@ -303,12 +303,12 @@ Each is kept with the steps and notes it rests on. The run's memories arrive
 as one item in the inbox, where a teammate approves, edits or rejects each one.
 A memory from outside the team, such as a review of an outside author's pull
 request, cannot be approved together with other memories. Approved memories
-stand; rejected ones are kept, and the newest of them are shown to the
+become active; rejected ones are kept, and the newest of them are shown to the
 drafter. The team's Memory page
-lists what stands, filtered by line, station, repository, path or kind. There
+lists the active ones, filtered by line, station, repository, path or kind. There
 you can write a memory yourself, correct one (the correction replaces it) or
 retire one with a reason; retired memories stay readable under Retired. Each
-standing memory has a handle, such as `M-12`, and runs are briefed with the ones
+active memory has a handle, such as `M-12`, and runs are briefed with the ones
 that bear most closely on their work, whatever harness they run. Every memory
 that applies to a run is also laid out in its workspace under
 `.spotlight/memory`, for the agent to search; it can also search with
@@ -378,7 +378,7 @@ until the person accepts it, which creates the task, or dismisses it. See
 ## Reaction
 
 A line's rule that moves a task to a station when a happening arrives,
-optionally only while the task stands at a given station. See
+optionally only while the task is at a given station. See
 [`spotlight_line`](/docs/reference/terraform/line) and
 [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves).
 
@@ -549,7 +549,7 @@ and the stations it passes to. See [`spotlight_line`](/docs/reference/terraform/
 
 ## Task
 
-A unit of work. A task stands at one station of one line at a time, and
+A unit of work. A task is at one station of one line at a time, and
 carries a title, a description, attachments, a trail of notes, marks and an
 assignee. See [Tasks](/docs/reference/app/tasks-runs-and-the-inbox#tasks).
 

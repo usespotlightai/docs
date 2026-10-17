@@ -155,7 +155,7 @@ What an iteration that looked into why the search
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `standing` | string or null | The candidate whose failures it looked into, by id: the seed's when nothing beat the live config. Null until it looked. |
+| `incumbent` | string or null | The candidate whose failures it looked into, by id: the best config before it, or the seed's when nothing beat the live config. Null until it looked. |
 | `tasks` | array | The searched tasks that config still failed, each `{ taskId, originalRunId, replayRunId }`: the task, its run in the set, and the replay run that failed it. Never a held-out task. |
 | `causes` | array | One per task given a cause, each `{ taskId, originalRunId, replayRunId, cause, evidence, suggestion, recordedAt }`. `cause` is `config`, `task`, `judge`, `check` or `infra`; see [Causes](/docs/reference/app/searches#causes). `suggestion` is a string or null. |
 | `outcome` | string or null | Once it ended: `went-on`, `no-config-cause`, `no-failures`, `did-not-run` or `out-of-budget`. See [Reflection outcomes](/docs/reference/app/searches#reflection-outcomes). |

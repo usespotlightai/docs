@@ -5,7 +5,7 @@ title: Tasks, runs and the inbox
 description: Task fields and states, notes, handovers and moves, run states, failure codes, configs, spend, a station's judge and alerts, station outcomes, the inbox and its notices, grades, memory reviews, station alerts, approvals, chats and attachments.
 ---
 
-A task stands at one station of a line. Runs work it; people answer it from the
+A task is at one station of a line. Runs work it; people answer it from the
 inbox. The terms are defined in the [glossary](/docs/reference/glossary).
 
 ## Tasks
@@ -16,7 +16,7 @@ inbox. The terms are defined in the [glossary](/docs/reference/glossary).
 | --- | --- |
 | Title | Up to 200 characters. Fixed once the task is created. |
 | Description | Markdown, up to 20,000 characters. Optional. Fixed once the task is created. |
-| Station | The station the task stands at. |
+| Station | The task's current station. |
 | Assignee | The person whose inbox the task's conversations reach. A task created by a person is assigned to them. |
 | Raised by | The person who created the task, if a person did. |
 | Attachments | Files given with the task. See [Attachments](#attachments). |
@@ -74,7 +74,7 @@ without regard to case.
 | --- | --- | --- |
 | a station key | The station is on the line, is not the current station, has a harness, and the current station passes to it. | The task moves to the back of that station with a `passed` note, its revision goes up, and a run starts there. |
 | `review` | Always. | An `asked` note is written and the task awaits review. An unassigned task is assigned to the person who raised it. |
-| `done` | The current station has `ends: true`. | The task is finished at the station where it stands, with a `passed` note, and its revision goes up. |
+| `done` | The current station has `ends: true`. | The task is finished at its current station, with a `passed` note, and its revision goes up. |
 
 Any other ending is handled as `review`, with one of these notes:
 
@@ -83,7 +83,7 @@ Any other ending is handled as `review`, with one of these notes:
 | No declaration | `The run finished without saying where the task should go next.` |
 | No outcome reported | `The run ended without reporting an outcome.` |
 | A key that is not a station on the line | `The run asked for station "<key>". This line has no such station.` |
-| The station the task stands at | `The run asked for station "<key>". The task already stands there.` |
+| The task's current station | `The run asked for station "<key>". The task is already there.` |
 | A station with no harness | `The run asked for station "<key>". Nothing runs there to take up the task.` |
 | A station the current one does not pass to | `The run asked for station "<key>". Work does not pass there from the task's station.` |
 | `done` where the line does not end | `The run said the work is done. The task is not at the end of its line.` |
@@ -116,20 +116,20 @@ A move to another station:
 
 A person who moves an unassigned task from the backlog to a work station becomes
 its assignee. A person's move names the task's current revision; a stale
-revision is refused with `409`. A move to the station the task already stands
+revision is refused with `409`. A move to the station the task is already
 at only reorders it.
 
 When a happening finds a task, the line decides one of these outcomes:
 
 | Outcome | Condition | Effect |
 | --- | --- | --- |
-| nothing | The task stands at the completed station, or none of the other outcomes applies. | None. |
+| nothing | The task is at the completed station, or none of the other outcomes applies. | None. |
 | moves | A reaction for the happening, from this station or from any, leads to another station, and the task has no current run. | The task moves there. |
 | deferred move | As for moves, but the task has a current run, queued, claimed, waiting or parked, and the station is not the completed station. | A `said` note `Heard while a run worked on the task. If the run does not pass the task on, the task moves to <Station> when the run ends.`, followed by what the happening said. The run is told, and keeps the task. A later `passed` note, or a later `asked` note other than an approval, drops deferred moves; a later `stays` outcome does not. |
 | interrupts | As for moves, but the task has a current run and the station is the completed station, and the task does not await a person's answer to a question (a pending approval does not count). | The run ends as for a person's move, and its later handover is ignored. The task is put to its assignee, or else the person who raised it, with an `asked` note in the world voice: `<What happened> while <Station> was working. Close the task, or reply to carry on.`, where `<What happened>` is the happening's text without its final full stop, and `its station` takes the place of `<Station>` when the station is not known. |
 | notes while waiting | As for interrupts, but the task already awaits a person's answer to a question. | A `said` note in the world voice, `<What happened> while <Station> was waiting for an answer. Close the task, or reply to carry on.`, added to the open conversation, with `its station` when the station is not known. The run keeps the task, and earlier deferred moves are cancelled. |
 | answers | No reaction leads to another station, the task awaits review, and the happening carries a person's words. | An `answered` note; the run that asked carries on, or else a run starts at the same station. |
-| stays | A reaction applies and leads to the station the task stands at, and the happening does not answer. | A `said` note. |
+| stays | A reaction applies and leads to the task's current station, and the happening does not answer. | A `said` note. |
 
 ## Runs
 
@@ -187,7 +187,7 @@ why (optional)`. See [Approvals](#approvals).
 | `claimed` | `failed` | The harness failed (`exited`), or the run failed before its harness started (`unprepared`). A hook on `run.starting` refused it (`refused`). Its hooks could not be asked after the last hand-back (`hooks-unanswered`). Its lease lapsed on the last attempt, and no stop was asked for (`runner-lost`). Its host stopped it at its run timeout on the last attempt, and no stop was asked for (`timed-out`). |
 | `failed` | `superseded` | The run's task has moved on. |
 
-Words said to a run at the station where its task stands idle, when that
+Words said to a run at the station where its task is idle, when that
 station has a harness, start a new run there that resumes the station's
 session. Words said to a run whose task has left its station are refused with
 `409`, and words from anyone but the task's assignee with `404`.
@@ -201,7 +201,7 @@ something to it. See [Steer or stop a run](/docs/runs/steer-or-stop-a-run).
 | When | Placeholder | Accessible name |
 | --- | --- | --- |
 | The run waits on a person's answer to a question that is not an approval. | `Answer the question to continue the run…` | `Answer <Station>` |
-| The task stands at the run's station with nothing running and no open question, and the station has a harness. Words start a new run there. | `Say what to change. <Station> starts again…` | `Send it back to <Station>` |
+| The task is at the run's station with nothing running and no open question, and the station has a harness. Words start a new run there. | `Say what to change. <Station> starts again…` | `Send it back to <Station>` |
 | Otherwise. | `Say something…` | `Say something to <Station>` |
 
 The "+" button, "Attach files", adds files, and so does dropping or pasting
@@ -279,7 +279,7 @@ the phase each runner message comes from.
 ### Config
 
 When a task's run is queued at a station with a harness, it records the
-station's config as it stands then. A replay run records its candidate's
+station's config at that time. A replay run records its candidate's
 config. A chat's run records none.
 
 | Part | Contains |
@@ -468,7 +468,7 @@ absolute error" and "Root mean square error" have no reading.
 
 The judge's scores show only when the station's current rubric is trusted:
 
-| Standing | When | Reads |
+| Calibration | When | Reads |
 | --- | --- | --- |
 | Trusted | At least 10 runs have both scores, and the measure is at least the judge's `trust`. | `Trusted. <measure>: <value> over <n> runs. Minimum required: <trust>` |
 | Hidden: too few runs | Fewer than 10 runs have both scores. | `Hidden until more runs have scores from both the judge and people. Runs so far: <n>` |
@@ -481,12 +481,12 @@ are shown to two decimals.
 
 While the judge is not trusted, a run's score and its reasons are both hidden.
 A score given under an earlier rubric version stays hidden, whatever the
-standing. A new rubric version starts with no runs that have both scores.
+calibration. A new rubric version starts with no runs that have both scores.
 
 The station's view on Insights shows, under "How far to trust the judge", the
-measure with the standing, then how many of the station's latest 200 ended
+measure with the calibration, then how many of the station's latest 200 ended
 runs, less those withdrawn, have "Both scores", "Judge only", "People only"
-and "Neither", each with `<share> of the last <n>`. A trusted judge's standing there reads
+and "Neither", each with `<share> of the last <n>`. A trusted judge's calibration there reads
 `Trusted. Minimum required: <trust>`. With no judged runs, it reads "No judged
 runs yet" and
 `Judge agreement with people shows here per rubric once the judge scores runs.`
@@ -521,7 +521,7 @@ Otherwise "Judge" shows `<sample>`, as a percentage, with "of runs judged".
 Then, when the agreement value and `trust` are both known, the measure and its
 value on a bar marked at `trust`; see [Agreement](#agreement). Under it, a trusted
 judge reads `Trusted above <trust> over <n> runs`, and any other judge its
-standing. When the agreement cannot be read, the part reads
+calibration. When the agreement cannot be read, the part reads
 `Trusted from <trust> agreement`. A judge with claims lists them under
 "Claims", numbered, then `A run passes when it meets every claim.`, or
 `A run passes when it meets at least <share> of its claims.` "Show rubric"
@@ -574,7 +574,7 @@ is shown when the station's current rubric is trusted and the score was given
 under it. While it is shown, the run's row in the trace carries it. Selecting
 the row shows "Judge" in the run's details: "Score", the judge's score or
 `Hidden`, and "People", people's grades, with `(you)` beside the reader's
-own. While the judge is not trusted, its standing is shown beneath. A
+own. While the judge is not trusted, its calibration is shown beneath. A
 shown score lists its reasons under it, each with the steps and hunks it
 cites, as `Step <n>` or the file's name and hunk header. Selecting a step shows
 `Step <n>` with its tool or kind, and its text; selecting a hunk shows its
@@ -755,7 +755,7 @@ on; if the task has no current run and the station has a harness, a run starts t
 taking up the harness session where the last run left it.
 
 A resolved item shows no answer box. In its place it reads
-`The task is settled here. Nothing is left to answer.` while the task stands at
+`The task is settled here. Nothing is left to answer.` while the task is at
 the item's station, or `The task moved on to <Station>. Nothing is left to answer.`
 
 ### Notices
@@ -864,7 +864,7 @@ edited, "Reject" becomes "Cancel", which puts the memory back, and "Approve",
 which keeps it as edited, is off while the text is empty. A decided card keeps
 the copy icon, with "Reject" and "Approve" off.
 
-- An approved memory stands, with a new handle. If it corrects a standing
+- An approved memory becomes active, with a new handle. If it corrects an active
   memory, that one is retired in its favour.
 - A rejected memory is kept and never briefed. When a station drafts
   memories, the drafter is shown the 20 newest memories the team rejected in
@@ -976,11 +976,11 @@ first", or when the harness profile's `ask` rules match a harness action. See
 [Person rules](#person-rules) and
 [`spotlight_harness_profile`](/docs/reference/terraform/harness-profile).
 
-| Standing | Meaning |
+| Status | Meaning |
 | --- | --- |
 | `asked` | Waiting on a person, as an inbox item. |
 | `granted` | Approved. The grant is spent by the call it allows. |
-| `refused` | Dismissed. The dismissal stands. |
+| `refused` | Dismissed. The dismissal stays valid. |
 
 In the inbox, the card's title reads "Waiting for your approval" while it is
 `asked`, then "Request approved", "Request approved with changes" or "Request
