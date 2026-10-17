@@ -72,15 +72,15 @@ resource "spotlight_line" "core_delivery" {
   # ...
 
   replay_check {
-    most_regressions = 0
-    ceiling          = 10
-    currency         = "USD"
-    min_gain         = 0.05
+    max_regressions = 0
+    ceiling         = 10
+    currency        = "USD"
+    min_gain        = 0.05
   }
 }
 ```
 
-- `most_regressions`: how many tasks a change may regress on and still pass.
+- `max_regressions`: how many tasks a change may regress on and still pass.
   A task regresses when the live config succeeded on it and the change did
   not, or the station's judge scored the change lower.
 - `ceiling` and `currency`: the most each replay a check starts may spend.
