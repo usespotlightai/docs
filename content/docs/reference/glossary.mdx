@@ -55,6 +55,14 @@ A line's page in the web app. It shows the line's stations and the tasks
 standing at them, in the views Backlog, Active and Completed. See
 [Web app](/docs/reference/app/web-app#team-pages).
 
+## Bound host
+
+A host that a secret of the run is bound to. Egress adds a secret only to
+requests to its bound hosts. For a run that reaches Spotlight's API, the
+Spotlight address's host is bound to the run's Spotlight token. See
+[Run secrets](/docs/reference/hosts/egress#run-secrets) and
+[The runner's way out](/docs/reference/hosts/egress#the-runners-way-out).
+
 ## Briefing
 
 The first prompt a task's run gives its agent: the station's prompt, the task,
@@ -150,10 +158,13 @@ Spotlight draws from what an agent said during a run at a station with
 
 ## Egress
 
-A proxy container a host starts beside each sandbox. The sandbox reaches the
-network only through it. Egress admits or refuses each connection and
+The proxy between a sandbox and the network. A host starts one egress
+container beside each sandbox, and the sandbox reaches the network only
+through it. A push pool can name a shared egress, one process that serves many
+runs, in `provision.egress`. Egress admits or refuses each connection and
 adds secrets to requests to the hosts they are bound to. See
-[Egress](/docs/reference/hosts/egress).
+[Egress](/docs/reference/hosts/egress) and
+[`spotlight_egress`](/docs/reference/terraform/egress).
 
 ## Frontier
 
@@ -354,7 +365,8 @@ give. See [Catalog](/docs/reference/built-ins/built-in-tools-and-skills#catalog)
 
 A runner pool: a workspace resource that admits runners. Hosts serve a pull
 pool and claim its runs with the pool's token. For a push pool, Spotlight calls
-a provision URL to start a runner for each run. See
+a provision URL to start a runner for each run. A push pool that names an
+egress also takes runs that use secrets. See
 [`spotlight_runner_pool`](/docs/reference/terraform/runner-pool).
 
 ## Proposal

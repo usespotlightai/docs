@@ -46,8 +46,8 @@ each harness package provides.
 | `/workspace/.spotlight/skills` | Skills, for Cursor and Codex. |
 | `/workspace/.spotlight/outcome.json` | Read if the agent never runs `spotlight handover`. Removed at the start of each run. See [Agent commands](/docs/reference/cli/agent-commands#without-a-handover). |
 | `/run/spotlight/handed.json` | The work the host handed the sandbox, mode `0400`. The runner deletes it after reading it. |
-| `/etc/spotlight/egress/authority.pem` | The run's egress certificate authority. |
-| `/etc/spotlight/egress/bundle.pem` | The image's system certificates with the egress authority added. |
+| `/etc/spotlight/egress/authority.pem` | The run's egress certificate authority. On a runner of a push pool that names an egress, the authority of the runner's way out. |
+| `/etc/spotlight/egress/bundle.pem` | The image's system certificates with that authority added. |
 | `/spotlight/mirrors/<repository>.git` | The host's mirror of each repository, mounted read-only when the host has one. |
 
 At start the runner also appends the egress authority to each of these files
@@ -72,7 +72,11 @@ A host sets these on the sandbox:
 | Variables from `SPOTLIGHT_SANDBOX_ENV` and `SPOTLIGHT_SANDBOX_PASS` | As given, except harness keys, which become `spotlight-egress:<NAME>`. See [Host settings](/docs/reference/hosts/host-configuration#harness-keys). |
 
 A runner a push pool provisions gets `SPOTLIGHT_URL` and a one-run
-`SPOTLIGHT_TOKEN` from its provider instead, and has no egress. See
+`SPOTLIGHT_TOKEN` from its provider instead. When the pool names an egress, it
+also gets `SPOTLIGHT_EGRESS_URL` and `SPOTLIGHT_EGRESS_CREDENTIAL`, and the
+agent gets the proxy and certificate variables of
+[the runner's way out](/docs/reference/hosts/egress#the-runners-way-out). When
+the pool names none, the runner has no egress. See
 [The spotlight command](/docs/reference/cli/spotlight-command#spotlight-runner) for
 the variables the runner reads.
 
@@ -114,6 +118,7 @@ harness starts has the failure code `unprepared`; from the harness start on,
 | Harness files | For a task's run, files a harness profile laid in an earlier run are removed from `.spotlight/state`, and the station's harness profile's files are written there. | | Fails the run. |
 | Ownership | `/workspace` is given to `agent`. Files `agent` already owns are left alone. | | Fails the run: `The runner couldn't prepare the run. Error: hand over workspace: <error>`. |
 | Setup | Each repository's `setup` runs in its checkout as `agent`, with `/bin/sh -c`. | 15 minutes per checkout | Recorded. The run continues. |
+| Egress check | A runner given `SPOTLIGHT_EGRESS_URL` tries a direct connection to the Spotlight address, and records `egress.checked`. See [Enforcement](/docs/reference/hosts/egress#enforcement). | 3 seconds | |
 | Harness start | The harness starts in `/workspace` as `agent`, over the Agent Client Protocol. The previous session is resumed, or a new session opens. A session the harness no longer holds opens a new one. | | Fails the run: `The runner couldn't start the agent. Error: start agent: <error>`, `The runner couldn't start the agent. Error: resume the session: <error>` or `The runner couldn't start the agent. Error: open a session: <error>`. |
 | Prompt | The [briefing](#briefing) is sent. Each message a person sends during the turn cancels the turn and is sent next. When a turn ends, messages waiting are sent as the next prompt. With none, the run completes, or waits for a person's answer with the harness kept open. | | See below. |
 | Change stacks | For a station with `diffs: true`, each checkout's changes are sent for a change stack. A replay run sends them when its turn ends, before it completes. | | Skipped for that checkout. |

@@ -77,6 +77,24 @@ See [Egress](/docs/reference/hosts/egress).
 | Upstream TLS handshake | 15 seconds |
 | Shutdown grace | 5 seconds |
 
+A [shared egress](/docs/reference/hosts/egress#shared-egress) and a push pool
+runner's way out:
+
+| Item | Value |
+| --- | --- |
+| Requests each second, for each workspace and egress process | `SPOTLIGHT_EGRESS_RATE`, default 50; `0` is no limit |
+| Open connections, for each workspace and egress process | `SPOTLIGHT_EGRESS_CONNECTIONS`, default 200; `0` is no limit |
+| Asking which runs are still held | Every 30 seconds, at most 500 run proxy credentials in one call |
+| A run with no request | Forgotten after 2 minutes |
+| Redeeming again while the runner holds no run | At most every 5 seconds |
+| Sending connection records | Every 5 seconds, at most 2,000 in one call and 10,000 waiting |
+| Time a connection record keeps from egress | At most 1 hour before and 1 minute after Spotlight gets it |
+| Connection records kept | 30 days |
+| Enforcement check | 3 seconds |
+| Way out authority lifetime | 48 hours |
+| Upstream connection | 30 seconds |
+| Upstream TLS handshake | 15 seconds |
+
 ## Workspace archives
 
 See [Inside a sandbox](/docs/reference/hosts/sandbox#run-phases).
