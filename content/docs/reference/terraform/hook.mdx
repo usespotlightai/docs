@@ -43,7 +43,7 @@ resource "spotlight_hook" "migrations" {
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `key` | string | required | Lowercase words joined by dashes, at most 64 characters. Fixed: an update that changes it is rejected; Terraform replaces the resource. |
+| `key` | string | required | Lowercase words joined by dashes, at most 64 characters. Immutable: an update that changes it is rejected; Terraform replaces the resource. |
 | `on` | string | required | The event the hook fires on. See [events](#events). |
 | `match.tools` | array of strings | `[]` | Tools, as `<integration>.<tool>`. Only on `tool.using` and `tool.used`. Each must be offered by an integration of the team. |
 | `match.lines` | array of strings | `[]` | Line keys. |

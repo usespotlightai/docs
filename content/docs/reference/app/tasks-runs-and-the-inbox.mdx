@@ -805,8 +805,8 @@ A notice reaches only its person, and only while they are a member of its
 team's workspace. To anyone else, and once it has left the inbox, its page
 reads `No longer waiting for you.` Resolving is
 `POST /api/workspaces/{slug}/inbox/notices/{noticeId}/resolve`, answering
-`204`, or `404` for a notice not put to the caller. Disbanding
-a team forgets its notices.
+`204`, or `404` for a notice not put to the caller. Deleting
+a team deletes its notices.
 
 ### Grades
 
@@ -901,7 +901,7 @@ the copy icon, with "Reject" and "Approve" off.
 
 Spotlight checks a work station's [alerts](/docs/reference/terraform/line#alert-fields)
 when one of its task runs ends or is measured, when the pull request of a task it
-worked closes, and when its line is changed or retired. A run counts in a measure once what that measure needs is
+worked closes, and when its line is changed or deleted. A run counts in a measure once what that measure needs is
 known:
 
 | Measure | A run is measured when |
@@ -938,8 +938,8 @@ If an open alert's amount or `over` is changed, the next check judges it by
 the new values: crossed, it stays open with the new reading; otherwise the
 check counts for its recovery. An open alert whose measure or threshold is
 removed from the station recovers at once, at the station's next check, and a
-crossing after that raises a new alert. Changing or retiring a line checks
-each of its stations, those it had and those it has. Deleting a task forgets
+crossing after that raises a new alert. Changing or deleting a line checks
+each of its stations, those it had and those it has. Deleting a task deletes
 the alerts raised on it.
 
 When an alert goes off, the task of the run that set off the check gets an

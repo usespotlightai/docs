@@ -157,6 +157,14 @@ Spotlight draws from what an agent said during a run at a station with
 `decisions: true`. People can dispute a decision. See
 [Decisions](/docs/reference/app/change-stacks-and-decisions#decisions).
 
+## Delete
+
+To remove a resource, such as a team, a line or a secret, through the web app,
+the resource API or Terraform. A workspace or a team can be deleted only when
+it has no resources left. Spotlight then deletes the records that belong to it,
+such as its tasks and notices. A [memory](#memory) is retired, not deleted. See
+[Resource API](/docs/reference/api/resource-api).
+
 ## Egress
 
 The proxy between a sandbox and the network. A host starts one egress
@@ -257,6 +265,13 @@ it replayed beside the live config. See
 A team's definition of an outside service: the webhooks it sends and the
 happenings they raise, the tools agents may call on it, and how Spotlight
 connects to it. See [`spotlight_integration`](/docs/reference/terraform/integration).
+
+## Issue
+
+To create a [workspace token](#workspace-token). A workspace owner or admin
+issues one, a [workspace token trust](#workspace-token-trust) issues a
+short-lived one for each exchange, and Spotlight issues one for each run of a
+setup chat. Spotlight shows the token value only once, when it issues it.
 
 ## Judge
 
@@ -388,6 +403,14 @@ egress also takes runs that use secrets. See
 A task the agent proposes in a chat, naming a line and a station. It is open
 until the person accepts it, which creates the task, or dismisses it. See
 [Proposals](/docs/reference/app/tasks-runs-and-the-inbox#proposals).
+
+## Purge
+
+To remove records when their retention period ends. For example, Spotlight
+purges connection records after 30 days, the run grants of a run 7 days after
+the run ends, hook firings 30 days after they finish, and a pull request 180
+days after it closed or, while it is open, 180 days after it last changed. See
+[Retention](/docs/reference/app/insights#retention).
 
 ## Reaction
 
@@ -629,7 +652,7 @@ by key. A workspace has at most one. See
 
 A bearer token that acts inside one workspace within its scopes, for the
 resource API and the Terraform provider. A workspace admin or owner issues one.
-Spotlight also mints one for each run of a setup chat; see
+Spotlight also issues one for each run of a setup chat; see
 [The run's Spotlight token](/docs/reference/hosts/egress#the-runs-spotlight-token).
 See [Workspace tokens](/docs/reference/api/workspace-token).
 

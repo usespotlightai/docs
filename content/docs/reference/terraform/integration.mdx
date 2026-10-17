@@ -70,7 +70,7 @@ Acme is an example name for any HTTP service. A station gives this tool as `acme
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `integration` | string | required | The name the host is addressed by. Prefixes its tools, happenings and webhook address. Fixed: an update that changes it is rejected; Terraform replaces the resource. |
+| `integration` | string | required | The name the host is addressed by. Prefixes its tools, happenings and webhook address. Immutable: an update that changes it is rejected; Terraform replaces the resource. |
 | `name` | string | none | The name shown in the web app. Without it, the `integration` value. |
 | `types` | map of name to object | `{}` | Named shapes that expressions are type-checked against. |
 | `connection` | object | none | How the team links to the host. See [connection](#connection). |
@@ -528,7 +528,7 @@ For an integration with `connection.oauth2`, the answer to a tool call carries
 (`team` or `person`), `personId` (for a person) and `handle`, the account the
 host named. `spotlight <tool>` prints only the output. See [Holder](#holder).
 
-A tool that a station gives or a hook matches or calls cannot be withdrawn
+A tool that a station gives or a hook matches or calls cannot be removed
 from the definition; the update fails with `409`.
 
 ### Input schemas
@@ -820,7 +820,7 @@ Spotlight keeps MCP sessions for each server, team, integration, kind of
 `auth`, connection holder and access token, and never shares one between
 holders. A session carries one call at a time; calls made at once each get a
 session of their own. A session unused for 5 minutes is ended at the server
-and closed. When the server answers `404` because it has forgotten the
+and closed. When the server answers `404` because it no longer has the
 session, Spotlight starts a new one and calls once more. Spotlight opens no
 stream for the server to send on outside a call: the `GET` stream of the
 streamable HTTP transport is not opened. A call
@@ -865,7 +865,7 @@ No expression may read a secret. An expression containing `secret.` or
 
 Secret references are not checked against the workspace's secrets when the
 definition is written. A request that uses a missing secret fails with
-`Secret <NAME> not found. Please define it first.`
+`Secret <NAME> not found. Please create it first.`
 
 ## Errors and warnings
 

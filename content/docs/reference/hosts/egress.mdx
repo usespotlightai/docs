@@ -158,16 +158,16 @@ Egress logs each failure, and the request goes out without that secret.
 ### The run's Spotlight token
 
 A run of a [setup chat](/docs/configuration/let-the-agent-write-your-first-terraform)
-reaches Spotlight's own API. When egress fetches the run's secrets, Spotlight mints a
+reaches Spotlight's own API. When egress fetches the run's secrets, Spotlight issues a
 workspace token for that run's attempt alone and seals it to egress, like a
 secret it keeps.
 
 | Property | Value |
 | --- | --- |
 | Scopes | `plan`, which includes `read`. |
-| Issued by | The person who started the chat. Recorded in the audit as minted by Spotlight, with the run and its attempt. |
+| Issued by | The person who started the chat. Recorded in the audit as issued by Spotlight, with the run and its attempt. |
 | Expires | An hour after egress fetches the run's secrets. |
-| Revoked | When the run completes, is exhausted or cancelled, when the lease of its attempt expires or the run is suspended, or when the runner loses the run while egress fetches its secrets. Each fetch of the run's secrets revokes the run's earlier token for the same attempt, then mints a new one. |
+| Revoked | When the run completes, is exhausted or cancelled, when the lease of its attempt expires or the run is suspended, or when the runner loses the run while egress fetches its secrets. Each fetch of the run's secrets revokes the run's earlier token for the same attempt, then issues a new one. |
 | Stand-in | `spotlight-egress:spotlight-api`, in `SPOTLIGHT_API_TOKEN`. See [The agent's environment](/docs/reference/hosts/sandbox#the-agents-environment). |
 | Injected | In `Authorization`, in place of the stand-in or `Bearer ` and the stand-in, on requests to the Spotlight address's host. |
 
@@ -280,7 +280,7 @@ and exits `1`:
 | `listen for sandboxes: <error>` | Egress cannot listen on `SPOTLIGHT_EGRESS_LISTEN`. |
 
 On `SIGINT` or `SIGTERM`, egress stops within 5 seconds, sends the connection
-records it still has, forgets every run, and exits `0`.
+records it still has, removes every run from its memory, and exits `0`.
 
 ### Credentials
 
@@ -301,8 +301,8 @@ with no credential, or one Spotlight does not admit, with `407`.
 | A runner's first request | Asks Spotlight to admit the runner. |
 | The runner has no lease on a run yet | Lets the runner reach only the Spotlight address's host. |
 | A request to any other host, or to `/.well-known/spotlight/bound` | Fetches the run's secrets, once. While the runner has no lease on a run, it asks again at most every 5 seconds. |
-| Every 30 seconds | Asks Spotlight which of its runs are still active, and forgets the secrets of the others. |
-| A run with no request open, and no request for 2 minutes | Forgets the run. Its next request admits it again. |
+| Every 30 seconds | Asks Spotlight which of its runs are still active, and removes the secrets of the others from its memory. |
+| A run with no request open, and no request for 2 minutes | Removes the run from its memory. Its next request admits it again. |
 
 Egress calls Spotlight with its egress token as a bearer token:
 
@@ -407,7 +407,7 @@ Spotlight drops a record whose `status` or `reason` does not fit its
 recorded.
 
 Spotlight keeps each record with the run's attempt for 30 days. Egress sends
-the records of a run before it forgets the run. Spotlight keeps a record when
+the records of a run before it removes the run from its memory. Spotlight keeps a record when
 the run still names the runner of the proxy credential, and that runner is active,
 or ended at most 2 minutes before. It drops all other records, and the records
 of a check.

@@ -23,20 +23,20 @@ a workspace is its owner. A person who accepts an invite joins with the role
 the invite gives, `admin` or `member`. A workspace always has at least one
 owner.
 
-A closed workspace grants nothing to anyone.
+A deleted workspace grants nothing to anyone.
 
 ## Permissions
 
 | Permission | Allows | Granted to |
 | --- | --- | --- |
 | `read` | See a workspace and its resources, and export it as Terraform. | Every role. Every token. |
-| `plan` | Check expressions, at `POST /api/expressions/check`. Open, change and delete replay sets, mark the set that guards a station's changes, start and stop replays, propose and withdraw replay candidates, start and stop searches, pick a search's candidate, and start replay checks, on a team whose outcomes the caller may read. | Every person. Tokens with `plan` or `configure`. |
+| `plan` | Check expressions, at `POST /api/expressions/check`. Create, change and delete replay sets, mark the set that guards a station's changes, start and stop replays, propose and delete replay candidates, start and stop searches, pick a search's candidate, and start replay checks, on a team whose outcomes the caller may read. | Every person. Tokens with `plan` or `configure`. |
 | `configure` | Create, change and delete teams, lines, integrations, hooks, skills and harness profiles; change the workspace. | Owners, admins. Tokens with `configure`. |
 | `manage-secrets` | Create, change and delete secrets. | Owners, admins. Tokens with `secrets`. |
 | `manage-runners` | Create, change and delete runner pools, egresses, runner trusts and workspace runners. | Owners, admins. Tokens with `runners`. |
 | `manage-token-trusts` | Create, change and delete workspace token trusts. | Owners, admins. Tokens with `trusts`. |
-| `administer` | Issue, change and revoke workspace tokens; read [configuration changes](/docs/reference/api/resource-api#configuration-changes); close the workspace; invite people, list, resend and revoke invites, and add members to teams; connect GitHub; connect the team to an integration over OAuth. | Owners, admins. Never a token. |
-| `open-workspaces` | Create a workspace. | Every signed-in person. Never a token. |
+| `administer` | Issue, change and revoke workspace tokens; read [configuration changes](/docs/reference/api/resource-api#configuration-changes); delete the workspace; invite people, list, resend and revoke invites, and add members to teams; connect GitHub; connect the team to an integration over OAuth. | Owners, admins. Never a token. |
+| `create-workspaces` | Create a workspace. | Every signed-in person. Never a token. |
 
 A request for something the caller cannot see returns `404`. A request to
 change something the caller can see but may not change returns `403`:
@@ -45,7 +45,7 @@ change something the caller can see but may not change returns `403`:
 | --- | --- |
 | `configure`, `manage-secrets`, `manage-runners`, `manage-token-trusts` | `Not allowed to change the <kind>` |
 | `administer` | `Not allowed to administer the <kind>` |
-| `open-workspaces` | `Not allowed to open a workspace` |
+| `create-workspaces` | `Not allowed to create a workspace` |
 | `plan` | `Not allowed to plan` |
 
 See [Resource API](/docs/reference/api/resource-api) for the error format.
@@ -68,7 +68,7 @@ A token's scopes must include `read`, `plan` or `configure`, and name each
 scope once; see [Scopes](/docs/reference/api/workspace-token#scopes) for the
 messages. A token acts only in its own workspace. See
 [`spotlight_workspace_token_trust`](/docs/reference/terraform/workspace-token-trust) for tokens a
-trust mints.
+trust issues.
 
 ## Team outcomes
 
@@ -134,9 +134,9 @@ optionally names teams of the workspace to join.
 | --- | --- | --- |
 | Invite | `POST /api/workspaces/{slug}/invites` | Owners and admins. |
 | List pending invites | `GET /api/workspaces/{slug}/invites` | Owners and admins. |
-| Send an invite again | `POST /api/workspaces/{slug}/invites/{inviteId}/resend` | Owners and admins. |
+| Resend an invite | `POST /api/workspaces/{slug}/invites/{inviteId}/resend` | Owners and admins. |
 | Revoke an invite | `DELETE /api/workspaces/{slug}/invites/{inviteId}` | Owners and admins. |
-| Read what an invite link offers | `GET /api/invites/{token}` | Anyone with the link, signed in or not. |
+| Read the preview of an invite | `GET /api/invites/{token}` | Anyone with the link, signed in or not. |
 | Accept an invite | `POST /api/invites/{token}/accept` | The person signed in with the invited address. |
 | Add a member to a team | `POST /api/teams/{teamId}/members` | Owners and admins. |
 
@@ -151,20 +151,21 @@ does not exist.
   Addresses are compared without regard to case, and a repeated address is
   invited once.
 - An address that belongs to a member of the workspace is sent nothing.
-- An address with an open or expired invite is sent it again, with a new link,
-  the role and teams of this request, and a fresh 14 days. An address whose
+- Spotlight resends the invite of an address that has a pending or expired
+  invite, with a new link, the role and teams of this request, and a fresh 14
+  days. An address whose
   invite was revoked or accepted gets a new invite.
-- Sending an invite again replaces its link; the old link stops working. Only
-  an open or expired invite can be sent again.
+- Resending an invite replaces its link; the old link stops working. Only
+  a pending or expired invite can be resent.
 - Revoking an invite stops its link working. Revoking a revoked invite changes
   nothing. An accepted invite cannot be revoked.
 - An invite lasts 14 days from when it was last sent.
 - Accepting needs the person to be signed in with the invited address,
-  compared without regard to case, and the invite to be open.
+  compared without regard to case, and the invite to be pending.
 - Accepting adds the person to the workspace with the invite's role, and to
   each team it names that still belongs to the workspace. A person already in
   the workspace keeps their role and is added to the teams.
-- The pending invites list contains only open invites, newest first.
+- The pending invites list contains only pending invites, newest first.
 - Adding a member to a team needs the person to be in the workspace already.
 
 Each address in an invite request gets one outcome:
@@ -172,7 +173,7 @@ Each address in an invite request gets one outcome:
 | Outcome | Web app | Meaning |
 | --- | --- | --- |
 | `invited` | "Invited" | A new invite was emailed. |
-| `sent-again` | "Sent again" | An open or expired invite was emailed again. |
+| `resent` | "Resent" | A pending or expired invite was emailed again. |
 | `already-a-member` | "Already a member" | The address belongs to a member. Nothing was sent. |
 | `not-sent` | "Not sent. Please resend it from Pending invites." | The invite was written but the email could not be sent. |
 
@@ -184,7 +185,7 @@ its log instead of sent.
 
 | State | Meaning |
 | --- | --- |
-| `open` | Sent, not yet accepted, revoked or expired. |
+| `pending` | Sent, not yet accepted, revoked or expired. |
 | `accepted` | Accepted. |
 | `revoked` | Taken back. |
 | `expired` | Not accepted within 14 days of being last sent. |

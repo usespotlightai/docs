@@ -307,7 +307,7 @@ Each command exits `1` and prints its message on standard error.
 | `Outbound call to <url> blocked. URL is not valid.` | An outbound call to an address that is not a URL. | [Requests](/docs/reference/terraform/integration#requests) |
 | `Outbound call to <host> blocked. redirected more than 5 times` | An outbound call was redirected more than 5 times. | [Requests](/docs/reference/terraform/integration#requests) |
 | `Outbound call to <host> blocked. is where an https request was redirected to over plain http, which Spotlight does not follow` | An `https` call was redirected to `http`. | [Requests](/docs/reference/terraform/integration#requests) |
-| `Secret <NAME> not found. Please define it first.` | A secret is named but not defined. It fails where it is used. | [Where a secret is named](/docs/reference/terraform/secret#where-a-secret-is-named) |
+| `Secret <NAME> not found. Please create it first.` | A secret is named but does not exist. It fails where it is used. | [Where a secret is named](/docs/reference/terraform/secret#where-a-secret-is-named) |
 | `Secret <NAME> could not be read. This deployment does not read from AWS Secrets Manager.` | An integration request made by Spotlight uses a secret from AWS Secrets Manager, and the deployment does not read from it. | [Sources](/docs/reference/terraform/secret#sources) |
 | `Secret <NAME> could not be read. AWS Secrets Manager returned <error>.` | AWS Secrets Manager returned an error for the read, as with `ResourceNotFoundException`. `an error` takes the place of `<error>` when AWS names none. | [Sources](/docs/reference/terraform/secret#sources) |
 | `Secret <NAME> could not be read. AWS Secrets Manager has no text for it.` | The secret has no text value. | [Sources](/docs/reference/terraform/secret#sources) |
@@ -386,7 +386,7 @@ slugs.
 | --- | --- | --- |
 | `Not allowed to change the <kind>` | `403`. The caller lacks `configure`, `manage-secrets`, `manage-runners` or `manage-token-trusts`. | [Permissions](/docs/reference/roles-and-permissions#permissions) |
 | `Not allowed to administer the <kind>` | `403`. The caller lacks `administer`. | [Permissions](/docs/reference/roles-and-permissions#permissions) |
-| `Not allowed to open a workspace` | `403`. The caller lacks `open-workspaces`. | [Permissions](/docs/reference/roles-and-permissions#permissions) |
+| `Not allowed to create a workspace` | `403`. The caller lacks `create-workspaces`. | [Permissions](/docs/reference/roles-and-permissions#permissions) |
 | `Not allowed to plan` | `403`. The caller lacks `plan`. | [Permissions](/docs/reference/roles-and-permissions#permissions) |
 
 ### Errors and warnings
@@ -440,11 +440,11 @@ slugs.
 | `must include read, plan or configure. Secrets, runners and trusts need one of them` | A workspace token with none of `read`, `plan` or `configure`. | [Scopes](/docs/reference/api/workspace-token#scopes), [Issue a workspace token](/docs/administration/issue-a-workspace-token) |
 | `must name each scope once` | A workspace token names a scope twice. | [Scopes](/docs/reference/api/workspace-token#scopes) |
 | `must name an owner before any *, as in repo:acme/* or repo:acme/platform:*` | A workspace token trust's subject pattern has no owner before `*`. | [Patterns](/docs/reference/terraform/workspace-token-trust#patterns) |
-| `Spotlight did not accept the exchange. Possible causes: an unknown trust, a token its issuer did not sign for the trust's audience, a workload the trust does not admit, or a closed workspace` | `401`. Spotlight did not accept an exchange through a workspace token trust. | [Exchange](/docs/reference/terraform/workspace-token-trust#exchange), [Run Terraform from GitHub Actions without a stored token](/docs/configuration/run-terraform-from-github-actions) |
+| `Spotlight did not accept the exchange. Possible causes: an unknown trust, a token its issuer did not sign for the trust's audience, a workload the trust does not admit, or a deleted workspace` | `401`. Spotlight did not accept an exchange through a workspace token trust. | [Exchange](/docs/reference/terraform/workspace-token-trust#exchange), [Run Terraform from GitHub Actions without a stored token](/docs/configuration/run-terraform-from-github-actions) |
 | `Both a token and an OIDC trust` | The provider is configured with a token and a trust. | [Provider configuration](/docs/reference/terraform/terraform-provider#provider-configuration) |
 | `A candidate named <address> already exists. Please choose another name.` | `409` `already-exists`. A replay candidate's name is taken at its station. | [Replay candidates](/docs/reference/api/replay-candidate#errors) |
 | `keeps the station's key, <key>` | A replay candidate's `station.key` names another station. | [Checks](/docs/reference/api/replay-candidate#checks) |
-| `Candidate <id> is being replayed. Please stop its replays first.` | `409` `in-use`. Withdrawing a candidate a replay is running. | [Replay candidates](/docs/reference/api/replay-candidate#errors) |
+| `Candidate <id> is being replayed. Please stop its replays first.` | `409` `in-use`. Deleting a candidate a replay is running. | [Replay candidates](/docs/reference/api/replay-candidate#errors) |
 
 ## Web app
 
@@ -574,7 +574,7 @@ answer with these. A caller who is not an owner or admin of the workspace gets
 | `Nobody can be invited as an owner. Please invite them as an admin, then make them an owner.` | `403`. An invite request with the `owner` role. | [Invites](/docs/reference/roles-and-permissions#invites), [Invite people and change their roles](/docs/administration/invite-people-and-change-roles#invite-people) |
 | `Team <teamId> is not in this workspace.` | `422`. An invite request names a team that is not in the workspace. | [Invites](/docs/reference/roles-and-permissions#invites) |
 | `An invite to <email> was just sent for this workspace. Please try again.` | `409`. Another invite to the same address was being sent at the same moment. | [Invites](/docs/reference/roles-and-permissions#invites) |
-| `Invite <inviteId> changed since you loaded it. Please reload and try again.` | `409`. The invite changed while it was being sent again or revoked. | [Invites](/docs/reference/roles-and-permissions#invites) |
+| `Invite <inviteId> changed since you loaded it. Please reload and try again.` | `409`. The invite changed while it was being resent or revoked. | [Invites](/docs/reference/roles-and-permissions#invites) |
 | `This invite has already been accepted.` | `409`. Accepting, resending or revoking an accepted invite. | [Invites](/docs/reference/roles-and-permissions#invites) |
 | `This invite has been revoked.` | `409`. Accepting or resending a revoked invite. | [Invites](/docs/reference/roles-and-permissions#invites) |
 | `This invite has expired. Please ask for a new one.` | `409`. Accepting an invite more than 14 days after it was last sent. | [Invites](/docs/reference/roles-and-permissions#invites), [Join a workspace from an invitation](/docs/getting-started/join-a-workspace-from-an-invitation) |
@@ -596,12 +596,12 @@ shows the message from the table above beneath its fields.
 | --- | --- | --- |
 | `Not an email address: <addresses>` | Text under "Email addresses" in the invite dialog that is not an email address. Nothing is sent. | [Invite people](/docs/administration/invite-people-and-change-roles#invite-people) |
 | `Not sent. Please resend it from Pending invites.` | The outcome for an address whose invite email could not be sent. | [Invites](/docs/reference/roles-and-permissions#invites) |
-| `Sorry, the invite couldn't be sent again.` | "Resend invite" failed. | [Follow up on a pending invite](/docs/administration/invite-people-and-change-roles#follow-up-on-a-pending-invite) |
+| `Sorry, the invite couldn't be resent.` | "Resend invite" failed. | [Follow up on a pending invite](/docs/administration/invite-people-and-change-roles#follow-up-on-a-pending-invite) |
 | `Sorry, the invite couldn't be revoked.` | "Revoke invite" failed. | [Follow up on a pending invite](/docs/administration/invite-people-and-change-roles#follow-up-on-a-pending-invite) |
 | `Sorry, the role couldn't be changed.` | "Change role" on the Members page failed. | [Changing roles](/docs/reference/roles-and-permissions#changing-roles) |
 | `Sorry, the member couldn't be added.` | "Add a member" on a team's General page failed. | [Add a member to a team](/docs/administration/invite-people-and-change-roles#add-a-member-to-a-team) |
 | `Invitation is for <invited address>, not <signed-in address>. Please sign in as <invited address> to accept.` | The invite page opened while signed in with another address. | [Join a workspace from an invitation](/docs/getting-started/join-a-workspace-from-an-invitation#if-the-page-says-something-else) |
-| `Invitation already accepted.` | The invite link of an accepted invite. | [Join a workspace from an invitation](/docs/getting-started/join-a-workspace-from-an-invitation#if-the-page-says-something-else) |
-| `Invitation withdrawn.` | The invite link of a revoked invite. | [Join a workspace from an invitation](/docs/getting-started/join-a-workspace-from-an-invitation#if-the-page-says-something-else) |
-| `Invitation expired. Please ask for a new one.` | The invite link of an expired invite. | [Join a workspace from an invitation](/docs/getting-started/join-a-workspace-from-an-invitation#if-the-page-says-something-else) |
-| `Invitation link doesn't work` | A link that matches no invite, or a link of an invite sent again since. | [Join a workspace from an invitation](/docs/getting-started/join-a-workspace-from-an-invitation#if-the-page-says-something-else) |
+| `This invitation is already accepted.` | The invite link of an accepted invite. | [Join a workspace from an invitation](/docs/getting-started/join-a-workspace-from-an-invitation#if-the-page-says-something-else) |
+| `This invitation is revoked.` | The invite link of a revoked invite. | [Join a workspace from an invitation](/docs/getting-started/join-a-workspace-from-an-invitation#if-the-page-says-something-else) |
+| `This invitation has expired. Please ask for a new one.` | The invite link of an expired invite. | [Join a workspace from an invitation](/docs/getting-started/join-a-workspace-from-an-invitation#if-the-page-says-something-else) |
+| `Invitation link doesn't work` | A link that matches no invite, or a link of an invite resent since. | [Join a workspace from an invitation](/docs/getting-started/join-a-workspace-from-an-invitation#if-the-page-says-something-else) |
