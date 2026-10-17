@@ -309,7 +309,8 @@ between them, the repositories its runs work in, and an optional role. See
 
 ## Line role
 
-A word on a line that integrations open tasks onto. `delivery` and `review` are
+A word on a line. An integration opens tasks on the lines whose role its
+`raise.opens.lineRole` names. `delivery` and `review` are
 built in. Only a line with role `review` may carry a review policy
 (`reviews`). See [`spotlight_line`](/docs/reference/terraform/line).
 
@@ -474,9 +475,9 @@ out. It may name a runner `image` and a `setup` command. See
 ## Requester
 
 The person who started a task, its Raised by. An integration whose
-`connection.holder` is `requester` has its tools act with that person's own
-connection to the host, which each person makes on the team's Integrations
-settings page. See [Holder](/docs/reference/terraform/integration#holder).
+`connection.actsAs` is `requester` has its tools act with that person's own
+connection to the service, which each person makes on the team's Integrations
+settings page. See [Acts as](/docs/reference/terraform/integration#acts-as).
 
 ## Reservation
 

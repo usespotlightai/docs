@@ -19,7 +19,7 @@ Spotlight has tools and skills of its own. An agent calls a tool with
 | `propose-task` | Every chat run. A station cannot enable it. | none |
 | `setup-pull-request` | Every run of a setup chat. A station cannot enable it. | none |
 
-In the input tables, a piped input may come from standard input, as described
+In the input tables, an input with `stdin` may come from standard input, as described
 under [spotlight &lt;tool&gt;](/docs/reference/cli/agent-commands#spotlight-tool).
 
 ### pull-request
@@ -30,7 +30,7 @@ already open for the branch, that one is returned. It answers with
 `{"url": "<address>"}`. The task then has the `git.pull-request`
 [mark](/docs/reference/events/github-events#marks).
 
-| Input | Type | Required | Piped | Description |
+| Input | Type | Required | Stdin | Description |
 | --- | --- | --- | --- | --- |
 | `title` | string | yes | no | What it does. |
 | `body` | string | no | yes | The detail, as Markdown. |
@@ -41,7 +41,7 @@ already open for the branch, that one is returned. It answers with
 Leaves a comment on a line of the pull request the task reviews. Spotlight keeps
 the comment until the review is submitted.
 
-| Input | Type | Required | Piped | Description |
+| Input | Type | Required | Stdin | Description |
 | --- | --- | --- | --- | --- |
 | `path` | string | yes | no | The file, from the root of the repository. |
 | `line` | number | yes | no | The line it is about, or the last of several. |
@@ -54,7 +54,7 @@ the comment until the review is submitted.
 Submits the comments left so far as one review of the pull request the task
 reviews.
 
-| Input | Type | Required | Piped | Description |
+| Input | Type | Required | Stdin | Description |
 | --- | --- | --- | --- | --- |
 | `verdict` | string | no | no | `comment`, `approve` or `request-changes`. |
 | `body` | string | no | yes | What the review comes down to, as Markdown. |
@@ -66,7 +66,7 @@ person accepts the proposal. It answers with the task's title as `proposed`,
 the `line` and `station` keys it was given, and what happens `next`. See
 [Proposals](/docs/reference/app/tasks-runs-and-the-inbox#proposals).
 
-| Input | Type | Required | Piped | Description |
+| Input | Type | Required | Stdin | Description |
 | --- | --- | --- | --- | --- |
 | `line` | string | yes | no | The key of the line it belongs on. |
 | `station` | string | yes | no | The key of the station on that line to start it at. |
@@ -82,7 +82,7 @@ the setup task's "Set up configuration as code" step is then done. A second
 call answers the pull request the chat already opened. See
 [Let the agent write your team's first Terraform](/docs/configuration/let-the-agent-write-your-first-terraform).
 
-| Input | Type | Required | Piped | Description |
+| Input | Type | Required | Stdin | Description |
 | --- | --- | --- | --- | --- |
 | `branch` | string | yes | no | The branch pushed, as in `spotlight-configuration`. A branch under `spotlight/` is rejected with `Branch <branch> is named like a task’s branch. Please name it outside spotlight/, as in spotlight-configuration.` |
 | `title` | string | yes | no | What it does. |
@@ -106,8 +106,8 @@ skill starting `spotlight-`.
 it with `spotlight tools describe`, give inputs as flags or as one JSON object,
 pipe a tool's JSON answer into the next call, use a tool that requires
 approval, and stop when a tool waits for a person to connect. It also explains
-learned answers: `describe` prints what a tool answered before as a learned
-type. See [Learned output](/docs/reference/cli/agent-commands#learned-output).
+inferred answers: `describe` prints what a tool answered before as an inferred
+type. See [Inferred output](/docs/reference/cli/agent-commands#inferred-output).
 Such a run's briefing also has a `## Tools` section naming each
 integration it has tools enabled from, with how many, and the `search` and
 `describe` commands. Catalog tools are named there as `the Spotlight catalog`.

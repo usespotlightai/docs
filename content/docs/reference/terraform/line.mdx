@@ -57,7 +57,7 @@ resource "spotlight_line" "core_delivery" {
     diffs     = true
     decisions = true
     memories  = true
-    tools     = ["${spotlight_integration.core_acme.source}.comment", "pull-request"]
+    tools     = ["${spotlight_integration.core_acme.integration}.comment", "pull-request"]
     skills    = [spotlight_skill.core_grafana.key]
     runners   = ["gpu"]
     passes_to = ["code-review"]
@@ -363,7 +363,7 @@ repositories sorted by name.
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `happening` | string | required | What happens, source first, as in `github.checks.failed`. Matches `^[a-z0-9]+(\.[a-z0-9][a-z0-9_-]*)+$`. |
+| `happening` | string | required | What happens, integration name first, as in `github.checks.failed`. Matches `^[a-z0-9]+(\.[a-z0-9][a-z0-9_-]*)+$`. |
 | `from` | string | none | The key of the station the task must be at for the reaction to apply. Without it, the reaction applies at any station. |
 | `to` | string | required | The key of the station the task moves to. While the task has a current run, the move waits until the run ends, and is dropped if the run passes the task on. A move to the completed station instead stops the run and asks a person, or, if the task awaits an answer to the run's question, adds a note to it. See [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves). |
 

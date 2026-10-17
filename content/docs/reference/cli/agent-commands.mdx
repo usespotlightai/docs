@@ -488,7 +488,7 @@ spotlight tools
 
 Lists the tools enabled for the run, up to 30 of them. Each entry is the tool's
 signature, its description, and a line for each input that has a description. For a tool
-`acme.comment` with a required input `issue` and an optional piped input
+`acme.comment` with a required input `issue` and an optional `stdin` input
 `body`:
 
 ```text
@@ -602,7 +602,7 @@ prints:
 | --- | --- |
 | Heading | The tool's name, and `(from <integration>)` for an integration's tool. Its description follows, with the reason a person approves it for a tool that requires approval. |
 | `Takes:` | The inputs as a TypeScript object type, or `Takes nothing.` for a tool without inputs. |
-| `Answers with (learned from earlier calls, may be incomplete):` | The answer's shape as a TypeScript type, for a tool with a [learned output](#learned-output). Left out otherwise. |
+| `Answers with (inferred from earlier calls, may be incomplete):` | The answer's shape as a TypeScript type, for a tool with an [inferred output](#inferred-output). Left out otherwise. |
 | `For example:` | One call to start from. |
 
 The type marks an optional input, or one with a default, with `?`. Each
@@ -656,12 +656,12 @@ spotlight tools describe linear.issue-create
 spotlight tools describe petstore find-pets-by-status
 ```
 
-### Learned output
+### Inferred output
 
-After a call to an integration's tool succeeds, Spotlight records the shape of
+After a call to an integration's tool succeeds, Spotlight infers the shape of
 what it answered: field names and types, never values. It does this in the
 background, and never slows or fails the call. Each later successful call is
-merged into it. Every shape `spotlight tools describe` prints is learned.
+merged into it. Every shape `spotlight tools describe` prints is inferred.
 
 | Rule | Value |
 | --- | --- |
@@ -674,7 +674,7 @@ merged into it. Every shape `spotlight tools describe` prints is learned.
 | Different kinds for one field | A union, as in `string \| null`. More than 4 kinds become `unknown`. |
 
 ```text
-Answers with (learned from earlier calls, may be incomplete):
+Answers with (inferred from earlier calls, may be incomplete):
 {
   id: string;
   url?: string;
@@ -705,17 +705,17 @@ for how an integration defines tools and their inputs.
 | Text or a number | `--<input> <value>`. A number is written in decimal, so `0x10` is rejected. |
 | `boolean` | `--<input>`, present or absent, or `--<input>=false` |
 | A list, an object or anything else | `--<input> '<JSON>'`, as in `--filter '{"team": "ENG"}'` |
-| Piped | `--<input> <value>`, or `--<input> -`, or `--<input> /dev/stdin`, or omitted with standard input not a terminal. Empty piped input counts as not given. |
+| Standard input | `--<input> <value>`, or `--<input> -`, or `--<input> /dev/stdin`, or omitted with standard input not a terminal. Empty standard input counts as not given. |
 
 `--json <object>` gives every input at once as one JSON object, keyed by input
 name, with each value in its JSON type. `--json -` or `--json /dev/stdin` reads
 the object from standard input. A flag given beside `--json` replaces that
-field of the object. When `--json` reads standard input, no piped input does:
+field of the object. When `--json` reads standard input, no `stdin` input does:
 an input left out stays out, and naming one with `-` or `/dev/stdin` is
 rejected.
 
 Spotlight checks the inputs against the tool's schemas before it calls the
-host, and rejects a call that does not fit, saying where, as in
+service, and rejects a call that does not fit, saying where, as in
 `linear.issue-create takes input, and input.teamId is not text`. See
 [Input schemas](/docs/reference/terraform/integration#input-schemas).
 
@@ -740,7 +740,7 @@ came. Built-in tools answer with an object, as in `{"url": "…"}` from
 | `<command>: "<argument>" is not a flag` | A word outside any flag. The tool's signature follows. |
 | `--json takes one JSON object, as --json '{"name": "value"}'` | The `--json` value, or what it read from standard input, is not a JSON object. The tool's signature follows. |
 | `read the --json piped in: <error>` | Standard input could not be read for `--json -`. |
-| `--<input> cannot be read from stdin when --json is` | A piped input was named with `-` or `/dev/stdin` while `--json` read standard input. The tool's signature follows. |
+| `--<input> cannot be read from stdin when --json is` | A `stdin` input was named with `-` or `/dev/stdin` while `--json` read standard input. The tool's signature follows. |
 | `<tool> takes <input>, and <where> <why>` | An input does not fit its schema. See [Input schemas](/docs/reference/terraform/integration#input-schemas). |
 | `this run has no tool "<name>" enabled; it has: <tools>` | The tool is not granted to the run. |
 | `unreadable input: hand the tool JSON` | The input is over 8 MiB, or is not JSON. |

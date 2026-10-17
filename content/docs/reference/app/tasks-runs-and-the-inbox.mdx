@@ -964,9 +964,9 @@ The item shows:
 
 ### Requests to connect
 
-When a run calls a tool of an integration whose `connection.holder` is
+When a run calls a tool of an integration whose `connection.actsAs` is
 `requester`, and the person who started the task has not connected it or the
-host could not renew their connection, nothing is sent. The task is assigned
+service could not refresh their connection, nothing is sent. The task is assigned
 to that person and put to them with an `asked` note of form `connection`:
 
 ```text
@@ -975,7 +975,7 @@ I need to use `<tool>`, which acts as you in <integration>, and you haven't conn
 Connect <integration> and I will carry on. Nothing has been sent yet.
 ```
 
-For a failed renewal, `<integration> could not renew your connection, so it
+For a failed refresh, `<integration> could not refresh your connection, so it
 has to be made again` takes the place of `you haven't connected <integration>
 yet`. `<integration>` is the integration's `name`.
 
@@ -985,7 +985,7 @@ Once they connect, the card reads `Connected <integration>`. Connecting answers 
 with `Connected <integration>.`, in their voice, on every task waiting on that
 connection in the team; the run resumes as for any answer. A request is never
 met with the team's connection. See
-[Holder](/docs/reference/terraform/integration#holder).
+[Acts as](/docs/reference/terraform/integration#acts-as).
 
 ## Approvals
 
@@ -1032,7 +1032,7 @@ call with the changed inputs.
 
 ### Person rules
 
-A tool of an integration whose `connection.holder` is `requester` acts with
+A tool of an integration whose `connection.actsAs` is `requester` acts with
 the connection of the person who started the task, and follows that person's
 rule for it as well as the team's. Of the two, the stricter wins:
 

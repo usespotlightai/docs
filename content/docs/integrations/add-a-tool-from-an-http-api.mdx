@@ -15,8 +15,8 @@ which the agent never sees. You need:
 - A Spotlight deployment that allows outbound calls to the API's host, since
   Spotlight calls the API from its own servers.
 
-If the API publishes an OpenAPI description or a GraphQL schema, see
-[Generate tools from an API description](/docs/integrations/generate-tools-from-an-api-description)
+If the API publishes an OpenAPI spec or a GraphQL schema, see
+[Generate tools from an API spec](/docs/integrations/generate-tools-from-an-api-spec)
 instead.
 
 The example uses a placeholder API at `api.acme.example` that takes a comment
@@ -75,7 +75,7 @@ parameter and keeps the key out of what it records, see
 
 ## Define the action and the tool
 
-Write the request as an action, and offer it to agents as a tool: `does`
+Write the request as an action, and offer it to agents as a tool: `action`
 names the action, `description` tells the agent when to use it, and each input
 becomes a flag. In the request, read the inputs as `inputs.<name>` and name the
 secret in `auth.secrets`.
@@ -105,7 +105,7 @@ resource "spotlight_integration" "acme" {
     }
     tools = {
       comment = {
-        does        = "comment"
+        action      = "comment"
         description = "Comment on the issue."
         inputs = {
           issue = { type = "string", required = true }
@@ -160,14 +160,14 @@ example call.
 
 ## See what a tool answers with
 
-After a call to the tool succeeds, Spotlight learns the shape of its answer:
+After a call to the tool succeeds, Spotlight infers the shape of its answer:
 the field names and their types, never the values. In runs that start after
 that call, `spotlight tools describe` prints it under
-`Answers with (learned from earlier calls, may be incomplete):`, so the agent
+`Answers with (inferred from earlier calls, may be incomplete):`, so the agent
 knows which fields to read. Each later successful call adds to it. Updating
 or deleting the integration, and deleting the team, deletes what was
-learned. See
-[Learned output](/docs/reference/cli/agent-commands#learned-output).
+inferred. See
+[Inferred output](/docs/reference/cli/agent-commands#inferred-output).
 
 If a person should agree before each call, see
 [Require approval before a tool runs](/docs/integrations/require-approval-before-a-tool-runs).

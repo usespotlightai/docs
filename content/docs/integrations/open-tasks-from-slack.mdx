@@ -117,7 +117,7 @@ resource "spotlight_integration" "slack" {
         when = "$${{ body.type == \"url_verification\" }}"
         body = "$${{ body.challenge }}"
       }
-      mine = "$${{ body.event.bot_id != \"\" }}"
+      ignoreWhen = "$${{ body.event.bot_id != \"\" }}"
       events = [
         {
           when = "$${{ body.event.type == \"app_mention\" }}"
@@ -126,9 +126,9 @@ resource "spotlight_integration" "slack" {
             label     = "Mentioned"
             summary   = "Mentioned Spotlight in Slack."
             opens = {
-              onto  = "delivery"
-              at    = "triage"
-              title = "$${{ body.event.text }}"
+              lineRole = "delivery"
+              station  = "triage"
+              title    = "$${{ body.event.text }}"
             }
             marks = [
               { kind = "slack.thread", value = "$${{ body.event.channel + \":\" + (has(body.event.thread_ts) ? body.event.thread_ts : body.event.ts) }}" },
@@ -169,7 +169,7 @@ resource "spotlight_integration" "slack" {
 
     on = {
       "task.asked" = {
-        do = "post-message"
+        action = "post-message"
         to = {
           channel = "$${{ task.marks[\"slack.channel\"] }}"
           thread  = "$${{ task.marks[\"slack.thread\"] }}"
@@ -186,8 +186,8 @@ resource "spotlight_integration" "slack" {
 }
 ```
 
-`onto` names the line's role, and `at` the key of the station new tasks start
-at. The keys under `routes` are line keys. Change any of them that differ on
+`lineRole` names the line's role, and `station` the key of the station new
+tasks start at. The keys under `routes` are line keys. Change any of them that differ on
 your team, and if your team's key is not `core`, change it in
 `spotlight_team`. Run
 `terraform apply`. If the plan fails at an expression,

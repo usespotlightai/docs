@@ -20,6 +20,8 @@ const MOVED: Readonly<Record<string, string>> = {
     '/docs/hosts/run-hosts-without-a-stored-token',
   '/docs/integrations/give-stations-a-tool-from-an-http-api':
     '/docs/integrations/add-a-tool-from-an-http-api',
+  '/docs/integrations/generate-tools-from-an-api-description':
+    '/docs/integrations/generate-tools-from-an-api-spec',
 };
 
 interface Env {

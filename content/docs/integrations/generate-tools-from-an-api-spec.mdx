@@ -1,20 +1,20 @@
 ---
 type: how-to
 icon: SquarePen
-title: Generate tools from an API description
-description: Point an integration at an OpenAPI description or a GraphQL endpoint, so Spotlight offers a tool for each of the API's operations, and enable some of them at a station.
+title: Generate tools from an API spec
+description: Point an integration at an OpenAPI spec or a GraphQL endpoint, so Spotlight offers a tool for each of the API's operations, and enable some of them at a station.
 ---
 
-An API description is an OpenAPI document or a GraphQL schema: a file that
+An API spec is an OpenAPI document or a GraphQL schema: a file that
 lists every operation an API has and what each one takes. You need:
 
 - Terraform set up with the Spotlight provider, using a token that has the
   `configure` scope, and the `secrets` scope if you keep a key. See
   [Manage Spotlight with Terraform](/docs/configuration/manage-spotlight-with-terraform).
-- An OpenAPI 3.0 or 3.1 description, in JSON or YAML, or a GraphQL endpoint.
+- An OpenAPI 3.0 or 3.1 spec, in JSON or YAML, or a GraphQL endpoint.
   Spotlight does not read Swagger 2; convert it to OpenAPI 3 first.
-- A Spotlight deployment that allows outbound calls to the host the description
-  is read from and to the API's own host, since Spotlight reads the description
+- A Spotlight deployment that allows outbound calls to the host the spec
+  is read from and to the API's own host, since Spotlight reads the spec
   and calls the API from its own servers.
 - If the API needs credentials: a key stored as a secret, as in
   [Add a tool from an HTTP API](/docs/integrations/add-a-tool-from-an-http-api#store-the-api-key-as-a-secret),
@@ -24,10 +24,10 @@ lists every operation an API has and what each one takes. You need:
 The examples use the public Swagger Petstore, an OpenAPI sample, and Linear's
 GraphQL API.
 
-## Name the description
+## Name the spec
 
-For an OpenAPI description, add an `openapi` block to the integration's
-definition, with the description's `url`:
+For an OpenAPI spec, add an `openapi` block to the integration's
+definition, with the spec's `url`:
 
 ```hcl
 resource "spotlight_integration" "petstore" {
@@ -44,11 +44,11 @@ resource "spotlight_integration" "petstore" {
 }
 ```
 
-If the description itself can be read only with the key, give `baseUrl`. See
-[Reading the description](/docs/reference/terraform/integration#reading-the-description)
+If the spec itself can be read only with the key, give `baseUrl`. See
+[Reading the spec](/docs/reference/terraform/integration#reading-the-spec)
 for when Spotlight sends `auth`.
 
-If the description is not published anywhere, write it out as `document`
+If the spec is not published anywhere, write it out as `document`
 in place of `url`, and give `baseUrl`.
 
 For a GraphQL API, add a `graphql` block instead, with the endpoint as `url`.
@@ -83,28 +83,28 @@ block. Run `terraform apply`.
 
 ## Check what was generated
 
-Spotlight reads the description during the apply. Once it finishes:
+Spotlight reads the spec during the apply. Once it finishes:
 
 ```bash
 terraform state show spotlight_integration.petstore
 ```
 
 `tools` lists every tool the integration offers, such as
-`"find-pets-by-status" = "petstore.find-pets-by-status"`. `described.tools`
+`"find-pets-by-status" = "petstore.find-pets-by-status"`. `spec.tools`
 counts the generated ones.
 
-The apply's warnings name each operation Spotlight passed over, and why, such
+The apply's warnings name each operation Spotlight skipped, and why, such
 as one that takes a body other than JSON.
 
-If `described.problem` is set, Spotlight could not read the description, and
+If `spec.problem` is set, Spotlight could not read the spec, and
 the apply shows the same reason as a warning on the block's `url`, or on its
 `document`. Fix the cause. If the fix is outside the definition, also
-[raise `revision`](#read-the-description-again). Then run `terraform apply`.
+[raise `revision`](#read-the-spec-again). Then run `terraform apply`.
 
 If the integration signs in with OAuth and the API answers only with
 credentials, the first read fails. [Connect the team](/docs/integrations/connect-an-integration#connect-the-team),
-and Spotlight reads the description again. This also applies to an integration whose
-`holder` is `requester` too: the description is read with the team's
+and Spotlight reads the spec again. This also applies to an integration whose
+`actsAs` is `requester` too: the spec is read with the team's
 connection, and a person connecting their own account does not read it again.
 
 ## Choose which tools it offers
@@ -125,7 +125,7 @@ openapi = {
 }
 ```
 
-If the apply fails because the description gives more than 1,000 tools,
+If the apply fails because the spec gives more than 1,000 tools,
 name fewer in `tools.include`.
 
 To change how one tool calls the API, write a tool of the same name under the
@@ -136,7 +136,7 @@ one.
 
 Generated tools that change data wait for a person to approve each call. To
 change which ones wait, or the reason a person reads, see
-[Require approval before a tool runs](/docs/integrations/require-approval-before-a-tool-runs#tools-generated-from-an-api-description).
+[Require approval before a tool runs](/docs/integrations/require-approval-before-a-tool-runs#tools-generated-from-an-api-spec).
 
 ## Enable a tool at a station
 
@@ -163,7 +163,7 @@ spotlight petstore find-pets-by-status --status sold
 spotlight linear issue-create --input '{"teamId": "<team id>", "title": "Flaky upload test"}'
 ```
 
-## Read the description again
+## Read the spec again
 
 When the API changes behind the same address, set or raise `revision`, then
 run `terraform apply`:
@@ -176,13 +176,13 @@ openapi = {
 }
 ```
 
-[Reading the description](/docs/reference/terraform/integration#reading-the-description)
+[Reading the spec](/docs/reference/terraform/integration#reading-the-spec)
 lists every change that makes Spotlight read it again.
 
 ## Related
 
-- [`spotlight_integration`](/docs/reference/terraform/integration#api-descriptions):
+- [`spotlight_integration`](/docs/reference/terraform/integration#api-specs):
   every field of the `openapi` and `graphql` blocks, and how tools are named.
 - [Agent commands](/docs/reference/cli/agent-commands#spotlight-tool): how an
   agent gives a tool its inputs.
-- [Limits and timeouts](/docs/reference/limits-and-timeouts#api-descriptions)
+- [Limits and timeouts](/docs/reference/limits-and-timeouts#api-specs)

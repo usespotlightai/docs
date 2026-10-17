@@ -230,17 +230,17 @@ and [Connect GitHub to a workspace](/docs/integrations/connect-github).
 
 ## Integration connections
 
-An integration that links over OAuth has a team connection, and, when its
-`connection.holder` is `requester`, a connection for each person who makes
-one. See [Holder](/docs/reference/terraform/integration#holder).
+An integration that connects over OAuth has a team connection, and, when its
+`connection.actsAs` is `requester`, a connection for each person who makes
+one. See [Acts as](/docs/reference/terraform/integration#acts-as).
 
 | Action | Who may |
 | --- | --- |
 | Connect or reconnect the team | An owner or admin of the workspace. |
-| Connect, reconnect or disconnect their own account | Any person on the team, for an integration whose `holder` is `requester`. |
-| See who on the team has connected, with the account the host named | An owner or admin of the workspace. Nobody sees another person's token. |
+| Connect, reconnect or disconnect their own account | Any person on the team, for an integration whose `actsAs` is `requester`. |
+| See who on the team has connected, with their linked accounts | An owner or admin of the workspace. Nobody sees another person's token. |
 | Disconnect another person | Nobody. |
-| Set what to ask of each tool's calls made with their own connection | Any person on the team, for themselves only, for an integration whose `holder` is `requester`. |
+| Set what to ask of each tool's calls made with their own connection | Any person on the team, for themselves only, for an integration whose `actsAs` is `requester`. |
 | Approve a call that asks because of a person's own rule | Only that person. The task is put to them. Whoever may answer the task can dismiss the call. |
 
 A tool of a `requester` integration acts only with the connection of the

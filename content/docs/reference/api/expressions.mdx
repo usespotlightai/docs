@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Expressions
-description: How expressions are written in integrations and hooks, what each position sees and returns, and how they are checked.
+description: How expressions are written in integrations and hooks, the variables each position can read, what it returns, and how they are checked.
 ---
 
 Expressions are [CEL](https://cel.dev). They are written in
@@ -37,7 +37,7 @@ object. Otherwise each expression is written into the text.
 
 | The expression is | When it fails to evaluate |
 | --- | --- |
-| a condition (`when`, `mine`, `respond.when`, `expect.success`, a hook's `when`) | it counts as false |
+| a condition (`when`, `ignoreWhen`, `respond.when`, `expect.success`, a hook's `when`) | it counts as false |
 | in a request's `url`, `query`, `headers` or `body`, or a hook request | the request is not sent and fails |
 | anywhere else | it reads as nothing: no mark is kept, a capture is null, a title is empty |
 
@@ -59,12 +59,12 @@ out the `integration.` prefix and write `[*]` as `.*`: the check and positions
 APIs write `webhook.events.*.when` as `integration.webhook.events[*].when`, and
 a check names a real index, as in `integration.webhook.events[0].when`.
 
-| Position | Returns | Sees |
+| Position | Returns | Variables |
 | --- | --- | --- |
 | `webhook.verify.hmac.signed`, `webhook.verify.hmac.freshness.at`, `webhook.verify.asymmetric.key`, `webhook.verify.asymmetric.signed`, `webhook.verify.asymmetric.freshness.at` | | `body`, `headers`, `raw` |
 | `webhook.respond.when` | bool | `body`, `headers`, `raw` |
 | `webhook.respond.body` | | `body`, `headers`, `raw` |
-| `webhook.mine` | bool | `body`, `headers`, `raw` |
+| `webhook.ignoreWhen` | bool | `body`, `headers`, `raw` |
 | `webhook.route.by`, `webhook.delivery` | | `body`, `headers`, `raw` |
 | `webhook.events.*.forEach` | list | `body`, `headers`, `raw` |
 | `webhook.events.*.when` | bool | `body`, `headers`, `raw`, `item` |
@@ -72,8 +72,8 @@ a check names a real index, as in `integration.webhook.events[0].when`.
 | `webhook.events.*.lookup.request.expect.success` | bool | the above, `response`, `status` |
 | `webhook.events.*.lookup.request.capture.*`, `webhook.events.*.lookup.capture.*` | | the above, `response`, `status` |
 | `webhook.events.*.raise.message`, `.opens.title`, `.opens.description`, `.opens.assignBy.email`, `.branch`, `.marks.*.value` | | `body`, `headers`, `raw`, `item`, captures |
-| `webhook.events.*.raise.attaches.each` | list | `body`, `headers`, `raw`, `item`, captures |
-| `webhook.events.*.raise.attaches.name`, `.type`, `.size`, and `.fetch` request fields | | the above, `file` |
+| `webhook.events.*.raise.attachments.each` | list | `body`, `headers`, `raw`, `item`, captures |
+| `webhook.events.*.raise.attachments.name`, `.type`, `.size`, and `.fetch` request fields | | the above, `file` |
 | `poll.request.url`, `.query.*`, `.headers.*`, `.body` | | `cursor`, `connection` |
 | `poll.request.expect.success` | bool | `cursor`, `connection`, `response`, `status` |
 | `poll.request.capture.*` | | `cursor`, `connection`, `response`, `status` |
@@ -114,7 +114,7 @@ What an action has at run time depends on what runs it:
 | `status` | dyn | The response's HTTP status. |
 | `capture` | map | The request's `capture` values, by name. |
 | `item` | dyn | The current entry of `forEach`. |
-| `file` | dyn | The current entry of `attaches.each`. |
+| `file` | dyn | The current entry of `attachments.each`. |
 | `inputs` | map | The tool's inputs, by name. |
 | `target` | map of string | The values of the binding's `to`, and `channel` from `routes`. |
 
@@ -137,7 +137,7 @@ What an action has at run time depends on what runs it:
 
 ## Hook positions
 
-| Position | Returns | Sees |
+| Position | Returns | Variables |
 | --- | --- | --- |
 | `hook.when` | bool | `event`, `task`, `run`, `vars`, `hook` |
 | `hook.steps.*.with.*` | | the above, `step` |
@@ -169,8 +169,8 @@ A hook's `match` is compiled into conditions of the same kind as `when`.
 
 ## Type-checking
 
-Every expression is type-checked against what its position sees when the
-definition is written.
+Every expression is type-checked against the variables of its position when
+the definition is written.
 
 | Problem | Integration | Hook |
 | --- | --- | --- |
@@ -235,5 +235,5 @@ credential.
 | --- | --- | --- |
 | `position` | string | The position, beginning with `integration` or `hook`, with `[*]` for any key or index, as in `integration.webhook.events[*].when`. |
 | `returns` | string or null | `bool`, `list`, or null. |
-| `sees` | array | The names the expression sees, each with `name`, `type` and nested `fields`. |
-| `alsoSees` | array | Names seen only in some definitions: `item`, `captures`, `inputs`. |
+| `variables` | array | The variables the expression can read, each with `name`, `type` and nested `fields`. |
+| `addedVariables` | array | Variables that only some definitions add: `item`, `captures`, `inputs`. |

@@ -2,13 +2,13 @@
 type: how-to
 icon: SquarePen
 title: Connect an integration that signs in with OAuth
-description: Authorize Spotlight at a service so an integration can call it with the team's grant, or with the grant of each person who starts a task.
+description: Authorize Spotlight at a service so an integration can call it with the team's connection, or with the connection of each person who starts a task.
 ---
 
-Use this page when an integration acts on a service with an OAuth grant
-instead of a stored key. Whether its tools use the team's grant or the grant of
-the person who started the task is set by `connection.holder`; see
-[Holder](/docs/reference/terraform/integration#holder).
+Use this page when an integration acts on a service with an OAuth connection
+instead of a stored key. Whether its tools use the team's connection or the
+connection of the person who started the task is set by `connection.actsAs`; see
+[Acts as](/docs/reference/terraform/integration#acts-as).
 
 You need:
 
@@ -64,7 +64,7 @@ account Spotlight shows once connected; point it at whatever field your service
 returns.
 
 If the integration's tools should act as the person who started each task, set
-`holder = "requester"` in `connection`. A hook cannot call these tools.
+`actsAs = "requester"` in `connection`. A hook cannot call these tools.
 
 For a remote MCP server whose connection discovers its endpoints, a client
 the deployment has must also name the `issuer` of the server's authorization
@@ -72,11 +72,11 @@ server; see [Discovery](/docs/reference/terraform/integration#discovery).
 
 If the deployment has no OAuth client for the integration, set
 `registration` to the service's client registration endpoint. If the service
-asks which resource the grant is for, set `resource` to its address:
+asks which resource the access is for, set `resource` to its address:
 
 ```hcl
     connection = {
-      holder = "requester"
+      actsAs = "requester"
       oauth2 = {
         authorize    = "https://acme.example/oauth/authorize"
         token        = "https://acme.example/oauth/token"
@@ -116,14 +116,14 @@ yourself.
 The service sends you back to the team's **Integrations** page. Open the row:
 **Team account** shows the account the service named, or "Connected" if the
 integration has no `identity`. Requests that use
-`auth = { oauth2 = { connection = true } }` now carry the team's grant.
+`auth = { oauth2 = { connection = true } }` now carry the team's access token.
 
 A member who is not an owner or admin sees "Waiting for an admin" on the row
 instead of the button.
 
 ## Connect yourself
 
-For an integration with `holder = "requester"`:
+For an integration with `actsAs = "requester"`:
 
 <Steps>
 <Step>
@@ -146,27 +146,27 @@ act as you on the tasks you start. To stop that, open the actions menu beside
 your account and select **Disconnect**.
 
 An owner or admin also sees **People**: who has connected, and under "Not
-connected", the team's members who have not, never their grants. Nobody can
+connected", the team's members who have not, never their tokens. Nobody can
 disconnect someone else.
 
 ## Answer a request to connect
 
 If a run on a task you started calls a tool that acts as you, and you have not
-connected the integration, or the service could not renew your grant, nothing
+connected the integration, or the service could not refresh your connection, nothing
 is sent. The task is assigned to you and your inbox gets an item saying which
 tool needs your connection. Select **Connect** in it and authorize at the
 service. Once you are back, the item is answered with `Connected <Name>.` and
 the work resumes.
 
 For what happens when there is nobody to ask, see
-[Holder](/docs/reference/terraform/integration#holder).
+[Acts as](/docs/reference/terraform/integration#acts-as).
 
 ## Reconnect
 
-To link a different account, or after the service revoked Spotlight's access,
+To connect a different account, or after the service revoked Spotlight's access,
 open the actions menu beside **Team account** and select **Change account**,
 or for your own, select **Disconnect** and then **Connect your account**, and
-authorize again. The new grant replaces the old one.
+authorize again. The new connection replaces the old one.
 
 ## If it does not connect
 
@@ -174,7 +174,7 @@ If you select **Connect team account** or **Connect your account** and the row
 shows "Could not connect. Try again." instead of taking you anywhere, Spotlight
 would not begin. Either you may not make that
 connection (the team's needs an owner or admin; your own needs you to be on the
-team and the integration to have `holder = "requester"`), or Spotlight has no
+team and the integration to have `actsAs = "requester"`), or Spotlight has no
 OAuth client for the integration: the deployment has none and the definition
 has no `registration`, or the service did not register one.
 

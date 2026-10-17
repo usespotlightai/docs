@@ -77,12 +77,12 @@ terraform state show spotlight_integration.acme
 ```
 
 `tools` lists every tool, such as `"create-issue" = "acme.create-issue"`,
-and `described.tools` counts them. The apply's warnings name each tool
-Spotlight passed over, and why.
+and `spec.tools` counts them. The apply's warnings name each tool
+Spotlight skipped, and why.
 
 To offer only some tools, add `tools.include` and `tools.exclude` to the `mcp`
 block, as in
-[Choose which tools it offers](/docs/integrations/generate-tools-from-an-api-description#choose-which-tools-it-offers).
+[Choose which tools it offers](/docs/integrations/generate-tools-from-an-api-spec#choose-which-tools-it-offers).
 
 ## Decide which calls wait for approval
 
@@ -140,7 +140,7 @@ Each call shows in the run's journal, and a
 Where the server echoes the key, its answer reads `[secret]` instead.
 
 What a tool answers is
-[learned](/docs/reference/cli/agent-commands#learned-output), as for any
+[inferred](/docs/reference/cli/agent-commands#inferred-output), as for any
 other integration's tool. Where the integration acts as each person, a
 person's own
 [tool rules](/docs/integrations/require-approval-before-a-tool-runs#let-a-person-ask-first-or-block-a-tool)
@@ -153,7 +153,7 @@ another interval. A tool the server stops offering is no longer offered, and a
 station that enables it can no longer call it. The workspace's
 [configuration changes](/docs/reference/api/resource-api#configuration-changes)
 record the change, naming each tool the integration no longer offers in
-`details.stranded`. Give the station another tool, or take the tool off it.
+`details.orphanedTools`. Give the station another tool, or take the tool off it.
 
 ## Related
 
