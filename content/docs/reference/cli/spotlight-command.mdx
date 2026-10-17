@@ -68,7 +68,7 @@ standard error as `spotlight host: <error>`.
 | `could not start a sandbox; claiming from this image pauses` | Claims for that image pause, longer after each failure in a row, up to about 30 seconds. |
 | `gave up the work: its way out did not start` | Egress did not start. The run fails, or the check is skipped. |
 | `the host is stopping, so the work is left to be claimed again` | The host stopped before the sandbox started. |
-| `the control plane will not have this host; it stops claiming and lets its sandboxes finish` | Spotlight refused the host. It exits `3`. |
+| `the control plane will not have this host; it stops claiming and lets its sandboxes finish` | Spotlight did not accept the host. It exits `3`. |
 
 ### Exit codes
 
@@ -76,7 +76,7 @@ standard error as `spotlight host: <error>`.
 | --- | --- |
 | `0` | Stopped on `SIGINT` or `SIGTERM`. |
 | `1` | A configuration or runtime error. |
-| `3` | Spotlight refused the host: an unknown or rotated credential, a host id serving another pool or trust, or a host Spotlight has no report from through that pool or trust. |
+| `3` | Spotlight did not accept the host: an unknown or rotated credential, a host id serving another pool or trust, or a host Spotlight has no report from through that pool or trust. |
 
 ## spotlight host install
 
@@ -85,7 +85,7 @@ spotlight host install
 ```
 
 Installs `spotlight host` as a service and starts it. It loads the host
-configuration first and refuses to install if it is invalid:
+configuration first and does not install if it is invalid:
 
 ```text
 spotlight host: <config path> is not ready to serve: <problems>
@@ -203,7 +203,7 @@ The runner logs JSON lines to standard output. See
 | Code | Meaning |
 | --- | --- |
 | `0` | The run or check ended, whatever its outcome, or nothing was reserved in time. |
-| `1` | The runner could not start or was refused. |
+| `1` | The runner could not start, or Spotlight did not accept it. |
 
 ## spotlight runner harnesses
 

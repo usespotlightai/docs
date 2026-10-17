@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Errors and messages
-description: The error, refusal and warning messages Spotlight shows, grouped by where they appear, with their causes and the pages that document them.
+description: The error and warning messages Spotlight shows, grouped by where they appear, with their causes and the pages that document them.
 ---
 
 Each message is written as Spotlight shows it. A value in angle brackets, as
@@ -33,7 +33,7 @@ pages for each command.
 | `<What happened> while <Station> was waiting for an answer. Close the task, or reply to carry on.` | A happening that moves the task to the completed station arrived while the task's run waited on a person's answer to its question (not an approval); earlier deferred moves were cancelled. | [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves) |
 | `<What happened> while <Station> was working. Close the task, or reply to carry on.` | A happening that moves the task to the completed station arrived while the task had a current run and awaited no answer to the run's own question; the run was stopped and the task put to a person. | [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves) |
 | `Task cannot move from <from> to <to>. <reason>` | `422`. A person's move other than starting, parking or closing a task. | [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves), [Add a task and move it along a line](/docs/tasks/add-and-move-tasks#move-the-task) |
-| `The run said: <note>` | Follows the hook's reason when a hook on `handover.giving` refused the handover. | [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover), [Refusing an event](/docs/reference/terraform/hook#refusing-an-event) |
+| `The run said: <note>` | Follows the hook's reason when a hook on `handover.giving` denied the handover. | [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover), [Denying an event](/docs/reference/terraform/hook#denying-an-event) |
 | `The task has moved to another station. Messages here reach no one.` | Shown on a run page in place of the message box once the task has left the run's station. | [Steer or stop a run](/docs/runs/steer-or-stop-a-run#say-something-to-the-agent), [Run page composer](/docs/reference/app/tasks-runs-and-the-inbox#run-page-composer) |
 | `Waiting for your approval` | An approval item, from a tool that requires approval or a harness permission a profile sets to ask. | [Approvals](/docs/reference/app/tasks-runs-and-the-inbox#approvals), [Answer the inbox](/docs/inbox/answer-the-inbox#approve-edit-or-dismiss-a-request) |
 | `Spotlight would like to <intent>.` | Above an approval item: what the agent said it wants to do. | [What the agent wants](/docs/reference/app/tasks-runs-and-the-inbox#what-the-agent-wants) |
@@ -65,7 +65,7 @@ reason, the reasons are joined with `; `.
 | Message | Cause | See |
 | --- | --- | --- |
 | `Runner image <image> can't be pulled. Error: <error>` | The host could not pull the line's image and has no copy of it. Unreadable registry credentials fail the pull even when the host has a copy, unless the image is named by digest or the copy has no registry digest. Code `unprepared`. | [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages), [Pull runner images from a private registry](/docs/hosts/pull-images-from-a-private-registry) |
-| `Runner image <image> is refused. <reason>` | The host does not serve the image. The reasons are those the [Runners page](#runners-page) shows. Code `unprepared`. | [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-task-shows-in-progress-but-nothing-happens) |
+| `Runner image <image> is unavailable. <reason>` | The host does not serve the image. The reasons are those the [Runners page](#runners-page) shows. Code `unprepared`. | [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-task-shows-in-progress-but-nothing-happens) |
 | `Runner image <digest> no longer has the <harness> harness.` | The image changed and lost the station's harness. Code `unprepared`. | [Harnesses](/docs/reference/hosts/harnesses), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-failed-with-a-message) |
 | `The sandbox's egress didn't start. Error: <error>` | Egress did not start. The error is one of the [egress start failures](#egress-start-failures). Code `unprepared`. | [Egress start failures](/docs/reference/hosts/egress#egress-start-failures) |
 | `The runner couldn't prepare the run. Error: prepare: git clone <path>: <error>: <output>` | A repository could not be cloned. Code `unprepared`. | [Run phases](/docs/reference/hosts/sandbox#run-phases), [Point a line at your repositories](/docs/lines/point-a-line-at-your-repositories) |
@@ -81,7 +81,7 @@ reason, the reasons are joined with `; `.
 | `catalog_item_wrong_kind: <reason>` | The station names a catalog tool as a skill, or a skill as a tool. | [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-refused-to-start) |
 | `not_entitled: <reason>` | The workspace's plan does not include a catalog item the station gives. | [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-refused-to-start) |
 | `entitlement_lapsed: <reason>` | The plan that included a catalog item the station gives has lapsed. | [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-refused-to-start) |
-| `No runner was provisioned after <n> attempts. Last failure: <failure>` | No push pool started a runner. The failure is a code and its detail, as in `refused: Provision URL answered <status>.` | [Provision call failures](/docs/reference/events/provision-call#failures), [Provision runners from your own platform](/docs/hosts/provision-runners-from-your-own-platform#check-that-it-works) |
+| `No runner was provisioned after <n> attempts. Last failure: <failure>` | No push pool started a runner. The failure is a code and its detail, as in `http-error: Provision URL answered <status>.` | [Provision call failures](/docs/reference/events/provision-call#failures), [Provision runners from your own platform](/docs/hosts/provision-runners-from-your-own-platform#check-that-it-works) |
 | `Hooks did not answer after <n> tries. Last error: <reason>` | The run's `run.starting` hooks went unanswered on every attempt. | [Failure codes](/docs/reference/app/tasks-runs-and-the-inbox#failure-codes), [`spotlight_hook`](/docs/reference/terraform/hook) |
 
 ### Egress start failures
@@ -115,8 +115,8 @@ Each follows `The sandbox's egress didn't start. Error: `.
 | `could not start a sandbox; claiming from this image pauses` | A sandbox did not start. Claims for that image pause, longer after each failure in a row. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host) |
 | `gave up the work: its way out did not start` | Egress did not start. The run fails, or the check is skipped. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host) |
 | `the host is stopping, so the work is left to be claimed again` | The host stopped before the sandbox started. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host) |
-| `the control plane will not have this host; it stops claiming and lets its sandboxes finish` | Spotlight refused the host. It exits `3`. | [Exit codes](/docs/reference/cli/spotlight-command#exit-codes) |
-| `Missing, rotated or unknown pool token, or a workload the trust does not admit` | Spotlight refused the host's credential, with `401`. | [Admission](/docs/reference/terraform/runner-trust#admission), [Run hosts without a stored token](/docs/hosts/admit-hosts-through-a-runner-trust) |
+| `the control plane will not have this host; it stops claiming and lets its sandboxes finish` | Spotlight did not accept the host. It exits `3`. | [Exit codes](/docs/reference/cli/spotlight-command#exit-codes) |
+| `Missing, rotated or unknown pool token, or a workload the trust does not admit` | Spotlight did not accept the host's credential, with `401`. | [Admission](/docs/reference/terraform/runner-trust#admission), [Run hosts without a stored token](/docs/hosts/admit-hosts-through-a-runner-trust) |
 | `could not pull the runner image, so it runs the copy it has` | A pull failed, and the host has a copy of the image. | [Pull runner images from a private registry](/docs/hosts/pull-images-from-a-private-registry#check-that-it-pulls) |
 | `another spotlight host already serves from <state>: <error>` | Another host uses the state directory. | [Validation](/docs/reference/hosts/host-configuration#validation) |
 | `spotlight host: <config path> is not ready to serve: <problems>` | `spotlight host install` found the host configuration invalid. | [spotlight host install](/docs/reference/cli/spotlight-command#spotlight-host-install) |
@@ -156,7 +156,7 @@ environment, are prefixed `egress: `.
 | `SPOTLIGHT_EGRESS_URL "<value>" is not an address such as https://egress.example.com` | Not an `http` or `https` URL with a host. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
 | `could not open the way out, so the agent goes out without its run's secrets` | A warning. The runner's way out did not open, and the agent gets no proxy. | [The runner's way out](/docs/reference/hosts/egress#the-runners-way-out) |
 | `could not trust the way out's authority, so TLS through it may fail` | A warning. The way out's authority could not be added to the image's bundles. | [The runner's way out](/docs/reference/hosts/egress#the-runners-way-out) |
-| `Change stacks are not set up on this deployment.` | A station with `diffs: true` on a deployment without drafting set up. The runner logs the refusal, and the checkout gets no change stack. | [Change stacks and decisions](/docs/reference/app/change-stacks-and-decisions) |
+| `Change stacks are not set up on this deployment.` | A station with `diffs: true` on a deployment without drafting set up. The runner logs the error, and the checkout gets no change stack. | [Change stacks and decisions](/docs/reference/app/change-stacks-and-decisions) |
 
 ### Egress log
 
@@ -180,7 +180,7 @@ injected, and requests go without it.
 | `AWS Secrets Manager has no text for it` | The secret has no text value. | [Run secrets](/docs/reference/hosts/egress#run-secrets) |
 | `its value in AWS Secrets Manager is not JSON, so it has no <field> field` | `field` is set, and the value is not JSON. | [Run secrets](/docs/reference/hosts/egress#run-secrets) |
 | `its value in AWS Secrets Manager has no text at <field>` | The value has no text at `field`. | [Run secrets](/docs/reference/hosts/egress#run-secrets) |
-| `the control plane gave egress no secrets to inject` | Spotlight refused to send the run's secrets. Egress starts with no secrets to inject. | [Egress start failures](/docs/reference/hosts/egress#egress-start-failures) |
+| `the control plane gave egress no secrets to inject` | Spotlight did not send the run's secrets. Egress starts with no secrets to inject. | [Egress start failures](/docs/reference/hosts/egress#egress-start-failures) |
 | `gave up fetching the run's secrets; the sandbox goes out with no injected secrets` | Egress could not reach Spotlight within 1 minute. | [Egress start failures](/docs/reference/hosts/egress#egress-start-failures) |
 
 ### Shared egress
@@ -290,25 +290,25 @@ Each command exits `1` and prints its message on standard error.
 | `<tool> needs a person's approval before it runs, and they have been asked in their inbox. Nothing was sent. Stop here and end your turn: their answer comes back to you in this conversation.` | `409`. The tool requires approval, and no unspent grant covers the call. | [Approvals](/docs/reference/app/tasks-runs-and-the-inbox#approvals), [Require approval before a tool runs](/docs/integrations/require-approval-before-a-tool-runs) |
 | `<tool> was not used, so nothing was sent: <person> blocks it on calls made with their connection.` | `403`. The person whose connection the tool acts with set the tool to "Block". `the person it acts as` takes the place of `<person>` when the person has no name. | [Person rules](/docs/reference/app/tasks-runs-and-the-inbox#person-rules) |
 | `the integration answered <status>: <body>` | The tool's request failed. The body is cut at 500 characters. | [Tools](/docs/reference/terraform/integration#tools) |
-| `<tool> acts as the person who started this task, and they haven't connected <integration>. They've been asked in their inbox. Nothing was sent. Stop here and end your turn: you're resumed once they connect.` | `409`. The tool's integration acts as the person who started the task, and they have not connected it, or the host refused to renew their connection. | [Holder](/docs/reference/terraform/integration#holder), [Connect an integration that signs in with OAuth](/docs/integrations/connect-an-integration#answer-a-request-to-connect) |
+| `<tool> acts as the person who started this task, and they haven't connected <integration>. They've been asked in their inbox. Nothing was sent. Stop here and end your turn: you're resumed once they connect.` | `409`. The tool's integration acts as the person who started the task, and they have not connected it, or the host could not renew their connection. | [Holder](/docs/reference/terraform/integration#holder), [Connect an integration that signs in with OAuth](/docs/integrations/connect-an-integration#answer-a-request-to-connect) |
 | `<tool> was not used, so nothing was sent: nobody started this task, so there is nobody whose <integration> connection it could act with` | The tool's integration acts as the person who started the task, and no person did. | [Holder](/docs/reference/terraform/integration#holder) |
 | `<tool> was not used, so nothing was sent: the person who started this task is no longer on the team, so it cannot act with their <integration> connection` | The tool's integration acts as the person who started the task, and they have left the team. | [Holder](/docs/reference/terraform/integration#holder) |
 | `<tool> was not used, so nothing was sent: this task is already waiting on someone, so nobody can be asked to connect <integration> until they answer` | The tool's integration acts as the person who started the task, they have not connected, and the task already waits on a person for something else. | [Holder](/docs/reference/terraform/integration#holder) |
-| `using <tool>: the MCP server asked a question in the middle of the call. Spotlight refused the call. It does not pass such questions on to a person` | `502`. The tool's MCP server asked a question during the call (MCP elicitation), which Spotlight refuses. | [Calling a tool](/docs/reference/terraform/integration#calling-a-tool) |
+| `using <tool>: the MCP server asked a question in the middle of the call. Spotlight does not pass such questions on to a person, so the call failed` | `502`. The tool's MCP server asked a question during the call (MCP elicitation). | [Calling a tool](/docs/reference/terraform/integration#calling-a-tool) |
 | `using <tool>: the MCP server answered with an error: <text>` | `502`. The tool's MCP server returned a result marked `isError`. The text is cut at 500 characters. | [Calling a tool](/docs/reference/terraform/integration#calling-a-tool) |
 | `using <tool>: <host> answered <status>` | `502`. The tool's MCP server answered with an HTTP error, as `401` when the connection could not be renewed. | [Calling a tool](/docs/reference/terraform/integration#calling-a-tool) |
-| `A hook stopped <tool>, so nothing was sent.` | A hook on `tool.using` refused the call. The hook's refusal follows. | [`spotlight_hook`](/docs/reference/terraform/hook) |
-| `A hook stopped the pull request. No pull request was opened.` | A hook on `pull-request.opening` refused the pull request. The hook's refusal follows. | [Check or block a pull request before it opens](/docs/integrations/check-a-pull-request-before-it-opens#check-a-refusal) |
-| `Hook <key> refused. Reason: <reason>` | A hook on a before event refused the event. | [Refusing an event](/docs/reference/terraform/hook#refusing-an-event) |
-| `Hook <key> failed at step <step> and blocks on failure. Reason: <reason>` | A step of a hook on a before event failed, and its `failure` is `block`. | [Refusing an event](/docs/reference/terraform/hook#refusing-an-event) |
-| `Hook <key> is broken and blocks on failure. Reason: <reason>` | A hook on a before event no longer reads as it was written, and its `failure` is `block`. | [Refusing an event](/docs/reference/terraform/hook#refusing-an-event) |
-| `Outbound call to <host> refused. Host is not on the allowed list.` | An integration request, hook request or OAuth token exchange to a host not on the deployment's outbound allow-list. | [Requests](/docs/reference/terraform/integration#requests) |
-| `Outbound call to <url> refused. URL is not valid.` | An outbound call to an address that is not a URL. | [Requests](/docs/reference/terraform/integration#requests) |
-| `Outbound call to <host> refused. redirected more than 5 times` | An outbound call was redirected more than 5 times. | [Requests](/docs/reference/terraform/integration#requests) |
-| `Outbound call to <host> refused. is where an https request was redirected to over plain http, which Spotlight does not follow` | An `https` call was redirected to `http`. | [Requests](/docs/reference/terraform/integration#requests) |
+| `A hook stopped <tool>, so nothing was sent.` | A hook on `tool.using` denied the call. The hook's reason follows. | [`spotlight_hook`](/docs/reference/terraform/hook) |
+| `A hook stopped the pull request. No pull request was opened.` | A hook on `pull-request.opening` denied the pull request. The hook's reason follows. | [Check or block a pull request before it opens](/docs/integrations/check-a-pull-request-before-it-opens#check-a-denial) |
+| `Hook <key> denied the event. Reason: <reason>` | A hook on a before event denied the event. | [Denying an event](/docs/reference/terraform/hook#denying-an-event) |
+| `Hook <key> failed at step <step> and blocks on failure. Reason: <reason>` | A step of a hook on a before event failed, and its `failure` is `block`. | [Denying an event](/docs/reference/terraform/hook#denying-an-event) |
+| `Hook <key> is broken and blocks on failure. Reason: <reason>` | A hook on a before event no longer reads as it was written, and its `failure` is `block`. | [Denying an event](/docs/reference/terraform/hook#denying-an-event) |
+| `Outbound call to <host> blocked. Host is not on the allowed list.` | An integration request, hook request or OAuth token exchange to a host not on the deployment's outbound allow-list. | [Requests](/docs/reference/terraform/integration#requests) |
+| `Outbound call to <url> blocked. URL is not valid.` | An outbound call to an address that is not a URL. | [Requests](/docs/reference/terraform/integration#requests) |
+| `Outbound call to <host> blocked. redirected more than 5 times` | An outbound call was redirected more than 5 times. | [Requests](/docs/reference/terraform/integration#requests) |
+| `Outbound call to <host> blocked. is where an https request was redirected to over plain http, which Spotlight does not follow` | An `https` call was redirected to `http`. | [Requests](/docs/reference/terraform/integration#requests) |
 | `Secret <NAME> not found. Please define it first.` | A secret is named but not defined. It fails where it is used. | [Where a secret is named](/docs/reference/terraform/secret#where-a-secret-is-named) |
 | `Secret <NAME> could not be read. This deployment does not read from AWS Secrets Manager.` | An integration request made by Spotlight uses a secret from AWS Secrets Manager, and the deployment does not read from it. | [Sources](/docs/reference/terraform/secret#sources) |
-| `Secret <NAME> could not be read. AWS Secrets Manager returned <error>.` | AWS Secrets Manager refused the read, as with `ResourceNotFoundException`. `an error` takes the place of `<error>` when AWS names none. | [Sources](/docs/reference/terraform/secret#sources) |
+| `Secret <NAME> could not be read. AWS Secrets Manager returned <error>.` | AWS Secrets Manager returned an error for the read, as with `ResourceNotFoundException`. `an error` takes the place of `<error>` when AWS names none. | [Sources](/docs/reference/terraform/secret#sources) |
 | `Secret <NAME> could not be read. AWS Secrets Manager has no text for it.` | The secret has no text value. | [Sources](/docs/reference/terraform/secret#sources) |
 | `Secret <NAME> could not be read. Its AWS Secrets Manager value is not JSON. Field expected: <field>` | The secret names a `field`, and its value is not JSON. | [Sources](/docs/reference/terraform/secret#sources) |
 | `Secret <NAME> could not be read. Its AWS Secrets Manager value has no text at <field>.` | The value has no text at the secret's `field`. | [Sources](/docs/reference/terraform/secret#sources) |
@@ -321,9 +321,9 @@ Each command exits `1` and prints its message on standard error.
 | --- | --- | --- |
 | `Egress answers only the sandbox it was started for.` | `407`. No proxy credential, or the wrong one. | [Responses](/docs/reference/hosts/egress#responses) |
 | `Egress is a proxy. Please ask it for an absolute URL, or CONNECT to a host.` | `400`. A request that is neither `CONNECT` nor an absolute URL. | [Responses](/docs/reference/hosts/egress#responses) |
-| `Egress doesn't let this sandbox reach <host>.` | `403`. The allow-list does not admit the host. | [Responses](/docs/reference/hosts/egress#responses), [Limit where sandboxes can connect](/docs/security/limit-where-sandboxes-connect#find-refused-requests) |
-| `Egress couldn't reach <host:port>. Error: Egress never opens a connection to <ip>.` | `502`. A tunnelled `CONNECT` to an always-refused address. | [Refused addresses](/docs/reference/hosts/egress#refused-addresses) |
-| `Egress couldn't reach <host:port>. Error: Egress opens a connection to private address <ip> only if the allow-list names the host.` | `502`. A tunnelled `CONNECT` to a private address the allow-list does not name. | [Refused addresses](/docs/reference/hosts/egress#refused-addresses), [Limit where sandboxes can connect](/docs/security/limit-where-sandboxes-connect#reach-a-private-host) |
+| `Egress doesn't let this sandbox reach <host>.` | `403`. The allow-list does not admit the host. | [Responses](/docs/reference/hosts/egress#responses), [Limit where sandboxes can connect](/docs/security/limit-where-sandboxes-connect#find-blocked-requests) |
+| `Egress couldn't reach <host:port>. Error: Egress never opens a connection to <ip>.` | `502`. A tunnelled `CONNECT` to an always-blocked address. | [Blocked addresses](/docs/reference/hosts/egress#blocked-addresses) |
+| `Egress couldn't reach <host:port>. Error: Egress opens a connection to private address <ip> only if the allow-list names the host.` | `502`. A tunnelled `CONNECT` to a private address the allow-list does not name. | [Blocked addresses](/docs/reference/hosts/egress#blocked-addresses), [Limit where sandboxes can connect](/docs/security/limit-where-sandboxes-connect#reach-a-private-host) |
 | `Egress couldn't reach <host:port>. Error: <reason>` | `502`. Any other failure of a tunnelled `CONNECT`. | [Responses](/docs/reference/hosts/egress#responses) |
 | `Egress couldn't reach <host:port>.` | `502`. A plain-HTTP or intercepted request that could not be passed on, for any reason. The reason and the URL are left out. | [Responses](/docs/reference/hosts/egress#responses) |
 | `Egress could not intercept TLS for <host>. Error: <reason>` | `502`. No certificate could be made for an intercepted host. | [Responses](/docs/reference/hosts/egress#responses) |
@@ -341,7 +341,7 @@ way out.
 | `Egress could not get the run's secrets from the control plane. Please try again.` | `502`. The run's secrets could not be fetched. | [Shared egress responses](/docs/reference/hosts/egress#shared-egress-responses) |
 | `Egress takes a CONNECT, a request that names its target in Spotlight-Egress-Target, or GET /.well-known/spotlight/bound.` | `400`. Any other request. | [Shared egress responses](/docs/reference/hosts/egress#shared-egress-responses) |
 | `Egress does not let this sandbox reach <host>.` | `403`. The allow-list does not admit the host, or the runner has no lease on a run yet. | [Shared egress responses](/docs/reference/hosts/egress#shared-egress-responses) |
-| `Egress could not reach <host:port>. Error: <reason>` | `502`. A tunnel could not be opened. | [Shared egress responses](/docs/reference/hosts/egress#shared-egress-responses), [Refused addresses](/docs/reference/hosts/egress#refused-addresses) |
+| `Egress could not reach <host:port>. Error: <reason>` | `502`. A tunnel could not be opened. | [Shared egress responses](/docs/reference/hosts/egress#shared-egress-responses), [Blocked addresses](/docs/reference/hosts/egress#blocked-addresses) |
 | `Egress tunnels only over HTTP/1.1. Please CONNECT over HTTP/1.1.` | `505`. A `CONNECT` over HTTP/2. | [Shared egress responses](/docs/reference/hosts/egress#shared-egress-responses) |
 | `Spotlight-Egress-Target must be a host and port 443, such as api.example.com:443.` | `400`. A forwarded request to another port. | [Shared egress responses](/docs/reference/hosts/egress#shared-egress-responses) |
 | `Egress forwards a request only to a host that a secret of this run is bound to, and <host> is not one. Please CONNECT to other hosts.` | `403`. A forwarded request to a host that is not bound. | [Shared egress responses](/docs/reference/hosts/egress#shared-egress-responses) |
@@ -377,7 +377,7 @@ slugs.
 | `idempotency-key-reused` | `422`. The `Idempotency-Key` was used for a different request body. | [Errors](/docs/reference/api/resource-api#errors) |
 | `precondition-required` | `428`. An update or delete has no `If-Match`. | [Errors](/docs/reference/api/resource-api#errors) |
 | `internal-error` | `500` or more. The server failed. | [Errors](/docs/reference/api/resource-api#errors) |
-| `refused-upstream` | `502`. An upstream service refused. | [Errors](/docs/reference/api/resource-api#errors) |
+| `upstream-error` | `502`. An upstream service failed. | [Errors](/docs/reference/api/resource-api#errors) |
 
 ### Permission titles
 
@@ -388,7 +388,7 @@ slugs.
 | `Not allowed to open a workspace` | `403`. The caller lacks `open-workspaces`. | [Permissions](/docs/reference/roles-and-permissions#permissions) |
 | `Not allowed to plan` | `403`. The caller lacks `plan`. | [Permissions](/docs/reference/roles-and-permissions#permissions) |
 
-### Refusals and warnings
+### Errors and warnings
 
 | Message | Cause | See |
 | --- | --- | --- |
@@ -399,12 +399,12 @@ slugs.
 | `cannot be set on a secret read from AWS Secrets Manager` | `valueWo` on a secret from AWS Secrets Manager. | [Sources](/docs/reference/terraform/secret#sources) |
 | `belongs to another pool. Please give each pool its own` | A pool token that another pool has. | [Pool token](/docs/reference/terraform/runner-pool#pool-token), [Create a pull pool and get its token](/docs/hosts/create-a-pull-pool) |
 | `was used before. Pool tokens work once only` | A pool token rotated away, or used by a pool since deleted or replaced. | [Pool token](/docs/reference/terraform/runner-pool#pool-token) |
-| `is not https. Its calls carry a one-run token. A production deployment refuses to make them` | A warning on a push pool's `provision.url`. | [Warnings](/docs/reference/terraform/runner-pool#warnings) |
+| `is not https. Its calls carry a one-run token. A production deployment does not make them` | A warning on a push pool's `provision.url`. | [Warnings](/docs/reference/terraform/runner-pool#warnings) |
 | `names spotlight. This deployment has no platform egress. Please name an egress of this workspace, or leave provision.egress out` | A push pool's `provision.egress` names the platform egress on a deployment without one. | [Egress](/docs/reference/terraform/runner-pool#egress) |
 | `names <id>. Egress <id> doesn't exist in this workspace` | A push pool's `provision.egress` names no egress of the workspace. | [Egress](/docs/reference/terraform/runner-pool#egress) |
 | `belongs to another egress. Please give each egress its own` | An egress token that another egress has. | [Egress token](/docs/reference/terraform/egress#egress-token) |
 | `was used before. Egress tokens work once only` | An egress token rotated away, or used by an egress since deleted or replaced. | [Egress token](/docs/reference/terraform/egress#egress-token) |
-| `is not https. Runners send their proxy credential to it. A production deployment refuses to provision runners that use it` | A warning on an egress's `url`. | [Warnings](/docs/reference/terraform/egress#warnings) |
+| `is not https. Runners send their proxy credential to it. A production deployment does not provision runners that use it` | A warning on an egress's `url`. | [Warnings](/docs/reference/terraform/egress#warnings) |
 | `Egress <key> is in use. Runner pools that name it: <pool keys>. Please remove provision.egress from these pools first.` | `409` `in-use`. A delete of an egress a runner pool names. | [Delete](/docs/reference/terraform/egress#delete) |
 | `names <key>. Runner pool <key> doesn't exist in this workspace` | A warning on `spotlight_workspace_runners` `pools`. | [`spotlight_workspace_runners`](/docs/reference/terraform/workspace-runners#warnings) |
 | `names <key>. Runner trust <key> doesn't exist in this workspace` | A warning on `spotlight_workspace_runners` `trusts`. | [`spotlight_workspace_runners`](/docs/reference/terraform/workspace-runners#warnings) |
@@ -439,7 +439,7 @@ slugs.
 | `must include read, plan or configure. Secrets, runners and trusts need one of them` | A workspace token with none of `read`, `plan` or `configure`. | [Scopes](/docs/reference/api/workspace-token#scopes), [Issue a workspace token](/docs/administration/issue-a-workspace-token) |
 | `must name each scope once` | A workspace token names a scope twice. | [Scopes](/docs/reference/api/workspace-token#scopes) |
 | `must name an owner before any *, as in repo:acme/* or repo:acme/platform:*` | A workspace token trust's subject pattern has no owner before `*`. | [Patterns](/docs/reference/terraform/workspace-token-trust#patterns) |
-| `Spotlight refused the exchange. Possible causes: an unknown trust, a token its issuer did not sign for the trust's audience, a workload the trust does not admit, or a closed workspace` | `401`. An exchange through a workspace token trust was refused. | [Exchange](/docs/reference/terraform/workspace-token-trust#exchange), [Run Terraform from GitHub Actions without a stored token](/docs/configuration/run-terraform-from-github-actions) |
+| `Spotlight did not accept the exchange. Possible causes: an unknown trust, a token its issuer did not sign for the trust's audience, a workload the trust does not admit, or a closed workspace` | `401`. Spotlight did not accept an exchange through a workspace token trust. | [Exchange](/docs/reference/terraform/workspace-token-trust#exchange), [Run Terraform from GitHub Actions without a stored token](/docs/configuration/run-terraform-from-github-actions) |
 | `Both a token and an OIDC trust` | The provider is configured with a token and a trust. | [Provider configuration](/docs/reference/terraform/terraform-provider#provider-configuration) |
 | `A candidate named <address> already exists. Please choose another name.` | `409` `already-exists`. A replay candidate's name is taken at its station. | [Replay candidates](/docs/reference/api/replay-candidate#errors) |
 | `keeps the station's key, <key>` | A replay candidate's `station.key` names another station. | [Checks](/docs/reference/api/replay-candidate#checks) |
@@ -457,7 +457,7 @@ slugs.
 ### Runners page
 
 A host whose images include one it will not start runs from reads
-`<n> refused` under "Images". Its hover lists each refused image with one of
+`<n> unavailable` under "Images". Its hover lists each unavailable image with one of
 these reasons.
 
 | Message | Cause | See |
@@ -517,7 +517,7 @@ messages.
 
 ### Searches
 
-A refused pull request names its reason in words; see
+A failed pull request names its reason in words; see
 [Config pull request reasons](/docs/reference/app/searches#config-pull-request-reasons).
 
 | Message | Cause | See |
@@ -556,7 +556,7 @@ list their own messages.
 ### Members, invites and GitHub
 
 The endpoints for roles, invites, team members and the GitHub connection
-refuse with these. A caller who is not an owner or admin of the workspace gets
+answer with these. A caller who is not an owner or admin of the workspace gets
 `404` with no message from the invite and team member endpoints.
 
 | Message | Cause | See |
@@ -588,7 +588,7 @@ refuse with these. A caller who is not an owner or admin of the workspace gets
 ### Members page and accepting an invite
 
 The web app shows these on the Members page, a team's General page and the
-page an invite link opens. When an invite request is refused, the invite dialog
+page an invite link opens. When an invite request fails, the invite dialog
 shows the message from the table above beneath its fields.
 
 | Message | Cause | See |

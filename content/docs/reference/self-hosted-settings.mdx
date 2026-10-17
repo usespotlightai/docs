@@ -43,7 +43,7 @@ Neither `SPOTLIGHT_SECRETS_KEY` nor `SECRETS_KMS_KEY_ID` set gives
 | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | required | The GitHub OAuth app people sign in with. |
 | `GITHUB_APP_ID` | required | The GitHub App that clones and pushes. |
 | `GITHUB_APP_PRIVATE_KEY` | required | The GitHub App's private key, in PEM. `\n` in the value is read as a line break. |
-| `GITHUB_WEBHOOK_SECRET` | empty | The GitHub App's webhook secret. While empty, every GitHub webhook is refused. |
+| `GITHUB_WEBHOOK_SECRET` | empty | The GitHub App's webhook secret. While empty, every GitHub webhook is rejected. |
 
 ## Secrets
 
@@ -67,7 +67,7 @@ every secret has to be set again and every integration connected again.
 | --- | --- | --- |
 | `OUTBOUND_ALLOWED_HOSTS` | empty | Comma-separated hosts Spotlight may call for integrations and their tools, OAuth token exchanges, hooks it sends itself, and push pools' provision calls. An entry admits the host and its subdomains, compared without regard to case. Empty allows none. |
 | `OAUTH_CLIENTS` | `{}` | The deployment's OAuth clients, as JSON mapping an integration's name to `{ "id", "secret" }`, with `issuer`, the authorization server, for an MCP server it discovers. Example: `{"slack":{"id":"...","secret":"..."}}`. |
-| `HOOK_SIGNING_KEY` | none | A P-256 private key, in PEM, that signs [hook OIDC tokens](/docs/reference/terraform/hook#oidc) with ES256. `\n` in the value is read as a line break. Without it, a hook with `oidc` is refused. |
+| `HOOK_SIGNING_KEY` | none | A P-256 private key, in PEM, that signs [hook OIDC tokens](/docs/reference/terraform/hook#oidc) with ES256. `\n` in the value is read as a line break. Without it, a hook with `oidc` is rejected. |
 | `MCP_RELIST_SECONDS` | `600` | How often the tools of an integration's MCP server are listed again. |
 | `SPOTLIGHT_CATALOG_URL` | `https://catalog.usespotlight.ai` | Where [catalog](/docs/reference/glossary#catalog) tools are called. Always reached, whatever `OUTBOUND_ALLOWED_HOSTS` says. |
 | `SPOTLIGHT_CATALOG_TOKEN` | none | The token sent with each catalog call. |
@@ -84,7 +84,7 @@ start with `OAUTH_CLIENTS is not JSON: <error>` or
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `SPOTLIGHT_PLATFORM_EGRESS_URL` | none | The URL of the deployment's own [shared egress](/docs/reference/hosts/egress#shared-egress), `http` or `https`. A push pool names it as `spotlight` in `provision.egress`. Without it, `spotlight` is refused. |
+| `SPOTLIGHT_PLATFORM_EGRESS_URL` | none | The URL of the deployment's own [shared egress](/docs/reference/hosts/egress#shared-egress), `http` or `https`. A push pool names it as `spotlight` in `provision.egress`. Without it, `spotlight` is rejected. |
 | `SPOTLIGHT_PLATFORM_EGRESS_TOKEN` | none | The token that egress calls Spotlight with: 32 to 255 of `A-Z a-z 0-9 . _ ~ -`. Give the same value to the egress as `SPOTLIGHT_EGRESS_TOKEN`. |
 
 Give both or neither. One without the other gives
@@ -98,7 +98,7 @@ Change stacks, decisions, memories and judges use models through OpenRouter.
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `OPENROUTER_API_KEY` | none | Without it, no decision or memory is drafted, no run is judged, and a change stack is refused with `Change stacks are not set up on this deployment.`. |
+| `OPENROUTER_API_KEY` | none | Without it, no decision or memory is drafted, no run is judged, and a change stack fails with `Change stacks are not set up on this deployment.`. |
 | `CHANGE_STACK_MODEL` | `google/gemini-3.8-flash` | Drafts [change stacks](/docs/reference/app/change-stacks-and-decisions). |
 | `DECISIONS_MODEL` | `google/gemini-3.8-flash` | Drafts [decisions](/docs/reference/app/change-stacks-and-decisions#decisions). |
 | `MEMORIES_MODEL` | `google/gemini-3.8-flash` | Drafts [memories](/docs/reference/glossary#memory). |

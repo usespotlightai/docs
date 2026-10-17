@@ -25,7 +25,7 @@ spotlight <tool> [--<input> <value>...] [--json <object> | --json -]
 ```
 
 In a [search's](/docs/reference/app/searches#the-searchs-agent-run) agent run,
-`reply`, `recall` and `remember` are refused with
+`reply`, `recall` and `remember` are rejected with
 `a search may not <answer a remark, recall what the team remembers or propose a memory>: it studies the station's history and proposes station configs, nothing more`.
 
 The tools Spotlight itself gives are listed in
@@ -67,7 +67,7 @@ fails:
 | Exit code on success | `0` |
 | Exit code on any error | `1`, with the message on standard error |
 | Request timeout | 2 minutes |
-| A refusal from the server | Printed as the server wrote it. |
+| An error from the server | Printed as the server wrote it. |
 | A token that does not match | `not this run's token` |
 | Spotlight unreachable | `reach Spotlight: <error>` |
 
@@ -406,9 +406,9 @@ Proposed <name> as candidate <id>.
 Spotlight replays it as <replay id>; its results show in spotlight history once the replay ends.
 ```
 
-A refused block prints `Spotlight refused the candidate:`, one line per
+A rejected block prints `Spotlight rejected the candidate:`, one line per
 problem as `<path>: <message>`, a warning marked `(<severity>, not why it was
-refused)`, and `Fix the station block and propose it again.` A refused
+rejected)`, and `Fix the station block and propose it again.` A rejected
 proposal does not count as one of the iteration's candidates, but an iteration may
 try at most three times as many as it may propose.
 
@@ -702,7 +702,7 @@ for how an integration defines tools and their inputs.
 
 | Input | How it is given |
 | --- | --- |
-| Text or a number | `--<input> <value>`. A number is written in decimal, so `0x10` is refused. |
+| Text or a number | `--<input> <value>`. A number is written in decimal, so `0x10` is rejected. |
 | `boolean` | `--<input>`, present or absent, or `--<input>=false` |
 | A list, an object or anything else | `--<input> '<JSON>'`, as in `--filter '{"team": "ENG"}'` |
 | Piped | `--<input> <value>`, or `--<input> -`, or `--<input> /dev/stdin`, or omitted with standard input not a terminal. Empty piped input counts as not given. |
@@ -712,10 +712,10 @@ name, with each value in its JSON type. `--json -` or `--json /dev/stdin` reads
 the object from standard input. A flag given beside `--json` replaces that
 field of the object. When `--json` reads standard input, no piped input does:
 an input left out stays out, and naming one with `-` or `/dev/stdin` is
-refused.
+rejected.
 
 Spotlight checks the inputs against the tool's schemas before it calls the
-host, and refuses a call that does not fit, saying where, as in
+host, and rejects a call that does not fit, saying where, as in
 `linear.issue-create takes input, and input.teamId is not text`. See
 [Input schemas](/docs/reference/terraform/integration#input-schemas).
 

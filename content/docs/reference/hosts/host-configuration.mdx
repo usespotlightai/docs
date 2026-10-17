@@ -96,7 +96,7 @@ other image is on Docker Hub.
 
 A missing file, or no entry for the registry, pulls anonymously. A file that
 cannot be read or parsed, or an `auth` that is not base64, fails the pull. The
-image is then refused with
+image is then unavailable with
 `Image can't be pulled. Error: read registry credentials <path>: <error>` or
 `Image can't be pulled. Error: registry credentials for <registry>: auth is not base64`,
 also when the host has a copy of it, unless the image is named by digest or
@@ -121,14 +121,14 @@ Any other variable, including `CURSOR_API_KEY`, enters the sandbox as it is.
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `SPOTLIGHT_EGRESS_ALLOW` | none | Comma-separated hosts sandboxes may reach. An entry is an exact host, or `*.example.com` for its subdomains. `*` alone is refused. Without it, any host is admitted; see [Admitted hosts](/docs/reference/hosts/egress#admitted-hosts). |
+| `SPOTLIGHT_EGRESS_ALLOW` | none | Comma-separated hosts sandboxes may reach. An entry is an exact host, or `*.example.com` for its subdomains. `*` alone is rejected. Without it, any host is admitted; see [Admitted hosts](/docs/reference/hosts/egress#admitted-hosts). |
 | `SPOTLIGHT_EGRESS_SECRET_ALLOW` | none | Comma-separated AWS Secrets Manager secret names or ARNs egress may read, or prefixes ending in `*`. |
 | `SPOTLIGHT_EGRESS_IMAGE` | `ghcr.io/usespotlightai/spotlight-runner:<release>`, or `:latest` for a binary built without a release | The image egress runs from. Entries in `SPOTLIGHT_RUNNER_IMAGE` do not change it. |
 | `SPOTLIGHT_EGRESS_ENV` | `egress.env` beside the config file | A file of variables only egress gets. |
 | `SPOTLIGHT_EGRESS_PASS` | none | Comma-separated names of the host's own variables to pass to egress only. |
 | `SPOTLIGHT_EGRESS_CA_BUNDLE` | none | A PEM file of certificate authorities egress trusts upstream. Sandboxes do not trust them. |
 
-See [Egress](/docs/reference/hosts/egress) for what egress admits and refuses.
+See [Egress](/docs/reference/hosts/egress) for what egress admits and blocks.
 
 ## Error reporting
 
@@ -150,10 +150,10 @@ The state directory contains:
 | Path | Contents |
 | --- | --- |
 | `<state>/host-id` | The host's id, made on first start. |
-| `<state>/host.lock` | A lock the host keeps while it runs. A second host on the same directory refuses to start. |
+| `<state>/host.lock` | A lock the host keeps while it runs. A second host on the same directory does not start. |
 | `<state>/mirrors/<workspace>/<repo>.git` | Bare mirrors of the repositories the host has checked out. Mounted read-only into sandboxes. Needs `git` on the host. |
 
-A host id serves one pool or trust at a time. Spotlight refuses a host id that
+A host id serves one pool or trust at a time. Spotlight rejects a host id that
 is already serving another pool or trust.
 
 ## Validation

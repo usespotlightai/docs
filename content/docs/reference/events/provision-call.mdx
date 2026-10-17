@@ -100,9 +100,9 @@ the last pool fails, the work's provisioning fails:
 | Code | Cause | Retried |
 | --- | --- | --- |
 | `unreachable` | The call could not be made. | yes |
-| `refused` | The response was not `2xx`. | yes |
+| `http-error` | The response was not `2xx`. | yes |
 | `lapsed` | The pool accepted the work, but no runner claimed it by `claimBy`. | yes |
-| `not-allowed` | The URL's host is not allowed, or the URL is not `https` where that is refused. The egress URL is not `https` where that is refused: `Egress URL must be https. Runners send their proxy credential to it.` | no |
+| `not-allowed` | The URL's host is not allowed, or the URL is not `https` where `https` is required. The egress URL is not `https` where `https` is required: `Egress URL must be https. Runners send their proxy credential to it.` | no |
 | `unusable` | The pool's provision secret cannot be opened. The pool names the platform egress and the deployment has none, or names an egress that does not exist in its workspace. The work needs egress, and the pool no longer names one: `The pool names no egress now. A run that uses secrets or the Spotlight API needs one.` | no |
 | `harness-missing` | The runner the pool started does not have the work's harness installed. | no |
 

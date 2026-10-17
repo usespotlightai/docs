@@ -90,7 +90,7 @@ Any other ending is handled as `review`, with one of these notes:
 | The run failed | `The run failed: <message>`, with a failure. See [Failure codes](#failure-codes). |
 | The runner was lost, or the host stopped the sandbox at its run timeout, on the last attempt | `Spotlight gave up on the run after <n> attempts. The run did not finish.`, with the failure `runner-lost` or `timed-out`. |
 | The run was stopped | `A person stopped the run. The task is back with you.` |
-| A hook on `handover.giving` refused it | The hook's reason, then `The run said: <note>`. See [`spotlight_hook`](/docs/reference/terraform/hook). |
+| A hook on `handover.giving` denied it | The hook's reason, then `The run said: <note>`. See [`spotlight_hook`](/docs/reference/terraform/hook). |
 
 If a reaction became a deferred move while the run worked on the task, every
 ending other than a station key moves the task to the station of the latest
@@ -102,7 +102,7 @@ while the task has a current run: the run is let go, and the `passed` note carri
 
 | Mover | How | Placed | Effect |
 | --- | --- | --- | --- |
-| Person | Dragging on the board, the selection bar's "Move to", or the task's "Station" property. Only from the backlog to a work station, from a work station to the backlog, from anywhere to the completed station, or within one station. Any other move is refused with `422` and `Task cannot move from <from> to <to>. <reason>`, where `<reason>` is `A completed task stays completed.` or `Only runs move a task between work stations.` | Below the task it is dropped under (`afterTaskId`), or at the top. | A `passed` note `Moved to <Station>.` is written. |
+| Person | Dragging on the board, the selection bar's "Move to", or the task's "Station" property. Only from the backlog to a work station, from a work station to the backlog, from anywhere to the completed station, or within one station. Any other move is denied with `422` and `Task cannot move from <from> to <to>. <reason>`, where `<reason>` is `A completed task stays completed.` or `Only runs move a task between work stations.` | Below the task it is dropped under (`afterTaskId`), or at the top. | A `passed` note `Moved to <Station>.` is written. |
 | Reaction | A happening that a line's reaction names, when the task has no current run. See [`spotlight_line`](/docs/reference/terraform/line). | At the top of the station. | A `passed` note in the world voice, carrying what the happening said. |
 | Deferred move | The run that worked on the task when a reaction became a deferred move ends other than by passing the task on. | At the top of the station. | A `passed` note in the station voice, `Moved to <Station> when the run ended. An event arrived while the run worked.`, followed by the run's note if it gave one; for a failure or a lost runner, that ending's note with its failure; for a missing outcome, that ending's note; for a console stop, `A person stopped the run.` |
 
@@ -116,7 +116,7 @@ A move to another station:
 
 A person who moves an unassigned task from the backlog to a work station becomes
 its assignee. A person's move names the task's current revision; a stale
-revision is refused with `409`. A move to the station the task is already
+revision fails with `409`. A move to the station the task is already
 at only reorders it.
 
 When a happening finds a task, the line decides one of these outcomes:
@@ -184,12 +184,12 @@ why (optional)`. See [Approvals](#approvals).
 | `parked` | `queued` | The person answers. The run is queued as its next attempt, and restores the stored workspace wherever it is claimed. |
 | `waiting`, `parked` | `completed` | The task is moved or deleted, or the run is stopped. |
 | `claimed` | `completed` | The runner reports an outcome without a failure, or the run is stopped, or its lease lapses after it was asked to stop. |
-| `claimed` | `failed` | The harness failed (`exited`), or the run failed before its harness started (`unprepared`). A hook on `run.starting` refused it (`refused`). Its hooks could not be asked after the last hand-back (`hooks-unanswered`). Its lease lapsed on the last attempt, and no stop was asked for (`runner-lost`). Its host stopped it at its run timeout on the last attempt, and no stop was asked for (`timed-out`). |
+| `claimed` | `failed` | The harness failed (`exited`), or the run failed before its harness started (`unprepared`). A hook on `run.starting` denied it (`refused`). Its hooks could not be asked after the last hand-back (`hooks-unanswered`). Its lease lapsed on the last attempt, and no stop was asked for (`runner-lost`). Its host stopped it at its run timeout on the last attempt, and no stop was asked for (`timed-out`). |
 | `failed` | `superseded` | The run's task has moved on. |
 
 Words said to a run at the station where its task is idle, when that
 station has a harness, start a new run there that resumes the station's
-session. Words said to a run whose task has left its station are refused with
+session. Words said to a run whose task has left its station fail with
 `409`, and words from anyone but the task's assignee with `404`.
 Only a claimed, waiting or parked run can be stopped. The web app offers Stop
 only while a run is claimed. Attempts a run spent parked do not count in
@@ -221,7 +221,7 @@ run and a search's agent run have the composer turned off, with
 | --- | --- | --- |
 | `exited` | The runner reported that the run failed once its harness had started, or the harness did not start. | no |
 | `unprepared` | The run failed before its harness started: its workspace, checkouts, attachments, skills or harness files could not be made ready, or its host could not start a sandbox with the line's image and its egress. | no |
-| `refused` | The run could not be given what its station names, or a hook refused its start. | no |
+| `refused` | The run could not be given what its station names, or a hook denied its start. | no |
 | `unprovisioned` | A push pool did not provision a runner for it. | no |
 | `hooks-unanswered` | Its `run.starting` hooks could not be asked. | yes |
 | `runner-lost` | Its runner stopped renewing the lease. | yes |
@@ -249,7 +249,7 @@ for more than one reason, the reasons are joined with `; `.
 | Message | Cause |
 | --- | --- |
 | `Runner image <image> can't be pulled. Error: <error>` | The host could not pull the line's image and has no copy of it. Unreadable registry credentials fail the pull even when the host has a copy, unless the image is named by digest or the copy has no registry digest. Code `unprepared`. |
-| `Runner image <image> is refused. <reason>` | The host does not serve the image. The reasons are those the Runners page shows for the image. Code `unprepared`. |
+| `Runner image <image> is unavailable. <reason>` | The host does not serve the image. The reasons are those the Runners page shows for the image. Code `unprepared`. |
 | `Runner image <digest> no longer has the <harness> harness.` | The image changed and lost the station's harness. Code `unprepared`. |
 | `The sandbox's egress didn't start. Error: <error>` | See [Egress start failures](/docs/reference/hosts/egress#egress-start-failures). Code `unprepared`. |
 | `The runner couldn't prepare the run. Error: prepare: git clone <path>: <error>: <output>` | A repository could not be cloned. Code `unprepared`. |
@@ -412,7 +412,7 @@ claims and the pass share together.
 | Failure | When | Tried again |
 | --- | --- | --- |
 | `no-evidence` | The run left no steps and no hunks. | no |
-| `refused` | The model refused to answer. | up to 4 attempts, from 30 seconds to 10 minutes apart |
+| `request-failed` | The request to the model failed. | up to 4 attempts, from 30 seconds to 10 minutes apart |
 | `unreadable` | The answer could not be read, gave more than 5 reasons, or a score off the scale. With claims: it did not answer each claim once, in order, or gave a claim no reasons or more than 3. | up to 3 attempts, from 30 seconds to 5 minutes apart |
 | `ungrounded` | Half the reasons or fewer cited what the judge read. With claims: half or fewer of any one claim's reasons. | up to 3 attempts, from 30 seconds to 5 minutes apart |
 | `errored` | Another error. | up to 4 attempts, from 30 seconds to 10 minutes apart |
@@ -946,7 +946,7 @@ The item shows:
 
 When a run calls a tool of an integration whose `connection.holder` is
 `requester`, and the person who started the task has not connected it or the
-host refused to renew their connection, nothing is sent. The task is assigned
+host could not renew their connection, nothing is sent. The task is assigned
 to that person and put to them with an `asked` note of form `connection`:
 
 ```text
@@ -955,7 +955,7 @@ I need to use `<tool>`, which acts as you in <integration>, and you haven't conn
 Connect <integration> and I will carry on. Nothing has been sent yet.
 ```
 
-For a refused renewal, `<integration> refused to renew your connection, so it
+For a failed renewal, `<integration> could not renew your connection, so it
 has to be made again` takes the place of `you haven't connected <integration>
 yet`. `<integration>` is the integration's `name`.
 
@@ -1005,7 +1005,7 @@ call with the changed inputs.
 - Only a person can approve or dismiss. A workspace token cannot.
 - A call that asks because of a person's own tool rule can be approved only
   by that person. See [Person rules](#person-rules).
-- An approval is decided once. A second decision is refused with `409`.
+- An approval is decided once. A second decision fails with `409`.
 - An answer without a decision answers the conversation and leaves the approval
   undecided.
 - A decision without words is recorded as `Approved.` or `Dismissed.`.
@@ -1026,7 +1026,7 @@ rule for it as well as the team's. Of the two, the stricter wins:
 
 - When a call waits because of a person's rule, the task is put to that
   person: they become its assignee.
-- Approving it by anyone else is refused with `409`. Whoever may answer the
+- Approving it by anyone else fails with `409`. Whoever may answer the
   task can still dismiss it.
 - A grant from someone else does not cover such a call. It asks that person
   again.
@@ -1047,14 +1047,14 @@ A person may approve a tool call with changed inputs, given as `inputs` with
   be added or removed.
 - Each value has the type of the input it replaces: any text for a `string`, a
   finite number for a `number`, `true` or `false` for a `boolean`.
-- A changed list or object is checked against the input's schema, and refused
+- A changed list or object is checked against the input's schema, and rejected
   naming where it does not fit. See
   [Input schemas](/docs/reference/terraform/integration#input-schemas).
 - A value may not be blank where the call was asked with one.
 - A harness permission and a dismissal take no changes.
 - Changes that leave every input as it was are recorded as no change.
 
-A refused answer is `409`. See
+An answer that breaks these rules fails with `409`. See
 [Answering an approval](/docs/reference/errors-and-messages#answering-an-approval).
 
 The answer the agent reads is the person's words, or `Approved.`, followed by
@@ -1125,7 +1125,7 @@ to open a pull request with the team's Terraform there, with
 The chat keeps the pull request. Its runs reach Spotlight's API with
 [the run's Spotlight token](/docs/reference/hosts/egress#the-runs-spotlight-token).
 A setup chat needs egress: a host that serves the workspace, or a push pool
-that names an egress. Without either, starting one is refused with `422` and
+that names an egress. Without either, starting one fails with `422` and
 `A setup chat needs egress. No host serves this workspace, and no push pool names an egress. Please connect a host, or name an egress in a push pool.`
 
 Chat runs have priority over task runs.

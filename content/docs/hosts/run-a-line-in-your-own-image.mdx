@@ -90,7 +90,7 @@ docker run --rm ghcr.io/acme/web-runner:main harnesses '[]'
 ```
 
 It prints the release as `release` in a line of JSON; ignore the empty
-`harnesses` list. A host refuses an image whose runner is older than Spotlight needs,
+`harnesses` list. A host cannot use an image whose runner is older than Spotlight needs,
 so rebuild on a newer base when that happens.
 
 ## Name the image on the line
@@ -141,7 +141,7 @@ after running the install script again.
 The host checks every minute which images lines name. Open **Settings** from
 the workspace menu, then **Runners**. In the host's row, **Images** shows the default image and `+N` for
 the others; hover over the image to see every name. If it also reads
-`N refused`, hover over that for each refused image and its reason. A refusal
+`N unavailable`, hover over that for each unavailable image and its reason. A reason
 saying the host's `SPOTLIGHT_RUNNER_IMAGE` does not admit it means the entry
 does not match the name on the line.
 

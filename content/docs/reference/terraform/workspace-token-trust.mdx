@@ -37,7 +37,7 @@ resource "spotlight_workspace_token_trust" "github_main" {
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `key` | string | required | Lowercase words joined by dashes, at most 64 characters. Fixed: an update that changes it is refused; Terraform replaces the resource. |
+| `key` | string | required | Lowercase words joined by dashes, at most 64 characters. Fixed: an update that changes it is rejected; Terraform replaces the resource. |
 | `issuer` | string | required | The issuer the workload's token must name in `iss`. `https`, or `http` only for `localhost`, `127.0.0.1` or `[::1]`. No query, fragment or credentials. At most 255 characters. |
 | `audience` | string | `spotlight` | A value the token's `aud` must contain. One word, at most 255 characters. |
 | `subject` | string | required | A pattern the token's `sub` must match. See [patterns](#patterns). |
@@ -62,7 +62,7 @@ before it must contain `/`.
 | `repo:*` | no |
 | `*` | no |
 
-A refused subject reads `must name an owner before any *, as in repo:acme/* or repo:acme/platform:*`.
+A rejected subject reads `must name an owner before any *, as in repo:acme/* or repo:acme/platform:*`.
 
 Claim names are lowercase letters, digits and `_`, starting with a letter, at
 most 64 characters. `iss`, `sub`, `aud`, `exp`, `nbf`, `iat` and `jti` may not
@@ -87,7 +87,7 @@ Writing a trust needs the `manage-token-trusts` permission. See
 A token may define a trust only with scopes it has itself, may change a
 trust only when it has both the trust's current scopes and the new ones, and
 may delete a trust only when it has the trust's current scopes. Otherwise the
-write or delete is refused with `403`, as for a caller without
+write or delete is forbidden with `403`, as for a caller without
 `manage-token-trusts`. See [Permission titles](/docs/reference/errors-and-messages#permission-titles).
 A person who is an owner or admin is not limited this way.
 
@@ -122,7 +122,7 @@ A `200` response:
 | `scopes` | array of strings | The trust's scopes. |
 | `expiresAt` | string | After this RFC 3339 time it admits nobody. |
 
-Every refusal is `401` with `Spotlight refused the exchange. Possible causes: an unknown trust, a token its issuer did not sign for the trust's audience, a workload the trust does not admit, or a closed workspace`.
+Every failed exchange gets `401` with `Spotlight did not accept the exchange. Possible causes: an unknown trust, a token its issuer did not sign for the trust's audience, a workload the trust does not admit, or a closed workspace`.
 
 Each exchange is recorded as a
 [configuration change](/docs/reference/api/resource-api#configuration-changes): a

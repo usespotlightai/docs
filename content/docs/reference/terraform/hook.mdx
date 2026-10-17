@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: spotlight_hook
-description: The fields of a hook, the events it fires on, the requests it sends, and how it signs, refuses, calls back and fails.
+description: The fields of a hook, the events it fires on, the requests it sends, and how it signs, denies, calls back and fails.
 ---
 
 The `spotlight_hook` resource, and the API's `hook` kind: a team's rule that
@@ -43,7 +43,7 @@ resource "spotlight_hook" "migrations" {
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `key` | string | required | Lowercase words joined by dashes, at most 64 characters. Fixed: an update that changes it is refused; Terraform replaces the resource. |
+| `key` | string | required | Lowercase words joined by dashes, at most 64 characters. Fixed: an update that changes it is rejected; Terraform replaces the resource. |
 | `on` | string | required | The event the hook fires on. See [events](#events). |
 | `match.tools` | array of strings | `[]` | Tools, as `<integration>.<tool>`. Only on `tool.using` and `tool.used`. Each must be offered by an integration of the team. |
 | `match.lines` | array of strings | `[]` | Line keys. |
@@ -184,21 +184,21 @@ The request carries `Authorization: Bearer <token>`, an ES256 JWT:
 | OpenID configuration | `https://app.usespotlight.ai/api/.well-known/openid-configuration` |
 | Keys | `https://app.usespotlight.ai/api/.well-known/jwks.json` |
 
-A hook with `oidc` is refused when the deployment has no key to sign hook
+A hook with `oidc` is rejected when the deployment has no key to sign hook
 tokens with, in [`HOOK_SIGNING_KEY`](/docs/reference/self-hosted-settings#calls-out-of-spotlight): `needs HOOK_SIGNING_KEY set to sign OIDC tokens`.
 
-## Refusing an event
+## Denying an event
 
-A hook on a before event refuses the event when:
+A hook on a before event denies the event when:
 
-- a step's response is `2xx` with a JSON body whose `refuse` is a non-empty string, whatever `failure` is; or
+- a step's response is `2xx` with a JSON body whose `deny` is a non-empty string, whatever `failure` is; or
 - a step fails and `failure` is `block`.
 
 ```json
-{ "refuse": "Migrations need a DBA's review first." }
+{ "deny": "Migrations need a DBA's review first." }
 ```
 
-The event is refused with `Hook <key> refused. Reason: <reason>`, or `Hook <key> failed at step <step> and blocks on failure. Reason: <reason>`.
+The event is denied with `Hook <key> denied the event. Reason: <reason>`, or `Hook <key> failed at step <step> and blocks on failure. Reason: <reason>`.
 With `continue`, a failed step lets the event go on.
 
 The hooks on one before event have 60 seconds together.
@@ -214,8 +214,8 @@ The token in `spotlight-callback-token` lives 15 minutes and is sent as
 | `POST /api/hook-callbacks/notes` | `{ "body": "<text>" }`, 1 to 20,000 characters | `204`. The note appears on the task as said by the hook. |
 
 `POST /api/hook-callbacks/notes` takes an optional `Idempotency-Key`; a retry
-with the same key is said once. A missing, expired or unknown token is refused
-with `401`. An empty or too long note is refused with `400`.
+with the same key is said once. A missing, expired or unknown token gets
+`401`. An empty or too long note gets `400`.
 
 ## Failures
 

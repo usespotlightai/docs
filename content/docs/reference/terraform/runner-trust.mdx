@@ -33,7 +33,7 @@ resource "spotlight_runner_trust" "production_cluster" {
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `key` | string | required | Lowercase words joined by dashes, at most 64 characters. Fixed: an update that changes it is refused; Terraform replaces the resource. |
+| `key` | string | required | Lowercase words joined by dashes, at most 64 characters. Fixed: an update that changes it is rejected; Terraform replaces the resource. |
 | `issuer` | string | required | The issuer the token must name in `iss`. `https`, or `http` only for `localhost`, `127.0.0.1` or `[::1]`. No query, fragment or credentials. At most 255 characters. |
 | `subject` | string | required | The token's `sub`, matched exactly. One word, at most 255 characters. `*` has no special meaning. |
 | `audience` | string | `spotlight` | A value the token's `aud` must contain. One word, at most 255 characters. |
@@ -59,7 +59,7 @@ A host serving a trust sends, on every request:
 The token is verified as a workspace token trust verifies a workload's token
 (see [Workload token verification](/docs/reference/terraform/workspace-token-trust#workload-token-verification)),
 and must match the trust's `issuer`, `subject` and `audience`. A host that is
-refused gets `401` with `Missing, rotated or unknown pool token, or a workload the trust does not admit`.
+not accepted gets `401` with `Missing, rotated or unknown pool token, or a workload the trust does not admit`.
 A host id already serving another pool or trust gets `409`.
 
 The host sets `SPOTLIGHT_TRUST` and `SPOTLIGHT_OIDC_TOKEN_FILE`; see

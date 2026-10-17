@@ -18,7 +18,7 @@ Expressions are [CEL](https://cel.dev). They are written in
 | A hook's `when` | bare CEL, or `${{ <CEL> }}` | `event.inputs.query != ''` |
 
 A field that contains one expression must be the whole string, `${{ ... }}`, with
-nothing around it but spaces. Such fields are refused otherwise, with
+nothing around it but spaces. Such fields are rejected otherwise, with
 `must be an expression, written as ${{ ... }}`.
 
 A field that contains text (a request's `url`, `query`, `headers` and `body`
@@ -49,7 +49,7 @@ has(body.data.assignee) ? body.data.assignee.email : ""
 ```
 
 No expression may read a secret. An expression containing `secret.` or
-`secret[` is refused.
+`secret[` is rejected.
 
 ## Integration positions
 
@@ -174,8 +174,8 @@ definition is written.
 
 | Problem | Integration | Hook |
 | --- | --- | --- |
-| does not parse | error, write refused | error, write refused |
-| does not type-check, or returns the wrong type | warning, definition kept | error, write refused |
+| does not parse | error, write rejected | error, write rejected |
+| does not type-check, or returns the wrong type | warning, definition kept | error, write rejected |
 
 An integration warning reads `does not check: <message>`, followed by `. Did you mean <suggestion>?` when there is one. Warnings are returned in the
 resource's `warnings`, and the Terraform provider shows them as warnings on the
@@ -191,8 +191,8 @@ POST /api/expressions/check
 ```
 
 Type-checks one expression where it would be written, as `terraform plan`
-does. Needs the `plan` permission; a workspace token without it is refused
-with `403`. It takes the same credentials and returns the same problems as the
+does. Needs the `plan` permission; a workspace token without it gets
+`403`. It takes the same credentials and returns the same problems as the
 [resource API](/docs/reference/api/resource-api).
 
 | Field | Type | Description |

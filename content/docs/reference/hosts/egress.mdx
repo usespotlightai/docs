@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Egress
-description: The proxy beside each sandbox and the shared egress of push pools, what each admits and refuses, which secrets it injects into requests to which hosts, what it records, and the responses it returns.
+description: The proxy beside each sandbox and the shared egress of push pools, what each admits and blocks, which secrets it injects into requests to which hosts, what it records, and the responses it returns.
 ---
 
 Egress is the proxy between a sandbox and the network. It has two forms:
@@ -47,13 +47,13 @@ seconds and clears the secret values it kept.
 
 Host names are compared without regard to case. The Spotlight address, and the
 storage hosts Spotlight names for the run, are always admitted. `*` alone is
-refused at host start.
+rejected at host start.
 
-## Refused addresses
+## Blocked addresses
 
 Egress checks the address it connects to, after resolving the host name.
 
-| Address | Refused |
+| Address | Blocked |
 | --- | --- |
 | Loopback, link-local (including `169.254.169.254`), multicast, unspecified, `0.0.0.0/8` | Always. |
 | Private (RFC 1918, IPv6 unique local), `100.64.0.0/10`, `64:ff9b::/96`, `2002::/16` | Unless an allow-list entry names the host. An empty allow-list names no host. |
@@ -191,7 +191,7 @@ an egress.
 | `407` | `Egress answers only the sandbox it was started for.` | No proxy credential, or the wrong one. |
 | `400` | `Egress is a proxy. Please ask it for an absolute URL, or CONNECT to a host.` | A request that is neither `CONNECT` nor an absolute URL. |
 | `403` | `Egress doesn't let this sandbox reach <host>.` | The allow-list does not admit the host. |
-| `502` | `Egress couldn't reach <host:port>. Error: Egress never opens a connection to <ip>.` | A tunnelled `CONNECT` to an always-refused address. |
+| `502` | `Egress couldn't reach <host:port>. Error: Egress never opens a connection to <ip>.` | A tunnelled `CONNECT` to an always-blocked address. |
 | `502` | `Egress couldn't reach <host:port>. Error: Egress opens a connection to private address <ip> only if the allow-list names the host.` | A tunnelled `CONNECT` to a private address the allow-list does not name. |
 | `502` | `Egress couldn't reach <host:port>. Error: <reason>` | Any other failure of a tunnelled `CONNECT`. |
 | `502` | `Egress couldn't reach <host:port>.` | A plain-HTTP or intercepted request that failed for any of these causes. The reason and the URL are left out. |
@@ -210,7 +210,7 @@ These fail the run with `The sandbox's egress didn't start. Error: <error>`:
 | `egress was not ready within 1m30s` | Egress did not publish its authority in time. |
 | `pull the egress image <image>: <error>` | The egress image could not be pulled. |
 
-If Spotlight refuses to send the run's secrets, egress starts with no secrets to
+If Spotlight does not send the run's secrets, egress starts with no secrets to
 inject and logs `the control plane gave egress no secrets to inject`. If it cannot reach
 Spotlight within 1 minute, it logs
 `gave up fetching the run's secrets; the sandbox goes out with no injected secrets`.
@@ -260,7 +260,7 @@ Spotlight's API, is never reserved for its runners.
 
 Egress reads AWS Secrets Manager with its own AWS identity, from the default
 credential chain. [Admitted hosts](#admitted-hosts) and
-[Refused addresses](#refused-addresses) apply as above. The Spotlight address's
+[Blocked addresses](#blocked-addresses) apply as above. The Spotlight address's
 host, and the storage hosts Spotlight names for the run, are always admitted.
 
 On a problem with its settings, egress logs each one, then `egress stopped`,
@@ -369,7 +369,7 @@ added to the bundles, the runner logs
   them.
 - Values Spotlight keeps are sealed to a key the egress process makes when it
   starts. One key serves every run of the process.
-- A forwarded request to a host that is not bound is refused with `403`.
+- A forwarded request to a host that is not bound is blocked with `403`.
   Egress logs the same reasons as above for a secret it does not inject.
 
 ### Connection records
@@ -395,7 +395,7 @@ A record contains no URL, method, header or body.
 | `outcome` | `reason` | When |
 | --- | --- | --- |
 | `blocked` | `not-allowed` | The allow-list does not admit the host. |
-| `blocked` | `address-refused` | Egress refuses the address of the host. See [Refused addresses](#refused-addresses). |
+| `blocked` | `private-address` | Egress blocks the address of the host. See [Blocked addresses](#blocked-addresses). |
 | `blocked` | `not-bound` | A forwarded request names a host that is not bound. |
 | `failed` | `no-such-host` | The host name has no DNS record. |
 | `failed` | `timed-out` | The host did not answer in time. |
@@ -455,14 +455,14 @@ A workspace can send up to the rate's number of requests at once.
 | `502` | `Egress could not get the run's secrets from the control plane. Please try again.` | The run's secrets could not be fetched. |
 | `400` | `Egress takes a CONNECT, a request that names its target in Spotlight-Egress-Target, or GET /.well-known/spotlight/bound.` | Any other request. |
 | `403` | `Egress does not let this sandbox reach <host>.` | The allow-list does not admit the host, or the runner has no lease on a run and the host is not the Spotlight address's. |
-| `502` | `Egress could not reach <host:port>. Error: <reason>` | A tunnel could not be opened, an address egress refuses included. |
+| `502` | `Egress could not reach <host:port>. Error: <reason>` | A tunnel could not be opened, an address egress blocks included. |
 | `505` | `Egress tunnels only over HTTP/1.1. Please CONNECT over HTTP/1.1.` | A `CONNECT` over HTTP/2. |
 | `400` | `Spotlight-Egress-Target must be a host and port 443, such as api.example.com:443.` | A forwarded request to another port. |
 | `403` | `Egress forwards a request only to a host that a secret of this run is bound to, and <host> is not one. Please CONNECT to other hosts.` | A forwarded request to a host that is not bound. |
 | `502` | `Egress could not reach <host>.` | A forwarded request that could not be sent on. The reason is left out. |
 | `429` | See [Limits](#limits). | |
 
-The way out passes each refusal of egress on with its status and message. Its
+The way out passes each error response of egress on with its status and message. Its
 own failures are:
 
 | Status | Message | Cause |

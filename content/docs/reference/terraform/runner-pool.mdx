@@ -64,7 +64,7 @@ removing `provision` replaces the pool.
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `key` | string | required | Lowercase words joined by dashes, at most 64 characters. Placement ignores it; lines and stations place work on the pool by its `labels`. Fixed: an update that changes it is refused; Terraform replaces the resource. |
+| `key` | string | required | Lowercase words joined by dashes, at most 64 characters. Placement ignores it; lines and stations place work on the pool by its `labels`. Fixed: an update that changes it is rejected; Terraform replaces the resource. |
 | `labels` | array of strings | `[]` | Names a line or station may use in `runners` to place work on the pool. Lowercase words joined by dashes, at most 64 characters, each once. |
 | `maxRuns` | integer or null | `null` | The most runs the pool serves at once, 1 to 10,000. Null is no limit. |
 | `token` | string | none | Pull pools only. Write-only. 32 to 255 of `A-Z a-z 0-9 . _ ~ -`. Without it, Spotlight issues one; see [Pool token](#pool-token). |
@@ -111,20 +111,20 @@ Spotlight provisions its runner, the pool no longer names an egress:
 - A pool created without `token` gets one from Spotlight, returned once in the
   `Spotlight-Pool-Token` response header, never again.
 - Spotlight keeps only its hash.
-- A token is given once, ever. A token that another pool has is refused with
+- A token is given once, ever. A token that another pool has is rejected with
   `belongs to another pool. Please give each pool its own`. A token rotated
-  away, or used by a pool since deleted or replaced, is refused to every pool,
+  away, or used by a pool since deleted or replaced, is rejected for every pool,
   the pool that used it included, with
   `was used before. Pool tokens work once only`.
-- Rotating with a new `tokenVersion` refuses the old token at once. Runs
+- After a rotation with a new `tokenVersion`, the old token stops working at once. Runs
   already claimed keep their own one-run credentials.
-- `token` and `tokenVersion` on a push pool are refused.
+- `token` and `tokenVersion` on a push pool are rejected.
 
 ## Warnings
 
 | Path | Warning |
 | --- | --- |
-| `provision.url` | `is not https. Its calls carry a one-run token. A production deployment refuses to make them` |
+| `provision.url` | `is not https. Its calls carry a one-run token. A production deployment does not make them` |
 
 ## Delete
 

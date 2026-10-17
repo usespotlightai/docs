@@ -46,7 +46,7 @@ A station gives it with `skills = [spotlight_skill.core_grafana.key]`, or
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `key` | string | required | What stations give the skill by. Lowercase words joined by dashes, at most 64 characters. Must not start with `spotlight-`. Fixed: an update that changes it is refused; Terraform replaces the resource. |
+| `key` | string | required | What stations give the skill by. Lowercase words joined by dashes, at most 64 characters. Must not start with `spotlight-`. Fixed: an update that changes it is rejected; Terraform replaces the resource. |
 | `files` | map of name to string | required | Each file's text by its path within the skill's folder. Must contain `SKILL.md`. |
 
 A read also returns these fields, taken from the `SKILL.md` frontmatter.
@@ -109,6 +109,6 @@ Before the run starts, anything else in that skills folder is removed.
 
 ## Delete
 
-A delete is refused with `409` `in-use` while any station gives the skill.
+A delete fails with `409` `in-use` while any station gives the skill.
 
 See [Give stations a skill](/docs/lines/give-stations-a-skill).

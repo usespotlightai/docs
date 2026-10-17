@@ -21,7 +21,7 @@ endpoints, under `/api/teams/{teamId}`. They answer JSON, and errors are
 | `GET /searches` | The team's searches, newest first, a page at a time. |
 | `GET /searches/{searchId}` | One search with its split, iterations, candidates and frontier. See [Search detail](#search-detail). |
 | `POST /searches/{searchId}/stop` | `204`: stops the search. Its agent's run is withdrawn or stopped, its replays stop, and nothing more starts. |
-| `POST /searches/{searchId}/candidates/{candidateId}/pick` | `201` and a [config pull request](#config-pull-request) when picked, or picked again after a refusal; `200` and the one it has when picked already. |
+| `POST /searches/{searchId}/candidates/{candidateId}/pick` | `201` and a [config pull request](#config-pull-request) when picked, or picked again after a failure; `200` and the one it has when picked already. |
 | `GET /config-pull-requests/{pullRequestId}` | A [config pull request](#config-pull-request). |
 | `GET /search-runs/{runId}` | A search's agent run: its search and iteration, the agent it ran, its steps, and what it spent. |
 
@@ -36,7 +36,7 @@ A search's agent proposes candidates at `POST /api/runs/{runId}/search-candidate
 which only the runner with the lease on the run may call, with its runner token. The
 agent reaches it through
 [`spotlight candidate`](/docs/reference/cli/agent-commands#spotlight-candidate).
-From a reflection's run it is refused with `409`.
+From a reflection's run it fails with `409`.
 
 A reflection's agent records a cause at `POST /api/runs/{runId}/search-causes`,
 on the same terms, through
@@ -141,7 +141,7 @@ Each item of a list, and the first fields of a search's detail:
 | Field | Type | Description |
 | --- | --- | --- |
 | `split` | object | `searchedTasks`, `heldOutTasks`, and `searched` and `heldOut`, each a list of `{ runId, taskId }` from the set. |
-| `iterations` | array | Each `{ number, kind, runId, state, attempts, proposed, agentSpent, reflection }`. `kind` is `propose` or `reflect`. `state` is `wanted`, `running`, `ended` or `failed`. `attempts` counts its proposals, refused ones included; `proposed` lists the candidates it admitted, by id. `agentSpent` is what its agent run spent, once known. `reflection` is a [reflection](#reflection) for a `reflect` iteration, else null. |
+| `iterations` | array | Each `{ number, kind, runId, state, attempts, proposed, agentSpent, reflection }`. `kind` is `propose` or `reflect`. `state` is `wanted`, `running`, `ended` or `failed`. `attempts` counts its proposals, rejected ones included; `proposed` lists the candidates it admitted, by id. `agentSpent` is what its agent run spent, once known. `reflection` is a [reflection](#reflection) for a `reflect` iteration, else null. |
 | `seed` | object | The live config the search started from, as a [candidate](#candidate). Its search score counts the searched runs only, its held-out score the held-out runs. |
 | `candidates` | array | Every candidate its agent proposed. |
 | `frontier` | array of strings | The candidates on the [frontier](/docs/reference/app/searches#frontier), by id, cheapest first, the seed always among them. With `objective` set to `cost`, only candidates whose `searchedGain.verdict` is `better` or `within-noise`. |
@@ -197,9 +197,9 @@ resource: it is not listed, imported, read or withdrawn there.
 | Field | Type | Description |
 | --- | --- | --- |
 | `id` | string | |
-| `state` | string | `opening`, `opened` or `refused`. |
+| `state` | string | `opening`, `opened` or `failed`. |
 | `url` | string or null | The pull request on GitHub, once opened. |
-| `reason` | object or null | Why it was refused: `{ code, message, attribute, expression, wanted }`. `code` is one of the [config pull request reasons](/docs/reference/app/searches#config-pull-request-reasons). `attribute` is the station attribute it is about, `expression` the Terraform expression that computes it, and `wanted` the value to set by hand. |
+| `reason` | object or null | Why it failed: `{ code, message, attribute, expression, wanted }`. `code` is one of the [config pull request reasons](/docs/reference/app/searches#config-pull-request-reasons). `attribute` is the station attribute it is about, `expression` the Terraform expression that computes it, and `wanted` the value to set by hand. |
 | `teamId`, `searchId`, `candidateId`, `lineId`, `stationId` | string | |
 | `candidateName`, `stationKey` | string | |
 | `repository`, `path` | string or null | The line's `source` when it was picked. Null when the line named none. |
@@ -208,7 +208,7 @@ resource: it is not listed, imported, read or withdrawn there.
 | `createdAt`, `updatedAt` | string | RFC 3339 times. |
 
 Picking a candidate whose pull request is opening or opened answers that one.
-Picking a refused one tries again, reading the line's `source` afresh.
+Picking a failed one tries again, reading the line's `source` afresh.
 
 ## Who may read and change
 
@@ -216,14 +216,14 @@ Reading, and estimating, need a person on the team or an owner or admin of
 its workspace, or a [workspace token](/docs/reference/api/workspace-token) of
 the team's workspace with the `read` scope. Anyone else is answered `404`.
 Starting and stopping a search and picking a candidate also need `plan`: a
-token with `read` alone is refused with `403`. See
+token with `read` alone gets `403`. See
 [Team outcomes](/docs/reference/roles-and-permissions#team-outcomes).
 
 Starting a search is recorded as a
 [configuration change](/docs/reference/api/resource-api#configuration-changes)
 of the kind `replay-search` with the action `created`, and stopping it as
 `updated`. Picking a candidate is recorded as `config-pull-request`, keyed by
-its branch: `created`, and `updated` when picked again after a refusal.
+its branch: `created`, and `updated` when picked again after a failure.
 
 ## Errors
 

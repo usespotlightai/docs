@@ -40,7 +40,7 @@ SPOTLIGHT_EGRESS_ALLOW=api.anthropic.com,registry.npmjs.org,*.acme.internal
 ```
 
 Then [restart the host](/docs/hosts/run-a-host#restart-the-host). The host
-checks the list when it starts, and on an entry it cannot read it refuses to
+checks the list when it starts, and on an entry it cannot read it does not
 start and names the entry.
 
 Reinstalling drops this line from `host.env`; add it back afterwards. If you
@@ -52,8 +52,8 @@ environment instead, where it overrides `host.env`.
 Egress opens a connection to a private address only for a host an entry names,
 exactly or by a `*.` pattern. Add the name the run uses for the private host,
 such as `git.acme.internal`. Loopback and link-local addresses, including the
-cloud metadata address, are always refused;
-[Refused addresses](/docs/reference/hosts/egress#refused-addresses) lists the ranges.
+cloud metadata address, are always blocked;
+[Blocked addresses](/docs/reference/hosts/egress#blocked-addresses) lists the ranges.
 
 ## Trust an internal certificate authority
 
@@ -69,7 +69,7 @@ Sandboxes do not trust these authorities. If the agent's own tools connect to
 the host directly, add the CA to your runner image as well; see
 [Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image).
 
-## Find refused requests
+## Find blocked requests
 
 A request to a host the list leaves out fails with status `403` and this
 message:

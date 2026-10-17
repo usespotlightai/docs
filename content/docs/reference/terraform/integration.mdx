@@ -70,7 +70,7 @@ Acme is an example name for any HTTP service. A station gives this tool as `acme
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `integration` | string | required | The name the host is addressed by. Prefixes its tools, happenings and webhook address. Fixed: an update that changes it is refused; Terraform replaces the resource. |
+| `integration` | string | required | The name the host is addressed by. Prefixes its tools, happenings and webhook address. Fixed: an update that changes it is rejected; Terraform replaces the resource. |
 | `name` | string | none | The name shown in the web app. Without it, the `integration` value. |
 | `types` | map of name to object | `{}` | Named shapes that expressions are type-checked against. |
 | `connection` | object | none | How the team links to the host. See [connection](#connection). |
@@ -86,9 +86,9 @@ Acme is an example name for any HTTP service. A station gives this tool as `acme
 
 A definition must do something: it has a `webhook`, a `poll`, a `schedule`, at
 least one action, at least one `on` binding, an `openapi`, a `graphql` or an
-`mcp`. Otherwise it is refused with
+`mcp`. Otherwise it is rejected with
 `must do something: a webhook, a poll, a schedule, an action to run, or an API description or MCP server to offer tools from`.
-A definition with two of `openapi`, `graphql` and `mcp` is refused with
+A definition with two of `openapi`, `graphql` and `mcp` is rejected with
 `offers tools from one source: an openapi, a graphql or an mcp, not two`.
 
 A read adds three fields that cannot be set:
@@ -115,7 +115,7 @@ is not there fails the apply, not the plan.
 | secret reference | `secret.` and a secret name of capitals, digits and `_`, starting with a capital, at most 64 characters | `secret.ACME_API_KEY` |
 | type name | starts with a capital, then letters and digits | `Issue` |
 
-A happening that does not begin with the integration's name is refused. One
+A happening that does not begin with the integration's name is rejected. One
 integration may not raise the same happening twice, offer the same tool twice,
 or bind the same task event twice.
 
@@ -147,11 +147,11 @@ that name themselves in a cycle, produce a warning and are then ignored.
 
 Without `discover`, `oauth2` must name both `authorize` and `token`. With
 `discover = true` it takes only `scopes`, `identity` and `resource`; naming
-`authorize`, `token` or `registration` beside it is refused as an unrecognized
-key. `discover` without an `mcp` block is refused at `connection.oauth2` with
+`authorize`, `token` or `registration` beside it is rejected as an unrecognized
+key. `discover` without an `mcp` block is rejected at `connection.oauth2` with
 `discovers how to connect from its MCP server, but mcp.url names no MCP server`.
 
-`holder = "requester"` without `oauth2` is refused with
+`holder = "requester"` without `oauth2` is rejected with
 `Integration <integration> takes each person's connection. A person can connect only over oauth2.`
 
 ```hcl
@@ -186,7 +186,7 @@ its place.
 | Situation | Result |
 | --- | --- |
 | The person has connected. | The call is made with their access token. |
-| The person has not connected, or the host refused to renew their connection. | The task is assigned to them and put to them with a request to connect. The call fails with `<tool> acts as the person who started this task, and they haven't connected <integration>. They've been asked in their inbox. Nothing was sent. Stop here and end your turn: you're resumed once they connect.` When they connect, the request is answered with `Connected <integration>.` |
+| The person has not connected, or the host could not renew their connection. | The task is assigned to them and put to them with a request to connect. The call fails with `<tool> acts as the person who started this task, and they haven't connected <integration>. They've been asked in their inbox. Nothing was sent. Stop here and end your turn: you're resumed once they connect.` When they connect, the request is answered with `Connected <integration>.` |
 | No person started the task. | The call fails with `<tool> was not used, so nothing was sent: nobody started this task, so there is nobody whose <integration> connection it could act with`. |
 | The person who started the task is no longer on the team. | The call fails with `<tool> was not used, so nothing was sent: the person who started this task is no longer on the team, so it cannot act with their <integration> connection`. |
 | The task already waits on a person for something else. | Nobody is asked. The call fails with `<tool> was not used, so nothing was sent: this task is already waiting on someone, so nobody can be asked to connect <integration> until they answer`. |
@@ -226,8 +226,8 @@ One renewal of a connection runs at a time, across every control-plane
 instance, under a claim that lasts 30 seconds. A request answered `401` while
 another renewal has the claim waits for it, for up to 30 seconds, and is sent
 again with the new token. A refresh token the host rotates is kept. When the
-host refuses to renew, the connection is marked refused until it is made again.
-A person whose connection is refused is asked to connect again the next time a
+host does not renew it, the connection is marked failed until it is made again.
+A person whose connection failed is asked to connect again the next time a
 tool needs it.
 
 ### Client registration
@@ -285,7 +285,7 @@ with: its issuer, authorization endpoint and token endpoint.
 
 | Client | Bound by |
 | --- | --- |
-| Registered at `registration_endpoint` | Spotlight keeps the three with the registration. When a later discovery finds others, the next connection registers again, and exchanging a code or renewing a token with the old client is refused. |
+| Registered at `registration_endpoint` | Spotlight keeps the three with the registration. When a later discovery finds others, the next connection registers again, and exchanging a code or renewing a token with the old client fails. |
 | Configured in the deployment for the integration | Its configured `issuer`. A deployment client without an `issuer`, or with another one, is not used for a discovered server, and the integration does not link. |
 
 ## Webhook
@@ -329,16 +329,16 @@ all, from 2 seconds apart doubling to 1 hour.
 | `signed` | string | none | An expression. The text that was signed. Sees `body`, `headers` and `raw`. Without it, the raw body. |
 | `encoding` | string | `hex` | `hex` or `base64`. How the signature is written. |
 | `prefix` | string | `""` | Text written before the signature, as in `v0=`. |
-| `header` | string | none | The header that carries the signature. A delivery without it is refused, and without `header` no delivery verifies. |
-| `freshness.at` | string | none | An expression. The delivery's time in Unix seconds. A delivery whose time cannot be read is refused. Required with `freshness`. |
-| `freshness.within` | string | none | Seconds, written as `300s`. A delivery further than this from now is refused. Required with `freshness`. |
+| `header` | string | none | The header that carries the signature. A delivery without it is rejected, and without `header` no delivery verifies. |
+| `freshness.at` | string | none | An expression. The delivery's time in Unix seconds. A delivery whose time cannot be read is rejected. Required with `freshness`. |
+| `freshness.within` | string | none | Seconds, written as `300s`. A delivery further than this from now is rejected. Required with `freshness`. |
 
 `token`:
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `secret` | string | required | The shared token. A secret reference, `secret.<NAME>`. |
-| `header` | string | none | The header that carries it. Compared whole. A delivery without it is refused, and without `header` no delivery verifies. |
+| `header` | string | none | The header that carries it. Compared whole. A delivery without it is rejected, and without `header` no delivery verifies. |
 
 `asymmetric`:
 
@@ -348,7 +348,7 @@ all, from 2 seconds apart doubling to 1 hour.
 | `key` | string | required | The public key: hex of the raw key for `ed25519`, PEM for `rsa-sha256`. May contain expressions. |
 | `signed` | string | none | An expression. The text that was signed. Without it, the raw body. |
 | `encoding` | string | `hex` | `hex` or `base64`. How the signature is written. |
-| `header` | string | none | The header that carries the signature. A delivery without it is refused, and without `header` no delivery verifies. |
+| `header` | string | none | The header that carries the signature. A delivery without it is rejected, and without `header` no delivery verifies. |
 | `freshness` | object | none | As for `hmac`. |
 
 `jwt`:
@@ -360,9 +360,9 @@ all, from 2 seconds apart doubling to 1 hour.
 | `audience` | string | none | When set, the token's `aud` must contain it. |
 | `issuer` | string | none | When set, the token's `iss` must equal it. |
 
-A `jwt` token must be signed with `RS256`. An expired token is refused.
+A `jwt` token must be signed with `RS256`. An expired token is rejected.
 
-`verify` accepts no other way. `oauth2` and `secrets` are refused with
+`verify` accepts no other way. `oauth2` and `secrets` are rejected with
 `verifies a delivery by hmac, token, asymmetric or jwt`.
 
 ## Events
@@ -394,7 +394,7 @@ its `when` is true.
 | `attaches` | object | none | Files attached to the task. See below. |
 
 A raise must name a `branch` or at least one mark with `find: true`; otherwise
-it is refused with `needs a branch or a mark. Without one, no task can be found from it`.
+it is rejected with `needs a branch or a mark. Without one, no task can be found from it`.
 When neither evaluates to a value, reading the delivery fails.
 
 Mark:
@@ -438,7 +438,7 @@ the raise carries at least one mark.
 | `cursor` | string | none | An expression. The next cursor, read from the response. Sees `body` and `cursor`. |
 | `events` | array of objects | required | At least one. Read against the response, which expressions see as `body`. |
 
-A poll whose request is refused raises nothing.
+A poll whose request fails raises nothing.
 
 ## Schedule
 
@@ -482,14 +482,14 @@ before it is sent.
 | `oauth2.connection` | boolean | `true` | Must be `true`. Sends the connection's OAuth access token as `Authorization: Bearer`: the team's, or for a tool of a `requester` integration, that of the person who started the task. See [Holder](#holder). |
 | `secrets` | array of strings | none | Secret references, `secret.<NAME>`, at least one when set. Each secret is injected into its bound header or query parameter on requests to the hosts it is bound to. A request to any other host goes without it, and so does a redirect to another host. |
 
-`auth` accepts no other way, and is refused with `authenticates a request by its oauth2 connection, or by the secrets that Spotlight injects for the hosts they are bound to`. See [Bindings](/docs/reference/terraform/secret#bindings).
+`auth` accepts no other way, and is rejected with `authenticates a request by its oauth2 connection, or by the secrets that Spotlight injects for the hosts they are bound to`. See [Bindings](/docs/reference/terraform/secret#bindings).
 
 Every request goes only to hosts on the deployment's outbound allow-list,
 [`OUTBOUND_ALLOWED_HOSTS`](/docs/reference/self-hosted-settings#calls-out-of-spotlight). A
-request to another host is refused with `Outbound call to <host> refused. Host is not on the allowed list.`
-A request is also refused with `Outbound call to <url> refused. URL is not valid.`,
-`Outbound call to <host> refused. redirected more than 5 times`, or
-`Outbound call to <host> refused. is where an https request was redirected to over plain http, which Spotlight does not follow`.
+request to another host is blocked with `Outbound call to <host> blocked. Host is not on the allowed list.`
+A request is also blocked with `Outbound call to <url> blocked. URL is not valid.`,
+`Outbound call to <host> blocked. redirected more than 5 times`, or
+`Outbound call to <host> blocked. is where an https request was redirected to over plain http, which Spotlight does not follow`.
 
 ## Tools
 
@@ -506,14 +506,14 @@ Input:
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `type` | string | `string` | `string`, `number`, `integer` or `boolean`. The input's type. Expressions see `boolean` as `bool`, and `number` and `integer` as `dyn`. |
-| `schema` | object | none | A JSON Schema for the input, in place of `type`, for a list, an object or a constrained value. An input with both `type` and `schema` is refused with `takes a type, or a JSON Schema as its schema, but not both`. Expressions see a `string` schema as `string`, a `boolean` one as `bool`, and any other as `dyn`. See [Input schemas](#input-schemas). |
+| `schema` | object | none | A JSON Schema for the input, in place of `type`, for a list, an object or a constrained value. An input with both `type` and `schema` is rejected with `takes a type, or a JSON Schema as its schema, but not both`. Expressions see a `string` schema as `string`, a `boolean` one as `bool`, and any other as `dyn`. See [Input schemas](#input-schemas). |
 | `description` | string | none | Shown to the agent. |
 | `required` | boolean | `false` | Whether the agent must give it. |
 | `default` | string | none | The value when none is given. Sees `task`. May contain expressions. |
 | `piped` | boolean | `false` | The input may be piped to the tool command. At most one input per tool, and it must take text. |
 
 An input may not be named `json`: Spotlight keeps that name for handing a tool
-every input at once, and refuses the tool with
+every input at once, and rejects the tool with
 `tool <integration>.<tool> cannot take reserved input json. That input hands a tool every input at once`.
 
 An agent calls a tool as `<integration>.<tool>`. A tool with `approval` also
@@ -529,7 +529,7 @@ For an integration with `connection.oauth2`, the answer to a tool call carries
 host named. `spotlight <tool>` prints only the output. See [Holder](#holder).
 
 A tool that a station gives or a hook matches or calls cannot be withdrawn
-from the definition; the update is refused with `409`.
+from the definition; the update fails with `409`.
 
 ### Input schemas
 
@@ -544,7 +544,7 @@ read and not checked. A schema is read 8 levels deep.
 
 A value given as text, as a command-line flag gives it, is read as the
 input's type first: a number from its decimal digits (not `0x10`), `true` or
-`false`, and a list or object from its JSON. A call whose input does not fit is refused before
+`false`, and a list or object from its JSON. A call whose input does not fit is rejected before
 anything is sent, naming where:
 
 | Message | Cause |
@@ -596,7 +596,7 @@ openapi = {
 | `tools` | object | `{}` | Which tools are generated, and which ask first. See [Choosing tools](#choosing-tools). |
 
 Spotlight reads OpenAPI 3.0 and 3.1. An `openapi` with both or neither of
-`url` and `document` is refused with
+`url` and `document` is rejected with
 `is read from a url, or written out in full as its document, but not both`.
 
 ### graphql
@@ -624,7 +624,7 @@ levels deep; deeper ones read as any object.
 | `approval` | map of tool name to object or `false` | `{}` | An object with `because` makes that tool ask a person first, who is shown the text. `false`: the tool never asks. |
 
 A pattern is a tool name in lowercase letters, digits and `-`, where `*`
-matches any run of characters. Anything else is refused with
+matches any run of characters. Anything else is rejected with
 `is a tool name in lowercase words joined by dashes, with * for any run of letters, as in *-issue*`.
 
 A tool in `tools` with the same name as a generated one is offered in its
@@ -632,7 +632,7 @@ place. A key of `approval` that names no generated tool gives a warning:
 `names <key>, but no operation of its <OpenAPI description, GraphQL schema or MCP server> has that name`.
 
 At most 1,000 tools are generated, counted after `include`, `exclude` and the
-tools in `tools`. More is refused at `<openapi, graphql or mcp>.tools` with
+tools in `tools`. More is rejected at `<openapi, graphql or mcp>.tools` with
 `offers <n> tools from its <OpenAPI description, GraphQL schema or MCP server>. A station can choose between at most 1000 tools. Please name the tools to offer in <openapi, graphql or mcp>.tools.include`.
 
 ### Generated tools
@@ -698,7 +698,7 @@ fetch and every redirect go only to hosts on the deployment's outbound
 allow-list. See [Limits and timeouts](/docs/reference/limits-and-timeouts#api-descriptions)
 for the size and time Spotlight allows.
 
-A description that cannot be read does not refuse the definition.
+A description that cannot be read does not make the definition fail.
 `described.problem` says why, and the same reason is a warning at
 `<openapi or graphql>.url`, or at `.document` when that is given. The tools of
 the last read that succeeded stay offered; before any such read, none are.
@@ -708,9 +708,9 @@ Problems include:
 | --- | --- |
 | `could not be read: <host> answered <status>` | The fetch did not succeed. |
 | `could not be read: <host>: <code>` | The host could not be reached, as in `ECONNREFUSED` or `ENOTFOUND`. |
-| `could not be read: Outbound call to <host> refused. Host is not on the allowed list.` | The fetch, or a redirect, went to a host not on the allow-list. |
-| `could not be read: Outbound call to <host> refused. redirected more than 5 times` | Too many redirects. |
-| `could not be read: Outbound call to <host> refused. is where an https request was redirected to over plain http, which Spotlight does not follow` | A redirect from `https` to `http`. |
+| `could not be read: Outbound call to <host> blocked. Host is not on the allowed list.` | The fetch, or a redirect, went to a host not on the allow-list. |
+| `could not be read: Outbound call to <host> blocked. redirected more than 5 times` | Too many redirects. |
+| `could not be read: Outbound call to <host> blocked. is where an https request was redirected to over plain http, which Spotlight does not follow` | A redirect from `https` to `http`. |
 | `is larger than the 64 MB Spotlight reads` | The description is too large. |
 | `took longer than 30 seconds to read` | The fetch was too slow. |
 | `took longer than 30 seconds to make sense of` | Reading the operations was too slow. At most 2 descriptions are read at once on each control plane server; one that waits for its turn waits within the same 30 seconds. |
@@ -809,9 +809,9 @@ Problems a failed listing gives in `described.problem` include:
 | `could not be read: <host> answered <status>` | The server answered with an HTTP error, as `401` before the team is connected. |
 | `could not be read: <host> answered: <error>` | The server answered with an MCP error. |
 | `could not be read: <host>: <code>` | The server could not be reached. |
-| `could not be read: Outbound call to <host> refused. Host is not on the allowed list.` | The server, or a redirect, is on a host not on the allow-list. |
-| `could not be read: Outbound call to <host> refused. redirected more than 5 times` | Too many redirects. |
-| `could not be read: Outbound call to <host> refused. is where an https request was redirected to over plain http, which Spotlight does not follow` | A redirect from `https` to `http`. |
+| `could not be read: Outbound call to <host> blocked. Host is not on the allowed list.` | The server, or a redirect, is on a host not on the allow-list. |
+| `could not be read: Outbound call to <host> blocked. redirected more than 5 times` | Too many redirects. |
+| `could not be read: Outbound call to <host> blocked. is where an https request was redirected to over plain http, which Spotlight does not follow` | A redirect from `https` to `http`. |
 | `could not be read: <host> answered without a status` | The server's answer failed without an HTTP status. |
 
 ### Calling a tool
@@ -829,8 +829,8 @@ answered `401` with `auth.oauth2` is renewed and retried once, as in
 
 Spotlight declares no client capabilities and answers no request from the
 server other than `ping`. A server that asks a question in the middle of a
-call (MCP elicitation) is refused, and the call fails with
-`using <tool>: the MCP server asked a question in the middle of the call. Spotlight refused the call. It does not pass such questions on to a person`.
+call (MCP elicitation) makes the call fail with
+`using <tool>: the MCP server asked a question in the middle of the call. Spotlight does not pass such questions on to a person, so the call failed`.
 A result marked `isError` fails the call with
 `using <tool>: the MCP server answered with an error: <text>`, cut at 500
 characters. An answer over 4 MB fails the call with
@@ -861,7 +861,7 @@ nothing is sent.
 ## Secrets in expressions
 
 No expression may read a secret. An expression containing `secret.` or
-`secret[` is refused with `reads a secret's value. No expression may read a secret. Please name the secret in auth.secrets, and Spotlight injects it for the hosts it is bound to`.
+`secret[` is rejected with `reads a secret's value. No expression may read a secret. Please name the secret in auth.secrets, and Spotlight injects it for the hosts it is bound to`.
 
 Secret references are not checked against the workspace's secrets when the
 definition is written. A request that uses a missing secret fails with
@@ -870,7 +870,7 @@ definition is written. A request that uses a missing secret fails with
 ## Errors and warnings
 
 A definition that does not match the schema, an expression that does not
-parse, and a broken rule above are errors: the write is refused with `422`
+parse, and a broken rule above are errors: the write fails with `422`
 and each problem is listed at its path, as in
 `webhook.events[0].raise.happening`. An expression that parses but does not
 type-check is a warning: the definition is kept, and the warning is returned

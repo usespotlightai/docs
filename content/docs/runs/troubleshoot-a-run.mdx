@@ -22,7 +22,7 @@ menu, then **Runners**, and look for the first of these that applies:
 - No host's **Harnesses** include the station's harness (the Run page's
   composer shows that harness): use a runner image that includes it. See
   [Harnesses](/docs/reference/hosts/harnesses).
-- The host's **Images** reads `<n> refused`: the host will not start runs from
+- The host's **Images** reads `<n> unavailable`: the host will not start runs from
   those images. Hover over it for each image and its reason, and fix the reason
   as in the table below.
 - The station's harness profile gives an MCP server a secret, or the run is a
@@ -35,7 +35,7 @@ menu, then **Runners**, and look for the first of these that applies:
   (`Pool <key>`, `Trust <key>`, the images) with the line. See
   [Send a line's work to particular runners](/docs/hosts/place-work-on-particular-runners).
 
-| Refusal reason | What to change |
+| Reason | What to change |
 | --- | --- |
 | `The host's SPOTLIGHT_RUNNER_IMAGE doesn't admit this image.` | Add the image, or a prefix that covers it, to `SPOTLIGHT_RUNNER_IMAGE` on the host. See [Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image#let-the-hosts-serve-it). |
 | `Image can't be pulled. Error: …` | Check the image reference and the host's registry access. See [Pull runner images from a private registry](/docs/hosts/pull-images-from-a-private-registry). |
@@ -57,7 +57,7 @@ lists every message and its code.
 | Message | What to change |
 | --- | --- |
 | `Runner image <image> can't be pulled. Error: …` | The image reference or the host's registry credentials. See [Pull runner images from a private registry](/docs/hosts/pull-images-from-a-private-registry). |
-| `Runner image <image> is refused. …` | Fix the refusal reason as in the table above. |
+| `Runner image <image> is unavailable. …` | Fix the reason as in the table above. |
 | `Runner image <digest> no longer has the <harness> harness.` | Put the harness back in the image, or change the station's harness. |
 | `The sandbox's egress didn't start. Error: …` | Read the host's log. See [Egress](/docs/reference/hosts/egress). |
 | `The runner couldn't prepare the run. Error: prepare: git clone <path>: …` | Check that the GitHub App can read the repository and that the line names it correctly. See [Point a line at your repositories](/docs/lines/point-a-line-at-your-repositories). |
@@ -134,7 +134,7 @@ error. Select it, and read **Outcome**, **Reason** and **Cause**.
 | **Blocked**, **Private address** | If the run needs a private host, name the host in the allow-list. See [Reach a private host](/docs/security/limit-where-sandboxes-connect#reach-a-private-host). |
 | **Blocked**, **No bound secret** | No secret of the run is bound to the host. Check the host of the secret. |
 | **Failed**, **Unknown host**, **Timed out**, **TLS failed** or **No connection** | Egress could not connect to the host. Check that the host name is correct and that the host is up. |
-| **Auth failed**, status `401` or `403` | The host refused the secret that egress injected. Check that the secret is correct, not expired, and has the necessary permission. |
+| **Auth failed**, status `401` or `403` | The host did not accept the secret that egress injected. Check that the secret is correct, not expired, and has the necessary permission. |
 | **Server error** | The host failed. Try the run again later. |
 
 See [Connections in the trace](/docs/reference/app/tasks-runs-and-the-inbox#connections-in-the-trace).

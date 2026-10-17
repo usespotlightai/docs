@@ -84,7 +84,7 @@ is disabled and gives the reason on hover.
 | --- | --- | --- |
 | Replays | ⓘ: `Each replay reruns the set under one config. The baseline is the latest replay of the live config. Gain: the change in success over the replay it is compared with, on the tasks both scored`. One row per replay of the set, newest first, as "Config", "State", "Success", "Gain", "Spent" and "Started". "Config" is the candidate's name, "Live config", or "A removed candidate", linked to the replay, with `Each run <n> times` when it replays each run more than once. "State" is its [state](#replay-states), with its note on hover. "Success" is its [success](#success), with `Likely range: <low>–<high>%` on hover, `–` while nothing is scored, and, when some of its copies are unscored, a warning sign with `<n> of its runs have no score yet.` on hover. "Gain" is "Baseline" on the set's baseline, `–` with no [gain](#gains), else the gain in points, coloured by verdict. On hover, the gain reads `<verdict>. Likely range: <low> to <high> pts`, `<verdict>` being `Better`, `Worse` or `within noise`; then, once the [counterpart](#counterparts)'s success on the tasks both scored is known, `<Counterpart label>: <share>`, as in `Live config: 50%`; then, once any task was compared [side by side](#side-by-side), `Side by side with <counterpart>: <n> wins, <n> losses, <n> ties`; joined by ` · `. "Spent" is `<spent> / <ceiling>`. With none, it reads "Not replayed yet" and `Replay the live config first. It becomes the baseline.` | "Start a replay": see below. |
 | Health | One row per reading of the set's [health](#health), as "Reading" and "Result". | Nothing. |
-| Runs | A bar of how the set's runs [turned out](#outcomes), then one row per run, as "Run", "State" and "Ended". "Run" is its task's title, linked to the run; a task since deleted reads "A deleted task". A run that [cannot be replayed](#why-a-run-cannot-be-replayed) carries a red warning sign, with the refusal on hover. "State" is the run's state, such as "Completed" or "Failed", or "Unknown run". See [What a set is made of](#what-a-set-is-made-of). With none, it reads "No runs in this set" and `Add past runs of the station. If Spotlight kept a run's starting point, you can replay the run.` | "Add runs": see below. The X that shows on a row's hover takes the run out of the set. "Add runs" is not offered once the station is gone. While a search of the set is running, runs can be neither added nor taken out, and "Add runs" and the X read `A search of this set is running. Add or take out runs after the search ends or a person stops it.` on hover. |
+| Runs | A bar of how the set's runs [turned out](#outcomes), then one row per run, as "Run", "State" and "Ended". "Run" is its task's title, linked to the run; a task since deleted reads "A deleted task". A run that [cannot be replayed](#why-a-run-cannot-be-replayed) carries a red warning sign, with the reason on hover. "State" is the run's state, such as "Completed" or "Failed", or "Unknown run". See [What a set is made of](#what-a-set-is-made-of). With none, it reads "No runs in this set" and `Add past runs of the station. If Spotlight kept a run's starting point, you can replay the run.` | "Add runs": see below. The X that shows on a row's hover takes the run out of the set. "Add runs" is not offered once the station is gone. While a search of the set is running, runs can be neither added nor taken out, and "Add runs" and the X read `A search of this set is running. Add or take out runs after the search ends or a person stops it.` on hover. |
 | Checks | The [checks](/docs/reference/app/searches#guarding-a-stations-changes) replayed on the set, newest first, as "Change", "Verdict", "Regressions" and "When". "Change" is `Pull request #<n>`, `Commit <first 7 characters>` or "A planned change", linked to the check's replay, with `attempt <n>` when the check was tried again. "Verdict" is "Checking", "Passed", "Too many regressions" or `Undecided: <reason>`, with the reasons of the [Replay checks API](/docs/reference/api/replay-checks#verdicts). "Show older checks" loads more. With none, it reads "No checks yet" and `This set checks pull requests that change this station.`, or `The set doesn't guard config changes.` when the set does not guard them. | The "Guards config changes" switch, disabled once the station is gone. |
 
 The ⓘ of "Checks" reads `spotlight replay check replays a pull request's
@@ -108,8 +108,8 @@ station's ended task runs, the 50 created most recently, newest first,
 after any runs [suggested to even the mix](#suggested-runs). Runs that are no
 longer in the workspace are left out after those 50 are read, so the list can
 have fewer. Each shows its title, its state, when it ended and, when it cannot
-be replayed, the refusal, then "Add", "In the set" or "Can't be replayed".
-"Add" reads "Adding…" while the run is added; when the server refuses it, the
+be replayed, the reason, then "Add", "In the set" or "Can't be replayed".
+"Add" reads "Adding…" while the run is added; when the server rejects it, the
 dialog shows nothing, and the server's message shows in an error notice. With
 no ended run, it reads `No ended runs to replay yet. Runs appear here once they
 end.` While the suggestions load, the dialog shows a placeholder, and when they
@@ -172,7 +172,7 @@ under the ceiling times those repeats divided by the repeats asked for: at 2
 repeats, 3 times under 1.5 times the ceiling; at 3 to 5 repeats, as asked,
 under the same ceiling.
 
-"Start replay" opens the new replay's page. The dialog refuses a ceiling of 0
+"Start replay" opens the new replay's page. The dialog rejects a ceiling of 0
 or less with `Please enter a ceiling above 0.`, more than 1,000 with `Maximum
 ceiling: 1,000`, a currency that is not three letters with `Please enter a
 three-letter currency code, like USD.`, and repeats out of bounds with `Please
@@ -350,8 +350,8 @@ A replay is `running` once its first run is queued, and `finished` once every
 run has a result. A stopped replay starts no more runs, and its running runs
 are stopped. An over-budget replay starts no more runs, and its runs already
 running finish. A run that never started reads `Never ran`, as does a run a
-stopped replay left waiting, or `Couldn't be replayed or started: <refusal>`
-when it was refused as it came to start, as for `dispatch-failed`, `forgone`
+stopped replay left waiting, or `Couldn't be replayed or started: <reason>`
+when it could not be replayed as it came to start, as for `dispatch-failed`, `forgone`
 or `candidate-unfit`. Through the API, a person can also stop an over-budget
 replay whose runs are still running: those runs stop, and its state stays
 `over-budget`.
@@ -390,7 +390,7 @@ detail:
 
 | Code | Reason shown | Detail | Result |
 | --- | --- | --- | --- |
-| `unreplayable` | `Couldn't be replayed or started` | [The refusal](#why-a-run-cannot-be-replayed), in lower case | Unscored |
+| `unreplayable` | `Couldn't be replayed or started` | [The reason](#why-a-run-cannot-be-replayed), in lower case | Unscored |
 | `not-run` | `Never ran` | | Unscored |
 | `run-failed` | `Run failed` | Its [failure](#run-failures) | Failed or Unscored, by failure |
 | `run-stopped` | `Replay stopped or hit its ceiling before the run finished` | | Unscored |
@@ -464,7 +464,7 @@ A replay's checks run as a station's checks do. See
 | `unavailable` | `no judge model available` |
 | `unreadable-rubric` | `rubric couldn't be read`. Also when the replay's candidate is gone or has no judge. |
 | `no-evidence` | `nothing to judge` |
-| `refused` | `judge declined` |
+| `request-failed` | `judge request failed` |
 | `unreadable` | `judge's answer couldn't be read` |
 | `ungrounded` | `judge cited nothing the run did` |
 | `errored` | `judging failed` |
@@ -569,7 +569,7 @@ A copy not compared reads `Not judged side by side: <reason>.`:
 | `unavailable` | `no judge model available` |
 | `unreadable-rubric` | `rubric couldn't be read` |
 | `no-evidence` | `nothing to compare` |
-| `refused` | `judge declined` |
+| `request-failed` | `judge request failed` |
 | `unreadable` | `judge's answer couldn't be read` |
 | `ungrounded` | `judge cited nothing either change did` |
 | `errored` | `judging failed` |
@@ -822,16 +822,16 @@ and the cell reads `–`. Otherwise the "Judge" column says why:
 
 ## Why a run cannot be replayed
 
-A run that cannot be replayed is refused when it is added to a set, with
+Adding a run that cannot be replayed to a set fails with
 `409`. A run in a set that can no longer be replayed carries a red warning sign
-on the set's page, with its refusal on hover, and the "Add runs" dialog shows
-the refusal beside the run. The sign shows only `unknown-run`,
+on the set's page, with its reason on hover, and the "Add runs" dialog shows
+the reason beside the run. The sign shows only `unknown-run`,
 `not-a-task-run`, `task-gone`, `still-running`, `no-starting-point`,
 `no-briefing` and `archive-gone`. The dialog shows these for the runs it lists.
 It leaves out runs that are no longer in the workspace, so it never shows
 `unknown-run`.
-The other refusals of an added run show only as the `409`. A run refused when its replay comes to start it is unscored, with
-`Couldn't be replayed or started: <refusal>`, the refusal in lower case.
+The other reasons of an added run show only as the `409`. A run that cannot be replayed when its replay comes to start it is unscored, with
+`Couldn't be replayed or started: <reason>`, the reason in lower case.
 
 | Code | Shown |
 | --- | --- |
@@ -852,7 +852,7 @@ The other refusals of an added run show only as the `409`. A run refused when it
 | `forgone` | `Never started` |
 | `dispatch-failed` | `Failed to start after several tries` |
 
-`attachments-gone`, `repository-gone` and `not-at-the-station` can be refused
+`attachments-gone`, `repository-gone` and `not-at-the-station` can arise
 both when a run is added and when its replay comes to start it. `answer-gone`,
 `candidate-unfit`, `cannot-start`, `forgone` and `dispatch-failed` arise only
 when a replay comes to start the run. `candidate-unfit` means the candidate was
@@ -921,8 +921,8 @@ A replay run differs from a task run:
 | Workspace | The exact archive the original run restored, or none if it restored none. A replay that cannot restore it fails. |
 | Checkouts | Each repository at the commit the original run started from. |
 | Briefing | The task as briefed to the original run, with its notes, attachments and decisions then. The memories it was briefed with are looked up again when the replay run is queued: a memory deleted since is left out, and each one reads as it is now. `spotlight history` and `spotlight recall` read as of the original run's start. A [replay with the answer](#replay-with-the-answer) adds the answer. |
-| Agent commands | `spotlight trace`, `spotlight remember` and answering a pull request's remarks are refused. |
-| Git | Fetch only. A push is refused with `this run may only fetch`. |
+| Agent commands | `spotlight trace`, `spotlight remember` and answering a pull request's remarks are not allowed. |
+| Git | Fetch only. A push fails with `this run may only fetch`. |
 | Tools, MCP servers, secrets | None. |
 | Hooks | None run for it. |
 | Asking a person | Ends the run, counted as asked. Handing the task to a person, or to nowhere, does the same. |

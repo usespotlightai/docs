@@ -46,7 +46,7 @@ second time: a push to the task's branch, a comment on its pull request, a
 question in someone's inbox, a memory proposed to the team. So a replay is a run of its own kind. It never
 works on the task, and it leaves nothing behind but its own result:
 
-- Its git access is fetch-only. A push is refused.
+- Its git access is fetch-only. A push fails.
 - It is given no tools and no MCP servers, and so egress injects no secrets for it.
 - No hook runs for it.
 - It cannot answer a pull request's remarks, propose a memory or read a
@@ -329,7 +329,7 @@ replayed.
 
 Spotlight keeps that archive for 30 days after the run started, and for as long
 as the run is in a replay set. After that the archive goes, and the run can
-no longer be replayed. A run is also refused if its task was deleted, if a file
+no longer be replayed. A run also cannot be replayed if its task was deleted, if a file
 its task was briefed with is gone, or if a repository it worked in has left the
 line. [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed)
 lists each reason.

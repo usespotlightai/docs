@@ -167,7 +167,7 @@ Replace the `plan` job of `.github/workflows/terraform.yml` with:
 
 `terraform_wrapper: false` keeps the JSON free of the wrapper's own output.
 Give the plan from `terraform show -json`: the log that `terraform plan -json`
-streams contains no station blocks, and the command refuses it. To pin a release,
+streams contains no station blocks, and the command rejects it. To pin a release,
 replace `latest/download` with `download/<version>`. See
 [Install](/docs/reference/cli/replay-command#install).
 
@@ -185,7 +185,7 @@ job ends with exit code `3` and the check's link.
 | Exit code | Meaning |
 | --- | --- |
 | `0` | Every changed station passed, or the plan changes nothing a check replays. |
-| `1` | A check was refused or could not run, such as for a line with no `replay_check` or a station whose changes no set guards. |
+| `1` | A check could not start or failed to run, such as for a line with no `replay_check` or a station whose changes no set guards. |
 | `2` | A change regressed on more tasks than its line allows. |
 | `3` | A check is undecided, or still running at the timeout. |
 

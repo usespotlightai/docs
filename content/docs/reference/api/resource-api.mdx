@@ -21,7 +21,7 @@ Request and response bodies are JSON with camelCase field names. Errors are
 | A person's session | the session cookie the web app sets at sign-in | as that person, within their role in each workspace |
 | A [workspace token](/docs/reference/api/workspace-token) | `Authorization: Bearer <token>` | only within its own workspace, and only as its scopes allow |
 
-A request with neither is refused with `401`. See
+A request with neither gets `401`. See
 [Roles and permissions](/docs/reference/roles-and-permissions) for what each
 role and scope allows.
 
@@ -122,7 +122,7 @@ An error body has these fields.
 | `422` | `invalid` | One or more fields are wrong. |
 | `422` | `idempotency-key-reused` | The `Idempotency-Key` was used for a different request body. |
 | `428` | `precondition-required` | An update or delete has no `If-Match`. |
-| `502` | `refused-upstream` | An upstream service refused. |
+| `502` | `upstream-error` | An upstream service failed. |
 
 `permission` is one of `configure`, `manage-secrets`, `manage-runners`,
 `manage-token-trusts`, `administer`, `open-workspaces` or `plan`.

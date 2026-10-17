@@ -66,7 +66,7 @@ Neither the pool token nor the workload token ever enters a sandbox. When a
 host claims a run, Spotlight answers with a credential that is good for that
 one run and nothing else, and that is what the host passes into the sandbox. A
 runner that has it can take exactly one piece of work; asking for a second
-is refused. Inside the sandbox, the runner reads the credential from the file
+fails. Inside the sandbox, the runner reads the credential from the file
 the host laid down and deletes the file. The agent's processes do not inherit
 the runner's Spotlight settings or its credential; from the runner they get a
 local address and a token for handing the task over.
@@ -88,7 +88,7 @@ their requests. Two credentials split that job so that neither is worth much
 alone. The egress process keeps the egress token, and Spotlight stores it
 as a hash. It is the only credential that can fetch a run's secrets, and it
 never enters a sandbox. Like a pool token, it is given once, ever, and
-rotating it refuses the old one at once.
+after a rotation the old one stops working at once.
 
 The run proxy credential is made for one runner, sent in the provision call,
 and kept by the runner. It lets the run send its traffic through the egress

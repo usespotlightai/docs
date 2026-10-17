@@ -44,13 +44,13 @@ after events are things that have already happened: a tool was used, a run
 ended, a pull request was merged, a task was opened or moved. The [`spotlight_hook`](/docs/reference/terraform/hook#events)
 reference lists them.
 
-Only a hook on a before event can stop anything, and Spotlight refuses a
+Only a hook on a before event can stop anything, and Spotlight rejects a
 hook definition that asks to block on an after event. By the time an after
 event fires, the pull request is merged or the tool has run; there is nothing
 left to stop, and the hook hears about it afterwards.
 
-A before-hook runs while the event waits. It can refuse by answering with a
-reason, or, when it is marked to block on failure, by failing. What a refusal
+A before-hook runs while the event waits. It can deny the event by answering with a
+reason, or, when it is marked to block on failure, by failing. What a denial
 means depends on the moment. A tool call is not made, and the agent is told
 which hook stopped it and why.
 A run does not start. A handover is stopped and the task is put to a person
@@ -93,7 +93,7 @@ reference.
 
 ## Signed, every time
 
-A hook that makes requests must sign them; Spotlight refuses one without a
+A hook that makes requests must sign them; Spotlight rejects one without a
 signing method. A hook's endpoint does things on Spotlight's word: it records
 what an agent did, it lets a pull request through, it writes a note on a task.
 The signature is how it tells a request from Spotlight apart from anything else

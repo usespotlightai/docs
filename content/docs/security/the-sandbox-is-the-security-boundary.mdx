@@ -41,13 +41,13 @@ starts beside the sandbox for that run alone. Every client in the sandbox is
 pointed at it, and a client that ignores the proxy has no route out at all.
 
 With one exit, there is one place for the host's rules to apply, and nothing in
-the sandbox can route around them. Some addresses are refused whatever the
+the sandbox can route around them. Some addresses are blocked whatever the
 host's list says: loopback and link-local, so that a sandbox never reaches the
 cloud's instance metadata or the host's own identity. A machine's identity lets
 it claim work and read secrets, and an agent that could borrow it would no
 longer be contained by anything on this page. [Limit where sandboxes can connect](/docs/security/limit-where-sandboxes-connect) covers the allow-list, and
 the [Egress](/docs/reference/hosts/egress) reference lists what egress admits and
-refuses.
+blocks.
 
 ## Keeping secrets out of the sandbox
 
@@ -124,7 +124,7 @@ container connect only to egress.
 A tool an integration offers, whether written out, generated from an API
 description or listed by a remote MCP server, is called by Spotlight, not by
 the agent. The credential stays with Spotlight, the call can wait for a
-person's approval, a hook can refuse it, and the run's journal records it.
+person's approval, a hook can deny it, and the run's journal records it.
 An MCP server the harness starts in the sandbox, from a harness profile's
 `mcpServers`, gets none of that: its calls never reach Spotlight. That is why
 a remote server belongs on an integration, and a profile's `mcpServers` is for
