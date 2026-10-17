@@ -104,9 +104,10 @@ runs are running at once. A pool that is full is offered nothing until a run
 ends.
 
 Push pools, which Spotlight calls to start a sandbox for each run, are served
-in the same priority order, less the runs that use secrets; [The sandbox is
-the security boundary](/docs/security/the-sandbox-is-the-security-boundary)
-explains why those wait for a host.
+in the same priority order. A push pool that names no egress is not offered
+the runs that use secrets; [The sandbox is the security
+boundary](/docs/security/the-sandbox-is-the-security-boundary) explains why
+those wait for a host, or for a pool that names an egress.
 
 Taken together, placement and harness decide which runs a host could take,
 capacity decides whether it takes one now, and depth and age decide which. The

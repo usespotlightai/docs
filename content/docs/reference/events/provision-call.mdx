@@ -37,7 +37,15 @@ signing, with `provision.secret` as the secret.
     "pool": "<pool key>",
     "labels": ["<label>"],
     "image": "<image reference or null>",
-    "runner": { "id": "<runner id>", "token": "<one-run token>" },
+    "runner": {
+      "id": "<runner id>",
+      "token": "<one-run token>",
+      "egress": {
+        "url": "<egress URL>",
+        "credential": "<run proxy credential>",
+        "traffic": "all"
+      }
+    },
     "spotlightUrl": "https://app.usespotlight.ai",
     "claimBy": "<ISO 8601 time>"
   }
@@ -54,6 +62,10 @@ signing, with `provision.secret` as the secret.
 | `labels` | The placement the work asks for. |
 | `image` | The image the line names, or null. |
 | `runner.id`, `runner.token` | The runner to start and its one-run token. |
+| `runner.egress` | The egress the runner sends its traffic through, or null when the pool names no egress. See [Egress](#egress). |
+| `runner.egress.url` | The egress's URL: the `url` of the [`spotlight_egress`](/docs/reference/terraform/egress) the pool names, or the platform egress's URL. |
+| `runner.egress.credential` | The run proxy credential: made for this runner alone. |
+| `runner.egress.traffic` | `all` or `bound`: the pool's `provision.egressTraffic`. |
 | `spotlightUrl` | The address the runner connects to. |
 | `claimBy` | The runner must claim the work by this time, 5 minutes after the work was reserved for it. |
 
@@ -66,7 +78,19 @@ signing, with `provision.secret` as the secret.
 | Accepted | Any `2xx` response. |
 | Hosts | Only hosts on the deployment's outbound allow-list. |
 
-A run that uses secrets is never provisioned by a push pool.
+## Egress
+
+When the pool names an egress in `provision.egress`:
+
+- Spotlight also offers the pool runs that use secrets or Spotlight's API,
+  such as the runs of a setup chat.
+- Each call, for a run or a check, carries `runner.egress`. The runner reads
+  `url` from `SPOTLIGHT_EGRESS_URL`, `credential` from
+  `SPOTLIGHT_EGRESS_CREDENTIAL` and `traffic` from `SPOTLIGHT_EGRESS_TRAFFIC`. See
+  [The spotlight command](/docs/reference/cli/spotlight-command#spotlight-runner).
+
+When it names none, `runner.egress` is null, and a run that uses secrets or
+Spotlight's API is never offered to the pool.
 
 ## Failures
 
@@ -78,8 +102,8 @@ the last pool fails, the work's provisioning fails:
 | `unreachable` | The call could not be made. | yes |
 | `refused` | The response was not `2xx`. | yes |
 | `lapsed` | The pool accepted the work, but no runner claimed it by `claimBy`. | yes |
-| `not-allowed` | The URL's host is not allowed, or the URL is not `https` where that is refused. | no |
-| `unusable` | The pool's provision secret cannot be opened. | no |
+| `not-allowed` | The URL's host is not allowed, or the URL is not `https` where that is refused. The egress URL is not `https` where that is refused: `Egress URL must be https. Runners send their proxy credential to it.` | no |
+| `unusable` | The pool's provision secret cannot be opened. The pool names the platform egress and the deployment has none, or names an egress that does not exist in its workspace. The work needs egress, and the pool no longer names one: `The pool names no egress now. A run that uses secrets or the Spotlight API needs one.` | no |
 | `harness-missing` | The runner the pool started does not have the work's harness installed. | no |
 
 A retried failure gets up to 5 attempts in all, 5, 10, 20 and 40 seconds

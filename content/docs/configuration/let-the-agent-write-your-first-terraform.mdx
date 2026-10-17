@@ -10,18 +10,19 @@ You need:
 - The GitHub App installed on your code repositories and on the repository the
   configuration goes in. If it isn't,
   [connect GitHub](/docs/integrations/connect-github) first.
-- A host serving the workspace. If you don't have one,
-  [run a host](/docs/hosts/run-a-host). The setup chat runs only on a host,
-  never on a runner a push pool provisions.
-- If the host has an [egress allow-list](/docs/security/limit-where-sandboxes-connect),
+- A host serving the workspace, or a push pool that names an egress. If you
+  have neither, [run a host](/docs/hosts/run-a-host), or
+  [send push pool runs through an egress](/docs/security/send-push-pool-runs-through-an-egress).
+  A push pool that names no egress can't run the setup chat.
+- If the host or the egress has an [egress allow-list](/docs/security/limit-where-sandboxes-connect),
   `registry.terraform.io`, `github.com` and `release-assets.githubusercontent.com`
   on it, so `terraform init` can download Spotlight's provider.
 
 ## Start the setup chat
 
 1. In the **Inbox**, open **Set up your team**. **Set up configuration as
-   code** shows a form once the GitHub App is installed and a host serves the
-   workspace. A push pool alone isn't enough.
+   code** shows a form once the GitHub App is installed, and a host serves the
+   workspace or a push pool names an egress.
 2. From **Repository**, choose the repository the configuration goes in. Leave
    the folder as `spotlight`, or type the path of another folder from the
    repository root, as in `infra/spotlight`.

@@ -72,6 +72,7 @@ terraform {
 | [`spotlight_secret`](/docs/reference/terraform/secret) | `secret` | `<workspace id>/<name>` |
 | [`spotlight_workspace_token_trust`](/docs/reference/terraform/workspace-token-trust) | `workspace-token-trust` | `<workspace id>/<key>` |
 | [`spotlight_runner_pool`](/docs/reference/terraform/runner-pool) | `runner-pool` | `<workspace id>/<key>` |
+| [`spotlight_egress`](/docs/reference/terraform/egress) | `egress` | `<workspace id>/<key>` |
 | [`spotlight_runner_trust`](/docs/reference/terraform/runner-trust) | `runner-trust` | `<workspace id>/<key>` |
 | [`spotlight_workspace_runners`](/docs/reference/terraform/workspace-runners) | `workspace-runners` | `<workspace id>/<workspace slug>` |
 
@@ -115,7 +116,7 @@ Each resource has a list resource of the same name, used in a `list` block in a
 | List resource | Configuration |
 | --- | --- |
 | `spotlight_workspace` | none |
-| `spotlight_team`, `spotlight_secret`, `spotlight_workspace_token_trust`, `spotlight_runner_pool`, `spotlight_runner_trust`, `spotlight_workspace_runners` | `workspace_id` |
+| `spotlight_team`, `spotlight_secret`, `spotlight_workspace_token_trust`, `spotlight_runner_pool`, `spotlight_egress`, `spotlight_runner_trust`, `spotlight_workspace_runners` | `workspace_id` |
 | `spotlight_line`, `spotlight_skill`, `spotlight_harness_profile`, `spotlight_integration`, `spotlight_hook` | `workspace_id`, and optionally `team_id` to list one team's |
 
 ```hcl
@@ -142,7 +143,7 @@ Changing any of these attributes replaces the resource.
 | `spotlight_line`, `spotlight_skill`, `spotlight_harness_profile`, `spotlight_hook` | `team_id`, `key` |
 | `spotlight_integration` | `team_id`, `definition.integration` (the read-only `source`) |
 | `spotlight_secret` | `workspace_id`, `name` |
-| `spotlight_workspace_token_trust`, `spotlight_runner_trust` | `workspace_id`, `key` |
+| `spotlight_workspace_token_trust`, `spotlight_runner_trust`, `spotlight_egress` | `workspace_id`, `key` |
 | `spotlight_runner_pool` | `workspace_id`, `key`, and adding or removing `provision` |
 | `spotlight_workspace_runners` | `workspace_id` |
 
@@ -157,11 +158,13 @@ sends the value again.
 | `spotlight_secret` | `value_wo` | `value_wo_version` |
 | `spotlight_runner_pool` | `token` | `token_version` |
 | `spotlight_runner_pool` | `provision.secret` | `provision.secret_version` |
+| `spotlight_egress` | `token` | `token_version` |
 | `spotlight_hook` | `signing.secret_wo` | `signing.secret_wo_version` |
 
 A pull pool created without `token` is issued one by Spotlight in the
 `Spotlight-Pool-Token` response header. The provider does not keep it, and
-warns.
+warns. The same holds for an egress created without `token`, in the
+`Spotlight-Egress-Token` header.
 
 ## Plan-time expression checks
 

@@ -87,6 +87,7 @@ Every resource representation has these fields besides its own.
 | `workspace-token` | name | `ci` |
 | `workspace-token-trust` | key | `github-main` |
 | `runner-pool` | key | `ephemeral` |
+| `egress` | key | `shared` |
 | `runner-trust` | key | `production-cluster` |
 | `workspace-runners` | the workspace's slug | `acme` |
 | `replay-candidate` | `<team key>/<line key>/<station key>/<name>` | `core/delivery/implementation/Higher effort` |
@@ -162,6 +163,7 @@ All paths are under `/api/resources`.
 | `workspace-token` | workspace | `POST /workspaces/{workspaceId}/tokens` | `/tokens/{id}` | `/workspaces/{workspaceId}/tokens` |
 | `workspace-token-trust` | workspace | `POST /workspaces/{workspaceId}/token-trusts` | `/token-trusts/{id}` | `/workspaces/{workspaceId}/token-trusts` |
 | `runner-pool` | workspace | `POST /workspaces/{workspaceId}/runner-pools` | `/runner-pools/{id}` | `/workspaces/{workspaceId}/runner-pools` |
+| `egress` | workspace | `POST /workspaces/{workspaceId}/egresses` | `/egresses/{id}` | `/workspaces/{workspaceId}/egresses` |
 | `runner-trust` | workspace | `POST /workspaces/{workspaceId}/runner-trusts` | `/runner-trusts/{id}` | `/workspaces/{workspaceId}/runner-trusts` |
 | `workspace-runners` | workspace | `POST /workspaces/{workspaceId}/workspace-runners` | `/workspace-runners/{id}` | `/workspaces/{workspaceId}/workspace-runners` |
 | `replay-candidate` | station | `POST /lines/{lineId}/stations/{stationKey}/replay-candidates` | `/replay-candidates/{id}`, read and delete only | `/workspaces/{workspaceId}/replay-candidates` |
@@ -196,6 +198,7 @@ Each kind's fields are on its own page:
 | `workspace-token` | [Workspace tokens](/docs/reference/api/workspace-token) |
 | `workspace-token-trust` | [`spotlight_workspace_token_trust`](/docs/reference/terraform/workspace-token-trust) |
 | `runner-pool` | [`spotlight_runner_pool`](/docs/reference/terraform/runner-pool) |
+| `egress` | [`spotlight_egress`](/docs/reference/terraform/egress) |
 | `runner-trust` | [`spotlight_runner_trust`](/docs/reference/terraform/runner-trust) |
 | `workspace-runners` | [`spotlight_workspace_runners`](/docs/reference/terraform/workspace-runners) |
 | `replay-candidate` | [Replay candidates](/docs/reference/api/replay-candidate) |
@@ -214,7 +217,7 @@ The export's files are ordered by path and are the same on every export:
 | File | Contents |
 | --- | --- |
 | `main.tf` | Every resource, each with an `import` block beside it, referring to one another. |
-| `variables.tf` | A sensitive variable for each value Spotlight never returns, such as secret values and runner pool tokens. |
+| `variables.tf` | A sensitive variable for each value Spotlight never returns, such as secret values, runner pool tokens and egress tokens. |
 | `prompts/<team>/<line>/<station>.md` | Each station prompt, read by `main.tf` with `file()`. |
 | `judges/<team>/<line>/<station>.md` | Each station judge's rubric, read by `main.tf` with `file()`. A judge with claims alone has none. |
 | `skills/<team>/<key>/<path>` | Each skill file, read by `main.tf` with `file()`. |
@@ -225,7 +228,7 @@ The `hcl` string holds, in order, any variable the resource reads, an `import`
 block that adopts it, and the resource. `files` holds the prompt, rubric and skill
 files it reads. `collection` is one of `workspaces`, `teams`, `lines`, `skills`,
 `harness-profiles`, `integrations`, `hooks`, `secrets`, `token-trusts`,
-`runner-trusts`, `runner-pools` or `workspace-runners`.
+`runner-trusts`, `runner-pools`, `egresses` or `workspace-runners`.
 
 ## Configuration changes
 
@@ -254,7 +257,7 @@ anyone else the workspace is `404`.
 | `by.tokenId` | string or null | The workspace token. |
 | `by.trust` | string or null | The workspace token trust the token was minted through. |
 | `client` | string or null | The client, from `Spotlight-Client`. |
-| `details` | object | What the kind records beyond the action. A secret records its value version and bound hosts, never its value. |
+| `details` | object | What the kind records beyond the action. A secret records its value version and bound hosts, never its value. An egress update records `rekeyed: true` when its token changed, never the token. |
 | `at` | string | When, as an ISO 8601 time. |
 
 ## Expression checks

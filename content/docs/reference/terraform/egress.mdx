@@ -1,0 +1,110 @@
+---
+type: reference
+icon: BookText
+title: spotlight_egress
+description: The fields of an egress that push pool runners send their traffic through, how its token is issued and rotated, and when a delete is refused.
+---
+
+The `spotlight_egress` resource, and the egress resource of the API: an
+egress that the runners of push pools send their traffic through. A
+[`spotlight_runner_pool`](/docs/reference/terraform/runner-pool) names it by
+`id` in `provision.egress`. The egress itself is a `spotlight egress serve`
+process that you run; see [Shared egress](/docs/reference/hosts/egress#shared-egress).
+Writing one needs the `manage-runners` permission; see
+[Roles and permissions](/docs/reference/roles-and-permissions).
+
+| Kind | Endpoint | Terraform | Address |
+| --- | --- | --- | --- |
+| `egress` | `/api/resources/workspaces/{workspaceId}/egresses` | `spotlight_egress` | `<key>` |
+
+See [Resource API](/docs/reference/api/resource-api) for the operations, headers
+and errors every kind shares.
+
+## Example
+
+```hcl
+variable "egress_token" {
+  type      = string
+  sensitive = true
+}
+
+resource "spotlight_egress" "shared" {
+  workspace_id  = spotlight_workspace.acme.id
+  key           = "shared"
+  url           = "https://egress.acme.example"
+  token         = var.egress_token
+  token_version = 1
+}
+
+resource "spotlight_runner_pool" "jobs" {
+  workspace_id = spotlight_workspace.acme.id
+  key          = "jobs"
+  provision = {
+    url            = "https://provision.acme.example/spotlight"
+    secret         = var.provision_secret
+    secret_version = 1
+    egress         = spotlight_egress.shared.id
+  }
+}
+```
+
+## Fields
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `key` | string | required | Lowercase words joined by dashes, at most 64 characters. Fixed: an update that changes it is refused; Terraform replaces the resource. |
+| `url` | string | required | Where the runners of a pool that names the egress send their traffic. An absolute `http` or `https` URL with no credentials, no query and no fragment, at most 2,048 characters. |
+| `token` | string | none | Write-only. The token the egress calls Spotlight with. 32 to 255 of `A-Z a-z 0-9 . _ ~ -`. Without it, Spotlight issues one; see [Egress token](#egress-token). |
+| `tokenVersion` | integer or null | `null` | At least `0`. A change must come with a new `token`. |
+
+In Terraform, `token` is write-only and needs Terraform 1.11 or later. A token
+Spotlight issues is not kept in the Terraform state, and the provider warns
+`Spotlight issued the egress a token Terraform did not keep`.
+
+| Message | Cause |
+| --- | --- |
+| `is lowercase words joined by dashes, at most 64 characters, as in shared` | A `key` of another shape. |
+| `must be an absolute https URL, as in https://egress.example.com` | A `url` that is not a URL. |
+| `must be an http or https URL` | A `url` with another scheme. |
+| `must carry no credentials. Runners give their proxy credential` | A `url` with a user name or a password. |
+| `must be at most 2048 characters, with no query and no fragment` | A `url` that is too long, or has a query or a fragment. |
+| `must be 32 to 255 URL-safe characters` | A `token` of another shape. |
+| `is required whenever tokenVersion changes` | A `tokenVersion` change without a `token`. |
+| `can't change its key to <key>. Please replace the egress instead` | An update that changes `key`. |
+
+## Egress token
+
+- An egress created without `token` gets one from Spotlight, returned once in
+  the `Spotlight-Egress-Token` response header, never again. A retry of the
+  create does not return it.
+- Spotlight keeps only its hash.
+- A token is given once, ever. A token another egress holds is refused with
+  `belongs to another egress. Please give each egress its own`. A token
+  rotated away, or held by an egress since deleted or replaced, is refused to
+  every egress, the egress that held it included, with
+  `was used before. Egress tokens work once only`.
+- Rotating with a new `tokenVersion` refuses the old token at once.
+
+The egress process reads the token from `SPOTLIGHT_EGRESS_TOKEN`. Runners
+never get it. See [Credentials](/docs/reference/hosts/egress#credentials).
+
+## Warnings
+
+| Path | Warning |
+| --- | --- |
+| `url` | `is not https. Runners send their proxy credential to it. A production deployment refuses to provision runners that use it` |
+
+## Delete
+
+A delete is refused with `409` `in-use` while a runner pool names the egress:
+
+```text
+Egress <key> is in use. Runner pools that name it: <pool keys>. Please remove provision.egress from these pools first.
+```
+
+Deleting an egress retires it. Its token is then refused.
+
+In Terraform, do not remove a `spotlight_egress` in the same apply as the
+`provision.egress` that names it. Terraform can delete the egress before it
+updates the pools, and the delete is refused with `409`. Remove
+`provision.egress` from the pools and apply first, then remove the egress.

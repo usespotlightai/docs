@@ -25,6 +25,11 @@ menu, then **Runners**, and look for the first of these that applies:
 - The host's **Images** reads `<n> refused`: the host will not start runs from
   those images. Hover over it for each image and its reason, and fix the reason
   as in the table below.
+- The station's harness profile gives an MCP server a secret, or the run is a
+  setup chat's, and the workspace's only runners come from push pools that
+  name no egress. Such a run waits for a host, or for a push pool that names
+  an egress. See
+  [Send push pool runs through an egress](/docs/security/send-push-pool-runs-through-an-egress).
 - The line or station names `runners` or an image: only a host that matches
   that placement can claim the run. Compare the names on the Runners page
   (`Pool <key>`, `Trust <key>`, the images) with the line. See
@@ -106,6 +111,33 @@ at its run time limit. See [Limits and timeouts](/docs/reference/limits-and-time
 failure happened again in the same conversation. A lost runner and a run time
 limit count as the same failure here, named for the latest. Find the message in the
 tables above and fix what it names before you reply again.
+
+## The trace reads Egress not enforced
+
+On a push pool's run, the run's row in the task trace shows a warning mark, which reads **Egress not
+enforced** when you hover over it,
+and the run's details show **Not enforced** under **Egress**: the sandbox could connect to the Spotlight
+address without egress. The run's secrets still stayed out of the sandbox, but
+a tool that ignores the proxy went out directly. Set the platform's firewall
+so that the pool's containers connect only to the egress host, as in
+[Limit the container to egress](/docs/security/send-push-pool-runs-through-an-egress#limit-the-container-to-egress).
+See [Enforcement](/docs/reference/hosts/egress#enforcement).
+
+## The trace shows a connection in red
+
+A red row with a host name under a step is a connection of the run that went
+wrong. Select it, and read **Outcome**, **Reason** and **Cause**.
+
+| Outcome and reason | Fix |
+| --- | --- |
+| **Blocked**, **Not on the allow-list** | If the run needs the host, add it to the allow-list of the egress. See [Set the allow-list](/docs/security/limit-where-sandboxes-connect#set-the-allow-list). |
+| **Blocked**, **Private address** | If the run needs a private host, name the host in the allow-list. See [Reach a private host](/docs/security/limit-where-sandboxes-connect#reach-a-private-host). |
+| **Blocked**, **No bound secret** | No secret of the run is bound to the host. Check the host of the secret. |
+| **Failed**, **Unknown host**, **Timed out**, **TLS failed** or **No connection** | Egress could not connect to the host. Check that the host name is correct and that the host is up. |
+| **Refused**, status `401` or `403` | The host refused the secret that egress added. Check that the secret is correct, not expired, and has the necessary permission. |
+| **Server error** | The host failed. Try the run again later. |
+
+See [Connections in the trace](/docs/reference/app/tasks-runs-and-the-inbox#connections-in-the-trace).
 
 ## The agent worked without the repository's setup
 
