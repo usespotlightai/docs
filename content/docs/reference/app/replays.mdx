@@ -28,12 +28,12 @@ replay sets, one row each:
 | Column | Shows |
 | --- | --- |
 | Set | The set's name, linked to the set's page, and "Station gone" when its station has left the line. |
-| Runs | How many runs the set holds. |
+| Runs | How many runs the set contains. |
 | Latest replay | The latest replay's [success](#success) as `<share> succeeded`, or `No score yet`, and its [state](#replay-states). Hovering over the success shows the replay's candidate, or "Live config", and its [success line](#success-line). A set never replayed reads "Not replayed yet". |
 
 "Create a replay set" asks for a name, then opens the new set's page. With no
 sets, the card reads "No replay sets yet" and
-`A replay set holds past runs to replay under a candidate. Create one to start comparing.`,
+`A replay set contains past runs to replay under a candidate. Create one to start comparing.`,
 with "Create a replay set". To a person who may not read the team's replays,
 the card reads `Only team members can see its replays`.
 
@@ -61,7 +61,7 @@ being the counterpart as [shown](#counterparts), as in `the baseline`.
 
 `/w/<slug>/team/<teamId>/lines/<lineId>/stations/<stationId>/replay-sets/<setId>`
 
-The top bar holds the breadcrumbs, `<team> › <line> › <station> › Replay sets
+The top bar shows the breadcrumbs, `<team> › <line> › <station> › Replay sets
 › <set>`, where "Replay sets" opens the station's replay sets, and "Rename" and
 "Delete" at its right. Under it, the heading shows the station's mark, the
 set's name and `<n> runs · opened <when>`, with this pill:
@@ -77,7 +77,7 @@ team members can see its replays".
 
 Then come four panels: "Replays" and "Health" one under the other, then
 "Runs" and "Checks" side by side. Each is titled with an ⓘ that explains it on
-hover, and holds its actions at its bottom left. A button that cannot be used
+hover, and shows its actions at its bottom left. A button that cannot be used
 is disabled and gives the reason on hover.
 
 | Panel | Shows | Can change |
@@ -107,14 +107,14 @@ Spotlight keeps a run's starting workspace while it's in the set.` It lists the
 station's ended task runs, the 50 created most recently, newest first,
 after any runs [suggested to even the mix](#suggested-runs). Runs that are no
 longer in the workspace are left out after those 50 are read, so the list can
-hold fewer. Each shows its title, its state, when it ended and, when it cannot
+have fewer. Each shows its title, its state, when it ended and, when it cannot
 be replayed, the refusal, then "Add", "In the set" or "Can't be replayed".
 "Add" reads "Adding…" while the run is added; when the server refuses it, the
 dialog shows nothing, and the server's message shows in an error notice. With
 no ended run, it reads `No ended runs to replay yet. Runs appear here once they
 end.` While the suggestions load, the dialog shows a placeholder, and when they
 cannot be read, `Suggested runs could not be loaded.` with "Try again". "Done"
-closes it. A set holds at most 50 runs.
+closes it. A set contains at most 50 runs.
 
 "Start a replay" is disabled with `Please add runs to the set first.` on an
 empty set, and with `The station is gone from its line.` once the station has
@@ -129,7 +129,7 @@ GitHub or any inbox.`:
 | Ceiling | The most the replay may spend, every copy of each run included, above 0 and at most 1,000, and a three-letter currency, `USD` unless changed. |
 
 A new baseline is needed when the set has no standing baseline (queued,
-running or finished) that holds every run now in the set, replays each run at
+running or finished) that contains every run now in the set, replays each run at
 least as many times as asked, and was scored the way the live config scores
 now. So a baseline is needed when the set has none, when a run was added since
 the last one (taking a run out does not count), when the last one replayed each
@@ -163,10 +163,10 @@ starts after the replay spends it.`, then one of these notes:
 | Otherwise, "Live config" | `If the set's runs changed since its baseline, this replay becomes the new baseline. Otherwise, Spotlight compares it with the current baseline.` |
 | Otherwise, a candidate | `If the set's runs changed since its baseline, a new baseline also starts. It gets its own ceiling of the same size.` |
 
-When the set holds 5 runs or more and its noise is not measured, the first
+When the set contains 5 runs or more and its noise is not measured, the first
 four notes end with `The first baseline checks the set. It replays each run 3
 times with 3 times the ceiling. It judges and checks each change twice.` The
-note reads the same at any repeats. It holds at 1 repeat. The baseline that
+note reads the same at any repeats. It also applies at 1 repeat. The baseline that
 checks the set replays each run 3 times, or the repeats asked for when more,
 under the ceiling times those repeats divided by the repeats asked for: at 2
 repeats, 3 times under 1.5 times the ceiling; at 3 to 5 repeats, as asked,
@@ -188,7 +188,7 @@ loads.
 | Part | Shows |
 | --- | --- |
 | Bar | How its runs turned out: the bar split by [outcome](#outcomes), then each outcome that occurs with its count, in the order "Accepted", "Sent back", "Asked a person", "Failed", "Other". |
-| ⓘ beside "Runs" | `Past runs of the station. Each replay reruns all of them.`, then, once the set holds runs, when they ended, as `Ended between <when> and <when> · Median: <when>`, or `Ended <when>` when they all ended at the same moment, left out while no run's end can be read; then `Where their tasks came from: <origin> <count> · <origin> <count>`, with each [origin](#origins), the largest count first, ties in the alphabetical order of the origin's key (such as `github`, `person`, `station`), not of the label shown. |
+| ⓘ beside "Runs" | `Past runs of the station. Each replay reruns all of them.`, then, once the set contains runs, when they ended, as `Ended between <when> and <when> · Median: <when>`, or `Ended <when>` when they all ended at the same moment, left out while no run's end can be read; then `Where their tasks came from: <origin> <count> · <origin> <count>`, with each [origin](#origins), the largest count first, ties in the alphabetical order of the origin's key (such as `github`, `person`, `station`), not of the label shown. |
 | "Unbalanced set" warning sign in the panel's header | With 6 runs or more, when one outcome other than "Other" covers more than two thirds of them. On hover: `<n> of <n> runs <outcome>. Add runs that turned out other ways to balance the set.`, the outcome read as "were accepted", "were sent back", "asked a person" or "failed". |
 
 ### Outcomes
@@ -221,7 +221,7 @@ Where a run's task came from is recorded when the task is opened.
 
 ### Suggested runs
 
-Once the set holds runs, the "Add runs" dialog lists up to 5 runs first,
+Once the set contains runs, the "Add runs" dialog lists up to 5 runs first,
 under "Suggested to even the mix", with `Recent runs with outcomes that the
 set has few of. These runs join the set only when you add them.` Each shows
 its [outcome](#outcomes) and "Add". None is ever added without it.
@@ -231,7 +231,7 @@ From those, Spotlight keeps the runs that can be replayed and are not in the
 set, then takes the newest run of each task, leaving out tasks with a run in
 the set already. Runs are then picked one at a time: the outcome among
 "Accepted", "Sent back", "Asked a person" and "Failed" that the set, with the runs
-picked so far, holds fewest of, that some run left has, and that is held fewer
+picked so far, has fewest of, that some run left has, and that occurs fewer
 times than the most common outcome, "Other" included. Ties go to "Accepted", then
 "Sent back", "Asked a person" and "Failed". The newest run left of that outcome is
 picked. Picking stops at 5, at the room left in the set below 50, or when no
@@ -250,7 +250,7 @@ another station, reads "Replay not found" and `This team has no replay at that
 address. Someone may have deleted it.` To anyone else, the page reads "Only
 team members can see its replays".
 
-The top bar holds the breadcrumbs, `<team> › <line> › <station> › Replay sets
+The top bar shows the breadcrumbs, `<team> › <line> › <station> › Replay sets
 › <set> › <candidate>`. While the replay is queued or running, "Stop" at its
 right opens "Stop this replay?", `Running runs stop and no more start.
 Finished runs keep their results.`, with "Keep it running" and "Stop replay".
@@ -308,7 +308,7 @@ again.`, with "Open the set".
 
 ### Task details
 
-Selecting a task opens a pane beside the card. Its top holds the task's title,
+Selecting a task opens a pane beside the card. Its top shows the task's title,
 "Original run", linked to the original run, and an X that closes it. Then
 come this replay's copies, under "This replay", or "Result" with nothing to
 compare with, then the counterpart's, under its [label](#counterparts):
@@ -515,7 +515,7 @@ the answer keeps none in `pairedWith`, so neither is ever set side by side. A
 stopped or over-budget replay never finishes, so it is never set side by side.
 Each copy of a task is set beside the counterpart's copy with the same number,
 or else its first copy, as the counterpart's copies conclude, when all of these
-hold:
+are true:
 
 - Both runs completed with a change of at least one line, and have their
   result.
@@ -728,9 +728,9 @@ it.
 ### Checking the set
 
 Nobody starts a check, and it cannot be started from the app or the API. A
-baseline of the live config checks the set when both hold:
+baseline of the live config checks the set when both are true:
 
-- the set holds 5 runs or more;
+- the set contains 5 runs or more;
 - no replay of the live config at its current
   [config fingerprint](/docs/reference/glossary#config-fingerprint) over the
   whole set has checked it, or is checking it, while queued, running or
@@ -770,7 +770,7 @@ starts:
 | A [replay check](/docs/reference/api/replay-checks) of a planned change | The baseline that starts beside it, else the set's standing baseline, as for a proposed candidate. |
 | A [replay with the answer](#replay-with-the-answer) | The replay of the live config whose finishing started it. |
 
-The first three also hold it in `pairedWith`, the replay their changes are set
+The first three also have it in `pairedWith`, the replay their changes are set
 [side by side](#side-by-side) with. A replay whose kept counterpart is gone has
 none, and is compared with nothing.
 
@@ -917,7 +917,7 @@ A replay run differs from a task run:
 
 | | Replay run |
 | --- | --- |
-| Task | Holds no task. The task's state, notes, board and inbox do not change. |
+| Task | Has no task. The task's state, notes, board and inbox do not change. |
 | Workspace | The exact archive the original run restored, or none if it restored none. A replay that cannot restore it fails. |
 | Checkouts | Each repository at the commit the original run started from. |
 | Briefing | The task as briefed to the original run, with its notes, attachments and decisions then. The memories it was briefed with are looked up again when the replay run is queued: a memory deleted since is left out, and each one reads as it stands now. `spotlight history` and `spotlight recall` read as of the original run's start. A [replay with the answer](#replay-with-the-answer) adds the answer. |
@@ -929,7 +929,7 @@ A replay run differs from a task run:
 | Change stack | Drafted when the candidate sets `diffs: true`, checked, and never sent to GitHub. |
 | Archive | None is kept for a later run. |
 | Outcomes | Not recorded among the station's outcomes or in the Insights figures of the team's runs; its replay shows under [Candidates](/docs/reference/app/insights#candidates) on the Insights Stations tab. No memories are drafted. |
-| Priority | Below every task run and chat run. At most 2 of a team's replay runs, other than a search's, are queued or running at once. A search's replay runs are held to its own limit; see [Spend and ceiling](/docs/reference/app/searches#spend-and-ceiling). |
+| Priority | Below every task run and chat run. At most 2 of a team's replay runs, other than a search's, are queued or running at once. A search's replay runs keep to its own limit; see [Spend and ceiling](/docs/reference/app/searches#spend-and-ceiling). |
 
 See [Inside a sandbox](/docs/reference/hosts/sandbox) for the phases every
 run goes through.

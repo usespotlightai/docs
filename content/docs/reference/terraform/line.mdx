@@ -199,7 +199,7 @@ reviews {
 | `harness` | string | none | The [harness](/docs/reference/hosts/harnesses) that works tasks here: `claude-code`, `cursor` or `codex`. At most 60 characters. A station without one runs nothing, and no run may hand a task on to it. |
 | `model` | string | none | The model the harness uses. At most 60 characters. Without it, the harness uses its own default. |
 | `effort` | string | none | `low`, `medium`, `high`, `xhigh` or `max`. Without it, the harness uses its own default. |
-| `profile` | string | none | The key of a team [harness profile](/docs/reference/terraform/harness-profile). A run at a station naming a profile the team does not hold is refused. |
+| `profile` | string | none | The key of a team [harness profile](/docs/reference/terraform/harness-profile). A run at a station naming a profile the team does not have is refused. |
 | `prompt` | string | none | Markdown handed to the agent that works the station. At most 20,000 characters. |
 | `check` | string | none | A command each layer of a change stack drafted at this station is checked with, as in `npm test`. One line of at most 500 characters. See [checks](/docs/reference/app/change-stacks-and-decisions#checks). |
 | `runners` | array of strings | none | Runner labels this station's work is placed on. Without it, the line's `runners` apply. See [placement](#placement). |
@@ -365,7 +365,7 @@ repositories sorted by name.
 | --- | --- | --- | --- |
 | `happening` | string | required | What happens, source first, as in `github.checks.failed`. Matches `^[a-z0-9]+(\.[a-z0-9][a-z0-9_-]*)+$`. |
 | `from` | string | none | The key of the station the task must stand at for the reaction to apply. Without it, the reaction applies at any station. |
-| `to` | string | required | The key of the station the task moves to. While a run holds the task, the move waits until the run ends, and is dropped if the run passes the task on. A move to the completed station instead stops the run and asks a person, or, if the task awaits an answer to the run's question, adds a note to it. See [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves). |
+| `to` | string | required | The key of the station the task moves to. While the task has a current run, the move waits until the run ends, and is dropped if the run passes the task on. A move to the completed station instead stops the run and asks a person, or, if the task awaits an answer to the run's question, adds a note to it. See [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves). |
 
 See [GitHub events](/docs/reference/events/github-events) for the happenings GitHub
 raises. An [integration](/docs/reference/terraform/integration) raises its own.
@@ -388,7 +388,7 @@ is chosen and the task it opens.
 ## Replay check fields [#replay-check-fields]
 
 The replay check (`replayCheck`, in Terraform `replay_check`) sets the threshold
-a planned change of one of the line's work stations is held to by
+that a planned change of one of the line's work stations must meet in
 [`spotlight replay check`](/docs/reference/cli/replay-command#spotlight-replay-check).
 A check reads it from the line as it is applied, never from the plan. A line
 read through the team's `GET /api/teams/{teamId}/lines` carries it as
@@ -411,7 +411,7 @@ See [Replay checks API](/docs/reference/api/replay-checks).
 
 ## Source fields
 
-The source (`source`) names the file that holds this `spotlight_line`
+The source (`source`) names the file that contains this `spotlight_line`
 resource. A picked [search](/docs/reference/app/searches#the-pull-request)
 candidate is opened as a pull request against it.
 
@@ -420,7 +420,7 @@ candidate is opened as a pull request against it.
 | `repository` | string | required | The GitHub repository, `owner/name`. Spotlight's GitHub App must be installed on it. |
 | `path` | string | required | The `.tf` file, from the repository's root, with forward slashes and no leading slash, as in `teams/core/delivery.tf`. 1 to 1,024 characters, with no empty, `.` or `..` part. |
 
-For Spotlight to edit the station, the file must hold exactly one
+For Spotlight to edit the station, the file must contain exactly one
 `resource "spotlight_line"` with the line's `key` written as a plain string,
 and in it exactly one `station` block with the station's `key` written the same
 way. An attribute a search may change that is read from a file must be read
@@ -499,5 +499,5 @@ A line's stations are refused unless they follow every rule below.
 | update | Replaces the whole definition. A station whose key is kept keeps its identity and the tasks at it. Changing `key` is refused with `422`. Dropping a station where any task stands is refused with `409` `in-use`, naming the stations and how many tasks stand at each. |
 | delete | Refused with `409` `in-use` while any task stands on the line. |
 
-A second line claiming a role another line of the team holds is refused with
+A second line claiming a role another line of the team has is refused with
 `422` on `role`.

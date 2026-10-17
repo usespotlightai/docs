@@ -2,7 +2,7 @@
 type: concept
 icon: Lightbulb
 title: Hooks and reactions
-description: Why Spotlight has hooks beside a line's reactions, why only a hook before an event can hold it back, why calls into a private network go out through a host's egress, and how hooks are kept from looping.
+description: Why Spotlight has hooks beside a line's reactions, why only a hook before an event can stop it, why calls into a private network go out through a host's egress, and how hooks are kept from looping.
 ---
 
 A line already has a way to hear the outside world. Its reactions are rules
@@ -44,7 +44,7 @@ after events are things that have already happened: a tool was used, a run
 ended, a pull request was merged, a task was opened or moved. The [`spotlight_hook`](/docs/reference/terraform/hook#events)
 reference lists them.
 
-Only a hook on a before event can hold anything back, and Spotlight refuses a
+Only a hook on a before event can stop anything, and Spotlight refuses a
 hook definition that asks to block on an after event. By the time an after
 event fires, the pull request is merged or the tool has run; there is nothing
 left to stop, and the hook hears about it afterwards.
@@ -52,8 +52,8 @@ left to stop, and the hook hears about it afterwards.
 A before-hook runs while the event waits. It can refuse by answering with a
 reason, or, when it is marked to block on failure, by failing. What a refusal
 means depends on the moment. A tool call is not made, and the agent is told
-which hook held it back and why.
-A run does not start. A handover is held back and the task is put to a person
+which hook stopped it and why.
+A run does not start. A handover is stopped and the task is put to a person
 with the hook's reason beside the agent's note. A pull request is not opened.
 [Check or block a pull request before it opens](/docs/integrations/check-a-pull-request-before-it-opens) builds one of these.
 
@@ -106,7 +106,7 @@ with a digest of the body; the endpoint checks it against Spotlight's published
 keys and needs no secret of its own.
 
 Either way, the request is signed inside Spotlight before any host sees it. A
-host that carries a `network` call into the team's network holds no signing
+host that carries a `network` call into the team's network has no signing
 secret, and cannot sign a request of its own.
 
 The same rule runs the other way. Every delivery Spotlight accepts from an

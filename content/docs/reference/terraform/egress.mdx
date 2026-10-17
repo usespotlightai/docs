@@ -78,10 +78,10 @@ Spotlight issues is not kept in the Terraform state, and the provider warns
   the `Spotlight-Egress-Token` response header, never again. A retry of the
   create does not return it.
 - Spotlight keeps only its hash.
-- A token is given once, ever. A token another egress holds is refused with
+- A token is given once, ever. A token that another egress has is refused with
   `belongs to another egress. Please give each egress its own`. A token
-  rotated away, or held by an egress since deleted or replaced, is refused to
-  every egress, the egress that held it included, with
+  rotated away, or used by an egress since deleted or replaced, is refused to
+  every egress, the egress that used it included, with
   `was used before. Egress tokens work once only`.
 - Rotating with a new `tokenVersion` refuses the old token at once.
 

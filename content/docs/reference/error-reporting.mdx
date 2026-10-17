@@ -2,17 +2,17 @@
 type: reference
 icon: BookText
 title: Error reporting
-description: The variables that send Spotlight's errors to a Sentry server, what a report holds, and what it never holds.
+description: The variables that send Spotlight's errors to a Sentry server, what a report contains, and what it never contains.
 ---
 
 Spotlight reports no error by default. It sends a report only when the
 operator sets `SENTRY_DSN`. The code, the published images, the release
-binaries and the web app hold no DSN.
+binaries and the web app contain no DSN.
 
 ## Servers
 
 Any server that speaks the Sentry protocol: [sentry.io](https://sentry.io),
-self-hosted Sentry or GlitchTip. Reports hold errors only. Spotlight sends no
+self-hosted Sentry or GlitchTip. Reports contain errors only. Spotlight sends no
 traces, profiles or session replays to the server.
 
 ## Spotlight
@@ -58,9 +58,9 @@ Spotlight tries again is written to the logs only. Only the last failure is
 reported. A failure that the person's own setup causes is not reported: an
 image that cannot be pulled, or an agent that stops with an error.
 
-## What a report holds
+## What a report contains
 
-| Field | Holds |
+| Field | Contains |
 | --- | --- |
 | Error | The type, the message and the stack trace. |
 | `release`, `environment` | As set above. |
@@ -69,7 +69,7 @@ image that cannot be pulled, or an agent that stops with an error.
 | User | The id of the person signed in to the web app. |
 | Request | The method, the path and the headers that remain after scrubbing. |
 
-## What a report never holds
+## What a report never contains
 
 - The `Cookie`, `Authorization` and `Set-Cookie` headers.
 - A request body or a response body.

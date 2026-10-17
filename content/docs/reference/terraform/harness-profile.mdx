@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: spotlight_harness_profile
-description: The fields of a harness profile, how each harness receives it, and the warnings Spotlight gives where a harness cannot hold a rule.
+description: The fields of a harness profile, how each harness receives it, and the warnings Spotlight gives where a harness cannot apply a rule.
 ---
 
 The `spotlight_harness_profile` resource, and the API's `harness-profile`
@@ -99,7 +99,7 @@ An `env` value is plain text, stored and shown as written, or a reference to a
 workspace [secret](/docs/reference/terraform/secret) written `secret.<NAME>`, as in
 `secret.ACME_API_KEY`.
 
-- A reference must name a secret the workspace holds, or the write is refused
+- A reference must name a secret the workspace has, or the write is refused
   with `422`.
 - The server receives a stand-in, and [egress](/docs/reference/hosts/egress) puts
   the value in place of it, in the server's requests to the host the secret is
@@ -134,24 +134,24 @@ repository's own settings files, such as `.claude/settings.json` or
 | `codex` | `codex/config.toml`, `codex/rules/spotlight.rules` | `CODEX_HOME` | The harness runs in codex-acp's `read-only` mode, with a workspace-write sandbox on every turn. |
 | `cursor` | `cursor/cli-config.json`, `cursor/mcp.json` | `CURSOR_CONFIG_DIR` | |
 
-| Harness | What the files hold |
+| Harness | What the files contain |
 | --- | --- |
 | `claude-code` | `permissions.allow` and `permissions.defaultMode` from the rules, then `native.claude-code` layered over them. `defaultMode` is `acceptEdits` unless `edit` is not allowed. Each MCP server is allowed as `mcp__<name>`. |
-| `codex` | `config.toml` is `native.codex` as written. `spotlight.rules` holds a `prefix_rule` for each `execute` rule with a pattern. |
-| `cursor` | `cli-config.json` holds `permissions.allow` and `permissions.deny` from the rules, then `native.cursor` layered over them. `mcp.json` holds the MCP servers. |
+| `codex` | `config.toml` is `native.codex` as written. `spotlight.rules` contains a `prefix_rule` for each `execute` rule with a pattern. |
+| `cursor` | `cli-config.json` contains `permissions.allow` and `permissions.deny` from the rules, then `native.cursor` layered over them. `mcp.json` contains the MCP servers. |
 
 ## Warnings
 
-Where a harness cannot hold a rule as written, the profile's `warnings` name
+Where a harness cannot apply a rule as written, the profile's `warnings` name
 the approximation. The write succeeds. Warnings include:
 
 | Harness | Case | Effect |
 | --- | --- | --- |
-| `claude-code` | A looser patterned rule under a bare `deny`, or under a bare `ask` for `read` | The bare rule holds for the whole kind. |
+| `claude-code` | A looser patterned rule under a bare `deny`, or under a bare `ask` for `read` | The bare rule applies to the whole kind. |
 | `claude-code`, `cursor` | `native` sets a key the rules also write | The native value replaces it. |
-| `codex` | Any `read` rule other than `allow` | Not held; Codex reads what its sandbox can see. |
-| `codex` | A bare `edit` rule other than `allow`, or any `edit` rule with a pattern | Not held; edits are decided by the sandbox. |
-| `codex` | A bare `execute` rule other than `allow` | Not held; only patterned `execute` rules are. |
+| `codex` | Any `read` rule other than `allow` | Does not apply; Codex reads what its sandbox can see. |
+| `codex` | A bare `edit` rule other than `allow`, or any `edit` rule with a pattern | Does not apply; edits are decided by the sandbox. |
+| `codex` | A bare `execute` rule other than `allow` | Does not apply; only patterned `execute` rules apply. |
 | `codex` | An `execute` pattern with a wildcard other than a final `*` word | Written as every command starting with the words before the wildcard. |
 | `codex` | An `execute` pattern starting with a wildcard | Left out. |
 | `codex` | `native.codex` sets `approval_policy`, `approvals_reviewer` or `sandbox_mode` | Replaced on every turn. |
@@ -165,7 +165,7 @@ the approximation. The write succeeds. Warnings include:
 
 A delete is refused with `409` `in-use` while any station names the profile.
 
-A station that names a profile its team does not hold is not refused when the
+A station that names a profile its team does not have is not refused when the
 line is written; its runs are refused.
 
 See [Limit what agents may do](/docs/agents/limit-what-agents-may-do)

@@ -36,7 +36,7 @@ On start, egress reads `/run/spotlight/egress.json` from the host and deletes
 it. It redeems the run's secrets from Spotlight, for up to 1 minute. It then
 listens, and writes its certificate authority for the host to lay into the
 sandbox. The host waits up to 90 seconds for it. On `SIGTERM` it stops within 5
-seconds and clears the secret values it held.
+seconds and clears the secret values it kept.
 
 ## Admitted hosts
 
@@ -80,9 +80,9 @@ or query parameter with the secret's value.
 
 ### Harness keys
 
-A host holds the harness keys in its [settings](/docs/reference/hosts/host-configuration#harness-keys)
+A host keeps the harness keys in its [settings](/docs/reference/hosts/host-configuration#harness-keys)
 and hands them to egress. The sandbox gets `spotlight-egress:<NAME>` in their
-place. Egress replaces the header only when it holds exactly that stand-in,
+place. Egress replaces the header only when it contains exactly that stand-in,
 with its prefix, as in `authorization: Bearer spotlight-egress:OPENAI_API_KEY`.
 
 Egress logs one of these reasons and sends the request without the harness
@@ -95,7 +95,7 @@ key:
 
 A secret an MCP server's environment names, as `secret.<NAME>`, is added for
 the run. The MCP server gets `spotlight-egress:<NAME>`. Egress replaces the
-bound header only on requests to the bound host whose header holds that
+bound header only on requests to the bound host whose header contains that
 stand-in, with or without the binding's prefix, as in
 `authorization: Bearer spotlight-egress:LINEAR_API_KEY`. The stand-in must be
 the whole value, or come right after the exact prefix. Other requests to the
@@ -118,19 +118,19 @@ intercepted request it could not pass on with only
 Egress logs one of these reasons and sends the request without the run
 secret:
 
-- `the host holds a key of its own for <host>`
+- `the host has a key of its own for <host>`
 - `the host's allow-list does not admit <host>`
 - `the host does not let egress read <secret id>`
 - `another secret is already worn in <Header> toward <host>`, or
   `in ?<parameter> toward <host>` for a query parameter
 - `it is worn in neither a header nor a query parameter`
 - `it names no header to be worn in`, or `it names no query to be worn in`
-- `it holds more than one line, so it cannot be worn in a request`
+- `it has more than one line, so it cannot be worn in a request`
 
-On a request to a host egress holds a secret or a harness key for, a header
-or query parameter holding a stand-in it doesn't put a value in, such as a
+On a request to a host egress has a secret or a harness key for, a header
+or query parameter that contains a stand-in it doesn't put a value in, such as a
 misspelt name, is removed before the request goes out, and egress logs
-`took a stand-in egress does not hold off a request` with the header's or
+`took a stand-in that egress has no value for off a request` with the header's or
 parameter's name only.
 
 Egress takes the secret back out of what the bound host answers before the
@@ -149,9 +149,9 @@ Reading a secret from AWS Secrets Manager fails with:
 | `find the host's AWS identity: <error>` | No AWS identity. |
 | `AWS Secrets Manager answered <code>` | An AWS error. |
 | `AWS Secrets Manager could not be asked: <error>` | AWS not reached. |
-| `AWS Secrets Manager holds no text for it` | No text value. |
+| `AWS Secrets Manager has no text for it` | No text value. |
 | `its value in AWS Secrets Manager is not JSON, so it has no <field> field` | `field` set, value not JSON. |
-| `its value in AWS Secrets Manager holds no text at <field>` | `field` missing. |
+| `its value in AWS Secrets Manager has no text at <field>` | `field` missing. |
 
 Egress logs each failure, and the request goes out without that secret.
 
@@ -175,9 +175,9 @@ Egress wears it whatever the host's allow-list says, since the Spotlight
 address is always admitted. When the Spotlight address is plain HTTP, as in
 `http://control-plane:3000` inside the host's network, egress also wears it
 over plain HTTP, on that address's port only. No other secret is worn over
-plain HTTP. Egress does not hold the token when the host holds a key of its own
+plain HTTP. Egress does not keep the token when the host has a key of its own
 for the Spotlight address, or another secret is worn in `Authorization` toward
-it, and logs `could not hold the run's Spotlight token` with the reason.
+it, and logs `could not keep the run's Spotlight token` with the reason.
 
 The token is not listed among the workspace's
 [tokens](/docs/reference/api/workspace-token). A run that reaches Spotlight's
@@ -226,8 +226,8 @@ followed.
 
 A shared egress is `spotlight egress serve`: one long-lived process that
 serves the runs of every push pool that names it in
-[`provision.egress`](/docs/reference/terraform/runner-pool#egress). It holds
-each run's secrets in memory while the run's runner holds the run. A push pool
+[`provision.egress`](/docs/reference/terraform/runner-pool#egress). It keeps
+each run's secrets in memory while the run's runner has a lease on the run. A push pool
 without `provision.egress` has no egress: a run that uses secrets, or reaches
 Spotlight's API, is never reserved for its runners.
 
@@ -242,7 +242,7 @@ Spotlight's API, is never reserved for its runners.
 | Listens | `SPOTLIGHT_EGRESS_LISTEN`, default `:3128`. HTTP/1.1 and HTTP/2, with TLS when a certificate is set. |
 | Reached by | Each runner, at `SPOTLIGHT_EGRESS_URL`, with `Proxy-Authorization: Basic` of `sandbox:<run proxy credential>`. |
 | Requests it takes | `CONNECT` over HTTP/1.1, a request that names its target in `Spotlight-Egress-Target`, and `GET /.well-known/spotlight/bound`. |
-| Processes | Several processes can serve one egress with the same token. Each process holds only the runs that reach it. |
+| Processes | Several processes can serve one egress with the same token. Each process keeps only the runs that reach it. |
 
 ### Settings
 
@@ -277,13 +277,13 @@ and exits `1`:
 | `listen for sandboxes: <error>` | Egress cannot listen on `SPOTLIGHT_EGRESS_LISTEN`. |
 
 On `SIGINT` or `SIGTERM`, egress stops within 5 seconds, sends the connection
-records it still holds, forgets every run, and exits `0`.
+records it still has, forgets every run, and exits `0`.
 
 ### Credentials
 
-| Credential | Held by | Lets its holder |
+| Credential | Kept by | Lets its holder |
 | --- | --- | --- |
-| Egress token | The egress process. Spotlight keeps only its hash. | Call Spotlight as the egress: admit a runner, redeem the secrets of the runs it serves, ask which runs are still held, and record their connections. No runner gets it, and only a holder of it can redeem a run's secrets. |
+| Egress token | The egress process. Spotlight keeps only its hash. | Call Spotlight as the egress: admit a runner, redeem the secrets of the runs it serves, ask which runs are still active, and record their connections. No runner gets it, and only a holder of it can redeem a run's secrets. |
 | Run proxy credential | The runner, from `SPOTLIGHT_EGRESS_CREDENTIAL`. Spotlight makes one for each runner, puts it in the [provision call](/docs/reference/events/provision-call#egress), and keeps only its hash. | Send traffic through egress. It is not accepted by Spotlight's API. |
 
 Egress gives Spotlight the run proxy credential with its egress token.
@@ -296,9 +296,9 @@ with no credential, or one Spotlight does not admit, with `407`.
 | When | Egress |
 | --- | --- |
 | A runner's first request | Asks Spotlight to admit the runner. |
-| The runner holds no run yet | Lets the runner reach only the Spotlight address's host. |
-| A request to any other host, or to `/.well-known/spotlight/bound` | Redeems the run's secrets, once. While the runner holds no run, it asks again at most every 5 seconds. |
-| Every 30 seconds | Asks Spotlight which of its runs their runners still hold, and forgets the secrets of the others. |
+| The runner has no lease on a run yet | Lets the runner reach only the Spotlight address's host. |
+| A request to any other host, or to `/.well-known/spotlight/bound` | Redeems the run's secrets, once. While the runner has no lease on a run, it asks again at most every 5 seconds. |
+| Every 30 seconds | Asks Spotlight which of its runs are still active, and forgets the secrets of the others. |
 | A run with no request open, and no request for 2 minutes | Forgets the run. Its next request admits it again. |
 
 Egress calls Spotlight with its egress token as a bearer token:
@@ -306,8 +306,8 @@ Egress calls Spotlight with its egress token as a bearer token:
 | Call | Answer |
 | --- | --- |
 | `POST /api/egress/admit` | The runner, its workspace and the Spotlight address's host. `401` for a token or a run proxy credential that Spotlight does not admit. |
-| `POST /api/egress/redeem`, with the run proxy credential | The run's secrets, sealed. `409` while the runner holds no run yet. |
-| `POST /api/egress/holds` | The run proxy credentials whose runners still hold their work. At most 500 credentials in one call; more is answered `422`. Egress sends them in batches. |
+| `POST /api/egress/redeem`, with the run proxy credential | The run's secrets, sealed. `409` while the runner has no lease on a run yet. |
+| `POST /api/egress/active-runs` | `active`: the run proxy credentials whose runner still leases its run. At most 500 credentials in one request; more is answered `422`. Egress sends them in batches. |
 | `POST /api/egress/connections` | `204`. At most 2,000 records in one call; more is answered `422`. Egress sends them in batches. |
 
 ### The runner's way out
@@ -376,7 +376,7 @@ records to Spotlight every 5 seconds, at most 2,000 in one call. It keeps at
 most 10,000 records waiting, and sends again the records that Spotlight could
 not be reached for.
 
-| Field | Holds |
+| Field | Contains |
 | --- | --- |
 | `host`, `port` | Where the connection went. |
 | `bytesOut` | Bytes from the sandbox to the host. |
@@ -387,7 +387,7 @@ not be reached for.
 | `reason` | Why egress blocked the connection or could not open it. See the table below. |
 | `at` | When it started, as egress says. Spotlight keeps that time only when it is at most 1 hour before, and at most 1 minute after, the time Spotlight gets the record. Otherwise it keeps its own time. |
 
-A record holds no URL, method, header or body.
+A record contains no URL, method, header or body.
 
 | `outcome` | `reason` | When |
 | --- | --- | --- |
@@ -427,7 +427,7 @@ The state is what the runner in the sandbox reports. Spotlight does not check
 it, and a sandbox that is not under the runner's control can report
 `enforced`. A runner on a host does not check. When egress is not enforced, a client in
 the sandbox that ignores the proxy goes out directly: the allow-list does not
-apply to it, and egress records nothing for it. The sandbox still holds only
+apply to it, and egress records nothing for it. The sandbox still has only
 stand-ins.
 
 ### Limits
@@ -451,7 +451,7 @@ A workspace can send up to the rate's number of requests at once.
 | `502` | `Egress could not ask the control plane about this sandbox. Please try again.` | Spotlight could not be asked. |
 | `502` | `Egress could not get the run's secrets from the control plane. Please try again.` | The run's secrets could not be redeemed. |
 | `400` | `Egress takes a CONNECT, a request that names its target in Spotlight-Egress-Target, or GET /.well-known/spotlight/bound.` | Any other request. |
-| `403` | `Egress does not let this sandbox reach <host>.` | The allow-list does not admit the host, or the runner holds no run and the host is not the Spotlight address's. |
+| `403` | `Egress does not let this sandbox reach <host>.` | The allow-list does not admit the host, or the runner has no lease on a run and the host is not the Spotlight address's. |
 | `502` | `Egress could not reach <host:port>. Error: <reason>` | A tunnel could not be opened, an address egress refuses included. |
 | `505` | `Egress tunnels only over HTTP/1.1. Please CONNECT over HTTP/1.1.` | A `CONNECT` over HTTP/2. |
 | `400` | `Spotlight-Egress-Target must be a host and port 443, such as api.example.com:443.` | A forwarded request to another port. |

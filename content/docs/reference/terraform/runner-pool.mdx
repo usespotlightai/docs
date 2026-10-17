@@ -111,10 +111,10 @@ Spotlight provisions its runner, the pool no longer names an egress:
 - A pool created without `token` gets one from Spotlight, returned once in the
   `Spotlight-Pool-Token` response header, never again.
 - Spotlight keeps only its hash.
-- A token is given once, ever. A token another pool holds is refused with
+- A token is given once, ever. A token that another pool has is refused with
   `belongs to another pool. Please give each pool its own`. A token rotated
-  away, or held by a pool since deleted or replaced, is refused to every pool,
-  the pool that held it included, with
+  away, or used by a pool since deleted or replaced, is refused to every pool,
+  the pool that used it included, with
   `was used before. Pool tokens work once only`.
 - Rotating with a new `tokenVersion` refuses the old token at once. Runs
   already claimed keep their own one-run credentials.
@@ -128,5 +128,5 @@ Spotlight provisions its runner, the pool no longer names an egress:
 
 ## Delete
 
-Deleting a pool retires it. Runs its runners already hold carry on to their
+Deleting a pool retires it. Runs its runners already lease carry on to their
 end.

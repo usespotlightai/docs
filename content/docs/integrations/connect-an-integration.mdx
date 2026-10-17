@@ -15,7 +15,7 @@ You need:
 - An account at the service that may grant the scopes the integration asks for.
 - The integration defined for the team with a `connection.oauth2` block, as
   below.
-- An OAuth client for the integration. Either Spotlight's deployment holds one,
+- An OAuth client for the integration. Either Spotlight's deployment has one,
   registered at the service with the redirect URL
   `https://app.usespotlight.ai/api/integrations/oauth/callback` (on a
   self-hosted Spotlight, your deployment's address in its place) and looked up
@@ -67,10 +67,10 @@ If the integration's tools should act as the person who started each task, set
 `holder = "requester"` in `connection`. A hook cannot call these tools.
 
 For a remote MCP server whose connection discovers its endpoints, a client
-the deployment holds must also name the `issuer` of the server's authorization
+the deployment has must also name the `issuer` of the server's authorization
 server; see [Discovery](/docs/reference/terraform/integration#discovery).
 
-If the deployment holds no OAuth client for the integration, set
+If the deployment has no OAuth client for the integration, set
 `registration` to the service's client registration endpoint. If the service
 asks which resource the grant is for, set `resource` to its address:
 
@@ -175,7 +175,7 @@ shows "Could not connect. Try again." instead of taking you anywhere, Spotlight
 would not begin. Either you may not make that
 connection (the team's needs an owner or admin; your own needs you to be on the
 team and the integration to have `holder = "requester"`), or Spotlight has no
-OAuth client for the integration: the deployment holds none and the definition
+OAuth client for the integration: the deployment has none and the definition
 has no `registration`, or the service refused to register one.
 
 If you authorized at the service but land on Spotlight's start page instead of

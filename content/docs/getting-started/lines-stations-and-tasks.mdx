@@ -111,14 +111,14 @@ the pull request sends the task back to Implementation, a comment or a request
 for changes on the pull request brings it back to Code Review, and a merged
 pull request moves it to Completed. These rules are part of the line's
 definition, and Spotlight calls them reactions. Unlike a person's move, a
-reaction waits while a run holds the task and applies when the run ends,
+reaction waits while the task has a current run and applies when the run ends,
 unless the run passes the task on first. A move to Completed, such as a merged
 pull request, is the exception: it stops the run and asks a person whether to
 close the task, or, if the task already waits on an answer to the run's
 question, adds itself to that question. [How outside events reach a
 task](/docs/getting-started/how-outside-events-reach-a-task) explains how
-Spotlight works out which task an event is about, and what happens when a run
-holds it.
+Spotlight works out which task an event is about, and what happens when it
+has a current run.
 
 ## When two moves happen at once
 
@@ -138,7 +138,7 @@ a move the person never saw.
 ## Finishing a task and moving it are separate
 
 A task keeps no single status. Its station says where it is, and whether it is
-running, waiting or finished comes from other facts: a run holding it, a
+running, waiting or finished comes from other facts: a current run on it, a
 question on it that has no answer, and the moment a station finished it or it
 reached Completed.
 

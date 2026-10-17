@@ -41,7 +41,7 @@ browser, do not work through egress.
 
 <Callout type="warn">
 
-`CURSOR_API_KEY` is not one of the keys egress holds. It enters the sandbox as
+`CURSOR_API_KEY` is not one of the keys egress keeps. It enters the sandbox as
 it is, where the agent can read it.
 
 </Callout>
@@ -59,7 +59,7 @@ them to a file. Set it in the same environment:
 SPOTLIGHT_SANDBOX_PASS=ANTHROPIC_API_KEY,OPENAI_API_KEY spotlight host
 ```
 
-The host passes only the variables its own process has. Egress holds the known
+The host passes only the variables its own process has. Egress keeps the known
 keys in the same way as keys from `sandbox.env`.
 
 ## If a push pool provisions the runners
@@ -67,7 +67,7 @@ keys in the same way as keys from `sandbox.env`.
 Put the keys in the environment your provisioner gives each runner it starts,
 as in [Provision runners from your own platform](/docs/hosts/provision-runners-from-your-own-platform#start-the-runner).
 The keys enter the sandbox as they are, also when the pool names an egress: a
-shared egress holds no harness keys.
+shared egress has no harness keys.
 
 ## Restart the host
 
@@ -82,5 +82,5 @@ does not add the key. See [Limit where sandboxes can connect](/docs/security/lim
 
 - [Harnesses](/docs/reference/hosts/harnesses): what each harness reads.
 - [Harness keys](/docs/reference/hosts/host-configuration#harness-keys), for the keys
-  egress holds and the host each one is sent to.
+  egress keeps and the host each one is sent to.
 - [The sandbox is the security boundary](/docs/security/the-sandbox-is-the-security-boundary)

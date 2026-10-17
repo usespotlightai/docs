@@ -32,7 +32,7 @@ first, one row each:
 | Search | `Search <n>`, numbered from the station's first search, linked to its page. |
 | State | Its [state](#search-states). Hovering over it shows its [ending](#search-endings), once it has one. |
 | Replay set | The set it searches on, or `–`. |
-| Best | Its [best candidate](#best-candidate)'s name, or "Live config", with its [reading](#only-on-seen-tasks) when it has one. Without one, "No best candidate yet", or `No candidate holds its success yet` for a search that aims for the same success for less. |
+| Best | Its [best candidate](#best-candidate)'s name, or "Live config", with its [reading](#only-on-seen-tasks) when it has one. Without one, "No best candidate yet", or `No candidate matches the live config’s success yet` for a search that aims for the same success for less. |
 | Success | The best candidate's score as a percentage, or `–`. Hovering over it shows `This score is from the held-out tasks.` or `This score is from the searched tasks.`, with `Likely range: <range>`. |
 | Iterations | `<run> / <budget>`. |
 | Spent | `<spent> / <ceiling>`. |
@@ -55,7 +55,7 @@ With no searches, the card reads "No searches yet" and
 
 The dialog's description reads `An agent proposes configs for this station.
 Each config replays on most of the set's tasks. Then the best configs replay
-on held-out tasks to check that they hold up. The station doesn't change until
+on held-out tasks to check that they still do well. The station doesn't change until
 you pick a config.`
 
 | Field | Values |
@@ -158,7 +158,7 @@ An ⓘ beside a tile's label shows its note on hover.
 
 | Tile | Shows | Note |
 | --- | --- | --- |
-| Best | The [best candidate](#best-candidate)'s name, or "Live config", then its score as a percentage with `held out` or `searched`, and its [reading](#only-on-seen-tasks) when it has one. Without one, `–` and "No best candidate yet". Labelled "Cheapest" when the search aims for the same success for less, and then `No candidate holds its success yet` without one. | `The search aims for <aim>.` and the aim's note, as under "Aim for", then `Likely range: <range>.` |
+| Best | The [best candidate](#best-candidate)'s name, or "Live config", then its score as a percentage with `held out` or `searched`, and its [reading](#only-on-seen-tasks) when it has one. Without one, `–` and "No best candidate yet". Labelled "Cheapest" when the search aims for the same success for less, and then `No candidate matches the live config’s success yet` without one. | `The search aims for <aim>.` and the aim's note, as under "Aim for", then `Likely range: <range>.` |
 | Live config | The live config's search score as a percentage, and `of <n> runs scored`; or `–` and "Not scored yet". | `Likely range: <range>.` and `Minimum real gain: <min_gain>.`, as in `+5 pts`. |
 | Iterations | `<n> of <m>`, the iterations run of its budget, and `<n> candidates proposed` ("candidate" for 1). | `Each iteration tries <n> candidates, <n> at once. Each run once. Search agent: <harness> · <model> · <effort>`, with `Each run <n> times` for more copies, and only the parts its agent has. |
 | Tasks | The searched tasks, and `searched · <n> held out`. | `The search agent sees only the searched tasks and their scores. It doesn't see the held-out tasks. After the search, the best candidates replay on the held-out tasks to check that they don't only fit what the agent saw.`, then `Held out: <titles>.` with each held-out task's title in the set, or `Task <first 8 characters of its id>`. |
@@ -198,7 +198,7 @@ It is one table:
 | Cost per run | What it spent per scored searched run, or "Unpriced". |
 | Pull request | `–` until it is picked, "Opening…", "Opened", linked to the pull request on GitHub, or "Not opened" with a warning icon, "Why", whose hover reads `<reason>. <message>`: the [reason](#config-pull-request-reasons) in words, then Spotlight's message. |
 
-The first row, "Started from", holds the live config. Then each iteration has
+The first row, "Started from", shows the live config. Then each iteration has
 a row `Iteration <n>`, followed by its candidates. An iteration's row reads
 `· Looked for why it stalled` for a [reflection](#reflections), its
 [state](#iteration-states) unless it ended, and "Agent run", linked to the
@@ -357,11 +357,11 @@ Each iteration's agent run is a run of its own kind:
 
 | | Search agent run |
 | --- | --- |
-| Task | Holds no task. |
+| Task | Has no task. |
 | Placement | Where the station's runs go: the station's `runners`, else the line's. Its priority is below every task run and chat run. |
 | Workspace | No repository is checked out, and no skills, settings files or team memories are laid out. |
 | Briefing | The station's live config as the search started, the budget left, how many candidates it may propose, how many tasks are held out, what counts as better for the search's [aim](#aims), what a candidate may change, and how to propose one. After a reflection that went on, also each `config` cause it recorded, with its task, evidence and suggestion. A reflection's briefing instead names the config whose failures it looks into, lists each failing task with its original run and the replay run that failed it, describes the five [causes](#causes), and says how to record one. |
-| `spotlight history` | Only the searched station. The held-out tasks' runs are left out; the searched runs are always written. A `candidates/` folder holds each candidate so far. See [`spotlight history`](/docs/reference/cli/agent-commands#spotlight-history). |
+| `spotlight history` | Only the searched station. The held-out tasks' runs are left out; the searched runs are always written. A `candidates/` folder contains each candidate so far. See [`spotlight history`](/docs/reference/cli/agent-commands#spotlight-history). |
 | `spotlight candidate` | Proposes a candidate. Refused in a reflection. See [`spotlight candidate`](/docs/reference/cli/agent-commands#spotlight-candidate). |
 | `spotlight cause` | Records a task's cause, in a reflection only. See [`spotlight cause`](/docs/reference/cli/agent-commands#spotlight-cause). |
 | Refused | Messages from people, git, tools, `spotlight reply`, `spotlight recall` and `spotlight remember`. `spotlight trace` finds no held-out task. |
@@ -547,7 +547,7 @@ The candidate first in the order of the search's [aim](#aims): by held-out
 score and held-out gain once any candidate has a held-out score, else by
 search score and searched gain. When it aims for more success, that is the one
 that succeeds most, then the cheaper; when it aims for the same success for
-less, the cheapest that holds its success, read "Cheapest". When the live
+less, the cheapest that keeps its success, read "Cheapest". When the live
 config comes first, the best reads "Live config".
 
 ## Spend and ceiling
@@ -624,12 +624,12 @@ is the station's. It changes only the attributes the candidate changes:
 | --- | --- |
 | A plain value or heredoc | Replaced in place. |
 | `file("${path.module}/<path>")`, for `prompt`, `description`, `harness`, `model`, `effort` or `profile` | The new value is written to the station's own file beside the `.tf` file: `prompts/<team>/<line>/<station>.md` for `prompt`, the file the export writes, and `prompts/<team>/<line>/<station>.<attribute>.md` for the others. If the attribute was already read from that file, and nothing else reads it, the file is changed in place. Otherwise a new file is written, with `-2`, `-3` and on added to its name when one is taken, and `file()` is pointed at it. |
-| A reference to a resource in the same file, as for `profile`, `skills` and `tools` | Followed to its value. A new value is written as a reference when a resource in the file holds it. |
+| A reference to a resource in the same file, as for `profile`, `skills` and `tools` | Followed to its value. A new value is written as a reference when a resource in the file contains it. |
 | Not written | Added after the block's last attribute. |
 | Anything else, such as a variable or a local | Refused, `computed-attribute`. |
 
 Before it writes, the edit checks that every attribute the candidate may change,
-the station's `check` and `passes_to`, and its `judge` block hold the values the
+the station's `check` and `passes_to`, and its `judge` block still have the values the
 search started from, and refuses with `drifted` otherwise. An attribute it
 cannot read and the candidate does not change is listed in the pull request
 as not checked. An attribute read through `file()` with a path not built on
@@ -637,7 +637,7 @@ as not checked. An attribute read through `file()` with a path not built on
 `computed-attribute`. A `file()` path outside the repository is refused with
 `file-missing`. The edited
 file is read back, and refused with `edit-failed` if it does not parse or does
-not hold the candidate's values.
+not contain the candidate's values.
 
 GitHub refusing a request with a `4xx` status, other than for a rate limit,
 refuses the pull request at once with `github-refused`. An attempt that fails
@@ -665,9 +665,9 @@ with `github-refused`.
 Each comes with Spotlight's message, such as
 ``Terraform computes `prompt` from `local.build_prompt`. Please change it by hand.``.
 `block-not-found` also covers a station no longer on its line, and
-`file-missing` a file a `file()` reads that the repository does not hold.
+`file-missing` a file a `file()` reads that the repository does not contain.
 `file-unwritable` is a file that is a symbolic link in the repository.
-`branch-taken` means the branch holds commits Spotlight did not write.
+`branch-taken` means the branch has commits Spotlight did not write.
 
 ## Guarding a station's changes
 

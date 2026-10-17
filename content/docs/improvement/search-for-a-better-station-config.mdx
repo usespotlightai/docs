@@ -11,7 +11,7 @@ rounds. In each round an agent studies how the station's past runs went and
 proposes a few changed configs, called candidates, and Spotlight
 [replays](/docs/improvement/replay-past-tasks-against-a-station-change) each
 one on most of a replay set's tasks. Nothing is applied: when you pick a
-candidate, Spotlight opens a pull request in the repository that holds the
+candidate, Spotlight opens a pull request in the repository that contains the
 line's Terraform. You need:
 
 - To be on the team, or an owner or admin of the workspace.
@@ -25,9 +25,9 @@ line's Terraform. You need:
 - To open pull requests from it: the line's Terraform in a GitHub repository
   that Spotlight's GitHub App is installed on, and a `source` block on the
   line that names the file. See
-  [Name the file that holds the line](#name-the-file-that-holds-the-line).
+  [Name the file that contains the line](#name-the-file-that-contains-the-line).
 
-## Name the file that holds the line
+## Name the file that contains the line
 
 Do this once per line, before you pick a candidate.
 
@@ -35,7 +35,7 @@ Do this once per line, before you pick a candidate.
 <Step>
 
 Add a `source` block to the line's `spotlight_line` resource, naming the
-repository and the `.tf` file, from the repository's root, that holds the
+repository and the `.tf` file, from the repository's root, that contains the
 resource:
 
 ```hcl
@@ -82,7 +82,7 @@ for the station's search under way to end.
 Under **Search on**, choose the replay set. A set with runs of fewer than 5
 different tasks can't be chosen: a search keeps about 30% of the tasks back to
 check its results on, and needs some left to search on. See
-[Why a search holds tasks back](/docs/improvement/why-a-search-holds-tasks-back).
+[Why a search holds tasks out](/docs/improvement/why-a-search-holds-tasks-out).
 
 </Step>
 <Step>
@@ -344,20 +344,20 @@ opened**, the reason, and what Spotlight found. Fix the cause, then select
 
 | Reason | What to do |
 | --- | --- |
-| Line names no repository for its Terraform | Give the line a `source` block. See [Name the file that holds the line](#name-the-file-that-holds-the-line). |
+| Line names no repository for its Terraform | Give the line a `source` block. See [Name the file that contains the line](#name-the-file-that-contains-the-line). |
 | Spotlight's GitHub App can't reach the line's repository | Install the GitHub App on that repository, or correct `source.repository`. |
 | Line's Terraform file isn't in its repository | Correct `source.path`. Spotlight reads the file on the repository's default branch. |
 | Station's block isn't in the file, or Station's block appears more than once | Spotlight looks for exactly one `spotlight_line` resource whose `key` is the line's, and in it exactly one `station` block whose `key` is the station's, both written as plain text. Write them that way, or make the change by hand. |
 | Attribute is computed in Terraform. Please set it by hand. | The attribute is built from a variable, a local or another expression. The reason names the attribute, the expression and the value to set: make the change by hand. |
 | File changed since the search began | The station's block in the repository no longer matches the config the search started from, such as after another change was applied. Make the change by hand, or start a new search. |
-| Pull request branch already exists | The branch `spotlight/search-<id>-<name>` holds commits Spotlight did not write. Delete the branch, then retry. |
+| Pull request branch already exists | The branch `spotlight/search-<id>-<name>` has commits Spotlight did not write. Delete the branch, then retry. |
 
 [Config pull request reasons](/docs/reference/app/searches#config-pull-request-reasons)
 lists every reason.
 
 ## Related
 
-- [Why a search holds tasks back](/docs/improvement/why-a-search-holds-tasks-back)
+- [Why a search holds tasks out](/docs/improvement/why-a-search-holds-tasks-out)
 - [Searches](/docs/reference/app/searches)
 - [Searches API](/docs/reference/api/searches)
 - [Replay past tasks against a change to a station](/docs/improvement/replay-past-tasks-against-a-station-change)

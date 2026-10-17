@@ -17,13 +17,13 @@ Expressions are [CEL](https://cel.dev). They are written in
 | An integration or hook written in HCL | `$${{ <CEL> }}` | `"$${{ body.data.id }}"` |
 | A hook's `when` | bare CEL, or `${{ <CEL> }}` | `event.inputs.query != ''` |
 
-A field that holds one expression must be the whole string, `${{ ... }}`, with
+A field that contains one expression must be the whole string, `${{ ... }}`, with
 nothing around it but spaces. Such fields are refused otherwise, with
 `must be an expression, written as ${{ ... }}`.
 
-A field that holds text (a request's `url`, `query`, `headers` and `body`
+A field that contains text (a request's `url`, `query`, `headers` and `body`
 strings, a tool input's `default`, `asymmetric.key`, and a hook step's `with`
-strings and `request` fields) may hold any number of expressions inside it:
+strings and `request` fields) may contain any number of expressions inside it:
 
 ```text
 https://api.example.com/issues/${{ task.marks["linear.issue"] }}/comments
@@ -218,8 +218,8 @@ The response:
 | `warnings` | array | Each has `position` and `message`. |
 
 `422` when the request is not shaped as a check, when the position names
-neither an integration nor a hook attribute, when the definition holds errors
-(each listed under `definition`), or when the position holds no expression in
+neither an integration nor a hook attribute, when the definition has errors
+(each listed under `definition`), or when the position contains no expression in
 the definition.
 
 ## Positions API

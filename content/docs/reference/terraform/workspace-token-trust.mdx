@@ -39,7 +39,7 @@ resource "spotlight_workspace_token_trust" "github_main" {
 | --- | --- | --- | --- |
 | `key` | string | required | Lowercase words joined by dashes, at most 64 characters. Fixed: an update that changes it is refused; Terraform replaces the resource. |
 | `issuer` | string | required | The issuer the workload's token must name in `iss`. `https`, or `http` only for `localhost`, `127.0.0.1` or `[::1]`. No query, fragment or credentials. At most 255 characters. |
-| `audience` | string | `spotlight` | A value the token's `aud` must hold. One word, at most 255 characters. |
+| `audience` | string | `spotlight` | A value the token's `aud` must contain. One word, at most 255 characters. |
 | `subject` | string | required | A pattern the token's `sub` must match. See [patterns](#patterns). |
 | `claims` | map of name to string | `{}` | Further claims the token must carry, each matching its pattern. At most 16. See [patterns](#patterns). |
 | `scopes` | array of strings | required | The scopes of every token the trust mints, as for a [workspace token](/docs/reference/api/workspace-token#scopes). |
@@ -84,9 +84,9 @@ be named. Only claims whose value is a string can match.
 Writing a trust needs the `manage-token-trusts` permission. See
 [Roles and permissions](/docs/reference/roles-and-permissions).
 
-A token may define a trust only with scopes it holds itself, may change a
-trust only when it holds both the trust's current scopes and the new ones, and
-may delete a trust only when it holds the trust's current scopes. Otherwise the
+A token may define a trust only with scopes it has itself, may change a
+trust only when it has both the trust's current scopes and the new ones, and
+may delete a trust only when it has the trust's current scopes. Otherwise the
 write or delete is refused with `403`, as for a caller without
 `manage-token-trusts`. See [Permission titles](/docs/reference/errors-and-messages#permission-titles).
 A person who is an owner or admin is not limited this way.

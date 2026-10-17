@@ -58,7 +58,7 @@ lists every message and its code.
 | --- | --- |
 | `Runner image <image> can't be pulled. Error: …` | The image reference or the host's registry credentials. See [Pull runner images from a private registry](/docs/hosts/pull-images-from-a-private-registry). |
 | `Runner image <image> is refused. …` | Fix the refusal reason as in the table above. |
-| `Runner image <digest> no longer holds the <harness> harness.` | Put the harness back in the image, or change the station's harness. |
+| `Runner image <digest> no longer has the <harness> harness.` | Put the harness back in the image, or change the station's harness. |
 | `The sandbox's egress didn't start. Error: …` | Read the host's log. See [Egress](/docs/reference/hosts/egress). |
 | `The runner couldn't prepare the run. Error: prepare: git clone <path>: …` | Check that the GitHub App can read the repository and that the line names it correctly. See [Point a line at your repositories](/docs/lines/point-a-line-at-your-repositories). |
 | `The runner couldn't prepare the run. Error: prepare: preparing <path> did not finish within 10m0s` | Check the host's network to GitHub. See [Limits and timeouts](/docs/reference/limits-and-timeouts). |
@@ -168,10 +168,10 @@ Then read it against what went wrong:
 | What you see | Cause | What to change |
 | --- | --- | --- |
 | The memory it needed is not in the pane, and not on the Memory page | Nobody kept it. | Write it on the team's Memory page, or turn on `memories` at the station. |
-| It is on the Memory page but not in the pane, and it applies to this run's line, station, repository and files | The briefing holds at most eight memories, or 3,000 characters, and memories that are more specific, closer to the task's words, or warnings filled it. The agent did not look it up in `.spotlight/memory`. | Retire memories that no longer help, narrow where others apply, or say the memory in words the task will use. |
+| It is on the Memory page but not in the pane, and it applies to this run's line, station, repository and files | The briefing contains at most eight memories, or 3,000 characters, and memories that are more specific, closer to the task's words, or warnings filled it. The agent did not look it up in `.spotlight/memory`. | Retire memories that no longer help, narrow where others apply, or say the memory in words the task will use. |
 | It is on the Memory page but not in the pane, and it does not apply to this run | It doesn't reach this run's line, station, repository or files. | Correct it to apply more widely. |
 | It is under **Given to the agent** and the agent acted against it | The agent didn't follow it. | Say it more plainly in a correction, or in the station's prompt. |
-| A listed memory is itself wrong | The memory is wrong. | Select **This was wrong** beside it, say why it no longer holds, and select **Retire**. Later runs aren't told it. |
+| A listed memory is itself wrong | The memory is wrong. | Select **This was wrong** beside it, say why it no longer applies, and select **Retire**. Later runs aren't told it. |
 
 Each memory's handle links to it on the team's Memory page, which also shows
 how many runs were briefed with it or recalled it. A run counts as briefed once

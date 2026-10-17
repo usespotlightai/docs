@@ -1,7 +1,7 @@
 ---
 type: concept
 icon: Lightbulb
-title: Why a search holds tasks back
+title: Why a search holds tasks out
 description: Why a search for a better station config keeps some of its tasks from its agent, why it ends with a frontier and not one winner, why it stops to look into a stall, what it may change, and how its budget is spent.
 ---
 
@@ -47,7 +47,7 @@ candidate's gain over the live config, comes with a range; see
 
 A few choices follow from this.
 
-- The split is by task, not by run. If a set holds two runs of one task, both
+- The split is by task, not by run. If a set contains two runs of one task, both
   land on the same side, so nothing about a held-out task leaks through a run
   of it the agent saw.
 - The split is drawn from the search's own id, so each search draws its own,
@@ -66,7 +66,7 @@ A few choices follow from this.
 
 When a candidate's gain over the live config reads Better on the searched
 tasks but not on the held-out ones, the search marks it "Only on seen tasks".
-That is the pattern overfitting leaves: the gain held on the tasks the agent
+That is the pattern overfitting leaves: the gain showed on the tasks the agent
 tuned against and did not reach the tasks it never saw. A marked candidate can
 still be picked. A held-out gain rests on few tasks and can read Within
 noise for a candidate that does help, so in the docs' view the person who
@@ -116,7 +116,7 @@ What it may not change falls into three groups.
 - How it is scored. A replay scores a candidate by the station's own check and
   judge. A search that could loosen the check or rewrite the judge's rubric
   could pass by lowering the bar. In the docs' view, a search must
-  be held to a bar it cannot move.
+  be measured against a bar it cannot move.
 - How tasks flow. Which stations a run may hand a task on to and whether it
   may finish a task shape the whole line, and the station's key, name and
   kind identify it there. A change to them is a change to the line, which in

@@ -204,7 +204,7 @@ The agent command line a station runs: `claude-code` (Claude Code), `cursor`
 
 An API key or token a harness uses to reach its model provider, such as
 `ANTHROPIC_API_KEY`. A host gives them to its sandboxes from `sandbox.env`.
-Egress holds the ones it knows, and the sandbox gets a [stand-in](#stand-in).
+Egress keeps the ones it knows, and the sandbox gets a [stand-in](#stand-in).
 See [Harness keys](/docs/reference/hosts/host-configuration#harness-keys).
 
 ## Harness profile
@@ -218,7 +218,7 @@ settings. A station names one in its `profile`. See
 One of the tasks of a replay set that a [search](#search) keeps from its
 agent, about 30% of them. Only the best candidates are replayed on them, once
 the search stops searching, to check they did not just fit the tasks the agent
-saw. See [Why a search holds tasks back](/docs/improvement/why-a-search-holds-tasks-back).
+saw. See [Why a search holds tasks out](/docs/improvement/why-a-search-holds-tasks-out).
 
 ## Hook
 
@@ -530,7 +530,7 @@ deployment's own settings.
 
 ## Stand-in
 
-The value `spotlight-egress:<NAME>` a sandbox holds in place of a harness key
+The value `spotlight-egress:<NAME>` a sandbox has in place of a harness key
 or a run secret. Egress replaces it with the real value in the request header
 or query parameter.
 See [What egress adds to requests](/docs/reference/hosts/egress#what-egress-adds-to-requests).
@@ -587,7 +587,7 @@ lower judge score. See [Results](/docs/reference/app/replays#results).
 
 ## Workspace
 
-The top-level account in Spotlight, with a name and a URL slug. It holds teams,
+The top-level account in Spotlight, with a name and a URL slug. It has teams,
 members and their roles, the GitHub connection, secrets, runner pools and
 trusts, and workspace tokens. See
 [`spotlight_workspace`](/docs/reference/terraform/workspace).

@@ -46,12 +46,12 @@ every harness, and it describes the diff that was actually left instead of the
 agent's idea of what it changed. A review stack can also be drafted for a pull
 request that no agent in Spotlight wrote.
 
-### Rules the stack is held to
+### Rules every stack follows
 
 An arrangement that reads well but is in the wrong order would mislead: a
 reviewer following it would meet code before the thing it depends on. So
 Spotlight works out some facts about the diff itself, without a model, and
-holds every stack to them. The principle is that nothing arrives before what it
+applies them to every stack. The principle is that nothing arrives before what it
 depends on. Code that uses something another change defines shares its cohort
 and never sits in an earlier layer; a test shares the cohort of the code it
 tests, in the layer where the last of that code arrives; both sides of a move
@@ -108,7 +108,7 @@ when its pull request merges: it stands, and stays on record, found by
 repository, path and time. Decisions on a pull request closed without merging
 are discarded.
 
-The alternative would be to hold decisions back until a change has merged, as a
+The alternative would be to keep decisions back until a change has merged, as a
 record for later only, which would keep them out of the one moment they can
 still change the outcome. Spotlight shows them from the start, as a comment on
 the pull request and beside the files they bear on in the task's change stack,

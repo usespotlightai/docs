@@ -6,7 +6,7 @@ description: Define a pull pool from the web app, with Terraform or through the 
 ---
 
 A host claims work with its pool's token. To create the pool you need to be an
-owner or admin of the workspace, or to hold a
+owner or admin of the workspace, or to have a
 [workspace token](/docs/administration/issue-a-workspace-token) with the `runners`
 scope. Spotlight keeps only a hash of the token, so store the value as soon as
 you have it.
@@ -125,7 +125,7 @@ gives its range.
 
 ## Rotate the token
 
-Use a token no pool has held before. The old one stops working at once, and
+Use a token no pool has used before. The old one stops working at once, and
 runs already claimed carry on.
 
 <Tabs items={['Terraform', 'Resource API']}>
@@ -168,7 +168,7 @@ The console prints `200` and the new token.
 </Tab>
 </Tabs>
 
-Hosts still holding the old token stop with exit code `3`. Give each one the
+Hosts that still use the old token stop with exit code `3`. Give each one the
 new token in `SPOTLIGHT_TOKEN` in its `host.env`, and
 [restart it](/docs/hosts/run-a-host#restart-the-host).
 

@@ -6,7 +6,7 @@ description: The fields of a team, and who may create, change and delete one.
 ---
 
 The `spotlight_team` resource, and the team resource of the API: a group
-inside a workspace that holds lines, skills, harness profiles, integrations,
+inside a workspace that has lines, skills, harness profiles, integrations,
 hooks and chats.
 
 | Kind | Endpoint | Terraform | Address |
@@ -30,23 +30,23 @@ resource "spotlight_team" "core" {
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `key` | string | required | Names the team within its workspace, and prefixes the address of everything it holds. Lowercase words joined by dashes, at most 64 characters. Fixed: an update that changes it is refused; Terraform replaces the resource. |
+| `key` | string | required | Names the team within its workspace, and prefixes the address of everything it has. Lowercase words joined by dashes, at most 64 characters. Fixed: an update that changes it is refused; Terraform replaces the resource. |
 | `name` | string | required | What the team is called. 1 to 100 characters. |
-| `workspaceId` | string | read-only | The workspace that holds the team. |
+| `workspaceId` | string | read-only | The workspace that has the team. |
 
 ## Rules
 
 | Operation | Rule |
 | --- | --- |
-| create | Needs `configure`. The team holds nothing. |
+| create | Needs `configure`. The team has nothing in it. |
 | update | Needs `configure`. Changes `name` only. |
-| delete | Needs `configure`. Refused with `409` `in-use` while the team holds any line, skill, harness profile, integration or hook. |
+| delete | Needs `configure`. Refused with `409` `in-use` while the team has any line, skill, harness profile, integration or hook. |
 | list | Every team of the workspace. |
 | import | `GET /api/resources/workspaces/{workspaceId}/teams/import?address=<key>` |
 
 An in-use refusal names what is left, as in
-`Team core is not empty. Still holds: line delivery`. See
-[Roles and permissions](/docs/reference/roles-and-permissions) for who holds
+`Team core is not empty. It still has: line delivery`. See
+[Roles and permissions](/docs/reference/roles-and-permissions) for who has
 each permission.
 
 A team created through the resource API or Terraform has no lines. The first

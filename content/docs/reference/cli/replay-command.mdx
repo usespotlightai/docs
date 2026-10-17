@@ -99,7 +99,7 @@ has with `<station> has <n> of <kind> named "<name>"; name one by its id: <ids>`
 spotlight replay propose --station <team/line/station> --name <name> <station.json>
 ```
 
-Proposes a candidate for the station from a file holding its station block as
+Proposes a candidate for the station from a file that contains its station block as
 JSON, in the shape of one entry of a line's `stations`. Give `-` to read the
 block from standard input. Nothing is applied.
 
@@ -124,9 +124,9 @@ prints `It changes nothing from the live config <fingerprint>.`
 | Message | Cause |
 | --- | --- |
 | `--name tells the candidate from the station's others` | No `--name`, or a blank one. |
-| `name one file holding the station block, as the line resource holds a station, or - to read it from stdin` | No file, or more than one. |
-| `<path> is HCL; Spotlight writes HCL but never reads it, so give the station block as JSON, as the line resource holds it` | The file ends in `.tf` or `.hcl`. |
-| `<path> holds no JSON object; it holds the station block, as the line resource holds a station` | The file is not a JSON object. |
+| `name one file that contains the station block, as the line resource contains a station, or - to read it from stdin` | No file, or more than one. |
+| `<path> is HCL; Spotlight writes HCL but never reads it, so give the station block as JSON, as the line resource contains it` | The file ends in `.tf` or `.hcl`. |
+| `<path> contains no JSON object; it must contain the station block, as the line resource contains a station` | The file is not a JSON object. |
 | `propose <name>: <refusal>` | Spotlight refused the candidate. See [Checks](/docs/reference/api/replay-candidate#checks). |
 
 ## spotlight replay candidates
@@ -460,7 +460,7 @@ as in `-17 points (-50 to +0), within noise`, or `-` without one.
 | Message | Cause |
 | --- | --- |
 | ``name the plan, the output of `terraform show -json <planfile>`, or - to read it from stdin`` | No plan, or more than one. The usage follows. |
-| ``this is the log `terraform plan -json` streams, which holds no station blocks; save the plan with `terraform plan -out=<planfile>`, then give this the output of `terraform show -json <planfile>` `` | The file is the streamed log of `terraform plan -json`. |
+| ``this is the log `terraform plan -json` streams, which contains no station blocks; save the plan with `terraform plan -out=<planfile>`, then give this the output of `terraform show -json <planfile>` `` | The file is the streamed log of `terraform plan -json`. |
 | ``the plan is not JSON; give this the output of `terraform show -json <planfile>` `` | The file is not JSON. |
 | ``this is not a saved plan shown as JSON; give this the output of `terraform show -json <planfile>` `` | The JSON has no `format_version`. |
 | `set SPOTLIGHT_URL, and SPOTLIGHT_API_TOKEN or SPOTLIGHT_OIDC_TRUST, to check a plan` | No `SPOTLIGHT_URL`. The usage follows. |

@@ -103,14 +103,14 @@ and admins; a member who opens it is sent to the workspace's own route.
 Roles are changed on the Members page, in the "Members" list of any team's
 "General" settings page, or with
 `PATCH /api/workspaces/{slug}/members/{userId}`. The role changed is the
-person's role in the workspace, and holds in every team.
+person's role in the workspace, and applies in every team.
 
 - Only an owner or an admin may set roles.
 - An owner may change anyone's role, including their own.
 - An admin may change only members, and may not give the `owner` role.
 - The last owner may not be given another role.
 
-For an owner or admin, setting a person's role to the one they already hold
+For an owner or admin, setting a person's role to the one they already have
 changes nothing and is not refused. A refused change returns one of
 these:
 
@@ -164,7 +164,7 @@ does not exist.
 - Accepting adds the person to the workspace with the invite's role, and to
   each team it names that still belongs to the workspace. A person already in
   the workspace keeps their role and is added to the teams.
-- The pending invites list holds only open invites, newest first.
+- The pending invites list contains only open invites, newest first.
 - Adding a member to a team needs the person to be in the workspace already.
 
 Each address in an invite request gets one outcome:
@@ -229,7 +229,7 @@ and [Connect GitHub to a workspace](/docs/integrations/connect-github).
 
 ## Integration connections
 
-An integration that links over OAuth holds a team connection, and, when its
+An integration that links over OAuth has a team connection, and, when its
 `connection.holder` is `requester`, a connection for each person who makes
 one. See [Holder](/docs/reference/terraform/integration#holder).
 

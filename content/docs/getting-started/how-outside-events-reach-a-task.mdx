@@ -44,7 +44,7 @@ A task keeps a record of the things outside Spotlight that belong to it, such
 as the pull request it opened or the Slack thread it started in. Spotlight
 calls each of these a mark. When the task in the example opened its pull
 request, Spotlight noted that pull request on the task. The comment names the
-same pull request, so Spotlight finds the task by it. Only one task can hold a
+same pull request, so Spotlight finds the task by it. Only one task can have a
 given mark.
 
 Events about a branch need no mark. Spotlight names the branch it works a task
@@ -57,7 +57,7 @@ question, without ever using it to find one.
 
 ## When no task is found
 
-If no task holds what the event is about, the integration may open a new one.
+If no task has what the event is about, the integration may open a new one.
 A Slack message that mentions Spotlight is the usual case. Each line has a
 role, a word for the kind of work it takes, such as `delivery`. The integration
 names a role, and the task opens on the team's line with that role. Otherwise
@@ -78,11 +78,11 @@ event does, and each moves the task to a station. Delivery's include:
 - a merged pull request moves it to Completed
 
 [Built-in lines](/docs/reference/built-ins/built-in-lines) lists them all.
-When no run holds the task, a rule moves it at once, and if the station it
+When the task has no current run, a rule moves it at once, and if the station it
 moves to has an agent, a new run starts there with the event among the task's
 notes.
 
-While a run holds the task, working on it, waiting to start, or paused until
+While the task has a current run, working on it, waiting to start, or paused until
 a person answers it, a rule does not move it. The event is added to the task's notes, where the agent sees it,
 and the move waits. If the run passes the task on to a station, the task goes
 there and the waiting move is dropped. If the run ends any other way, by
@@ -90,7 +90,7 @@ finishing, asking a person, failing or being stopped, the waiting move applies
 then. When several are waiting, the latest one applies, and a person moving
 the task first drops them.
 
-While a run holds the task, an event that would move it to Completed, such as
+While the task has a current run, an event that would move it to Completed, such as
 a merged pull request, goes differently. The work it was about is settled, so
 it stops the run at once, keeps the task at its station, and asks the task's
 assignee whether to close the task or carry on. If the task is already waiting
@@ -107,7 +107,7 @@ A few cases go differently:
   as a reply in the task's Slack thread, the reply answers the question, even
   when the line has no rule for it, and the agent carries on as if it had been
   answered in the inbox. A rule that moves the task elsewhere comes first, and
-  while a run holds the task that move waits like any other.
+  while the task has a current run that move waits like any other.
 - Otherwise, if the line has no rule for the event, or the task is already
   completed, nothing happens.
 

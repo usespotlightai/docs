@@ -30,10 +30,10 @@ endpoints, under `/api/teams/{teamId}`. They answer JSON, and errors are
 | Parameter | Description |
 | --- | --- |
 | `limit` | At most this many. Default 50, at most 200. |
-| `before` | Only searches started before this one, by its id. A search the team does not hold answers an empty page. |
+| `before` | Only searches started before this one, by its id. A search that the team does not own answers an empty page. |
 
 A search's agent proposes candidates at `POST /api/runs/{runId}/search-candidates`,
-which only the runner holding the run may call, with its runner token. The
+which only the runner with the lease on the run may call, with its runner token. The
 agent reaches it through
 [`spotlight candidate`](/docs/reference/cli/agent-commands#spotlight-candidate).
 From a reflection's run it is refused with `409`.
@@ -46,7 +46,7 @@ optional; it answers `201` and `{ "taskId", "cause", "replayRunId" }`.
 
 | Status | Cause |
 | --- | --- |
-| `404` | The run is no search run the runner holds, the search no longer holds it, or the task is none the reflection looks into. |
+| `404` | The run is not a search run that the runner leases, it is no longer the active run of the search, or the reflection does not look into the task. |
 | `409` | The run's iteration proposes candidates. |
 | `422` | A `cause` other than `config`, `task`, `judge`, `check` or `infra`; no `evidence`, or more than 4,000 characters of it; a `suggestion` over 4,000 characters. |
 

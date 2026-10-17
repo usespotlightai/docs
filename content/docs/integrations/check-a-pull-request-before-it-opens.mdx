@@ -2,7 +2,7 @@
 type: how-to
 icon: SquarePen
 title: Check or block a pull request before it opens
-description: Send a pull request an agent is about to open to your own endpoint, and hold it back when the endpoint refuses.
+description: Send a pull request an agent is about to open to your own endpoint, and stop it when the endpoint refuses.
 ---
 
 The example sends any pull request that touches database migrations to a
@@ -17,7 +17,7 @@ DBA's review service before the agent opens it. You need:
 
 Fire the hook on `pull-request.opening`, narrow it with `match`, and send one
 request step to your endpoint. Set `failure = "block"` so an endpoint that
-fails or does not answer in time also holds the pull request back.
+fails or does not answer in time also stops the pull request.
 
 ```hcl
 data "spotlight_workspace" "acme" {
@@ -109,7 +109,7 @@ Run `terraform apply`.
 
 ## Answer from your endpoint
 
-To let the pull request open, answer with any 2xx. To hold it back, answer
+To let the pull request open, answer with any 2xx. To stop it, answer
 with a 2xx and a JSON body that has a `refuse` string, the reason:
 
 ```json
@@ -120,13 +120,13 @@ with a 2xx and a JSON body that has a `refuse` string, the reason:
 
 Have an agent open a pull request that touches `db/migrations/` while your
 endpoint refuses. No pull request is opened. The agent's `pull-request` call
-fails with `A hook held back the pull request. No pull request was opened.`
+fails with `A hook stopped the pull request. No pull request was opened.`
 followed by `Hook migrations-need-a-dba refused. Reason:` and your reason, and the
 agent carries on from that answer.
 
 ## Related
 
 - [`spotlight_hook`](/docs/reference/terraform/hook): every field, event and header.
-- [Expressions](/docs/reference/api/expressions), for what `event` holds on each
+- [Expressions](/docs/reference/api/expressions), for what `event` contains on each
   event.
 - [Reviewing an agent's changes](/docs/runs/reviewing-an-agents-changes)

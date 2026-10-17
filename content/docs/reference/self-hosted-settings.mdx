@@ -31,7 +31,7 @@ Neither `SPOTLIGHT_SECRETS_KEY` nor `SECRETS_KMS_KEY_ID` set gives
 | `NODE_ENV` | `development` | `development`, `test` or `production`. |
 | `LOG_LEVEL` | `debug` in `development`, else `info` | `fatal`, `error`, `warn`, `info`, `debug`, `trace` or `silent`. |
 | `SPOTLIGHT_RELEASE` | none | The release the [install script](/docs/reference/cli/install-script) installs, and the runner image tag it pulls. Without it, `latest`. |
-| `SPOTLIGHT_INSTALLER_DIR` | `/opt/spotlight/installer` | The directory holding the `install.sh` served at `/api/install.sh`. |
+| `SPOTLIGHT_INSTALLER_DIR` | `/opt/spotlight/installer` | The directory that contains the `install.sh` served at `/api/install.sh`. |
 
 ## Addresses and sign-in
 
@@ -112,12 +112,12 @@ Change stacks, decisions, memories and judges use models through OpenRouter.
 | `SENTRY_WEB_DSN` | `SENTRY_DSN` | Where the web app reports its errors. |
 | `SENTRY_ENVIRONMENT` | the Sentry SDK's default | The environment on each report. |
 
-See [Error reporting](/docs/reference/error-reporting) for what a report holds.
+See [Error reporting](/docs/reference/error-reporting) for what a report contains.
 
 ## Storage
 
 Attachments and [workspace archives](/docs/runs/how-a-conversation-survives-between-runs)
-are kept in one S3 bucket. Browsers and runners never hold its keys: they
+are kept in one S3 bucket. Browsers and runners never get its keys: they
 upload and download through presigned URLs that last 15 minutes.
 
 | Variable | Default | Description |
@@ -138,7 +138,7 @@ storage host runners reach: the host of `S3_RUNNER_ENDPOINT`, else of
 
 ### Objects
 
-| Key | Holds |
+| Key | Contains |
 | --- | --- |
 | `pending/<workspace id>/<attachment id>` | A file a browser has uploaded but no task, answer or message has taken yet. |
 | `workspaces/<workspace id>/attachments/<attachment id>` | A file a task, answer or message has taken. |

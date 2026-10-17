@@ -20,8 +20,8 @@ these rules:
 - Bake each repository's checkout at `/workspace/<name>`, where `<name>` is the
   repository's name without its owner. A run then only fetches and switches
   branches.
-- Keep the harnesses the base image holds. A run goes only to an image that
-  holds its station's harness.
+- Keep the harnesses the base image contains. A run goes only to an image that
+  contains its station's harness.
 
 For a Node.js repository `acme/web`:
 
@@ -83,7 +83,7 @@ Clone a private repository with your build's own credentials. Push the image
 to your registry. If the registry is private, set up the hosts as in
 [Pull runner images from a private registry](/docs/hosts/pull-images-from-a-private-registry).
 
-To check which runner release the image holds, run it with `harnesses '[]'`:
+To check which runner release the image contains, run it with `harnesses '[]'`:
 
 ```bash
 docker run --rm ghcr.io/acme/web-runner:main harnesses '[]'

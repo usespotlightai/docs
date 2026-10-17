@@ -21,7 +21,7 @@ JSON, and answer errors as `application/problem+json`, as on the
 | `DELETE /replay-sets/{setId}/guards-changes` | `204`: the set no longer guards them. Checks already started keep running. |
 | `POST /replay-checks` | `201` and a [check](#check), or `200` and the check this change already has. See [Start a check](#start-a-check). Requires `Idempotency-Key`. |
 | `GET /replay-checks/{checkId}` | A [check](#check) and its verdict. |
-| `GET /replay-sets/{setId}/replay-checks` | The checks replayed over a set, newest first, a page at a time: each check's `id`, `stationId`, `stationKey`, `verdict`, `undecidedBecause`, `regressions` (how many tasks it regressed on), `attempt`, `reference`, `createdAt` and `replayUrl`. Takes `limit` (default 50, at most 200) and `before`, a check's id; a check the set does not hold answers an empty page. |
+| `GET /replay-sets/{setId}/replay-checks` | The checks replayed over a set, newest first, a page at a time: each check's `id`, `stationId`, `stationKey`, `verdict`, `undecidedBecause`, `regressions` (how many tasks it regressed on), `attempt`, `reference`, `createdAt` and `replayUrl`. Takes `limit` (default 50, at most 200) and `before`, a check's id; a check that the set does not contain answers an empty page. |
 
 A replay set's reads in the [Replays API](/docs/reference/api/replays) carry
 `guardsChanges`, `true` for the set that guards its station's changes. A

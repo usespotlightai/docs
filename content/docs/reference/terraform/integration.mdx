@@ -141,7 +141,7 @@ that name themselves in a cycle, produce a warning and are then ignored.
 | `oauth2.token` | string | required unless `discover` | The host's token endpoint. |
 | `oauth2.scopes` | array of strings | `[]` | Scopes asked for, joined by spaces. |
 | `oauth2.identity` | string | none | An expression. Names the linked account, shown as "Connected as" in the web app. Sees `response`, the token endpoint's response. |
-| `oauth2.registration` | string | none | A URL. The host's dynamic client registration endpoint (RFC 7591). Used only when the deployment holds no OAuth client for the integration. See [Client registration](#client-registration). |
+| `oauth2.registration` | string | none | A URL. The host's dynamic client registration endpoint (RFC 7591). Used only when the deployment has no OAuth client for the integration. See [Client registration](#client-registration). |
 | `oauth2.resource` | string | none | A URL. Sent as the `resource` parameter (RFC 8707) on the authorization URL and on every token request. |
 | `manual.secrets` | array of strings | `[]` | Secrets the connection uses, each a secret reference, `secret.<NAME>`. |
 
@@ -200,7 +200,7 @@ An integration with `connection.oauth2` shows a `Connect team account`
 button, and `Change account` once linked, on the team's Integrations settings
 page. An integration whose `holder` is `requester` also shows
 `Connect your account` there, where each person connects their own account. It
-links only when Spotlight has an OAuth client for it: one the deployment holds
+links only when Spotlight has an OAuth client for it: one the deployment has
 for the integration's name in [`OAUTH_CLIENTS`](/docs/reference/self-hosted-settings#calls-out-of-spotlight), or one registered at `oauth2.registration`.
 
 | Step | Endpoint | Behaviour |
@@ -223,8 +223,8 @@ access token as `Authorization: Bearer`.
 | A description fetch with `auth.oauth2` is answered `401`. | Renews the team's token once and fetches the description once more with the new one. |
 
 One renewal of a connection runs at a time, across every control-plane
-instance, under a claim held for 30 seconds. A request answered `401` while
-another renewal holds the claim waits for it, for up to 30 seconds, and is sent
+instance, under a claim that lasts 30 seconds. A request answered `401` while
+another renewal has the claim waits for it, for up to 30 seconds, and is sent
 again with the new token. A refresh token the host rotates is kept. When the
 host refuses to renew, the connection is marked refused until it is made again.
 A person whose connection is refused is asked to connect again the next time a
@@ -232,13 +232,13 @@ tool needs it.
 
 ### Client registration
 
-When the deployment holds no OAuth client for the integration and
+When the deployment has no OAuth client for the integration and
 `oauth2.registration` is set, Spotlight registers a client at that endpoint
 the first time someone in the team connects, once per team and integration.
 The registration is a `POST` of JSON with `client_name` `Spotlight`, the
 callback URL as the one `redirect_uris` entry, `grant_types`
 `authorization_code` and `refresh_token`, `response_types` `code` and
-`token_endpoint_auth_method` `client_secret_post`. The answer must hold a
+`token_endpoint_auth_method` `client_secret_post`. The answer must contain a
 `client_id`; a `client_secret` is kept sealed, with its
 `client_secret_expires_at`. The client is reused until the registration
 endpoint or the callback URL changes or the client secret expires, and is then
@@ -286,7 +286,7 @@ with: its issuer, authorization endpoint and token endpoint.
 | Client | Bound by |
 | --- | --- |
 | Registered at `registration_endpoint` | Spotlight keeps the three with the registration. When a later discovery finds others, the next connection registers again, and exchanging a code or renewing a token with the old client is refused. |
-| Held by the deployment for the integration | Its configured `issuer`. A deployment client without an `issuer`, or with another one, is not used for a discovered server, and the integration does not link. |
+| Configured in the deployment for the integration | Its configured `issuer`. A deployment client without an `issuer`, or with another one, is not used for a discovered server, and the integration does not link. |
 
 ## Webhook
 
@@ -294,8 +294,8 @@ with: its issuer, authorization endpoint and token endpoint.
 | --- | --- | --- | --- |
 | `shape` | object | none | The shape of `body`, for type-checking. |
 | `verify` | object | required | How a delivery is verified. Exactly one of `hmac`, `token`, `asymmetric` or `jwt`. See [verify](#verify). |
-| `respond` | object | none | A handshake response. `when` (an expression that returns bool) and `body` (an expression). When `when` holds, Spotlight returns `200` with `body` and does not read the delivery further. |
-| `mine` | string | none | An expression that returns bool. When it holds, the delivery is the host echoing Spotlight's own post, and its happenings are dropped. |
+| `respond` | object | none | A handshake response. `when` (an expression that returns bool) and `body` (an expression). When `when` is true, Spotlight returns `200` with `body` and does not read the delivery further. |
+| `mine` | string | none | An expression that returns bool. When it is true, the delivery is the host echoing Spotlight's own post, and its happenings are dropped. |
 | `route` | object | none | `by` (expression). Type-checked. Deliveries go to the integration's team whatever it returns. |
 | `parse` | string | `json` | `json` or `form`. Kept in the definition. Not used when a delivery is read. |
 | `delivery` | string | none | An expression. The delivery's id. A delivery with an id already taken is not processed again. Without it, the SHA-256 of the raw body. |
@@ -311,7 +311,7 @@ POST https://app.usespotlight.ai/api/webhooks/w/<workspace slug>/t/<team key>/<i
 
 | Status | When |
 | --- | --- |
-| `200` with the `respond.body` text | The delivery is verified and `respond.when` holds. |
+| `200` with the `respond.body` text | The delivery is verified and `respond.when` is true. |
 | `204` | The delivery is verified and accepted. It is read afterwards. |
 | `401` | The signature does not verify, the signing secret is missing or cannot be read, the delivery's `freshness.at` cannot be read or is further from now than `freshness.within`, the integration has no `webhook`, the delivery has no raw body, or there is no such workspace, team or integration. The response does not say which. |
 
@@ -345,7 +345,7 @@ all, from 2 seconds apart doubling to 1 hour.
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `algorithm` | string | required | `ed25519` or `rsa-sha256`. The signature algorithm. |
-| `key` | string | required | The public key: hex of the raw key for `ed25519`, PEM for `rsa-sha256`. May hold expressions. |
+| `key` | string | required | The public key: hex of the raw key for `ed25519`, PEM for `rsa-sha256`. May contain expressions. |
 | `signed` | string | none | An expression. The text that was signed. Without it, the raw body. |
 | `encoding` | string | `hex` | `hex` or `base64`. How the signature is written. |
 | `header` | string | none | The header that carries the signature. A delivery without it is refused, and without `header` no delivery verifies. |
@@ -357,7 +357,7 @@ all, from 2 seconds apart doubling to 1 hour.
 | --- | --- | --- | --- |
 | `jwks` | string | required | Where the signing keys are published. |
 | `header` | string | `authorization` | The header that carries the token. A `Bearer ` prefix is removed. |
-| `audience` | string | none | When set, the token's `aud` must hold it. |
+| `audience` | string | none | When set, the token's `aud` must contain it. |
 | `issuer` | string | none | When set, the token's `iss` must equal it. |
 
 A `jwt` token must be signed with `RS256`. An expired token is refused.
@@ -369,12 +369,12 @@ A `jwt` token must be signed with `RS256`. An expired token is refused.
 
 `webhook.events` and `poll.events` are lists of events. Each event is read
 against every delivery or poll response, in order, and raises one happening when
-its `when` holds.
+its `when` is true.
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `forEach` | string | none | An expression that returns a list. The event is read once for each item, which expressions see as `item`. |
-| `when` | string | required | An expression that returns bool. The event raises only when it holds. An expression that fails to evaluate counts as false. |
+| `when` | string | required | An expression that returns bool. The event raises only when it is true. An expression that fails to evaluate counts as false. |
 | `lookup.request` | object | none | A further request made before raising. See [requests](#requests). When it does not succeed, the event raises without the captures. |
 | `lookup.capture` | map of name to string | none | Values read from the lookup's response. Raise expressions see each by its name. Each value is an expression. Required with `lookup`. |
 | `raise` | object | required | See [raise](#raise). |
@@ -461,10 +461,10 @@ A request appears in `actions`, `poll.request`, `lookup.request` and
 | --- | --- | --- | --- |
 | `response` | object | none | The shape of `response`, for type-checking. |
 | `method` | string | `POST` | `GET`, `POST`, `PUT`, `PATCH` or `DELETE`. The HTTP method. |
-| `url` | string | required | The address. May hold expressions. |
-| `query` | map of name to string | `{}` | Query parameters. A parameter that evaluates to nothing is left out. Values may hold expressions. |
-| `headers` | map of name to string | `{}` | Request headers. A header that evaluates to nothing is left out. Values may hold expressions. |
-| `body` | string, array or object | none | A string is sent as it is. A list or object is sent as JSON, with `content-type: application/json` unless a header sets it. Strings inside may hold expressions. |
+| `url` | string | required | The address. May contain expressions. |
+| `query` | map of name to string | `{}` | Query parameters. A parameter that evaluates to nothing is left out. Values may contain expressions. |
+| `headers` | map of name to string | `{}` | Request headers. A header that evaluates to nothing is left out. Values may contain expressions. |
+| `body` | string, array or object | none | A string is sent as it is. A list or object is sent as JSON, with `content-type: application/json` unless a header sets it. Strings inside may contain expressions. |
 | `auth` | object | none | Exactly one of `oauth2` or `secrets`. See below. |
 | `expect.success` | string | none | An expression that returns bool. When set, decides whether the request succeeded. |
 | `expect.status` | array of integers | none | Statuses that count as success, when `expect.success` is not set. |
@@ -509,7 +509,7 @@ Input:
 | `schema` | object | none | A JSON Schema for the input, in place of `type`, for a list, an object or a constrained value. An input with both `type` and `schema` is refused with `takes a type, or a JSON Schema as its schema, but not both`. Expressions see a `string` schema as `string`, a `boolean` one as `bool`, and any other as `dyn`. See [Input schemas](#input-schemas). |
 | `description` | string | none | Shown to the agent. |
 | `required` | boolean | `false` | Whether the agent must give it. |
-| `default` | string | none | The value when none is given. Sees `task`. May hold expressions. |
+| `default` | string | none | The value when none is given. Sees `task`. May contain expressions. |
 | `piped` | boolean | `false` | The input may be piped to the tool command. At most one input per tool, and it must take text. |
 
 An input may not be named `json`: Spotlight keeps that name for handing a tool
@@ -855,7 +855,7 @@ Binding:
 | `routes` | map of name to string | `{}` | Keyed by line key. When `to` gives no `channel`, the value for the task's line is used as `target.channel`. |
 | `mark` | array of objects | `[]` | Marks kept on the task after the action succeeds. Sees `response` and `capture`. `find` is not read here. |
 
-A binding runs only when `target` holds a `channel` or a `thread`. Otherwise
+A binding runs only when `target` contains a `channel` or a `thread`. Otherwise
 nothing is sent.
 
 ## Secrets in expressions

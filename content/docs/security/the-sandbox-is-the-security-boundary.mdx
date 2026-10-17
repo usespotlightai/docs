@@ -23,7 +23,7 @@ their limit. An agent can still find a way around its own harness's rules,
 since a rule about one kind of action need not cover another that reaches the
 same place. A repository can loosen whatever is not enforced, because a harness
 reads the repository's own settings files on top of the ones Spotlight writes.
-Spotlight puts the rules that must hold where a repository cannot reach them,
+Spotlight puts the rules that must apply where a repository cannot reach them,
 where the harness allows that, but the harnesses differ in what they allow.
 
 So Spotlight treats harness permissions as guardrails. They keep a well-meaning
@@ -58,9 +58,9 @@ be read by the agent, and so by anything that talks the agent into reading it.
 
 Instead the sandbox gets a stand-in. An MCP server whose environment names the
 workspace secret `LINEAR_API_KEY` sees `spotlight-egress:LINEAR_API_KEY` where
-the value would be. Egress, which is outside the sandbox, holds the real value
+the value would be. Egress, which is outside the sandbox, keeps the real value
 for the length of the run. When a request leaves for a host the secret is bound
-to, and its header or query parameter holds the stand-in, egress puts the
+to, and its header or query parameter contains the stand-in, egress puts the
 value in its place. Where the host's answer repeats the value, egress swaps
 the stand-in back before the sandbox sees it. The server's request works, and
 the agent never had the value to leak.
@@ -101,8 +101,8 @@ Everything else goes to egress in tunnels it does not decrypt, and egress
 records each connection.
 
 Two credentials keep the secrets on the egress side. The egress token, which
-the egress holds, is the only way to redeem a run's secrets, and it never
-enters a sandbox. The run proxy credential, which the runner holds, lets the
+the egress keeps, is the only way to redeem a run's secrets, and it never
+enters a sandbox. The run proxy credential, which the runner keeps, lets the
 run send traffic through that one egress and nothing more. A sandbox that
 leaks its credential leaks nothing that opens a secret.
 
@@ -112,10 +112,10 @@ can. So before the harness starts, the runner tries to connect to Spotlight
 directly, and the run's trace says what it reported. The report comes from
 inside the sandbox, so it is evidence, not proof: an agent that took over the
 sandbox could report Enforced. Enforced means the sandbox
-could not connect around egress: the allow-list holds for every client, and
+could not connect around egress: the allow-list applies to every client, and
 every connection is on record. Not enforced means it could: a tool that
 ignores the proxy goes out directly, past both. The secrets are safe in both
-cases, since the sandbox only ever holds stand-ins. Enforcement is about the
+cases, since the sandbox only ever has stand-ins. Enforcement is about the
 allow-list and the record, and it comes from a firewall that lets the
 container connect only to egress.
 
@@ -155,7 +155,7 @@ stand-in. [Give hosts your harness keys](/docs/hosts/give-sandboxes-your-harness
 
 ## Two users inside the sandbox
 
-Inside the sandbox there are two parties. The runner, which runs as root, holds
+Inside the sandbox there are two parties. The runner, which runs as root, keeps
 the run's credential, fetches the work, prepares the checkout and talks to the
 control plane. The agent runs as a separate user, and its environment carries
 none of the runner's credentials. ([Ways in: pools, trusts and
@@ -163,7 +163,7 @@ tokens](/docs/administration/ways-in-pools-trusts-and-tokens) follows the run's
 credential from the host to the runner.)
 
 The separate user is the part that counts. With both in one account, the agent
-could read whatever the runner held, and the division between them would be
+could read whatever the runner kept, and the division between them would be
 cosmetic.
 
 ## Known gaps
@@ -179,7 +179,7 @@ setup-token`, is. Egress cannot itself sit behind a corporate proxy.
 
 A push pool's sandbox is enforced only if the team's platform makes it so. The
 runner checks and the trace reports it, but a run that reads Not enforced
-still runs. A shared egress holds no harness keys, so on a push pool they
+still runs. A shared egress has no harness keys, so on a push pool they
 enter the sandbox as they are. A push pool that names no egress has nothing
 to add a secret to requests, so a run that uses secrets is never offered to
 it, and waits for a host or for a pool that names an egress.

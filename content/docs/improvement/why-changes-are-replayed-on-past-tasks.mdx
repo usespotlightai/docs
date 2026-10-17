@@ -2,7 +2,7 @@
 type: concept
 icon: Lightbulb
 title: Why changes are replayed on past tasks
-description: Why Spotlight tests a station change by running past tasks again, what a replay starts from and what it may not touch, how it is scored against a baseline, why its changes are also compared side by side, why its results come with a range, how a replay set is checked before it is trusted and what it should hold, and what it costs.
+description: Why Spotlight tests a station change by running past tasks again, what a replay starts from and what it may not touch, how it is scored against a baseline, why its changes are also compared side by side, why its results come with a range, how a replay set is checked before it is trusted and what it should contain, and what it costs.
 ---
 
 A team changes a work station to make its runs better, with a sharper prompt
@@ -44,7 +44,7 @@ A replay works a real task in a real repository, and its agent believes it is
 doing the work. Anything it did outside the sandbox would act on the task a
 second time: a push to the task's branch, a comment on its pull request, a
 question in someone's inbox, a memory proposed to the team. So a replay is a run of its own kind. It never
-holds the task, and it leaves nothing behind but its own result:
+works on the task, and it leaves nothing behind but its own result:
 
 - Its git access is fetch-only. A push is refused.
 - It is given no tools and no MCP servers, and so wears no secrets.
@@ -163,7 +163,7 @@ by task, as the candidate's success on each task less the baseline's on the
 same task, and its range is resampled the same way. In the docs' view,
 pairing the tasks this way keeps how hard each task is out of the gain, since
 the candidate and the baseline faced the same tasks. Here, and wherever
-results count tasks, a task is one run of the set: a set that holds two runs
+results count tasks, a task is one run of the set: a set that contains two runs
 of the same task counts them as two.
 
 A gain then reads one of three ways. It is better when its whole range lies
@@ -239,7 +239,7 @@ now, as its health, and a search warns about each before it starts.
   same change, can flip a candidate's result by chance. Running the check a
   second time on the same change shows which tasks do it.
 
-What the set holds matters as well. A set whose original runs were nearly all
+What the set contains matters as well. A set whose original runs were nearly all
 accepted, or nearly all sent back, says little about how runs that turned out
 other ways would go. In the docs' view, a candidate that wins on such a set
 may lose on the runs it lacks. So a set's page counts how its original runs
@@ -318,7 +318,7 @@ replay page shows them apart from the spend the ceiling counts.
 Replays take runners the team's real work needs. At most 2 of a team's replay
 runs run at once, apart from a search's, which keep to a limit the search
 sets, and replay runs wait behind every waiting task run and chat run. In the docs' view, a replay answers a question about the future, and
-should never hold up work that people are waiting on now.
+should never delay work that people are waiting on now.
 
 ## What a replay can start from
 
@@ -365,19 +365,19 @@ on the pull request and on the replay set's page.
 
 A replay never changes the station, however well its candidate does. A person
 reads the result and makes the change in Terraform, the same way as any other
-change to a line. A [search](/docs/improvement/why-a-search-holds-tasks-back),
+change to a line. A [search](/docs/improvement/why-a-search-holds-tasks-out),
 which replays many candidates an agent proposes, goes no further: picking one
 of its candidates opens a pull request, which the team reviews and applies. A
 line can also have its CI [replay each pull request's station changes](/docs/configuration/check-terraform-pull-requests-for-station-regressions)
 before they merge. [Why configuration lives in Terraform](/docs/configuration/why-configuration-lives-in-terraform)
 gives the reasons. Once applied, the change's own runs are recorded under its
 new config, and [the record of each run's config](/docs/improvement/why-each-run-records-its-stations-config)
-shows whether it held up on the team's real work.
+shows whether it still did well on the team's real work.
 
 ## Related
 
 - [Replay past tasks against a change to a station](/docs/improvement/replay-past-tasks-against-a-station-change)
 - [Replays](/docs/reference/app/replays)
 - [Why a judge must agree with people before its scores show](/docs/improvement/why-a-judge-must-agree-with-people)
-- [Why a search holds tasks back](/docs/improvement/why-a-search-holds-tasks-back)
+- [Why a search holds tasks out](/docs/improvement/why-a-search-holds-tasks-out)
 - [Insights: Candidates](/docs/reference/app/insights#candidates)

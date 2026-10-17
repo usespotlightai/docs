@@ -62,7 +62,7 @@ The sandbox environment, from `SPOTLIGHT_SANDBOX_ENV` and
 `SPOTLIGHT_SANDBOX_PASS`, may not set `SPOTLIGHT_URL`, `SPOTLIGHT_TOKEN`,
 `SPOTLIGHT_TRUST`, `SPOTLIGHT_OIDC_TOKEN_FILE`, `SPOTLIGHT_HANDED` or
 `SPOTLIGHT_ANSWER_WAIT`, and may
-not carry the pool token in any variable. The same holds for the egress
+not carry the pool token in any variable. The same applies to the egress
 environment.
 
 ### Registry credentials
@@ -79,7 +79,7 @@ The file named by `SPOTLIGHT_REGISTRY_CONFIG` is JSON. The host reads only its
 ```
 
 Each key of `auths` names a registry. The registry of an image is the first
-part of its name when that part holds a `.` or a `:`, or is `localhost`; any
+part of its name when that part contains a `.` or a `:`, or is `localhost`; any
 other image is on Docker Hub.
 
 | Registry | Keys looked up, in order |
@@ -105,7 +105,7 @@ the copy has no registry digest.
 ### Harness keys
 
 These variables, when `SPOTLIGHT_SANDBOX_ENV` or `SPOTLIGHT_SANDBOX_PASS`
-gives them a value, are held by egress. The sandbox gets the stand-in
+gives them a value, are kept by egress. The sandbox gets the stand-in
 `spotlight-egress:<NAME>`.
 
 | Variable | Sent to | Header |
@@ -137,7 +137,7 @@ See [Egress](/docs/reference/hosts/egress) for what egress admits and refuses.
 | `SENTRY_DSN` | none | Where the host reports its errors. When it is set, the host gives it to each sandbox and egress it starts as `SPOTLIGHT_SENTRY_DSN`, and egress admits the server's host. |
 | `SENTRY_ENVIRONMENT` | the Sentry SDK's default | The environment on each report. The host gives it to each sandbox and egress as `SPOTLIGHT_SENTRY_ENVIRONMENT`. |
 
-See [Error reporting](/docs/reference/error-reporting) for what a report holds.
+See [Error reporting](/docs/reference/error-reporting) for what a report contains.
 
 ## State
 
@@ -145,12 +145,12 @@ See [Error reporting](/docs/reference/error-reporting) for what a report holds.
 | --- | --- | --- |
 | `SPOTLIGHT_STATE` | `/var/lib/spotlight-host` as root on Linux, else `~/.spotlight/host` | The host's state directory, created with mode `0700`. |
 
-The state directory holds:
+The state directory contains:
 
 | Path | Contents |
 | --- | --- |
 | `<state>/host-id` | The host's id, made on first start. |
-| `<state>/host.lock` | A lock held while the host runs. A second host on the same directory refuses to start. |
+| `<state>/host.lock` | A lock the host keeps while it runs. A second host on the same directory refuses to start. |
 | `<state>/mirrors/<workspace>/<repo>.git` | Bare mirrors of the repositories the host has checked out. Mounted read-only into sandboxes. Needs `git` on the host. |
 
 A host id serves one pool or trust at a time. Spotlight refuses a host id that
@@ -172,11 +172,11 @@ together. Messages include:
 | `SPOTLIGHT_ANSWER_WAIT: "<x>" is not a duration such as 5m, or 0 to park at once` | Bad answer wait. |
 | `SPOTLIGHT_RUNNER_IMAGE: "<x>" is not an image reference such as ghcr.io/acme/runner:main` | Bad image entry. |
 | `SPOTLIGHT_EGRESS_ALLOW: "*" allows everything; leave the list empty for that` | `SPOTLIGHT_EGRESS_ALLOW=*`. |
-| `the sandbox environment sets <NAME>, which only the host holds` | A sandbox variable names a variable only the host sets. |
-| `the sandbox environment carries the pool token in <NAME>` | A sandbox variable holds the pool token. |
+| `the sandbox environment sets <NAME>, which only the host has` | A sandbox variable names a variable only the host sets. |
+| `the sandbox environment carries the pool token in <NAME>` | A sandbox variable contains the pool token. |
 
 The same two problems in the egress environment are prefixed `egress: `.
-A host that finds another host already holding its state directory stops with
+A host that finds another host already using its state directory stops with
 `another spotlight host already serves from <state>: <error>`.
 
 ## Exit codes
