@@ -69,7 +69,7 @@ an agent asks for them, or where they choose to step in.
 
 Each station's agent starts with no memory of the stations before it, so
 something has to carry the work forward. That something is the note each agent
-leaves when it hands the task on. Every note is kept on the task, and the next
+leaves when it passes the task on. Every note is kept on the task, and the next
 station's agent is given all of them, station by station, as what has already
 been done.
 
@@ -82,7 +82,7 @@ Code travels with the task too. A task keeps one set of working files from its
 first station to its last: the line's repositories with the task's own branch
 checked out. Each station's agent finds them as the last agent left them,
 including changes that were never committed. The branch is how the code reaches
-GitHub. On Delivery, Implementation pushes the branch before it hands on. On
+GitHub. On Delivery, Implementation pushes the branch before it passes the task on. On
 Review, the files are the pull request under review, not a branch of the task's
 own.
 
@@ -101,9 +101,9 @@ stations is left to its runs, because a move by hand drops the station's
 conversation and says nothing about why, while a run passes the task on with a
 note the next agent works from. A person who wants work redone says so in the
 run's chat, and the station's agent passes the task on. When a
-person does move a task, any run on it ends: a run still
-waiting for a host, one of the team's computers, to take it up is withdrawn,
-and a run already working is asked to stop. If the new station has an agent, a
+person does move a task, any run on it ends: a run that no host, one of
+the team's computers, has claimed yet is cancelled, and a run already
+working is asked to stop. If the new station has an agent, a
 new run is queued there.
 
 Events from outside Spotlight move tasks too. On Delivery, a failed check on

@@ -62,8 +62,9 @@ are grouped in sections whose heading folds them away.
 ## What is counted
 
 A run is counted in a period when it ended in it. Except on the Runs tab, only
-runs that ran are counted: every run except those withdrawn before they
-started. Only task runs at a station are recorded; chat runs are not.
+runs that ran are counted: every run except cancelled ones. See
+[Run endings](/docs/reference/app/tasks-runs-and-the-inbox#run-endings).
+Only task runs at a station are recorded; chat runs are not.
 
 | Term | Meaning |
 | --- | --- |
@@ -532,13 +533,13 @@ runs per day, failures in red, beside the change in its runs. Then:
 | Checks passed, Checks failed | Runs whose check passed or failed. |
 | Accepted | Runs whose next act was Closed. |
 | Sent back | Runs whose next act was Sent back. |
-| Handed on | Runs that passed their task to another station. |
+| Passed | Runs that passed their task to another station. |
 | Merged | Tasks among the runs whose pull request merged, at any time. |
-| Withdrawn | Runs withdrawn before they ran. |
+| Cancelled | Runs cancelled before they ran. |
 | Cost | The runs' cost, when all are in one currency. |
 | Median, p90 | The time the runs took. |
 
-A column from "Failed" to "Withdrawn" shows only when the whole team's count
+A column from "Failed" to "Cancelled" shows only when the whole team's count
 in the period is above 0. "Runs" and "Failed" open the Runs tab at the
 station's runs, or its failed ones. Each row has the anchor
 `#station-<stationId>`, which a station alert's "Open in Insights" opens.
@@ -667,7 +668,7 @@ applied.
 
 | Filter | Narrows to |
 | --- | --- |
-| Outcome | The outcome charted: "Accepted", the default, "Sent back", "Handed on", "Checks passed", "Merged", or "Judge score" when any setup has judged runs. |
+| Outcome | The outcome charted: "Accepted", the default, "Sent back", "Passed", "Checks passed", "Merged", or "Judge score" when any setup has judged runs. |
 | Station | "Every station", or the runs at one work station. |
 | Task size | "Every size", or the runs of one size. |
 
@@ -675,7 +676,7 @@ applied.
 | --- | --- |
 | Accepted | Runs whose next act was Closed, of the runs whose next act is known. |
 | Sent back | Runs whose next act was Sent back, of the runs whose next act is known. Lower is better. |
-| Handed on | Runs that passed their task to another station, of the runs with a next act or a hand-on. |
+| Passed | Runs that passed their task to another station, of the runs with a next act or that passed their task. |
 | Checks passed | Passed checks, of passed and failed checks. |
 | Merged | Tasks whose pull request merged, of the tasks of the runs whose pull request merged or closed unmerged. |
 | Judge score | The mean judge score, as under [Impact](#impact). |
@@ -707,7 +708,7 @@ The table groups the setups by harness, each as model, `<effort> effort` and
 each outcome; a trophy, "Best value", marks a setup on the frontier of the
 charted outcome.
 
-A run's size is told by the lines it changed: the lines taken out and put in
+A run's size is told by the lines it changed: the lines removed and added
 across its file changes, each file compared from before its first change to
 after its last. A run that changed no lines is told by its steps, over the
 attempts it kept.
@@ -942,8 +943,8 @@ server reads `–` under "Server".
 | Tile | Counts |
 | --- | --- |
 | Active memories | The [memories](/docs/reference/glossary#memory) the team keeps now, whatever the period. |
-| Briefed | Memories briefed to the runs that ended in the period, withdrawn runs included, each counted once, with `to <n> runs`, the runs that ran they were briefed to. |
-| Read | Memories the runs that ended in the period read with [`spotlight recall`](/docs/reference/cli/agent-commands#spotlight-recall), withdrawn runs included, each counted once, with `by <n> runs`, the runs that ran that read them. |
+| Briefed | Memories briefed to the runs that ended in the period, cancelled runs included, each counted once, with `to <n> runs`, the runs that ran they were briefed to. |
+| Read | Memories the runs that ended in the period read with [`spotlight recall`](/docs/reference/cli/agent-commands#spotlight-recall), cancelled runs included, each counted once, with `by <n> runs`, the runs that ran that read them. |
 | Flagged wrong | Memories a person retired in the period. A memory replaced by a correction is not counted. |
 | Solved with memories | `–`, with `No benchmark yet`. |
 
@@ -963,13 +964,13 @@ period, the section reads "No memories yet", with "Open the team's memory".
 
 ## Runs
 
-The Runs tab, `?tab=runs`, lists every run that ended in the period, withdrawn
+The Runs tab, `?tab=runs`, lists every run that ended in the period, cancelled
 runs included, newest first, 50 to a page. Runs that ended at the same time are
 in reverse order of their ID, by character code:
 
 | Column | Shows |
 | --- | --- |
-| Outcome | Completed, Failed, Stopped, Abandoned, Withdrawn or Superseded, linked to the run. |
+| Outcome | The run's [ending](/docs/reference/app/tasks-runs-and-the-inbox#run-endings): Completed, Failed, Stopped, Exhausted, Cancelled or Superseded, linked to the run. |
 | Failure | The run's failure, or `–`. |
 | Station | The station. |
 | Person | Who opened the task, "No one", or "A former member". |
@@ -1000,7 +1001,7 @@ figure on another tab narrows it further, shown as a pill that can be removed:
 | Refused, Refused on | Where a person refused the tool, or a tool of the MCP server; "No server" for a tool of none. |
 
 Every filter narrows the others. The skill, MCP server and refusal filters
-leave out withdrawn runs. The address keeps the filters and the page. Under
+leave out cancelled runs. The address keeps the filters and the page. Under
 the list, the pager reads `<first>–<last> of <total>`, as in `1–50 of 230`.
 Narrowed to nothing, the list reads `No runs match.`, with "Show every run".
 

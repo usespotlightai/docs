@@ -60,7 +60,8 @@ The token is verified as a workspace token trust verifies a workload's token
 (see [Workload token verification](/docs/reference/terraform/workspace-token-trust#workload-token-verification)),
 and must match the trust's `issuer`, `subject` and `audience`. A host that is
 not accepted gets `401` with `Missing, rotated or unknown pool token, or a workload the trust does not admit`.
-A host id already serving another pool or trust gets `409`.
+A host id that is in use by another pool or trust gets `409` `host-in-use`:
+`Host <id> is in use by another pool or trust. Please stop it there, or give it its own state directory.`
 
 The host sets `SPOTLIGHT_TRUST` and `SPOTLIGHT_OIDC_TOKEN_FILE`; see
 [Host settings](/docs/reference/hosts/host-configuration#connection).

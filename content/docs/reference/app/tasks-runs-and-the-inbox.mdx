@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Tasks, runs and the inbox
-description: Task fields and states, notes, handovers and moves, run states, failure codes, configs, spend, a station's judge and alerts, station outcomes, the inbox and its notices, grades, memory reviews, station alerts, approvals, chats and attachments.
+description: Task fields and states, notes, handovers and moves, run states, run endings, failure codes, configs, spend, a station's judge and alerts, station outcomes, the inbox and its notices, grades, memory reviews, station alerts, approvals, chats and attachments.
 ---
 
 A task is at one station of a line. Runs work it; people answer it from the
@@ -42,7 +42,7 @@ whether it is finished.
 | Idle | None of the above. | none |
 
 A task that is created, moved, answered or reached by a happening, and is then
-idle at a station with a harness, is handed to a new run at once. A finished
+idle at a station with a harness, is assigned a new run at once. A finished
 task is unfinished again when it moves to a station other than
 completed, or when a person or a happening adds a note to it.
 
@@ -88,14 +88,14 @@ Any other ending is handled as `review`, with one of these notes:
 | A station the current one does not pass to | `The run asked for station "<key>". Work does not pass there from the task's station.` |
 | `done` where the line does not end | `The run said the work is done. The task is not at the end of its line.` |
 | The run failed | `The run failed: <message>`, with a failure. See [Failure codes](#failure-codes). |
-| The runner was lost, or the host stopped the sandbox at its run timeout, on the last attempt | `Spotlight gave up on the run after <n> attempts. The run did not finish.`, with the failure `runner-lost` or `timed-out`. |
+| The runner was lost, or the host stopped the sandbox at its run timeout, on the last attempt | `The run did not finish after <n> attempts. Spotlight does not try it again.`, with the failure `runner-lost` or `timed-out`. |
 | The run was stopped | `A person stopped the run. The task is back with you.` |
 | A hook on `handover.giving` denied it | The hook's reason, then `The run said: <note>`. See [`spotlight_hook`](/docs/reference/terraform/hook). |
 
 If a reaction became a deferred move while the run worked on the task, every
 ending other than a station key moves the task to the station of the latest
 deferred move instead of the ending above. So does a hook stopped for looping
-while the task has a current run: the run is let go, and the `passed` note carries the hook's failure. See
+while the task has a current run: the run ends as for a person's move, and the `passed` note carries the hook's failure. See
 [Moves](#moves).
 
 ## Moves
@@ -109,8 +109,8 @@ while the task has a current run: the run is let go, and the `passed` note carri
 A move to another station:
 
 - raises the task's revision;
-- ends the task's run, for a person's move: a queued run is withdrawn, a
-  claimed run is asked to stop, and a waiting or parked run is completed;
+- ends the task's run, for a person's move: a queued run is cancelled, a
+  claimed run is asked to stop, and a waiting or suspended run is completed;
 - finishes the task if the station is completed, and unfinishes it otherwise;
 - starts a run if the task is idle at a station with a harness.
 
@@ -125,7 +125,7 @@ When a happening finds a task, the line decides one of these outcomes:
 | --- | --- | --- |
 | nothing | The task is at the completed station, or none of the other outcomes applies. | None. |
 | moves | A reaction for the happening, from this station or from any, leads to another station, and the task has no current run. | The task moves there. |
-| deferred move | As for moves, but the task has a current run, queued, claimed, waiting or parked, and the station is not the completed station. | A `said` note `Heard while a run worked on the task. If the run does not pass the task on, the task moves to <Station> when the run ends.`, followed by what the happening said. The run is told, and keeps the task. A later `passed` note, or a later `asked` note other than an approval, drops deferred moves; a later `stays` outcome does not. |
+| deferred move | As for moves, but the task has a current run, queued, claimed, waiting or suspended, and the station is not the completed station. | A `said` note `Heard while a run worked on the task. If the run does not pass the task on, the task moves to <Station> when the run ends.`, followed by what the happening said. The run is told, and keeps the task. A later `passed` note, or a later `asked` note other than an approval, drops deferred moves; a later `stays` outcome does not. |
 | interrupts | As for moves, but the task has a current run and the station is the completed station, and the task does not await a person's answer to a question (a pending approval does not count). | The run ends as for a person's move, and its later handover is ignored. The task is put to its assignee, or else the person who raised it, with an `asked` note in the world voice: `<What happened> while <Station> was working. Close the task, or reply to carry on.`, where `<What happened>` is the happening's text without its final full stop, and `its station` takes the place of `<Station>` when the station is not known. |
 | notes while waiting | As for interrupts, but the task already awaits a person's answer to a question. | A `said` note in the world voice, `<What happened> while <Station> was waiting for an answer. Close the task, or reply to carry on.`, added to the open conversation, with `its station` when the station is not known. The run keeps the task, and earlier deferred moves are cancelled. |
 | answers | No reaction leads to another station, the task awaits review, and the happening carries a person's words. | An `answered` note; the run that asked carries on, or else a run starts at the same station. |
@@ -146,14 +146,16 @@ search's agent run, which proposes candidates, has no task either; see
 | `queued` | Waiting for a runner. | no |
 | `claimed` | A runner has a 60-second lease on it, and the runner renews the lease. | no |
 | `waiting` | The run asked a person and waits for the answer. Its runner still has the lease on it and keeps the sandbox, for up to the host's `SPOTLIGHT_ANSWER_WAIT`. | no |
-| `parked` | The run asked a person, and its runner let the sandbox go; no runner has a lease on it. An answer puts it back in the queue. | no |
+| `suspended` | The run asked a person, and its runner removed the sandbox; no runner has a lease on it. An answer puts it back in the queue. | no |
 | `completed` | Ended without a failure. A stopped run ends here. | yes |
-| `failed` | Ended with a failure code. | yes |
-| `superseded` | Withdrawn before it started, or failed after its task had moved on. | yes |
+| `failed` | Ended with a failure code. A run that used all its attempts ends here. | yes |
+| `cancelled` | Ended while it was queued. | yes |
+| `superseded` | Failed after its task had moved on. | yes |
 
 On the Runs list and on a task's "Activity", a queued run reads "Queued", a
-superseded run "Superseded", and a claimed run shows that it is in progress. A
-run reads "Waiting for you" while it is waiting or parked, and while the
+cancelled run "Cancelled", a superseded run "Superseded", and a claimed run
+shows that it is in progress. A run reads "Waiting for you" while it is
+waiting or suspended, and while the
 `asked` note it wrote has no later `answered` or `passed` note. On the Runs
 list, that label links to the run's inbox item. On a task's "Activity", such a
 run is led by a row that reads "Waiting for you", or "Answered" once a later
@@ -161,7 +163,7 @@ run is led by a row that reads "Waiting for you", or "Answered" once a later
 list's "Waiting for you" view shows only the runs that read "Waiting for you";
 with none, it reads `Nothing is waiting for you. Switch to All to see every run.`
 
-The Run page of a waiting or parked run shows "Waiting for you" with "Answer
+The Run page of a waiting or suspended run shows "Waiting for you" with "Answer
 in the inbox", or "Open in the inbox" when the open question is an approval.
 An approval can also be decided on the Run page itself, on the same card as
 in the inbox: copy the call, edit a tool call's inputs, "Approve", or
@@ -172,29 +174,46 @@ why (optional)`. See [Approvals](#approvals).
 
 | From | To | When |
 | --- | --- | --- |
-| | `queued` | A task or chat is handed to a run. |
+| | `queued` | A task or chat is dispatched: it gets a new run. |
 | `queued` | `claimed` | A runner that meets the run's placement claims it, and no other run for the same task is claimed or waiting. |
 | `queued` | `failed` | The station gives what cannot be given: a catalog item that does not exist or that the plan does not include, or a harness profile the team does not have (`refused`). A push pool could not provision a runner (`unprovisioned`). |
-| `queued` | `superseded` | The task moved to another station or was deleted. |
-| `claimed` | `queued` | The lease lapsed, or the host stopped the sandbox at its run timeout (`timed-out`), no stop was asked for, and the run has had fewer than 3 attempts. Or its `run.starting` hooks could not be asked, and the run is handed back to wait. |
+| `queued` | `cancelled` | The task moved to another station or was deleted. Or the run's replay or search stopped it, its replay reached its ceiling, or no runner claimed a search's run in time. |
+| `claimed` | `queued` | The lease expired, or the host stopped the sandbox at its run timeout (`timed-out`), no stop was asked for, and the run has had fewer than 3 attempts. Or its `run.starting` hooks could not be asked, and the run is requeued to wait. |
 | `claimed` | `waiting` | The turn ended cleanly with the task put to a person, and the runner reports the workspace stored for the turn. Only a task's run waits; a chat run never does. |
-| `waiting` | `claimed` | The person answers while the sandbox is kept, in the inbox, in the task's Slack thread or on the run's page. The answer goes to the same session, in the same attempt. A run asked to stop is not taken up. |
-| `waiting` | `parked` | `SPOTLIGHT_ANSWER_WAIT` passes without an answer, at once when no host started the runner, or the lease lapses. |
+| `waiting` | `claimed` | The person answers while the sandbox is kept, in the inbox, in the task's Slack thread or on the run's page. The answer goes to the same session, in the same attempt. A run asked to stop is not resumed. |
+| `waiting` | `suspended` | `SPOTLIGHT_ANSWER_WAIT` passes without an answer, at once when no host started the runner, or the lease expires. |
 | `claimed` | `queued` | An answer arrives while the runner is setting the run aside after its harness has closed. The run is queued as its next attempt. |
-| `parked` | `queued` | The person answers. The run is queued as its next attempt, and restores the stored workspace wherever it is claimed. |
-| `waiting`, `parked` | `completed` | The task is moved or deleted, or the run is stopped. |
-| `claimed` | `completed` | The runner reports an outcome without a failure, or the run is stopped, or its lease lapses after it was asked to stop. |
-| `claimed` | `failed` | The harness failed (`exited`), or the run failed before its harness started (`unprepared`). A hook on `run.starting` denied it (`refused`). Its hooks could not be asked after the last hand-back (`hooks-unanswered`). Its lease lapsed on the last attempt, and no stop was asked for (`runner-lost`). Its host stopped it at its run timeout on the last attempt, and no stop was asked for (`timed-out`). |
+| `suspended` | `queued` | The person answers. The run is queued as its next attempt, and restores the stored workspace wherever it is claimed. |
+| `waiting`, `suspended` | `completed` | The task is moved or deleted, or the run is stopped. |
+| `claimed` | `completed` | The runner reports an outcome without a failure, or the run is stopped, or its lease expires after it was asked to stop. |
+| `claimed` | `failed` | The harness failed (`exited`), or the run failed before its harness started (`unprepared`). A hook on `run.starting` denied it (`refused`). Its hooks could not be asked after the last requeue (`hooks-unanswered`). Its lease expired on the last attempt, and no stop was asked for (`runner-lost`). Its host stopped it at its run timeout on the last attempt, and no stop was asked for (`timed-out`). |
 | `failed` | `superseded` | The run's task has moved on. |
 
 Words said to a run at the station where its task is idle, when that
 station has a harness, start a new run there that resumes the station's
 session. Words said to a run whose task has left its station fail with
 `409`, and words from anyone but the task's assignee with `404`.
-Only a claimed, waiting or parked run can be stopped. The web app offers Stop
-only while a run is claimed. Attempts a run spent parked do not count in
+Only a claimed, waiting or suspended run can be stopped. The web app offers Stop
+only while a run is claimed. Attempts a run spent suspended do not count in
 the 3. Only the task's assignee may stop a run or say
 something to it. See [Steer or stop a run](/docs/runs/steer-or-stop-a-run).
+
+### Run endings
+
+An ended run has one ending. Insights, a station's outcomes,
+[`spotlight history`](/docs/reference/cli/agent-commands#spotlight-history)
+and the API use this list.
+
+| Ending | Label | Meaning |
+| --- | --- | --- |
+| `completed` | Completed | Ended without a failure, and no stop was asked for. |
+| `failed` | Failed | Ended with a [failure code](#failure-codes), and no other ending applies. |
+| `stopped` | Stopped | Ended without a failure after it was asked to stop. |
+| `exhausted` | Exhausted | Its runner was lost, or its host stopped it at its run timeout, on its last attempt. Or its runner was lost after the run asked a person. Spotlight does not try it again. |
+| `cancelled` | Cancelled | Ended while it was queued, because its task moved on, its replay or search stopped it, its replay reached its ceiling, or no runner claimed a search's run in time. |
+| `superseded` | Superseded | Failed after its task had moved on. |
+
+Counts of runs that ran leave out cancelled runs.
 
 ### Run page composer
 
@@ -226,9 +245,10 @@ run and a search's agent run have the composer turned off, with
 | `hooks-unanswered` | Its `run.starting` hooks could not be asked. | yes |
 | `runner-lost` | Its runner stopped renewing the lease. | yes |
 | `timed-out` | Its host stopped its sandbox for running past `SPOTLIGHT_RUN_TIMEOUT`. | yes |
+| `cancelled` | It ended while it was queued. | no |
 | `superseded` | Its task had moved on. | no |
 
-A run whose `run.starting` hooks could not be asked is handed back and tried
+A run whose `run.starting` hooks could not be asked is requeued and tried
 again, 6 attempts in all, waiting 5 seconds and doubling to at most 2 minutes.
 A run whose runner is lost, or that timed out, is queued again at once, 3
 attempts in all, counted together.
@@ -269,11 +289,11 @@ for more than one reason, the reasons are joined with `; `.
 | `Hooks did not answer after <n> tries. Last error: <reason>` | Its `run.starting` hooks went unanswered on every attempt. Code `hooks-unanswered`. |
 
 A run whose runner is lost, or that times out, on its last attempt is noted
-`Spotlight gave up on the run after <n> attempts. The run did not finish.`, with the
+`The run did not finish after <n> attempts. Spotlight does not try it again.`, with the
 failure `runner-lost` or `timed-out`, as its last attempt ended. The run's own
 outcome reads `No runner finished the run after <n> attempts.`, or
 `Sandbox stopped at the host's time limit. No runner finished the run after <n> attempts.`
-for a timeout, where `<n>` leaves out the attempts that were parked. See [Inside a sandbox](/docs/reference/hosts/sandbox#run-phases) for
+for a timeout, where `<n>` leaves out the attempts that were suspended. See [Inside a sandbox](/docs/reference/hosts/sandbox#run-phases) for
 the phase each runner message comes from.
 
 ### Config
@@ -374,8 +394,8 @@ When a task's run ends at a station with a
 [judge](/docs/reference/terraform/line#judge-fields), the run is judged if all
 of these are true:
 
-- It ended Completed or Stopped. Failed, abandoned, withdrawn and superseded
-  runs are not judged.
+- It ended Completed or Stopped. Runs with any other
+  [ending](#run-endings) are not judged.
 - Its task still exists.
 - It falls in the judge's `sample`. Whether a run falls in it is worked out
   from the run's id, so it never changes. A `sample` of 1 judges every run, and
@@ -485,7 +505,7 @@ calibration. A new rubric version starts with no runs that have both scores.
 
 The station's view on Insights shows, under "How far to trust the judge", the
 measure with the calibration, then how many of the station's latest 200 ended
-runs, less those withdrawn, have "Both scores", "Judge only", "People only"
+runs, less those cancelled, have "Both scores", "Judge only", "People only"
 and "Neither", each with `<share> of the last <n>`. A trusted judge's calibration there reads
 `Trusted. Minimum required: <trust>`. With no judged runs, it reads "No judged
 runs yet" and
@@ -678,14 +698,14 @@ returns after another starts a new group. A group is named by the first of its
 `Config <fingerprint>`, the fingerprint's first 8 characters. The group of
 runs before any recorded config reads `Before the first run with a config`. A
 group whose runs never started on its config, because they failed before
-starting or were withdrawn, is marked "Never started".
+starting or were cancelled, is marked "Never started".
 
 A run's outcome:
 
 | Part | Values | Meaning |
 | --- | --- | --- |
-| Ending | Completed, Failed, Stopped, Abandoned, Withdrawn, Superseded | How the run ended. Stopped: ended after it was asked to stop. Abandoned: given up after its runner was lost on the last attempt. Withdrawn: ended before it started. Superseded: failed after its task had moved on. |
-| Failure | A [failure code](#failure-codes) | Shown beside a Failed or Superseded ending. |
+| Ending | Completed, Failed, Stopped, Exhausted, Cancelled, Superseded | How the run ended. See [Run endings](#run-endings). |
+| Failure | A [failure code](#failure-codes) | Shown beside an ending that has one: Failed, Exhausted, Cancelled or Superseded. |
 | Round | 1, 2, … | 1 plus the number of the task's earlier runs at the station that completed or failed. |
 | Checks | Checks passed, Checks failed, Checks skipped | The station's check on the run's change. See [Checks](/docs/reference/app/change-stacks-and-decisions#checks). |
 | Next | Started, Parked, Closed, Answered, Sent back | The first thing a person did with the task in answer to the run, or after it. See the table below. |
@@ -709,15 +729,15 @@ A tally counts:
 
 | Figure | Counts |
 | --- | --- |
-| Runs | The group's runs that ran. The other figures, except Withdrawn, count only these. |
+| Runs | The group's runs that ran. The other figures, except Cancelled, count only these. |
 | Failed | Runs that ended Failed. |
 | Stopped | Runs that ended Stopped. |
 | Checks passed, Checks failed | Runs whose check passed or failed. |
 | Accepted | Runs whose next act was Closed. |
 | Sent back | Runs whose next act was Sent back. |
-| Handed on | Runs that passed their task to another station. |
+| Passed | Runs that passed their task to another station. |
 | Merged | Tasks the group's runs worked whose pull request merged. |
-| Withdrawn | Runs withdrawn before they started. |
+| Cancelled | Runs that ended Cancelled. |
 | Cost | The runs' cost together, when all are in one currency. |
 | Median, p90 | The time the runs took. |
 

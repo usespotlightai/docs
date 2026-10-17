@@ -351,7 +351,7 @@ run has a result. A stopped replay starts no more runs, and its running runs
 are stopped. An over-budget replay starts no more runs, and its runs already
 running finish. A run that never started reads `Never ran`, as does a run a
 stopped replay left waiting, or `Couldn't be replayed or started: <reason>`
-when it could not be replayed as it came to start, as for `dispatch-failed`, `forgone`
+when it could not be replayed as it came to start, as for `dispatch-failed`, `cancelled`
 or `candidate-unfit`. Through the API, a person can also stop an over-budget
 replay whose runs are still running: those runs stop, and its state stays
 `over-budget`.
@@ -363,7 +363,7 @@ replay whose runs are still running: those runs stop, and its state stays
 | Pending | The run has not ended, its checks or judging have not finished, or, for a run with no change stack, its measures have not come in. |
 | Succeeded | The run ended and passed everything that scores the station. |
 | Failed | The run failed with `exited`, `refused`, `timed-out` or no failure code, asked a person, or failed a check or the judge. |
-| Unscored | Nothing could score the run: it could not be replayed or started, its replay stopped it or reached its ceiling first, its checks or judging could not give an answer, nothing scores the station (`nothing-judges`), it failed before the agent began or for another reason outside the candidate, or Spotlight abandoned it (see [Run failures](#run-failures)). |
+| Unscored | Nothing could score the run: it could not be replayed or started, its replay stopped it or reached its ceiling first, its checks or judging could not give an answer, nothing scores the station (`nothing-judges`), it failed before the agent began or for another reason outside the candidate, or it was exhausted (see [Run failures](#run-failures)). |
 
 A result does not decide alone whether a task [regressed](#regressions): a
 copy that succeeded, or one that is unscored but has a judge's verdict, can
@@ -429,12 +429,13 @@ A failed replay run is classified by its [failure code](/docs/reference/app/task
 | `hooks-unanswered` | `hooks didn't respond (not scored)` | Unscored |
 | `runner-lost` | `runner lost (not scored)` | Unscored |
 | `timed-out` | `exceeded the host's time limit` | Failed |
+| `cancelled` | `cancelled before a runner claimed it (not scored)` | Unscored |
 | `superseded` | `superseded (not scored)` | Unscored |
 
-A run Spotlight gave up on as abandoned with no code is unscored. A failure
+An exhausted run with no failure code is unscored. A failure
 code Spotlight does not know shows as the detail as it is. When an attempt is
 queued again, as after `timed-out`, its cost is not part of the run's cost:
-only the run's last attempt, and attempts parked on the way, add to the
+only the run's last attempt, and attempts suspended on the way, add to the
 replay's spend.
 
 ### Check skips
@@ -449,7 +450,7 @@ replay's spend.
 | `out-of-time` | `checks ran out of time` |
 | `no-image` | `check image missing` |
 | `unprovisioned` | `no runner could be provisioned for the check` |
-| `nobody-checked` | `no runner took the check in time` |
+| `nobody-checked` | `no runner claimed the check in time` |
 | `skipped` | `checks skipped` |
 | `undrafted` | `change never drafted` |
 | `no-check-asked` | `candidate has no check command`. Shown when the candidate has a check but no change stack ended passed, failed, skipped or undrafted. |
@@ -683,7 +684,7 @@ still to come, the advice ends with `<n> second checks are still to come.`
 ### Replay with the answer
 
 After a replay of the live config over every run of the set finishes, other
-than a search's, Spotlight starts a replay of the same live config handed each
+than a search's, Spotlight starts a replay of the same live config with each
 run's answer, when:
 
 - the station still runs that config, at the same
@@ -849,12 +850,12 @@ The other reasons of an added run show only as the `409`. A run that cannot be r
 | `candidate-unfit` | `Candidate can't run it` |
 | `cannot-start` | `Run couldn't be started` |
 | `unchecked` | `Couldn't be checked just now` |
-| `forgone` | `Never started` |
+| `cancelled` | `Never started` |
 | `dispatch-failed` | `Failed to start after several tries` |
 
 `attachments-gone`, `repository-gone` and `not-at-the-station` can arise
 both when a run is added and when its replay comes to start it. `answer-gone`,
-`candidate-unfit`, `cannot-start`, `forgone` and `dispatch-failed` arise only
+`candidate-unfit`, `cannot-start`, `cancelled` and `dispatch-failed` arise only
 when a replay comes to start the run. `candidate-unfit` means the candidate was
 removed, or its block no longer fits the line as it is now. `cannot-start`
 means the candidate's station runs no harness a runner can start.
@@ -883,7 +884,7 @@ the replay's, or larger when it [checks the set](#checking-the-set). The second 
 count against its ceiling, but not in its success or in what its runs cost.
 
 Once a replay's spend reaches its ceiling, it ends as `over-budget`: nothing
-more of it starts, its runs not yet started are withdrawn, and its runs already
+more of it starts, its runs not yet started are cancelled, and its runs already
 running finish. What they spend still counts, so a replay can end above its
 ceiling. The replay page then reads `Over the ceiling by <amount>`, and
 `spotlight replay status` adds `, over the ceiling by <amount>, spent by runs

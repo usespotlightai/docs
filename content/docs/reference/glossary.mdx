@@ -107,7 +107,8 @@ and then each layer of a change stack drafted at that station. See
 A statement a good run makes true, such as `The change adds a test that fails
 without it.`, listed in a station's `judge` block. The [judge](#judge) marks
 each claim met or not, and scores a run as the share met. See
-[Judge fields](/docs/reference/terraform/line#judge-fields).
+[Judge fields](/docs/reference/terraform/line#judge-fields). For a runner that
+claims a run, see [Lease](#lease).
 
 ## Cohort
 
@@ -213,6 +214,12 @@ A team's named set of permission rules, MCP servers and native harness
 settings. A station names one in its `profile`. See
 [`spotlight_harness_profile`](/docs/reference/terraform/harness-profile).
 
+## Heartbeat
+
+A host's request to Spotlight, every 20 seconds, that says what the host has
+and what it runs. A host with a heartbeat in the last 90 seconds is online.
+See [Limits and timeouts](/docs/reference/limits-and-timeouts#hosts).
+
 ## Held-out task
 
 One of the tasks of a replay set that a [search](#search) keeps from its
@@ -271,6 +278,13 @@ A step of a change stack: a title, a summary and the changes it places, built
 on the layers before it. A station's check runs on each layer of a `change` cohort
 together with the layers before it. See
 [Structure](/docs/reference/app/change-stacks-and-decisions#structure).
+
+## Lease
+
+A runner's hold on a run. A runner claims a queued run and gets a 60-second
+lease on it, which it renews while it works. When the lease expires, Spotlight
+requeues the run, or ends it after its last attempt. See
+[Run states](/docs/reference/app/tasks-runs-and-the-inbox#run-states).
 
 ## Line
 
@@ -441,6 +455,13 @@ The person who started a task, its Raised by. An integration whose
 connection to the host, which each person makes on the team's Integrations
 settings page. See [Holder](/docs/reference/terraform/integration#holder).
 
+## Reservation
+
+A queued run held for one runner that a push pool provisioned. Only that
+runner can claim the run, and it must claim it within 5 minutes. When the
+reservation expires, Spotlight provisions a runner again. See
+[Provision call](/docs/reference/events/provision-call#failures).
+
 ## Revision
 
 A counter on a task. It goes up each time the task moves to another station
@@ -459,6 +480,12 @@ place of a rubric, or beside one. See
 
 One execution of a harness in a fresh sandbox, for a task at a station, for a
 chat, or for a [replay](#replay). See [Runs](/docs/reference/app/tasks-runs-and-the-inbox#runs).
+
+## Run ending
+
+How an ended run ended: `completed`, `failed`, `stopped`, `exhausted`,
+`cancelled` or `superseded`. See
+[Run endings](/docs/reference/app/tasks-runs-and-the-inbox#run-endings).
 
 ## Runner
 

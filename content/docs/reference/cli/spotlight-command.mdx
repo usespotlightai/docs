@@ -66,7 +66,7 @@ standard error as `spotlight host: <error>`.
 | `the sandbox finished` | The sandbox exited. |
 | `the sandbox ran past its time` | `SPOTLIGHT_RUN_TIMEOUT` passed. The sandbox is stopped with a 30-second grace, and the run is reported `timed-out`: `Its sandbox ran past the host's limit of <timeout> and was stopped.` |
 | `could not start a sandbox; claiming from this image pauses` | Claims for that image pause, longer after each failure in a row, up to about 30 seconds. |
-| `gave up the work: its way out did not start` | Egress did not start. The run fails, or the check is skipped. |
+| `failed the work: its way out did not start` | Egress did not start. The run fails, or the check is skipped. |
 | `the host is stopping, so the work is left to be claimed again` | The host stopped before the sandbox started. |
 | `the control plane will not have this host; it stops claiming and lets its sandboxes finish` | Spotlight did not accept the host. It exits `3`. |
 
@@ -76,7 +76,7 @@ standard error as `spotlight host: <error>`.
 | --- | --- |
 | `0` | Stopped on `SIGINT` or `SIGTERM`. |
 | `1` | A configuration or runtime error. |
-| `3` | Spotlight did not accept the host: an unknown or rotated credential, a host id serving another pool or trust, or a host Spotlight has no report from through that pool or trust. |
+| `3` | Spotlight did not accept the host: an unknown or rotated credential, a host id that is in use by another pool or trust (`409` `host-in-use`), or a host that sent no heartbeat through that pool or trust. |
 
 ## spotlight host install
 
@@ -166,7 +166,7 @@ Any other argument fails with `usage: spotlight runner [harnesses <json>]`.
 | Variable | Default | Description |
 | --- | --- | --- |
 | `SPOTLIGHT_URL` | required | The Spotlight address. |
-| `SPOTLIGHT_HANDED` | none | The file of work a host handed the sandbox. The host sets it. |
+| `SPOTLIGHT_ASSIGNMENT_FILE` | none | The file with the work a host assigned to the sandbox. The host sets it. |
 | `SPOTLIGHT_TOKEN` | none | The one-run credential a push pool's provider passes. |
 | `SPOTLIGHT_WORKSPACE` | `/workspace` | The workspace directory. |
 | `SPOTLIGHT_AGENT_USER` | none | The user the harness runs as. The default runner image sets `agent`. When set, the runner must run as root. |
@@ -176,7 +176,7 @@ Any other argument fails with `usage: spotlight runner [harnesses <json>]`.
 | `SPOTLIGHT_EGRESS_PROXY_CREDENTIAL` | none | With `SPOTLIGHT_EGRESS_URL`. The run proxy credential: `runner.egress.credential` of the provision call. |
 | `SPOTLIGHT_EGRESS_TRAFFIC` | `all` | With `SPOTLIGHT_EGRESS_URL`. `bound` sends traffic to hosts that are not bound directly, not through egress. The provisioner passes `runner.egress.traffic` here. See [The runner's way out](/docs/reference/hosts/egress#the-runners-way-out). |
 
-Exactly one of `SPOTLIGHT_HANDED` or `SPOTLIGHT_TOKEN` must be set. The runner
+Exactly one of `SPOTLIGHT_ASSIGNMENT_FILE` or `SPOTLIGHT_TOKEN` must be set. The runner
 reads the `SPOTLIGHT_EGRESS_` variables only with `SPOTLIGHT_TOKEN`.
 
 ### Messages
@@ -184,9 +184,9 @@ reads the `SPOTLIGHT_EGRESS_` variables only with `SPOTLIGHT_TOKEN`.
 | Message | Cause |
 | --- | --- |
 | `SPOTLIGHT_URL is required` | No address. |
-| `SPOTLIGHT_TOKEN and SPOTLIGHT_HANDED are different ways to be given work; give one` | Both set. |
-| `SPOTLIGHT_HANDED names the work a host handed this runner, or SPOTLIGHT_TOKEN is the one-run credential a push pool provisioned it with` | Neither set. |
-| `the work it was handed carries no one-run credential` | The handed file contains no credential. |
+| `SPOTLIGHT_TOKEN and SPOTLIGHT_ASSIGNMENT_FILE are different ways to get work; give one` | Both set. |
+| `SPOTLIGHT_ASSIGNMENT_FILE names the file with the work a host assigned to this runner, or SPOTLIGHT_TOKEN is the one-run credential a push pool provisioned it with` | Neither set. |
+| `its assignment has no one-run credential` | The assignment file contains no credential. |
 | `could not trust the egress authority, so TLS through egress may fail` | A warning. The egress authority could not be added to the image's bundles. |
 | `nothing was reserved for it in time` | With `SPOTLIGHT_TOKEN`, no work arrived within 5 minutes. The runner exits `0`. |
 | `SPOTLIGHT_EGRESS_URL and SPOTLIGHT_EGRESS_PROXY_CREDENTIAL go together; give both or neither` | Only one of the two is set. |
@@ -237,8 +237,8 @@ spotlight egress
 ```
 
 The proxy a host starts beside each sandbox. It takes no arguments other
-than `serve`; any other argument prints the usage and exits `1`. It reads what
-the host handed it from `/run/spotlight/egress.json` and deletes the file. See
+than `serve`; any other argument prints the usage and exits `1`. It reads the
+config the host gave it from `/run/spotlight/egress.json` and deletes the file. See
 [Egress](/docs/reference/hosts/egress).
 
 ```text

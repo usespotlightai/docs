@@ -25,7 +25,7 @@ pages for each command.
 | `The run asked for station "<key>". Work does not pass there from the task's station.` | The current station does not pass to the station named. | [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover) |
 | `The run said the work is done. The task is not at the end of its line.` | The handover said `done` at a station without `ends: true`. | [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover) |
 | `The run failed: <message>` | The run failed. The message is one of the [run failure messages](#run-failure-messages). | [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-failed-with-a-message) |
-| `Spotlight gave up on the run after <n> attempts. The run did not finish.` | The runner was lost, or the host stopped the sandbox at its run timeout, on the last attempt. Failure `runner-lost` or `timed-out`, as the last attempt ended. | [Failure codes](/docs/reference/app/tasks-runs-and-the-inbox#failure-codes), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-was-given-up-on) |
+| `The run did not finish after <n> attempts. Spotlight does not try it again.` | The runner was lost, or the host stopped the sandbox at its run timeout, on the last attempt. Failure `runner-lost` or `timed-out`, as the last attempt ended. | [Failure codes](/docs/reference/app/tasks-runs-and-the-inbox#failure-codes), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-used-all-its-attempts) |
 | `A person stopped the run. The task is back with you.` | A person stopped the run. | [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover), [Steer or stop a run](/docs/runs/steer-or-stop-a-run#stop-the-run) |
 | `A person stopped the run.` | A person stopped a run whose task then made its deferred move. | [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves) |
 | `Heard while a run worked on the task. If the run does not pass the task on, the task moves to <Station> when the run ends.` | A reaction's happening arrived while a run worked on the task. | [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves) |
@@ -90,7 +90,7 @@ Each follows `The sandbox's egress didn't start. Error: `.
 
 | Message | Cause | See |
 | --- | --- | --- |
-| `the control plane handed no credential for the sandbox's egress` | Spotlight handed no egress credential with the work. | [Egress start failures](/docs/reference/hosts/egress#egress-start-failures) |
+| `the assignment has no credential for the sandbox's egress` | The work came with no egress credential. | [Egress start failures](/docs/reference/hosts/egress#egress-start-failures) |
 | `egress was not ready within 1m30s` | Egress did not publish its authority in time. | [Egress start failures](/docs/reference/hosts/egress#egress-start-failures) |
 | `pull the egress image <image>: <error>` | The egress image could not be pulled. | [Egress start failures](/docs/reference/hosts/egress#egress-start-failures) |
 
@@ -111,12 +111,13 @@ Each follows `The sandbox's egress didn't start. Error: `.
 | `the container runtime is not answering yet` | The container engine did not respond. The host retries. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host) |
 | `could not report to the control plane, still trying` | Spotlight did not respond. The host retries. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host) |
 | `destroyed a sandbox left behind` | A sandbox from an earlier host process was removed at start. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host) |
-| `the sandbox ran past its time` | `SPOTLIGHT_RUN_TIMEOUT` passed. The sandbox is stopped with a 30-second grace, and the run is reported `timed-out`. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-was-given-up-on) |
+| `the sandbox ran past its time` | `SPOTLIGHT_RUN_TIMEOUT` passed. The sandbox is stopped with a 30-second grace, and the run is reported `timed-out`. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-used-all-its-attempts) |
 | `could not start a sandbox; claiming from this image pauses` | A sandbox did not start. Claims for that image pause, longer after each failure in a row. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host) |
-| `gave up the work: its way out did not start` | Egress did not start. The run fails, or the check is skipped. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host) |
+| `failed the work: its way out did not start` | Egress did not start. The run fails, or the check is skipped. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host) |
 | `the host is stopping, so the work is left to be claimed again` | The host stopped before the sandbox started. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host) |
 | `the control plane will not have this host; it stops claiming and lets its sandboxes finish` | Spotlight did not accept the host. It exits `3`. | [Exit codes](/docs/reference/cli/spotlight-command#exit-codes) |
 | `Missing, rotated or unknown pool token, or a workload the trust does not admit` | Spotlight did not accept the host's credential, with `401`. | [Admission](/docs/reference/terraform/runner-trust#admission), [Run hosts without a stored token](/docs/hosts/admit-hosts-through-a-runner-trust) |
+| `Host <id> is in use by another pool or trust. Please stop it there, or give it its own state directory.` | `409` `host-in-use`. Another pool or trust uses the host's id. The host stops claiming. | [Admission](/docs/reference/terraform/runner-trust#admission), [State](/docs/reference/hosts/host-configuration#state) |
 | `could not pull the runner image, so it runs the copy it has` | A pull failed, and the host has a copy of the image. | [Pull runner images from a private registry](/docs/hosts/pull-images-from-a-private-registry#check-that-it-pulls) |
 | `another spotlight host already serves from <state>: <error>` | Another host uses the state directory. | [Validation](/docs/reference/hosts/host-configuration#validation) |
 | `spotlight host: <config path> is not ready to serve: <problems>` | `spotlight host install` found the host configuration invalid. | [spotlight host install](/docs/reference/cli/spotlight-command#spotlight-host-install) |
@@ -145,9 +146,9 @@ environment, are prefixed `egress: `.
 
 | Message | Cause | See |
 | --- | --- | --- |
-| `SPOTLIGHT_TOKEN and SPOTLIGHT_HANDED are different ways to be given work; give one` | Both are set. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
-| `SPOTLIGHT_HANDED names the work a host handed this runner, or SPOTLIGHT_TOKEN is the one-run credential a push pool provisioned it with` | Neither is set. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
-| `the work it was handed carries no one-run credential` | The handed file contains no credential. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
+| `SPOTLIGHT_TOKEN and SPOTLIGHT_ASSIGNMENT_FILE are different ways to get work; give one` | Both are set. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
+| `SPOTLIGHT_ASSIGNMENT_FILE names the file with the work a host assigned to this runner, or SPOTLIGHT_TOKEN is the one-run credential a push pool provisioned it with` | Neither is set. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
+| `its assignment has no one-run credential` | The assignment file contains no credential. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
 | `could not trust the egress authority, so TLS through egress may fail` | A warning. The egress authority could not be added to the image's bundles. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
 | `nothing was reserved for it in time` | With `SPOTLIGHT_TOKEN`, no work arrived within 5 minutes. The runner exits `0`. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
 | `usage: spotlight runner [harnesses <json>]` | An argument other than `harnesses`. | [spotlight runner](/docs/reference/cli/spotlight-command#spotlight-runner) |
@@ -397,13 +398,13 @@ slugs.
 | `Team <key> is not empty. It still has: <what>` | `409` `in-use`. A delete of a team that still has resources. | [`spotlight_team`](/docs/reference/terraform/team#rules) |
 | `Secret <NAME> is in use. Used by: <names>` | `409`. A delete of a secret an integration or a harness profile still names. | [Rules](/docs/reference/terraform/secret#rules) |
 | `cannot be set on a secret read from AWS Secrets Manager` | `valueWo` on a secret from AWS Secrets Manager. | [Sources](/docs/reference/terraform/secret#sources) |
-| `belongs to another pool. Please give each pool its own` | A pool token that another pool has. | [Pool token](/docs/reference/terraform/runner-pool#pool-token), [Create a pull pool and get its token](/docs/hosts/create-a-pull-pool) |
-| `was used before. Pool tokens work once only` | A pool token rotated away, or used by a pool since deleted or replaced. | [Pool token](/docs/reference/terraform/runner-pool#pool-token) |
+| `is in use by another pool. Please use a different token for each pool` | A pool token that another pool has. | [Pool token](/docs/reference/terraform/runner-pool#pool-token), [Create a pull pool and get its token](/docs/hosts/create-a-pull-pool) |
+| `was used before. Each pool token is single-use. Please use a new token` | A pool token rotated away, or used by a pool since deleted or replaced. | [Pool token](/docs/reference/terraform/runner-pool#pool-token) |
 | `is not https. Its calls carry a one-run token. A production deployment does not make them` | A warning on a push pool's `provision.url`. | [Warnings](/docs/reference/terraform/runner-pool#warnings) |
 | `names spotlight. This deployment has no platform egress. Please name an egress of this workspace, or leave provision.egress out` | A push pool's `provision.egress` names the platform egress on a deployment without one. | [Egress](/docs/reference/terraform/runner-pool#egress) |
 | `names <id>. Egress <id> doesn't exist in this workspace` | A push pool's `provision.egress` names no egress of the workspace. | [Egress](/docs/reference/terraform/runner-pool#egress) |
-| `belongs to another egress. Please give each egress its own` | An egress token that another egress has. | [Egress token](/docs/reference/terraform/egress#egress-token) |
-| `was used before. Egress tokens work once only` | An egress token rotated away, or used by an egress since deleted or replaced. | [Egress token](/docs/reference/terraform/egress#egress-token) |
+| `is in use by another egress. Please use a different token for each egress` | An egress token that another egress has. | [Egress token](/docs/reference/terraform/egress#egress-token) |
+| `was used before. Each egress token is single-use. Please use a new token` | An egress token rotated away, or used by an egress since deleted or replaced. | [Egress token](/docs/reference/terraform/egress#egress-token) |
 | `is not https. Runners send their proxy credential to it. A production deployment does not provision runners that use it` | A warning on an egress's `url`. | [Warnings](/docs/reference/terraform/egress#warnings) |
 | `Egress <key> is in use. Runner pools that name it: <pool keys>. Please remove provision.egress from these pools first.` | `409` `in-use`. A delete of an egress a runner pool names. | [Delete](/docs/reference/terraform/egress#delete) |
 | `names <key>. Runner pool <key> doesn't exist in this workspace` | A warning on `spotlight_workspace_runners` `pools`. | [`spotlight_workspace_runners`](/docs/reference/terraform/workspace-runners#warnings) |
@@ -490,7 +491,7 @@ it follows `Couldn't be replayed or started:` in lower case.
 | `Candidate can't run it` | `candidate-unfit`. The candidate was removed, or no longer fits the line as it is. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
 | `Run couldn't be started` | `cannot-start`. The candidate runs no harness a runner can start. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
 | `Couldn't be checked just now` | `unchecked`. Spotlight could not read the run's facts. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
-| `Never started` | `forgone`. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
+| `Never started` | `cancelled`. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
 | `Failed to start after several tries` | `dispatch-failed`. Queuing the run failed 10 times. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
 
 A replay's results give their reasons in words such as

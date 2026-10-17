@@ -14,9 +14,9 @@ Open the task. Under **Activity**, the latest run reads **Queued**: it is
 waiting for a runner to claim it. Open **Settings** from the workspace
 menu, then **Runners**, and look for the first of these that applies:
 
-- No host is listed, or every host reads **Not answering**: no machine is
+- No host is listed, or every host reads **Offline**: no machine is
   taking work. [Run a host](/docs/hosts/run-a-host), or read the log of the
-  one that stopped answering.
+  host that is offline.
 - A host reads `Running <n> of <capacity>` with every slot taken: it is full,
   and the run waits for a free slot. Raise the host's capacity or add a host.
 - No host's **Harnesses** include the station's harness (the Run page's
@@ -92,12 +92,13 @@ which:
 
 Refused runs are not retried. After changing the station, reply to the item.
 
-## The run was given up on
+## The run used all its attempts
 
-"Spotlight gave up on the run after N attempts. The run did not finish." means runners
-claimed the run and then stopped reporting, or ran it past the host's run time
-limit, N times in a row. Spotlight puts such a run back in the queue by itself
-before it gives up. On Insights, the **Runs** tab shows its code under
+"The run did not finish after N attempts. Spotlight does not try it again."
+means runners claimed the run and then stopped renewing its lease, or ran it
+past the host's run time limit, N times in a row. Spotlight puts such a run
+back in the queue by itself until it has used all its attempts. On Insights,
+the **Runs** tab shows the run as **Exhausted**, with its code under
 **Failure**: `runner-lost` or `timed-out`.
 
 Read the log of the host that claimed it around the time of each attempt.
@@ -175,7 +176,7 @@ Then read it against what went wrong:
 
 Each memory's handle links to it on the team's Memory page, which also shows
 how many runs were briefed with it or recalled it. A run counts as briefed once
-it is queued with the memory, even if it is withdrawn before it starts.
+it is queued with the memory, even if it is cancelled before it starts.
 
 ## Related
 

@@ -28,7 +28,7 @@ through the [Replayed candidates API](/docs/reference/api/replayed-candidates).
 | `GET /replay-sets/{setId}/suggestions` | Up to 5 of the station's recent runs that would even out how the set's runs turned out, each as `replayable-runs` lists it, with its `outcome`. None is added. See [Suggested runs](/docs/reference/app/replays#suggested-runs). |
 | `POST /lines/{lineId}/stations/{stationId}/replay-sets` | `201` and `{ "id" }`: opens an empty set. |
 | `PATCH /replay-sets/{setId}` | `204`: renames the set, also once its station has left its line. |
-| `DELETE /replay-sets/{setId}` | `204`: deletes the set and its replays, and lets go of the archives it kept. |
+| `DELETE /replay-sets/{setId}` | `204`: deletes the set and its replays, and releases the archives it kept. |
 | `POST /replay-sets/{setId}/entries` | `204`: adds a run to the set. |
 | `DELETE /replay-sets/{setId}/entries/{runId}` | `204`: takes a run out of the set, also once its station has left its line. |
 | `GET /replay-sets/{setId}/replays` | Every replay of the set, newest first, with each run's result, the baseline marked. |

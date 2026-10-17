@@ -38,8 +38,8 @@ When an agent asks a person something, or needs a tool call approved, its run
 pauses instead of ending. Before it waits, the runner packs the workspace into
 an archive and stores it. The host then keeps the sandbox for a few minutes, so
 an answer that comes quickly reaches the agent in the same session. If no
-answer comes in that time, the runner lets the sandbox go and the run is set
-aside. The archive belongs to the task (or to a chat, for the agent's planning
+answer comes in that time, the sandbox is removed and the run is
+suspended. The archive belongs to the task (or to a chat, for the agent's planning
 chats). When the answer arrives, the same run carries on as its next attempt:
 any runner that meets the run's placement restores the archive into a fresh
 sandbox before the harness starts, and asks the harness to resume the
@@ -55,7 +55,7 @@ was about would hand the agent a memory of work that is no longer there.
 
 ## One workspace for the task, one conversation for each station
 
-A task keeps one workspace for as long as it lives. When a station hands the
+A task keeps one workspace for as long as it lives. When a station passes the
 task on, the next station's run restores the same archive. Its agent finds the
 checkout as the last agent left it, with changes that were never committed and
 any files written beside the checkout.

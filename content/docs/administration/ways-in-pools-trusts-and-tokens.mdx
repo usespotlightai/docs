@@ -26,7 +26,7 @@ A pull pool is a named group of hosts that share one token. A host keeps the
 token and presents it every time it asks for work. Spotlight keeps only a hash
 of it, and a token Spotlight issues is shown only once.
 
-A pool token is given once, ever. A token that was rotated away, or that
+Each token is single-use. A pool token that was rotated away, or that
 belonged to a pool since deleted, never works again, even if someone gives it
 to a new pool later. Rotating is a matter of giving the pool a new token: the
 old one stops being accepted at once, and runs already claimed with it carry on
@@ -65,7 +65,7 @@ wildcards. [Run hosts without a stored token](/docs/hosts/admit-hosts-through-a-
 Neither the pool token nor the workload token ever enters a sandbox. When a
 host claims a run, Spotlight answers with a credential that is good for that
 one run and nothing else, and that is what the host passes into the sandbox. A
-runner that has it can take exactly one piece of work; asking for a second
+runner that has it can claim exactly one piece of work; a second claim
 fails. Inside the sandbox, the runner reads the credential from the file
 the host laid down and deletes the file. The agent's processes do not inherit
 the runner's Spotlight settings or its credential; from the runner they get a
@@ -87,7 +87,7 @@ A push pool can name a shared egress, which injects the secrets of many runs int
 their requests. Two credentials split that job so that neither is worth much
 alone. The egress process keeps the egress token, and Spotlight stores it
 as a hash. It is the only credential that can fetch a run's secrets, and it
-never enters a sandbox. Like a pool token, it is given once, ever, and
+never enters a sandbox. Like a pool token, it is single-use, and
 after a rotation the old one stops working at once.
 
 The run proxy credential is made for one runner, sent in the provision call,

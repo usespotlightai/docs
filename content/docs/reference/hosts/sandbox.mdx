@@ -45,7 +45,7 @@ each harness package provides.
 | `/workspace/.claude/skills` | Skills, for Claude Code. |
 | `/workspace/.spotlight/skills` | Skills, for Cursor and Codex. |
 | `/workspace/.spotlight/outcome.json` | Read if the agent never runs `spotlight handover`. Removed at the start of each run. See [Agent commands](/docs/reference/cli/agent-commands#without-a-handover). |
-| `/run/spotlight/handed.json` | The work the host handed the sandbox, mode `0400`. The runner deletes it after reading it. |
+| `/run/spotlight/assignment.json` | The work the host assigned to the sandbox, mode `0400`. The runner deletes it after reading it. |
 | `/etc/spotlight/egress/authority.pem` | The run's egress certificate authority. On a runner of a push pool that names an egress, the authority of the runner's way out. |
 | `/etc/spotlight/egress/bundle.pem` | The image's system certificates with that authority added. |
 | `/spotlight/mirrors/<repository>.git` | The host's mirror of each repository, mounted read-only when the host has one. |
@@ -63,7 +63,7 @@ A host sets these on the sandbox:
 | Variable | Value |
 | --- | --- |
 | `SPOTLIGHT_URL` | `SPOTLIGHT_SANDBOX_URL` from the host configuration. |
-| `SPOTLIGHT_HANDED` | `/run/spotlight/handed.json` |
+| `SPOTLIGHT_ASSIGNMENT_FILE` | `/run/spotlight/assignment.json` |
 | `SPOTLIGHT_MIRRORS` | `/spotlight/mirrors`, when mirrors are mounted. |
 | `HTTP_PROXY`, `HTTPS_PROXY`, `http_proxy`, `https_proxy` | `http://sandbox:<credential>@egress:3128`, with a credential for this run alone. |
 | `NO_PROXY`, `no_proxy` | `localhost,127.0.0.1,::1` |

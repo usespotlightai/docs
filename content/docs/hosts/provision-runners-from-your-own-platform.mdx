@@ -169,7 +169,7 @@ stops.
 Answer any `2xx` within 10 seconds, and start the container after answering or
 in the background. Spotlight treats a later answer, a redirect or any other
 status as a failure. It then offers the work to the next push pool that fits,
-or, after `http-error`, `unreachable` or `lapsed`, tries again later, up to 5
+or, after `http-error`, `unreachable` or `expired`, tries again later, up to 5
 attempts in all. The other causes below fail the run at once.
 
 Every call names a new runner, and its id is also the `webhook-id` header. If
@@ -193,7 +193,7 @@ the cause:
 | `http-error: Provision URL answered <status>. Response: <body>` | Your endpoint answered with that status. Check its signature verification and its logs. |
 | `unreachable` | Spotlight could not call the endpoint. Check the URL and that it answers within 10 seconds. |
 | `not-allowed` | Spotlight's deployment does not allow outbound calls to the endpoint's host, or the URL is not `https`. With `Egress URL must be https.`, give the egress an `https` URL. |
-| `lapsed` | The endpoint accepted, but no runner claimed the work in time. Check that the container started and can reach `spotlightUrl`, or the egress when the call names one. |
+| `expired` | The endpoint accepted, but no runner claimed the work in time. Check that the container started and can reach `spotlightUrl`, or the egress when the call names one. |
 | `unusable` | Spotlight cannot open the pool's provision secret: set the secret again with a new `secret_version`. Or the pool's `provision.egress` names an egress that does not exist: correct it. |
 | `harness-missing` | The image does not have the station's harness installed. |
 

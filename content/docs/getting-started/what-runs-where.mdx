@@ -97,7 +97,7 @@ the commands it reports with, such as `spotlight handover`.
 ## Where each credential stays
 
 The host's own credential, its pool token or its cloud identity, stays on the
-host. When the host takes a run, Spotlight gives it a credential for that run
+host. When the host claims a run, Spotlight gives it a credential for that run
 alone, and that is all the sandbox gets. If someone took over a sandbox, that
 credential would let them do only what the run itself may do, such as report
 on it and reach its line's repositories, and only until the run ends. They
@@ -139,7 +139,7 @@ doesn't keep a team's code away from Spotlight:
 - When a run stops to wait for a person, and when it ends, the runner saves
   the task's working files (its checked-out code and the agent's conversation)
   to Spotlight's storage. When the run carries on after the answer, or a later
-  run of the task starts, it restores them on whichever host takes it up ([How
+  run of the task starts, it restores them on whichever host claims it ([How
   a conversation survives between
   runs](/docs/runs/how-a-conversation-survives-between-runs)).
 - The record of what the agent said and did is sent to Spotlight as it

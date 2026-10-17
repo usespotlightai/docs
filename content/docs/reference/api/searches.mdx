@@ -20,7 +20,7 @@ endpoints, under `/api/teams/{teamId}`. They answer JSON, and errors are
 | `POST /lines/{lineId}/stations/{stationId}/searches` | `201` and `{ "id", "seedReplayId", "objective", "warnings" }`: starts a search. See [Start a search](#start-a-search). |
 | `GET /searches` | The team's searches, newest first, a page at a time. |
 | `GET /searches/{searchId}` | One search with its split, iterations, candidates and frontier. See [Search detail](#search-detail). |
-| `POST /searches/{searchId}/stop` | `204`: stops the search. Its agent's run is withdrawn or stopped, its replays stop, and nothing more starts. |
+| `POST /searches/{searchId}/stop` | `204`: stops the search. Its agent's run is cancelled or stopped, its replays stop, and nothing more starts. |
 | `POST /searches/{searchId}/candidates/{candidateId}/pick` | `201` and a [config pull request](#config-pull-request) when picked, or picked again after a failure; `200` and the one it has when picked already. |
 | `GET /config-pull-requests/{pullRequestId}` | A [config pull request](#config-pull-request). |
 | `GET /search-runs/{runId}` | A search's agent run: its search and iteration, the agent it ran, its steps, and what it spent. |

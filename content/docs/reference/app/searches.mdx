@@ -331,14 +331,14 @@ ending in words.
 `ceiling-reached` also ends a search whose replay of the live config ran over
 its ceiling. `stalled` ends a search that [stalled](#stalls) with no room to
 look into why, or whose reflection found nothing the config can fix. A stopped
-search withdraws its agent's run
+search cancels or stops its agent's run
 and stops its replays.
 
 ## Iteration states
 
 | State | Shown | Meaning |
 | --- | --- | --- |
-| `wanted` | Waiting for a runner | Its agent run is not yet queued, or no runner has taken it. |
+| `wanted` | Waiting for a runner | Its agent run is not yet queued, or no runner has claimed it. |
 | `running` | Running | Its agent run is queued or running, and may propose candidates. |
 | `ended` | Ended | Its agent run ended. |
 | `failed` | Failed | Its agent run failed, asked a person, or could not start. |
@@ -347,7 +347,7 @@ Each iteration is of one kind: `propose`, whose agent proposes candidates, or
 `reflect`, a [reflection](#reflections), whose agent proposes nothing and
 records causes. A reflection counts in "Iterations" like any other.
 
-An agent run no runner takes within 60 minutes is withdrawn, and its iteration
+An agent run no runner claims within 60 minutes is cancelled, and its iteration
 fails. An agent run whose spend is not known 15 minutes after it ended is
 counted as [unpriced](#spend-and-ceiling).
 
