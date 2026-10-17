@@ -12,7 +12,7 @@ read into happenings. Lines react to happenings with their reactions; see
 
 ## Happenings
 
-| GitHub event | Condition | Happening | Spoken |
+| GitHub event | Condition | Happening | Answers |
 | --- | --- | --- | --- |
 | `pull_request` | action `opened`, `reopened` or `ready_for_review` | `github.pull_request.opened` | no |
 | `pull_request` | action `labeled`, with a label name | `github.pull_request.labelled` | no |
@@ -25,9 +25,9 @@ read into happenings. Lines react to happenings with their reactions; see
 | any of the four rows above | the comment or review contains `@` | also `github.pull_request.mentioned` | yes |
 | `check_suite` | action `completed`, conclusion `failure` | `github.checks.failed` | no |
 
-A spoken happening carries the words of the comment or review, with the file
-and lines it is about where there are any. Those words can answer a task that
-awaits review; see [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves).
+A happening that answers carries the words of the comment or review as a
+message, with the file and lines it is about where there are any. Those words
+can answer a task that awaits review; see [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves).
 
 Each happening also has a label and a line of text written to the task's
 notes when the delivery carries no words:

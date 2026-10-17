@@ -7,16 +7,16 @@ description: Why an agent reports its handover, replies and tool calls through t
 
 An agent working a task has things to tell Spotlight. At the end of a run it
 has to say where the task goes next and leave a note for whoever picks it up.
-On a pull request review it answers comments. On a station with tools it calls
-them. All of this goes through one command, `spotlight`, which is on the path
-in every sandbox:
+On a pull request review it replies to review comments. On a station with
+tools it calls them. All of this goes through one command, `spotlight`, which
+is on the path in every sandbox:
 
 ```bash
 spotlight handover --next code-review --note "Implemented the retry; tests pass."
 ```
 
 The command talks to a small endpoint the runner starts for that run, on the
-sandbox's own loopback, and the runner passes what the agent said on to the
+sandbox's own loopback, and the runner passes what the agent sends on to the
 control plane. A handover travels with the rest of the run's result. The agent
 needs nothing but a shell. [Agent commands](/docs/reference/cli/agent-commands)
 lists them.

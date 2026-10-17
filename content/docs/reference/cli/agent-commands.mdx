@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Agent commands
-description: The spotlight commands an agent runs inside its sandbox to hand a task over, answer a remark, read a trace or a station's history, recall and propose team memories, propose a search candidate, record why a stalled search's tasks fail, and find, read and use tools.
+description: The spotlight commands an agent runs inside its sandbox to hand a task over, reply to a review comment, read a trace or a station's history, recall and propose team memories, propose a search candidate, record why a stalled search's tasks fail, and find, read and use tools.
 ---
 
 An agent runs these commands from anywhere in its sandbox. Each one talks to
@@ -26,7 +26,7 @@ spotlight <tool> [--<input> <value>...] [--json <object> | --json -]
 
 In a [search's](/docs/reference/app/searches#the-searchs-agent-run) agent run,
 `reply`, `recall` and `remember` are rejected with
-`a search may not <answer a remark, recall what the team remembers or propose a memory>: it studies the station's history and proposes station configs, nothing more`.
+`a search may not <reply to a review comment, recall what the team remembers or propose a memory>: it studies the station's history and proposes station configs, nothing more`.
 
 The tools Spotlight itself gives are listed in
 [Built-in tools and skills](/docs/reference/built-ins/built-in-tools-and-skills).
@@ -40,17 +40,17 @@ variable is removed from it.
 
 | Variable | Value |
 | --- | --- |
-| `SPOTLIGHT_HANDOVER_URL` | The address of the run's loopback server, as `http://127.0.0.1:<port>/`. |
-| `SPOTLIGHT_HANDOVER_TOKEN` | A random token for this run, sent as `Authorization: Bearer`. |
+| `SPOTLIGHT_AGENT_API_URL` | The address of the run's loopback server, as `http://127.0.0.1:<port>/`. |
+| `SPOTLIGHT_AGENT_API_TOKEN` | A random token for this run, sent as `Authorization: Bearer`. |
 | `SPOTLIGHT_STATE_DIR` | The harness's state directory, `/workspace/.spotlight/state`. |
 
-Without `SPOTLIGHT_HANDOVER_URL` and `SPOTLIGHT_HANDOVER_TOKEN`, each command
+Without `SPOTLIGHT_AGENT_API_URL` and `SPOTLIGHT_AGENT_API_TOKEN`, each command
 fails:
 
 | Command | Message |
 | --- | --- |
 | `handover` | `no run to hand over: spotlight runs inside a Spotlight workspace` |
-| `reply` | `no run to answer for: spotlight runs inside a Spotlight workspace` |
+| `reply` | `no run to reply from: spotlight runs inside a Spotlight workspace` |
 | `trace` | `no run to read a trace from: spotlight runs inside a Spotlight workspace` |
 | `history` | `no run to read history from: spotlight runs inside a Spotlight workspace` |
 | `recall` | `no run to recall from: spotlight runs inside a Spotlight workspace` |
@@ -132,32 +132,32 @@ With neither a handover nor the file, the task goes to a person. See
 spotlight reply --to <handle> [--body <text>] [--resolve]
 ```
 
-Answers a remark on the task's pull request. The run's briefing lists the open
-remarks and their handles, such as `c12`.
+Replies to a review comment on the task's pull request. The run's briefing lists
+the open review comments and their handles, such as `c12`.
 
 | Flag | Required | Description |
 | --- | --- | --- |
-| `--to` | yes | The remark's handle. |
-| `--body` | yes | The answer. Omitted, `-` or `/dev/stdin`: read from standard input. |
+| `--to` | yes | The review comment's handle. |
+| `--body` | yes | The reply. Omitted, `-` or `/dev/stdin`: read from standard input. |
 | `--resolve` | no | Resolves the thread as well. |
 
 | Output | When |
 | --- | --- |
-| `Answered <handle>.` | Without `--resolve`. |
-| `Answered <handle>, and resolved it.` | With `--resolve`. |
+| `Replied to <handle>.` | Without `--resolve`. |
+| `Replied to <handle>, and resolved it.` | With `--resolve`. |
 
 | Message | Cause |
 | --- | --- |
 | `--to is required` | No `--to`. |
 | `--body is required` | No body, and nothing on standard input. |
-| `say which remark` | The handle is blank. |
-| `say something back` | The body is blank. |
-| `unreadable answer` | The request body was not JSON. |
-| `read the answer: <error>` | Standard input could not be read. |
+| `name the review comment` | The handle is blank. |
+| `write the reply` | The body is blank. |
+| `unreadable reply` | The request body was not JSON. |
+| `read the reply: <error>` | Standard input could not be read. |
 
 ```bash
 spotlight reply --to c12 --body "Renamed, thanks." --resolve
-spotlight reply --to c14 < answer.md
+spotlight reply --to c14 < reply.md
 ```
 
 ## spotlight trace
@@ -306,8 +306,8 @@ The last line says where the memory came from:
 | Last line | The memory |
 | --- | --- |
 | `From a run on task <task id>, approved by <name> on <date>` | Was drawn from a run of the task. |
-| `From what a person said on task <task id>, approved by <name> on <date>` | Was drawn only from what people said on the task, or was edited on the Memory page from one drawn from the task. |
-| `From a run on input from outside the team on task <task id>, approved by <name> on <date>` | Was drawn from a task that came from outside the team, or from what another tool said on the task. |
+| `From notes by a person on task <task id>, approved by <name> on <date>` | Was drawn only from the notes that people wrote on the task, or was edited on the Memory page from one drawn from the task. |
+| `From a run on input from outside the team on task <task id>, approved by <name> on <date>` | Was drawn from a task that came from outside the team, or from a message that another tool wrote on the task. |
 | `Written by <name> on <date>` | Was written on the Memory page. |
 
 `<name>` is `someone` when the person is not known. With no match it prints

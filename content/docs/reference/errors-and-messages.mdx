@@ -17,13 +17,13 @@ pages for each command.
 
 | Message | Cause | See |
 | --- | --- | --- |
-| `The run finished without saying where the task should go next.` | The run made no handover declaration. | [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover) |
+| `The run finished without saying where the task should go next.` | The run made no handover. | [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover) |
 | `The run ended without reporting an outcome.` | The run reported no outcome. | [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover) |
 | `The run asked for station "<key>". This line has no such station.` | The handover named a key that is not a station on the line. | [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover) |
 | `The run asked for station "<key>". The task is already there.` | The handover named the task's current station. | [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover) |
 | `The run asked for station "<key>". Nothing runs there to take up the task.` | The handover named a station with no harness. | [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover) |
 | `The run asked for station "<key>". Work does not pass there from the task's station.` | The current station does not pass to the station named. | [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover) |
-| `The run said the work is done. The task is not at the end of its line.` | The handover said `done` at a station without `ends: true`. | [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover) |
+| `The run handed over the task as done. The task is not at the end of its line.` | The handover named `done` at a station without `ends: true`. | [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover) |
 | `The run failed: <message>` | The run failed. The message is one of the [run failure messages](#run-failure-messages). | [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-failed-with-a-message) |
 | `The run did not finish after <n> attempts. Spotlight does not try it again.` | The runner was lost, or the host stopped the sandbox at its run timeout, on the last attempt. Failure `runner-lost` or `timed-out`, as the last attempt ended. | [Failure codes](/docs/reference/app/tasks-runs-and-the-inbox#failure-codes), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-used-all-its-attempts) |
 | `A person stopped the run. The task is back with you.` | A person stopped the run. | [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover), [Steer or stop a run](/docs/runs/steer-or-stop-a-run#stop-the-run) |
@@ -33,7 +33,7 @@ pages for each command.
 | `<What happened> while <Station> was waiting for an answer. Close the task, or reply to carry on.` | A happening that moves the task to the completed station arrived while the task's run waited on a person's answer to its question (not an approval); earlier deferred moves were cancelled. | [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves) |
 | `<What happened> while <Station> was working. Close the task, or reply to carry on.` | A happening that moves the task to the completed station arrived while the task had a current run and awaited no answer to the run's own question; the run was stopped and the task put to a person. | [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves) |
 | `Task cannot move from <from> to <to>. <reason>` | `422`. A person's move other than starting, parking or closing a task. | [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves), [Add a task and move it along a line](/docs/tasks/add-and-move-tasks#move-the-task) |
-| `The run said: <note>` | Follows the hook's reason when a hook on `handover.giving` denied the handover. | [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover), [Denying an event](/docs/reference/terraform/hook#denying-an-event) |
+| `Note from the run: <note>` | Follows the hook's reason when a hook on `handover.giving` denied the handover. | [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover), [Denying an event](/docs/reference/terraform/hook#denying-an-event) |
 | `The task has moved to another station. Messages here reach no one.` | Shown on a run page in place of the message box once the task has left the run's station. | [Steer or stop a run](/docs/runs/steer-or-stop-a-run#say-something-to-the-agent), [Run page composer](/docs/reference/app/tasks-runs-and-the-inbox#run-page-composer) |
 | `Waiting for your approval` | An approval item, from a tool that requires approval or a harness permission a profile sets to ask. | [Approvals](/docs/reference/app/tasks-runs-and-the-inbox#approvals), [Answer the inbox](/docs/inbox/answer-the-inbox#approve-edit-or-dismiss-a-request) |
 | `Spotlight would like to <intent>.` | Above an approval item: what the agent said it wants to do. | [What the agent wants](/docs/reference/app/tasks-runs-and-the-inbox#what-the-agent-wants) |
@@ -227,11 +227,11 @@ Each command exits `1` and prints its message on standard error.
 
 | Message | Cause | See |
 | --- | --- | --- |
-| `no run to hand over: spotlight runs inside a Spotlight workspace` | `spotlight handover` without the run's handover variables. | [Environment](/docs/reference/cli/agent-commands#environment) |
-| `no run to answer for: spotlight runs inside a Spotlight workspace` | `spotlight reply` without the run's handover variables. | [Environment](/docs/reference/cli/agent-commands#environment) |
-| `no run to read a trace from: spotlight runs inside a Spotlight workspace` | `spotlight trace` without the run's handover variables. | [Environment](/docs/reference/cli/agent-commands#environment) |
-| `no run to read history from: spotlight runs inside a Spotlight workspace` | `spotlight history` without the run's handover variables. | [Environment](/docs/reference/cli/agent-commands#environment) |
-| `no run to reach for tools in: spotlight runs inside a Spotlight workspace` | `spotlight tools`, `tools search` or `tools describe` without the run's handover variables. | [Environment](/docs/reference/cli/agent-commands#environment) |
+| `no run to hand over: spotlight runs inside a Spotlight workspace` | `spotlight handover` without the run's agent API variables. | [Environment](/docs/reference/cli/agent-commands#environment) |
+| `no run to reply from: spotlight runs inside a Spotlight workspace` | `spotlight reply` without the run's agent API variables. | [Environment](/docs/reference/cli/agent-commands#environment) |
+| `no run to read a trace from: spotlight runs inside a Spotlight workspace` | `spotlight trace` without the run's agent API variables. | [Environment](/docs/reference/cli/agent-commands#environment) |
+| `no run to read history from: spotlight runs inside a Spotlight workspace` | `spotlight history` without the run's agent API variables. | [Environment](/docs/reference/cli/agent-commands#environment) |
+| `no run to reach for tools in: spotlight runs inside a Spotlight workspace` | `spotlight tools`, `tools search` or `tools describe` without the run's agent API variables. | [Environment](/docs/reference/cli/agent-commands#environment) |
 | `not this run's token` | The token does not match. | [Common behaviour](/docs/reference/cli/agent-commands#common-behaviour) |
 | `reach Spotlight: <error>` | Spotlight is unreachable. | [Common behaviour](/docs/reference/cli/agent-commands#common-behaviour) |
 | `--next is required` | `spotlight handover` without `--next`. | [spotlight handover](/docs/reference/cli/agent-commands#spotlight-handover) |
@@ -240,10 +240,10 @@ Each command exits `1` and prints its message on standard error.
 | `read the note: <error>` | Standard input could not be read. | [spotlight handover](/docs/reference/cli/agent-commands#spotlight-handover) |
 | `--to is required` | `spotlight reply` without `--to`. | [spotlight reply](/docs/reference/cli/agent-commands#spotlight-reply) |
 | `--body is required` | No body, and nothing on standard input. | [spotlight reply](/docs/reference/cli/agent-commands#spotlight-reply) |
-| `say which remark` | The handle is blank. | [spotlight reply](/docs/reference/cli/agent-commands#spotlight-reply) |
-| `say something back` | The body is blank. | [spotlight reply](/docs/reference/cli/agent-commands#spotlight-reply) |
-| `unreadable answer` | The request body was not JSON. | [spotlight reply](/docs/reference/cli/agent-commands#spotlight-reply) |
-| `read the answer: <error>` | Standard input could not be read. | [spotlight reply](/docs/reference/cli/agent-commands#spotlight-reply) |
+| `name the review comment` | The handle is blank. | [spotlight reply](/docs/reference/cli/agent-commands#spotlight-reply) |
+| `write the reply` | The body is blank. | [spotlight reply](/docs/reference/cli/agent-commands#spotlight-reply) |
+| `unreadable reply` | The request body was not JSON. | [spotlight reply](/docs/reference/cli/agent-commands#spotlight-reply) |
+| `read the reply: <error>` | Standard input could not be read. | [spotlight reply](/docs/reference/cli/agent-commands#spotlight-reply) |
 | `--task is required` | `spotlight trace` without `--task`. | [spotlight trace](/docs/reference/cli/agent-commands#spotlight-trace) |
 | `say which task` | The task id is blank. | [spotlight trace](/docs/reference/cli/agent-commands#spotlight-trace) |
 | `open <path>: <error>` | `--out` could not be created. | [spotlight trace](/docs/reference/cli/agent-commands#spotlight-trace) |
@@ -270,11 +270,11 @@ Each command exits `1` and prints its message on standard error.
 | `<command>: "<argument>" is not a flag` | A word outside any flag. | [spotlight &lt;tool&gt;](/docs/reference/cli/agent-commands#spotlight-tool) |
 | `it is larger than the 4 MB Spotlight reads from a tool` | A generated tool's answer is over 4 MB. | [Generated tools](/docs/reference/terraform/integration#generated-tools) |
 | `could not read this run's tools to find "<name>": <error>` | The tool list could not be read. | [Agent commands](/docs/reference/cli/agent-commands) |
-| `a replay may not answer a remark: it has no effect outside Spotlight` | `spotlight reply` in a replay run. | [Replay runs](/docs/reference/app/replays#replay-runs) |
+| `a replay may not reply to a review comment: it has no effect outside Spotlight` | `spotlight reply` in a replay run. | [Replay runs](/docs/reference/app/replays#replay-runs) |
 | `a replay may not remember: it has no effect outside Spotlight` | `spotlight remember` in a replay run. | [Replay runs](/docs/reference/app/replays#replay-runs) |
 | `A replay may not read a task's trace: it leaves nothing behind but its own result` | `spotlight trace` in a replay run. | [Replay runs](/docs/reference/app/replays#replay-runs) |
 | `this run may only fetch` | `403`. A `git push` from a replay run. | [Replay runs](/docs/reference/app/replays#replay-runs) |
-| `a search may not answer a remark: it studies the station's history and proposes station configs, nothing more` | `spotlight reply` in a search's agent run. `recall what the team remembers` and `propose a memory` in place of `answer a remark` for `spotlight recall` and `spotlight remember`. | [The search's agent run](/docs/reference/app/searches#the-searchs-agent-run) |
+| `a search may not reply to a review comment: it studies the station's history and proposes station configs, nothing more` | `spotlight reply` in a search's agent run. `recall what the team remembers` and `propose a memory` in place of `reply to a review comment` for `spotlight recall` and `spotlight remember`. | [The search's agent run](/docs/reference/app/searches#the-searchs-agent-run) |
 | `this run cannot propose a candidate: only a search's runs do` | `spotlight candidate` in a run that is not a search's. | [spotlight candidate](/docs/reference/cli/agent-commands#spotlight-candidate) |
 | `This search iteration has proposed its <n> candidates, or tried to too often; end the run` | `spotlight candidate` once the iteration may propose no more. | [spotlight candidate](/docs/reference/cli/agent-commands#spotlight-candidate) |
 | `This run is no longer the active run of the search` | `spotlight candidate` or `spotlight cause` after the search stopped or moved on. | [spotlight candidate](/docs/reference/cli/agent-commands#spotlight-candidate) |

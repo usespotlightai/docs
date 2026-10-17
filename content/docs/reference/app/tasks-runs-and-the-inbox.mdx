@@ -38,7 +38,7 @@ whether it is finished.
 | --- | --- | --- |
 | Awaiting review | The latest `asked` note has no later `answered` or `passed` note. | Waiting for you |
 | Running | The task has a current run, queued or claimed. | In progress |
-| Finished | The task was moved to the completed station, or its run declared `done`. | none |
+| Finished | The task was moved to the completed station, or its run handed it over as `done`. | none |
 | Idle | None of the above. | none |
 
 A task that is created, moved, answered or reached by a happening, and is then
@@ -55,8 +55,8 @@ trail, and a note's words never change.
 | --- | --- |
 | `asked` | A station puts the task to a person: a `review` handover, a failed or stopped run, an approval to decide, a [request to connect](#requests-to-connect); or a happening stops the run (see [Moves](#moves)). |
 | `passed` | The task moves to another station or is finished. It closes the open conversation. |
-| `answered` | A person answers in the inbox or on the run's page, or a happening with words answers the open conversation. |
-| `said` | A person says something to a running run, a happening arrives that leaves the task where it is, or a different failure arrives while the task awaits review. |
+| `answered` | A person answers in the inbox or on the run's page, or a happening with a message answers the open conversation. |
+| `message` | A person sends a message to a running run, a happening arrives that leaves the task where it is, or a different failure arrives while the task awaits review. |
 
 Each note has a voice, `station`, `person` or `world` (a happening), and a
 form: `words`, `setup`, `resolved`, `approval`, `failure` or `connection`.
@@ -66,11 +66,11 @@ until that `passed` note is written.
 
 ## Handover
 
-A task's run ends with a declaration, made with `spotlight handover --next`
+A task's run ends with a handover, made with `spotlight handover --next`
 (see [Agent commands](/docs/reference/cli/agent-commands)). Keys are compared
 without regard to case.
 
-| Declaration | Allowed when | Effect |
+| Handover | Allowed when | Effect |
 | --- | --- | --- |
 | a station key | The station is on the line, is not the current station, has a harness, and the current station passes to it. | The task moves to the back of that station with a `passed` note, its revision goes up, and a run starts there. |
 | `review` | Always. | An `asked` note is written and the task awaits review. An unassigned task is assigned to the person who raised it. |
@@ -80,17 +80,17 @@ Any other ending is handled as `review`, with one of these notes:
 
 | Ending | Note |
 | --- | --- |
-| No declaration | `The run finished without saying where the task should go next.` |
+| No handover | `The run finished without saying where the task should go next.` |
 | No outcome reported | `The run ended without reporting an outcome.` |
 | A key that is not a station on the line | `The run asked for station "<key>". This line has no such station.` |
 | The task's current station | `The run asked for station "<key>". The task is already there.` |
 | A station with no harness | `The run asked for station "<key>". Nothing runs there to take up the task.` |
 | A station the current one does not pass to | `The run asked for station "<key>". Work does not pass there from the task's station.` |
-| `done` where the line does not end | `The run said the work is done. The task is not at the end of its line.` |
+| `done` where the line does not end | `The run handed over the task as done. The task is not at the end of its line.` |
 | The run failed | `The run failed: <message>`, with a failure. See [Failure codes](#failure-codes). |
 | The runner was lost, or the host stopped the sandbox at its run timeout, on the last attempt | `The run did not finish after <n> attempts. Spotlight does not try it again.`, with the failure `runner-lost` or `timed-out`. |
 | The run was stopped | `A person stopped the run. The task is back with you.` |
-| A hook on `handover.giving` denied it | The hook's reason, then `The run said: <note>`. See [`spotlight_hook`](/docs/reference/terraform/hook). |
+| A hook on `handover.giving` denied it | The hook's reason, then `Note from the run: <note>`. See [`spotlight_hook`](/docs/reference/terraform/hook). |
 
 If a reaction became a deferred move while the run worked on the task, every
 ending other than a station key moves the task to the station of the latest
@@ -103,7 +103,7 @@ while the task has a current run: the run ends as for a person's move, and the `
 | Mover | How | Placed | Effect |
 | --- | --- | --- | --- |
 | Person | Dragging on the board, the selection bar's "Move to", or the task's "Station" property. Only from the backlog to a work station, from a work station to the backlog, from anywhere to the completed station, or within one station. Any other move is denied with `422` and `Task cannot move from <from> to <to>. <reason>`, where `<reason>` is `A completed task stays completed.` or `Only runs move a task between work stations.` | Below the task it is dropped under (`afterTaskId`), or at the top. | A `passed` note `Moved to <Station>.` is written. |
-| Reaction | A happening that a line's reaction names, when the task has no current run. See [`spotlight_line`](/docs/reference/terraform/line). | At the top of the station. | A `passed` note in the world voice, carrying what the happening said. |
+| Reaction | A happening that a line's reaction names, when the task has no current run. See [`spotlight_line`](/docs/reference/terraform/line). | At the top of the station. | A `passed` note in the world voice, carrying the happening's message, or else its summary. |
 | Deferred move | The run that worked on the task when a reaction became a deferred move ends other than by passing the task on. | At the top of the station. | A `passed` note in the station voice, `Moved to <Station> when the run ended. An event arrived while the run worked.`, followed by the run's note if it gave one; for a failure or a lost runner, that ending's note with its failure; for a missing outcome, that ending's note; for a console stop, `A person stopped the run.` |
 
 A move to another station:
@@ -125,11 +125,11 @@ When a happening finds a task, the line decides one of these outcomes:
 | --- | --- | --- |
 | nothing | The task is at the completed station, or none of the other outcomes applies. | None. |
 | moves | A reaction for the happening, from this station or from any, leads to another station, and the task has no current run. | The task moves there. |
-| deferred move | As for moves, but the task has a current run, queued, claimed, waiting or suspended, and the station is not the completed station. | A `said` note `Heard while a run worked on the task. If the run does not pass the task on, the task moves to <Station> when the run ends.`, followed by what the happening said. The run is told, and keeps the task. A later `passed` note, or a later `asked` note other than an approval, drops deferred moves; a later `stays` outcome does not. |
+| deferred move | As for moves, but the task has a current run, queued, claimed, waiting or suspended, and the station is not the completed station. | A `message` note `Heard while a run worked on the task. If the run does not pass the task on, the task moves to <Station> when the run ends.`, followed by the happening's message, or else its summary. The run gets the note, and keeps the task. A later `passed` note, or a later `asked` note other than an approval, drops deferred moves; a later `stays` outcome does not. |
 | interrupts | As for moves, but the task has a current run and the station is the completed station, and the task does not await a person's answer to a question (a pending approval does not count). | The run ends as for a person's move, and its later handover is ignored. The task is put to its assignee, or else the person who raised it, with an `asked` note in the world voice: `<What happened> while <Station> was working. Close the task, or reply to carry on.`, where `<What happened>` is the happening's text without its final full stop, and `its station` takes the place of `<Station>` when the station is not known. |
-| notes while waiting | As for interrupts, but the task already awaits a person's answer to a question. | A `said` note in the world voice, `<What happened> while <Station> was waiting for an answer. Close the task, or reply to carry on.`, added to the open conversation, with `its station` when the station is not known. The run keeps the task, and earlier deferred moves are cancelled. |
-| answers | No reaction leads to another station, the task awaits review, and the happening carries a person's words. | An `answered` note; the run that asked carries on, or else a run starts at the same station. |
-| stays | A reaction applies and leads to the task's current station, and the happening does not answer. | A `said` note. |
+| notes while waiting | As for interrupts, but the task already awaits a person's answer to a question. | A `message` note in the world voice, `<What happened> while <Station> was waiting for an answer. Close the task, or reply to carry on.`, added to the open conversation, with `its station` when the station is not known. The run keeps the task, and earlier deferred moves are cancelled. |
+| answers | No reaction leads to another station, the task awaits review, and the happening carries a message (`answers: true`). | An `answered` note; the run that asked carries on, or else a run starts at the same station. |
+| stays | A reaction applies and leads to the task's current station, and the happening does not answer. | A `message` note. |
 
 ## Runs
 
@@ -876,7 +876,7 @@ known:
 | Kind | The kind, with what it means on hover. |
 | Applies to | "The whole team", "This line" or "This station". |
 | Files | `<paths> in <repository>`, or the repository alone for a memory about the whole repository. Only for a memory kept for a repository. |
-| Source | The notes and steps it was drawn from: each note with a person's name, "A teammate" or "From another tool", and each step with the run's harness or "The agent". |
+| Source | The notes and steps it was drawn from: each note with a person's name, "A teammate" or "Another tool", and each step with the run's harness or "The agent". |
 
 An undecided card has a copy icon, an edit icon, "Reject" and "Approve". The
 edit icon changes the memory in place, at most 1,000 characters. While it is
