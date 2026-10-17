@@ -100,14 +100,14 @@ A replay read carries:
 | `repeats` | number | How many times it replays each run of its set. |
 | `totals.successRate` | number or null | Its [success](/docs/reference/app/replays#success), 0 to 1: per task, the share of its scored copies that succeeded, averaged over the tasks scored. |
 | `totals.interval` | object or null | `{ rate, low, high }`: the success rate and its 95% interval, bootstrapped over the tasks. Null while none was scored. |
-| `totals.tasks`, `totals.tasksScored` | number | How many tasks it replays, and how many have a scored copy. `entries`, `settled`, `scored` and `unscored` count copies. |
+| `totals.tasks`, `totals.tasksScored` | number | How many tasks it replays, and how many have a scored copy. `entries`, `ended`, `scored` and `unscored` count copies. |
 | `againstBaseline` | object or null | Its [gain](#gain) over the replay in `comparedWith`, with whether it is within noise. Null where `comparedWith` is, and while no task was scored on both sides. |
 | `comparedWith` | object or null | `{ replayId, successRate, interval }`: the replay its gain, `comparison` rows and deltas are against, with its success. Null for the baseline itself, or with none. See [Compared with](#compared-with). |
 | `entries[].repeat` | number | Which copy of its original run an entry is, from 1. |
 | `comparison` | array | On a single replay's read: one row per task against the replay in `comparedWith`, regressions first. |
 | `comparison[].candidate`, `comparison[].baseline` | array | Each copy of the task this replay, and the replay in `comparedWith`, replayed. `baseline` is empty without one. |
 | `comparison[].candidateSuccess`, `comparison[].baselineSuccess` | number or null | The share of each side's scored copies that succeeded. |
-| `comparison[].costDelta`, `msDelta`, `stepsDelta` | number or null | This replay's measure less that of the replay in `comparedWith`, each averaged over its copies, once every copy of both has settled. |
+| `comparison[].costDelta`, `msDelta`, `stepsDelta` | number or null | This replay's measure less that of the replay in `comparedWith`, each averaged over its copies, once every copy of both has ended. |
 | `comparison[].regressed` | boolean | See [Regressions](/docs/reference/app/replays#regressions). |
 | `probe` | boolean | Whether it [checks the set](#checking-the-set). |
 | `entries[].secondJudge` | object or null | A check's second judging of the entry's change, in the shape of its first. Null when it was not judged again. |

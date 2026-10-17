@@ -59,7 +59,7 @@ trail, and a note's words never change.
 | `said` | A person says something to a running run, a happening arrives that leaves the task where it is, or a different failure arrives while the task awaits review. |
 
 Each note has a voice, `station`, `person` or `world` (a happening), and a
-form: `words`, `setup`, `settled`, `approval`, `failure` or `connection`.
+form: `words`, `setup`, `resolved`, `approval`, `failure` or `connection`.
 
 A conversation runs from an `asked` note to the next `passed` note. It is open
 until that `passed` note is written.
@@ -755,7 +755,7 @@ on; if the task has no current run and the station has a harness, a run starts t
 taking up the harness session where the last run left it.
 
 A resolved item shows no answer box. In its place it reads
-`The task is settled here. Nothing is left to answer.` while the task is at
+`The conversation is closed here. Nothing is left to answer.` while the task is at
 the item's station, or `The task moved on to <Station>. Nothing is left to answer.`
 
 ### Notices
@@ -773,8 +773,8 @@ Nothing waits on it, and it cannot be answered.
 
 | Flag | Set when |
 | --- | --- |
-| unread | Its person has not opened it, and it is not settled. |
-| resolved | Its person opened it, which settles it. A settled notice shows under "Resolved" for 30 days after it was settled, then leaves the inbox. |
+| unread | Its person has not opened it, and it is not resolved. |
+| resolved | Its person opened it, which resolves it. A resolved notice shows under "Resolved" for 30 days after it was resolved, then leaves the inbox. |
 
 Its row shows a lightbulb, the headline, an unread dot, the day it was raised,
 and the first point. Its page, `/w/<slug>/inbox/notices/<noticeId>`, shows when
@@ -783,8 +783,8 @@ opens the link.
 
 A notice reaches only its person, and only while they are a member of its
 team's workspace. To anyone else, and once it has left the inbox, its page
-reads `No longer waiting for you.` Settling is
-`POST /api/workspaces/{slug}/inbox/notices/{noticeId}/settle`, answering
+reads `No longer waiting for you.` Resolving is
+`POST /api/workspaces/{slug}/inbox/notices/{noticeId}/resolve`, answering
 `204`, or `404` for a notice not put to the caller. Disbanding
 a team forgets its notices.
 
@@ -815,7 +815,7 @@ judge marked it reads `Claim <n>`. The judge's score is not shown on it.
 
 - Any person on the team, and any owner or admin of the workspace, can grade
   a run. Anyone else is answered `404`, and the card reads
-  `Only team members can grade this run`. One grade settles the item for
+  `Only team members can grade this run`. One grade resolves the item for
   everyone.
 - A person's later grade of the same run replaces their earlier one.
 - A run is graded on its judge's scale, else on the scale of its station's
@@ -829,7 +829,7 @@ An item is raised for a run when it proposes at least one
 [memory](/docs/reference/glossary#memory): drafted after the run at a station
 with `memories: true`, or proposed by the agent with
 [`spotlight remember`](/docs/reference/cli/agent-commands#spotlight-remember).
-The item reads `A run proposed memories for the team.` It settles, and reads
+The item reads `A run proposed memories for the team.` It is resolved, and reads
 `Proposed memories decided.`, once no memory of the run is left to decide:
 every one is approved or rejected, or a later run's drafting has dropped the
 undecided ones.
@@ -880,11 +880,11 @@ the copy icon, with "Reject" and "Approve" off.
 ### Station alerts
 
 Spotlight checks a work station's [alerts](/docs/reference/terraform/line#alert-fields)
-when one of its task runs ends or settles, when the pull request of a task it
-worked closes, and when its line is changed or retired. A run counts in a measure once it has settled for that
-measure:
+when one of its task runs ends or is measured, when the pull request of a task it
+worked closes, and when its line is changed or retired. A run counts in a measure once what that measure needs is
+known:
 
-| Measure | A run has settled when |
+| Measure | A run is measured when |
 | --- | --- |
 | `sent_back_rate`, `accepted_rate` | Its [next act](#station-outcomes) is known. |
 | `checks_failed_rate` | Its check passed or failed. |
@@ -893,10 +893,10 @@ measure:
 | `cost_per_run` | Its cost was worked out. |
 
 Only runs that ran count, ordered by when they ended. An alert reads its
-measure over the latest `over` settled runs and, for `risesBy` and `fallsBy`,
-over the `over` settled runs before those. Settled runs are looked for among the
+measure over the latest `over` measured runs and, for `risesBy` and `fallsBy`,
+over the `over` measured runs before those. Measured runs are looked for among the
 station's latest runs, 4 times as many as its alerts need at most. Until enough
-runs have settled, or while the measure cannot be worked out, as for cost with
+runs are measured, or while the measure cannot be worked out, as for cost with
 no priced runs, the alert is not checked.
 
 | Threshold | Goes off when |
@@ -908,9 +908,9 @@ no priced runs, the alert is not checked.
 
 An alert goes off once per crossing. While it is open, later checks do not
 raise it again. It recovers once it has stayed within its threshold for `over`
-further settled runs: each check whose newest settled run is a new one, and
+further measured runs: each check whose newest measured run is a new one, and
 finds the alert no longer crossed, counts one, and a check that finds it
-crossed again starts the count over. For `over` settled runs after it
+crossed again starts the count over. For `over` measured runs after it
 recovers, a crossing reopens the same alert, and its inbox item, instead of
 raising a new one. After that, a crossing raises a new alert.
 
@@ -923,7 +923,7 @@ each of its stations, those it had and those it has. Deleting a task forgets
 the alerts raised on it.
 
 When an alert goes off, the task of the run that set off the check gets an
-inbox item: the run that ended or settled, or, when a pull request closed, the
+inbox item: the run that ended or was measured, or, when a pull request closed, the
 task's latest run at the station. The item reads
 `Station crossed an alert threshold.` and, once the alert recovers,
 `Station back within its alert threshold.` A reopened alert opens its item again. It reaches the task's assignee, or
@@ -939,7 +939,7 @@ The item shows:
 | Heading | `Alert raised at <station>`, with the day it went off. |
 | Reading | What the runs did, then the threshold, with cost in the currency of the station's runs. For a rate, `<value> of the last <over> runs <did>.`, where `<did>` is "were sent back", "were accepted", "were merged", "failed" or "failed their checks". For cost, `The last <over> runs cost <value> each on average.` For `risesBy` and `fallsBy`, the comparison follows before the full stop: `, up from <value> in the <over> before`, or `down from` or `the same as`. Then `The alert is set at a <change>-point rise.` (or `fall`), `a rise of <amount>` for cost, or `The alert is set at above <amount>.` (or `below`). With `over` set to 1, `the last run` and `the one before`, with "was sent back", "was accepted", "was merged", "failed" or "failed its checks", and `The last run cost <value>` for cost. |
 | Recovery | `The station has been back under the threshold since <day>.`, or `over` in place of `under` for `fallsBy` and `below`, once the alert has recovered. |
-| Chart | The measure over the `over` settled runs up to each run, from 2 × `over` runs before the run that crossed it to `over` runs after. Its legend names "Alert level" with the amount, for `above` and `below`; "Before" with the measure over the runs before, for `risesBy` and `fallsBy`; and "The run it went off at". It is drawn from the station's latest 500 runs; without that run among them, it reads `There is no chart to show. The runs behind this alert are deleted.` |
+| Chart | The measure over the `over` measured runs up to each run, from 2 × `over` runs before the run that crossed it to `over` runs after. Its legend names "Alert level" with the amount, for `above` and `below`; "Before" with the measure over the runs before, for `risesBy` and `fallsBy`; and "The run it went off at". It is drawn from the station's latest 500 runs; without that run among them, it reads `There is no chart to show. The runs behind this alert are deleted.` |
 | Links | "Open the station", which opens its "Overview" tab; "Open in Insights", which opens the [Stations tab](/docs/reference/app/insights#runs-at-each-station) at the station's row, `#station-<stationId>`, over the shortest period that covers the day it went off; and "Improve", while the station is on one of the team's lines, which opens the Agent page with the station attached to a new chat. |
 
 ### Requests to connect
