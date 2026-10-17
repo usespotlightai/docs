@@ -40,7 +40,11 @@ signing, with `provision.secret` as the secret.
     "runner": {
       "id": "<runner id>",
       "token": "<one-run token>",
-      "egress": { "url": "<egress URL>", "credential": "<run proxy credential>" }
+      "egress": {
+        "url": "<egress URL>",
+        "credential": "<run proxy credential>",
+        "traffic": "all"
+      }
     },
     "spotlightUrl": "https://app.usespotlight.ai",
     "claimBy": "<ISO 8601 time>"
@@ -61,6 +65,7 @@ signing, with `provision.secret` as the secret.
 | `runner.egress` | The egress the runner sends its traffic through, or null when the pool names no egress. See [Egress](#egress). |
 | `runner.egress.url` | The egress's URL: the `url` of the [`spotlight_egress`](/docs/reference/terraform/egress) the pool names, or the platform egress's URL. |
 | `runner.egress.credential` | The run proxy credential: made for this runner alone. |
+| `runner.egress.traffic` | `all` or `bound`: the pool's `provision.egressTraffic`. |
 | `spotlightUrl` | The address the runner connects to. |
 | `claimBy` | The runner must claim the work by this time, 5 minutes after the work was reserved for it. |
 
@@ -80,8 +85,8 @@ When the pool names an egress in `provision.egress`:
 - Spotlight also offers the pool runs that use secrets or Spotlight's API,
   such as the runs of a setup chat.
 - Each call, for a run or a check, carries `runner.egress`. The runner reads
-  `url` from `SPOTLIGHT_EGRESS_URL` and `credential` from
-  `SPOTLIGHT_EGRESS_CREDENTIAL`. See
+  `url` from `SPOTLIGHT_EGRESS_URL`, `credential` from
+  `SPOTLIGHT_EGRESS_CREDENTIAL` and `traffic` from `SPOTLIGHT_EGRESS_TRAFFIC`. See
   [The spotlight command](/docs/reference/cli/spotlight-command#spotlight-runner).
 
 When it names none, `runner.egress` is null, and a run that uses secrets or

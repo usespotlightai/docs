@@ -174,7 +174,7 @@ Any other argument fails with `usage: spotlight runner [harnesses <json>]`.
 | `SPOTLIGHT_GIT_AUTHOR_EMAIL` | `noreply@usespotlight.ai` | `user.email` in each checkout. |
 | `SPOTLIGHT_EGRESS_URL` | none | With `SPOTLIGHT_TOKEN` only. The URL of the shared egress the runner sends its traffic through: `runner.egress.url` of the [provision call](/docs/reference/events/provision-call#egress). |
 | `SPOTLIGHT_EGRESS_CREDENTIAL` | none | With `SPOTLIGHT_EGRESS_URL`. The run proxy credential: `runner.egress.credential` of the provision call. |
-| `SPOTLIGHT_EGRESS_DIRECT` | `false` | With `SPOTLIGHT_EGRESS_URL`. `true` sends traffic to hosts that are not bound directly, not through egress. See [The runner's way out](/docs/reference/hosts/egress#the-runners-way-out). |
+| `SPOTLIGHT_EGRESS_TRAFFIC` | `all` | With `SPOTLIGHT_EGRESS_URL`. `bound` sends traffic to hosts that are not bound directly, not through egress. The provisioner passes `runner.egress.traffic` here. See [The runner's way out](/docs/reference/hosts/egress#the-runners-way-out). |
 
 Exactly one of `SPOTLIGHT_HANDED` or `SPOTLIGHT_TOKEN` must be set. The runner
 reads the `SPOTLIGHT_EGRESS_` variables only with `SPOTLIGHT_TOKEN`.
@@ -190,7 +190,7 @@ reads the `SPOTLIGHT_EGRESS_` variables only with `SPOTLIGHT_TOKEN`.
 | `could not trust the egress authority, so TLS through egress may fail` | A warning. The egress authority could not be added to the image's bundles. |
 | `nothing was reserved for it in time` | With `SPOTLIGHT_TOKEN`, no work arrived within 5 minutes. The runner exits `0`. |
 | `SPOTLIGHT_EGRESS_URL and SPOTLIGHT_EGRESS_CREDENTIAL go together; give both or neither` | Only one of the two is set. |
-| `SPOTLIGHT_EGRESS_DIRECT: "<value>" is not true or false` | A value that is not a boolean. |
+| `SPOTLIGHT_EGRESS_TRAFFIC: "<value>" is not all or bound` | A value that is not `all` or `bound`. |
 | `SPOTLIGHT_EGRESS_URL "<value>" is not an address such as https://egress.example.com` | Not an `http` or `https` URL with a host. |
 | `could not open the way out, so the agent goes out without its run's secrets` | A warning. The way out did not open, and the agent gets no proxy. See [The runner's way out](/docs/reference/hosts/egress#the-runners-way-out). |
 | `could not trust the way out's authority, so TLS through it may fail` | A warning. The way out's authority could not be added to the image's bundles. |

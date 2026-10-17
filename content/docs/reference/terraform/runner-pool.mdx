@@ -73,6 +73,7 @@ removing `provision` replaces the pool.
 | `provision.secret` | string | none | Write-only. `whsec_` followed by 24 to 64 base64-encoded bytes. Required with `provision`: on create and whenever `secretVersion` changes. |
 | `provision.secretVersion` | integer | none | At least `0`. A change, with a new `secret`, rotates the secret. |
 | `provision.egress` | string or null | `null` | The egress the pool's runners send their traffic through: `spotlight` for the platform egress, or the `id` of a [`spotlight_egress`](/docs/reference/terraform/egress) in the workspace. A change updates the pool in place. See [Egress](#egress). |
+| `provision.egressTraffic` | `all` or `bound` | `all` | Which traffic of a run goes through the egress. `all`: every connection, so egress records every host and its allow-list applies to all of them. `bound`: only the traffic to hosts that a secret of the run is bound to; other traffic goes directly. Only with `provision.egress`. In Terraform, `provision.egress_traffic`. |
 | `mode` | string | read-only | `pull` or `push`. |
 
 In Terraform, `token` and `provision.secret` are write-only and need Terraform

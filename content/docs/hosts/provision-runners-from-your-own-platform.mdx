@@ -119,7 +119,7 @@ The body is JSON of type `work.provision`. Read these fields from `data`:
 | `spotlightUrl` | Pass it as `SPOTLIGHT_URL`. |
 | `image` | The image to start. When it is `null`, start the image hosts use by default, `ghcr.io/usespotlightai/spotlight-runner:<release>`, where `<release>` is a Spotlight release tag. |
 | `claimBy` | The container must have claimed the work by this time. |
-| `runner.egress` | When it is not `null`, pass `url` as `SPOTLIGHT_EGRESS_URL` and `credential` as `SPOTLIGHT_EGRESS_CREDENTIAL`. |
+| `runner.egress` | When it is not `null`, pass `url` as `SPOTLIGHT_EGRESS_URL`, `credential` as `SPOTLIGHT_EGRESS_CREDENTIAL` and `traffic` as `SPOTLIGHT_EGRESS_TRAFFIC`. |
 
 `data.kind` is `run` or `check`; start the same container for both.
 [Provision call](/docs/reference/events/provision-call) lists
@@ -146,6 +146,7 @@ docker run --rm --name "spotlight-<runner id>" \
   -e SPOTLIGHT_TOKEN="<runner token>" \
   -e SPOTLIGHT_EGRESS_URL="<runner.egress.url>" \
   -e SPOTLIGHT_EGRESS_CREDENTIAL="<runner.egress.credential>" \
+  -e SPOTLIGHT_EGRESS_TRAFFIC="<runner.egress.traffic>" \
   -e ANTHROPIC_API_KEY="<your key>" \
   <image>
 ```

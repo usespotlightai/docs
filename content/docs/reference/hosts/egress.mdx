@@ -337,10 +337,11 @@ in their environment:
 | A plain-HTTP request | Sends it through a `CONNECT` tunnel to the host's port. Nothing is added to it. |
 | Anything else | `400` `The way out is a proxy. Please ask it for an absolute URL, or CONNECT to a host.` |
 
-With `SPOTLIGHT_EGRESS_DIRECT=true`, the way out connects to other hosts
+With `SPOTLIGHT_EGRESS_TRAFFIC=bound`, the way out connects to other hosts
 directly, not through egress: only requests to bound hosts go to egress. The
-runner's own traffic still goes through egress. The value is read as a
-boolean, and the default is `false`.
+runner's own traffic still goes through egress. The default is `all`. The
+value comes from the pool's `provision.egressTraffic`, through
+`runner.egress.traffic` in the provision call.
 
 | Way out authority | Value |
 | --- | --- |
