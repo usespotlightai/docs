@@ -1,11 +1,11 @@
 ---
 type: how-to
 icon: SquarePen
-title: Give stations a skill
-description: Give the agents at chosen stations a skill's instructions and files in every run.
+title: Enable skills at a station
+description: Enable a skill at chosen stations, so that their agents get its instructions and files in every run.
 ---
 
-A skill is a folder with a `SKILL.md`, defined for a team and given to
+A skill is a folder with a `SKILL.md`, defined for a team and enabled at
 stations. You need the team's configuration in Terraform. If your factory
 isn't in Terraform yet, [make the factory
 yours](/docs/getting-started/make-the-factory-yours) first.
@@ -28,7 +28,7 @@ description: Look up dashboards
 Search before you guess.
 ```
 
-The `name` is the key stations give the skill by: lowercase words joined by
+The `name` is the key that stations use to enable the skill: lowercase words joined by
 dashes, not starting with `spotlight-`.
 
 </Step>
@@ -89,7 +89,7 @@ resource "spotlight_skill" "core_grafana" {
 
 The `key` must be the `name` in `SKILL.md`.
 
-## Give it to stations
+## Enable it at stations
 
 Add the skill's key to the `skills` of each station whose agent should have it,
 in the line's `spotlight_line` resource:
@@ -107,9 +107,9 @@ station {
 Run `terraform apply`.
 
 The skill appears in **Settings**, on the team's **Skills** page, and on the
-Station page of each station that gives it.
+Station page of each station that enables it.
 
-## Give a catalog skill
+## Enable a catalog skill
 
 Spotlight also offers skills of its own in a catalog. Name one in a station's
 `skills` by its name and version, as `catalog.<name>@<version>`:
@@ -118,8 +118,8 @@ Spotlight also offers skills of its own in a catalog. Name one in a station's
 skills = ["catalog.research@1.0.0"]
 ```
 
-[What a station gives](/docs/reference/terraform/skill#what-a-station-gives) lists the
-catalog skills. Which of them a station may give depends on the workspace's
+[What a station enables](/docs/reference/terraform/skill#what-a-station-enables) lists the
+catalog skills. Which of them a station may enable depends on the workspace's
 plan. If the plan does not include the skill, Terraform rejects the station's
 `skills` and says so.
 

@@ -37,7 +37,7 @@ menu, then **Runners**, and look for the first of these that applies:
 
 | Reason | What to change |
 | --- | --- |
-| `The host's SPOTLIGHT_RUNNER_IMAGE doesn't admit this image.` | Add the image, or a prefix that covers it, to `SPOTLIGHT_RUNNER_IMAGE` on the host. See [Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image#let-the-hosts-serve-it). |
+| `The host's SPOTLIGHT_RUNNER_IMAGE doesn't allow this image.` | Add the image, or a prefix that covers it, to `SPOTLIGHT_RUNNER_IMAGE` on the host. See [Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image#let-the-hosts-serve-it). |
 | `Image can't be pulled. Error: …` | Check the image reference and the host's registry access. See [Pull runner images from a private registry](/docs/hosts/pull-images-from-a-private-registry). |
 | `Image can't be inspected. Error: …` | Check that the image is built on the Spotlight runner image. See [Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image). |
 | `Runner is on release <release>. Minimum version required: <release>` | Rebuild the image on a newer runner release. |
@@ -76,14 +76,14 @@ same station, as in [Answer the inbox](/docs/inbox/answer-the-inbox).
 
 ## The run refused to start
 
-A station's run fails before it starts when the station asks for something
+A station's run fails before it starts when the station requires something
 the team or workspace does not have. The message after "The run failed:" says
 which:
 
 - `harness_profile_unknown: Harness profile <profile> is not in this team. Station: <Station>`:
   create that harness profile for the team, or remove it from the station. See
   [Limit what agents may do](/docs/agents/limit-what-agents-may-do).
-- `not_entitled: …` or `entitlement_lapsed: …`: the station gives a catalog
+- `not_entitled: …` or `entitlement_lapsed: …`: the station enables a catalog
   item that the workspace's plan does not include, or that its plan included
   before the plan lapsed. Remove the item from the station.
 - `catalog_item_unknown: …` or `catalog_item_wrong_kind: …`: the station names
@@ -154,13 +154,13 @@ again.
 
 Open the Run page. Below the run's last step, select the **Remembered** icon
 in the toolbar. The toolbar shows once the run stops working, and the icon
-only when the run was given or proposed memories. The pane lists:
+only when the run was supplied or proposed memories. The pane lists:
 
-- **Given to the agent**: the memories the run was briefed with before it
+- **Supplied to the agent**: the memories the run was briefed with before it
   started, and the ones the agent looked up with `spotlight recall` or read
   from `.spotlight/memory`. Each `spotlight recall` is also a
   `spotlight.recall` span in the task's trace, with the words or handle it
-  asked for and how many it found.
+  searched for and how many it found.
 - **Proposed by this run**: what the run put to the team to keep, and the
   status of each.
 
@@ -168,10 +168,10 @@ Then read it against what went wrong:
 
 | What you see | Cause | What to change |
 | --- | --- | --- |
-| The memory it needed is not in the pane, and not on the Memory page | Nobody kept it. | Write it on the team's Memory page, or turn on `memories` at the station. |
+| The memory it needed is not in the pane, and not on the Memory page | Nobody approved it. | Write it on the team's Memory page, or turn on `memories` at the station. |
 | It is on the Memory page but not in the pane, and it applies to this run's line, station, repository and files | The briefing contains at most eight memories, or 3,000 characters, and memories that are more specific, closer to the task's words, or warnings filled it. The agent did not look it up in `.spotlight/memory`. | Retire memories that no longer help, narrow where others apply, or say the memory in words the task will use. |
-| It is on the Memory page but not in the pane, and it does not apply to this run | It doesn't reach this run's line, station, repository or files. | Correct it to apply more widely. |
-| It is under **Given to the agent** and the agent acted against it | The agent didn't follow it. | Say it more plainly in a correction, or in the station's prompt. |
+| It is on the Memory page but not in the pane, and it does not apply to this run | Its scope does not include this run's line, station, repository or files. | Correct it to apply more widely. |
+| It is under **Supplied to the agent** and the agent acted against it | The agent didn't follow it. | Say it more plainly in a correction, or in the station's prompt. |
 | A listed memory is itself wrong | The memory is wrong. | Select **This was wrong** beside it, say why it no longer applies, and select **Retire**. Later runs aren't told it. |
 
 Each memory's handle links to it on the team's Memory page, which also shows

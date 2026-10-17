@@ -206,8 +206,8 @@ reviews {
 | `diffs` | boolean | `false` | Whether a change stack is drafted from each run's diff. See [Change stacks and decisions](/docs/reference/app/change-stacks-and-decisions). |
 | `decisions` | boolean | `false` | Whether decisions are drafted from each run. See [decisions](/docs/reference/app/change-stacks-and-decisions#decisions). |
 | `memories` | boolean | `false` | Whether proposed team memories are drafted from each completed run, for the team to approve in the inbox. They come from what the agent said, thought and planned, never tool output, and from what people said on the task since the last draft. See [memory](/docs/reference/glossary#memory). |
-| `tools` | array of strings | `[]` | The tools given to the agent. See [tool names](#tool-names). Each tool once. |
-| `skills` | array of strings | `[]` | The skills given to the agent: a team [skill](/docs/reference/terraform/skill) key, or a catalog skill as `catalog.<name>@<x.y.z>`. Each skill once. A key starting `spotlight-` is rejected. |
+| `tools` | array of strings | `[]` | The tools the station enables for its agent. See [tool names](#tool-names). Each tool once. |
+| `skills` | array of strings | `[]` | The skills the station enables for its agent: a team [skill](/docs/reference/terraform/skill) key, or a catalog skill as `catalog.<name>@<x.y.z>`. Each skill once. A key starting `spotlight-` is rejected. |
 | `passesTo` | array of strings | `[]` | The keys of the stations a run here may hand a task on to. |
 | `ends` | boolean | `false` | Whether a run here may finish the task by handing over with `done`. From any other station, `done` goes to a person instead. |
 | `judge` | object | none | Scores the station's runs against a rubric, a list of claims, or both. Only on a `work` station. See [judge fields](#judge-fields). A read leaves it out when none is set. |
@@ -291,7 +291,7 @@ change to the rubric, a claim or the pass share starts a new rubric version.
 | `Judge sample must be a share from 0 to 1.` | `sample` is outside 0 to 1. |
 | `Judge trust must be a share from 0 to 1.` | `trust` is outside 0 to 1. |
 | `Judge rubric names its scale as "scores: yes-no" or "scores: 1-5" on its first line.` | The judge has no `claims`, and the `scores:` line names another scale, or the rubric opens a front matter block with `---` and never closes it. |
-| `Judge rubric or claims must be given.` | Neither `rubric` nor `claims` is set. |
+| `Judge rubric or claims must be set.` | Neither `rubric` nor `claims` is set. |
 | `Judge claims must list 1 to 20 claims.` | `claims` is empty or has more than 20. |
 | `Judge claims each must not be empty.` | A claim is empty or only whitespace. |
 | `Judge claims each must be at most 500 characters.` | A claim is longer. |
@@ -379,8 +379,8 @@ is chosen and the task it opens.
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `start` | string | `mentioned` | `mentioned`: take a pull request when the `mention` handle appears in a comment or review on it. `opened`: also take every pull request as it opens. |
-| `mention` | string | `@spotlight` | The handle that asks for a review. Matches `^@[A-Za-z0-9][A-Za-z0-9_-]*(\[bot\])?$`. Matched as a whole word, without regard to case. |
-| `label` | string | `spotlight` | The pull request label that asks for a review, whatever `start` is. 1 to 50 characters. Matched without regard to case. |
+| `mention` | string | `@spotlight` | The handle that requests a review. Matches `^@[A-Za-z0-9][A-Za-z0-9_-]*(\[bot\])?$`. Matched as a whole word, without regard to case. |
+| `label` | string | `spotlight` | The pull request label that requests a review, whatever `start` is. 1 to 50 characters. Matched without regard to case. |
 | `skip.spotlight` | boolean | `true` | Skip pull requests Spotlight opened: a head branch under `spotlight/`, or a pull request a task opened. |
 | `skip.drafts` | boolean | `true` | Skip draft pull requests when they open. A mention or a label on a draft is still taken. |
 | `skip.authors` | array of strings | `[]` | GitHub logins whose pull requests are skipped, as in `dependabot[bot]`. Compared, stored and sorted in lower case, each once. |
@@ -444,14 +444,14 @@ apply. A station without `runners` uses the line's. With neither, any runner of
 the workspace qualifies.
 
 A label is one a [runner pool](/docs/reference/terraform/runner-pool) or [runner trust](/docs/reference/terraform/runner-trust)
-gives the runners it admits. A pool's `key` is not a label. Each entry,
+assigns to the runners it accepts. A pool's `key` is not a label. Each entry,
 trimmed of surrounding whitespace, is shaped as a label is, lowercase words joined by dashes of at most 64
 characters, and named once; any other entry is rejected.
 
 | Message | Cause |
 | --- | --- |
 | `Runners must each name a pool or trust label in lowercase words joined by dashes, at most 64 characters, such as vpc-internal.` | An entry is not shaped as a label. |
-| `Runners must name <label> only once.` | An entry is given twice. |
+| `Runners must name <label> only once.` | An entry is named twice. |
 
 Each is returned with `422` at the path `runners`, or
 `stations[<n>].runners` for a station.

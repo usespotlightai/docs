@@ -13,7 +13,7 @@ GitHub App can see. You need:
 - A host serving the workspace. If you don't have one,
   [run a host](/docs/hosts/run-a-host).
 
-## Ask for a review by mention
+## Request a review by mention
 
 The built-in Review line already reviews a pull request when someone mentions
 `@spotlight` in a comment or review on it. Write a comment on the pull request:
@@ -26,13 +26,13 @@ A task for the pull request opens on the Review line, titled with the pull
 request's title. When its run finishes, the review appears on the pull request,
 with comments on the lines it concerns.
 
-## Ask for a review by label
+## Request a review by label
 
 The built-in Review line also reviews a pull request when someone adds the
 `spotlight` label to it. Add the label from the pull request's **Labels** menu.
 If the repository has no `spotlight` label, create one on the repository's
 **Labels** page first. A label added by a bot, such as a labelling workflow,
-asks for a review too.
+requests a review too.
 
 A task for the pull request opens on the Review line, as it does for a
 mention.
@@ -60,7 +60,7 @@ resource "spotlight_line" "core_review" {
 }
 ```
 
-A mention still asks for a review with `start = "opened"`. Drafts are skipped
+A mention still requests a review with `start = "opened"`. Drafts are skipped
 until they are marked ready for review.
 
 To have it respond to a different handle, set `mention`:
@@ -79,7 +79,7 @@ reviews {
 }
 ```
 
-A label asks for a review whatever `start` is set to.
+A label requests a review whatever `start` is set to.
 
 To skip pull requests by certain authors, such as bots, list their GitHub
 logins in lower case:
@@ -97,7 +97,7 @@ reviews {
 To review pull requests Spotlight opened itself, set
 `skip { spotlight = false }`. To review drafts as they open with
 `start = "opened"`, set `skip { drafts = false }`. A mention or a label on a
-draft asks for a review either way.
+draft requests a review either way.
 
 Run `terraform apply`.
 
@@ -129,5 +129,5 @@ Run `terraform apply`.
 
 - [Reviews fields](/docs/reference/terraform/line#reviews-fields), with their defaults.
 - [GitHub events](/docs/reference/events/github-events): the pull request events
-  Spotlight hears.
+  Spotlight receives.
 - [Reviewing an agent's changes](/docs/runs/reviewing-an-agents-changes)

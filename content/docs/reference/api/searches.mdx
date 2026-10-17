@@ -84,7 +84,7 @@ Starting takes a snapshot of the station's live config, draws the
 [held-out split](/docs/reference/glossary#held-out-task), and starts a replay
 of the live config on every run of the set: `seedReplayId`. That replay is the
 set's new baseline, with a ceiling from the search's budget. `objective` is
-the aim it keeps, as asked or as the set's health suggests. `warnings` are as
+the aim it keeps, as requested or as the set's health suggests. `warnings` are as
 for an [estimate](#estimate-a-search); the search starts all the same.
 
 ## Estimate a search
@@ -100,7 +100,7 @@ The body is `setId`, `budget` and `objective`, as above. The answer:
 | `perReplayAllotments` | object | The ceilings each replay would get: `seed`, `searchReplay`, `heldOutReplay`, and `agentRun`, what each agent run is expected to spend. |
 | `estimatedDuration` | number or null | Roughly how long it takes at its concurrency, in milliseconds, from the average time of the set's runs. Null when none was timed. |
 | `minGain` | number | The smallest gain over the live config the line counts as real: `replay_check.min_gain`, or `0.05` when the line has none. |
-| `objective` | string | `success` or `cost`: what the search would aim for, as asked or as the set's health suggests. |
+| `objective` | string | `success` or `cost`: what the search would aim for, as requested or as the set's health suggests. |
 | `warnings` | array | What makes the search's results hard to trust. Empty when nothing does. See [Warnings](#warnings). |
 
 ### Warnings
@@ -141,7 +141,7 @@ Each item of a list, and the first fields of a search's detail:
 | Field | Type | Description |
 | --- | --- | --- |
 | `split` | object | `searchedTasks`, `heldOutTasks`, and `searched` and `heldOut`, each a list of `{ runId, taskId }` from the set. |
-| `iterations` | array | Each `{ number, kind, runId, state, attempts, proposed, agentSpent, reflection }`. `kind` is `propose` or `reflect`. `state` is `wanted`, `running`, `ended` or `failed`. `attempts` counts its proposals, rejected ones included; `proposed` lists the candidates it admitted, by id. `agentSpent` is what its agent run spent, once known. `reflection` is a [reflection](#reflection) for a `reflect` iteration, else null. |
+| `iterations` | array | Each `{ number, kind, runId, state, attempts, proposed, agentSpent, reflection }`. `kind` is `propose` or `reflect`. `state` is `wanted`, `running`, `ended` or `failed`. `attempts` counts its proposals, rejected ones included; `proposed` lists the candidates it accepted, by id. `agentSpent` is what its agent run spent, once known. `reflection` is a [reflection](#reflection) for a `reflect` iteration, else null. |
 | `seed` | object | The live config the search started from, as a [candidate](#candidate). Its search score counts the searched runs only, its held-out score the held-out runs. |
 | `candidates` | array | Every candidate its agent proposed. |
 | `frontier` | array of strings | The candidates on the [frontier](/docs/reference/app/searches#frontier), by id, cheapest first, the seed always among them. With `objective` set to `cost`, only candidates whose `searchedGain.verdict` is `better` or `within-noise`. |

@@ -23,7 +23,7 @@ files back.
 Everything else follows from how the harness finds them. Claude Code files a
 conversation under a directory named after the working directory it was started
 in. The same files under a different working directory are invisible to it:
-asked to resume, it answers that the session does not exist. A conversation is
+told to resume, it answers that the session does not exist. A conversation is
 therefore tied to a path, whatever machine the path is on. Move the working
 directory and the harness's state together, to the same path on another machine,
 and the conversation moves with them. Nothing else needs to go.
@@ -42,7 +42,7 @@ answer comes in that time, the sandbox is removed and the run is
 suspended. The archive belongs to the task (or to a chat, for the agent's planning
 chats). When the answer arrives, the same run carries on as its next attempt:
 any runner that meets the run's placement restores the archive into a fresh
-sandbox before the harness starts, and asks the harness to resume the
+sandbox before the harness starts, and tells the harness to resume the
 conversation it left.
 
 The runner also archives the workspace when a run ends, so every later run of
@@ -117,7 +117,7 @@ answer takes, and past that relies on the archive, which avoids both.
 ## When a session is lost
 
 Resume can fail. The archive may be gone or fail to restore, or the harness may
-not recognise the session it is asked for. When the harness says the session is
+not recognise the session it is told to resume. When the harness says the session is
 gone, the runner logs it and starts a new conversation instead of failing the
 run.
 
@@ -129,15 +129,15 @@ and tasks](/docs/getting-started/lines-stations-and-tasks) explains the notes. A
 resumed conversation is an improvement on top of that, and Spotlight treats it
 as one.
 
-## Chats give back what was not heard
+## Chats take back what was not read
 
 Planning chats with the agent have a variant of the same problem. A person
 sends messages, a run is started to answer them, and the run fails before the
 agent has a session, for example because its setup failed. From the person's
-side the messages were sent. From the agent's side they were never heard.
+side the messages were sent. From the agent's side they were never read.
 
-Spotlight decides by the session. A chat run that ends without reporting a
-session kept nothing, so the chat takes back the messages that went to it, and
+Spotlight decides by the session. When a chat run ends without a
+session, the chat takes back the messages that went to it, and
 they go again with the person's next message. The rule is on the cautious side.
 A run that fails after the agent read the messages but before it reported a
 session sends them a second time. Spotlight accepts that, because a duplicate
@@ -145,15 +145,15 @@ beats a loss.
 
 ## What an archive keeps, and for how long
 
-A task's archive is kept for as long as the task is unfinished. It expires some
+Spotlight retains a task's archive for as long as the task is unfinished. It expires some
 days after the task finishes, and a chat's some days after the chat leaves its
 conversation. Both go at once when their task or chat is deleted. A run that
 finds no archive starts from a fresh checkout of the task's branch and a new
 conversation, and the notes carry the work as above. An archive a task's run
-started from is also kept for 30 days after that run started, and while the run is in a
+started from is also retained for 30 days after that run started, and while the run is in a
 replay set, so the run can be
 [replayed](/docs/improvement/why-changes-are-replayed-on-past-tasks). How long each
-kind of archive is kept, and how large one may be, is in [Limits and
+kind of archive is retained, and how large one may be, is in [Limits and
 timeouts](/docs/reference/limits-and-timeouts#workspace-archives).
 
 An archive also leaves things out when something else can put them back. When a

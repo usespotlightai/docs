@@ -17,9 +17,9 @@ server's URL in its place. You need:
   [harness profile](/docs/reference/terraform/harness-profile).
 - A Spotlight deployment that allows outbound calls to the server's host, and
   for a server behind OAuth, to its authorization server's host.
-- If the server takes a key: the key kept as a secret bound to the server's
+- If the server takes a key: the key stored as a secret bound to the server's
   host, in a header or a query parameter, as in
-  [Give stations a tool from an HTTP API](/docs/integrations/give-stations-a-tool-from-an-http-api#keep-the-api-key-as-a-secret).
+  [Add a tool from an HTTP API](/docs/integrations/add-a-tool-from-an-http-api#store-the-api-key-as-a-secret).
 
 ## Name the server
 
@@ -105,7 +105,7 @@ mcp = {
 
 Run `terraform apply`.
 
-## Give a tool to a station
+## Enable a tool at a station
 
 Name the tool through the integration's `tools` map:
 
@@ -125,7 +125,7 @@ The agent calls it like any integration tool:
 spotlight acme create-issue --title "Flaky upload test"
 ```
 
-A station given many of a server's tools lets the agent find and read one
+A station that enables many of a server's tools lets the agent find and read one
 first, with the server's own descriptions:
 
 ```bash
@@ -150,7 +150,7 @@ apply to calls made with their connection.
 
 Spotlight lists the tools again every ten minutes, unless the deployment sets
 another interval. A tool the server stops offering is no longer offered, and a
-station given it can no longer call it. The workspace's
+station that enables it can no longer call it. The workspace's
 [configuration changes](/docs/reference/api/resource-api#configuration-changes)
 record the change, naming each tool the integration no longer offers in
 `details.stranded`. Give the station another tool, or take the tool off it.

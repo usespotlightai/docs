@@ -45,8 +45,8 @@ Every sandbox, and every command an agent runs, is on the team's hosts.
 
 A host is any computer running `spotlight host`. It joins a pool, a group of
 hosts that take a team's runs, either with the pool's token or, on a cloud
-platform, by proving its identity through a runner trust. The host asks
-Spotlight for work, and for each run it takes, it starts two containers on a
+platform, by proving its identity through a runner trust. The host requests
+work from Spotlight, and for each run it takes, it starts two containers on a
 private network of their own:
 
 - The sandbox, where the code is checked out and the agent does its work.
@@ -69,7 +69,7 @@ settings on the host ([Host settings](/docs/reference/hosts/host-configuration))
 ## The host only connects out
 
 Spotlight never connects to a host. Every exchange starts with the host: it
-asks for work, reports what it is doing, and asks again. Calls meant for the
+requests work, reports what it is doing, and requests again. Calls meant for the
 team's private network, such as a hook to an internal service, reach the host
 the same way: the host collects them ([Hooks and
 reactions](/docs/integrations/hooks)).
@@ -79,8 +79,8 @@ connections works behind a home router or a company firewall with nothing
 opened up, so a laptop can take work as well as a cloud server can.
 
 The one exception is a push pool, where Spotlight calls one of the team's
-endpoints to start a machine for each run. [Ways in: pools, trusts and
-tokens](/docs/administration/ways-in-pools-trusts-and-tokens) compares push
+endpoints to start a machine for each run. [Pools, trusts and
+tokens](/docs/administration/pools-trusts-and-tokens) compares push
 pools with hosts. A machine a push pool starts has no egress beside it. The
 pool can name a shared egress instead, one gatekeeper that many runs go out
 through ([Send push pool runs through an
@@ -101,8 +101,8 @@ host. When the host claims a run, Spotlight gives it a credential for that run
 alone, and that is all the sandbox gets. If someone took over a sandbox, that
 credential would let them do only what the run itself may do, such as report
 on it and reach its line's repositories, and only until the run ends. They
-could not take other runs or act as the host. [Ways in: pools, trusts and
-tokens](/docs/administration/ways-in-pools-trusts-and-tokens) lists each kind
+could not take other runs or act as the host. [Pools, trusts and
+tokens](/docs/administration/pools-trusts-and-tokens) lists each kind
 of access and what it costs if it leaks.
 
 Git goes through Spotlight. Every clone, fetch and push from a sandbox goes to

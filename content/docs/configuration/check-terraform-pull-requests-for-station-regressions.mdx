@@ -30,7 +30,7 @@ worse on more tasks than the line allows. You need:
 A check replays the change as the pull request plans it, including the line's
 repositories, their runner `image` and `setup` command. Anyone whose pull
 request runs the check can have the team's runners pull an image and run a
-command of their choosing. Admit only jobs you trust: scope the trust's
+command of their choosing. Accept only jobs you trust: scope the trust's
 `subject` to your own repository's pull requests or branches, never run the
 check on `pull_request_target` or on pull requests from forks, and limit the
 images your hosts run with `SPOTLIGHT_RUNNER_IMAGE`. See
@@ -100,7 +100,7 @@ and says so. Once it is applied, hover over the ⓘ beside **Checks** on the
 set's page to read the line's threshold. The threshold always comes from the line as it is applied, never
 from the plan, so a pull request cannot loosen its own check. In the same way,
 a change to a station's `check`, `judge`, `diffs` or `runners` is replayed with
-the live station's, and the output says which it kept. See
+the live station's, and the output says which it pinned. See
 [`replay_check`](/docs/reference/terraform/line#replay-check-fields).
 
 ## Let the job call Spotlight
@@ -108,7 +108,7 @@ the live station's, and the output says which it kept. See
 <Tabs items={['OIDC trust', 'Workspace token']}>
 <Tab value="OIDC trust">
 
-Use a trust that admits the job and grants `plan`, such as the
+Use a trust that matches the job and grants `plan`, such as the
 `github-pull-requests` trust from
 [Create the trusts](/docs/configuration/run-terraform-from-github-actions#create-the-trusts).
 Give the job its id as `SPOTLIGHT_OIDC_TRUST`, and `permissions: id-token:

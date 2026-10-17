@@ -65,7 +65,7 @@ every secret has to be set again and every integration connected again.
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `OUTBOUND_ALLOWED_HOSTS` | empty | Comma-separated hosts Spotlight may call for integrations and their tools, OAuth token exchanges, hooks it sends itself, and push pools' provision calls. An entry admits the host and its subdomains, compared without regard to case. Empty allows none. |
+| `OUTBOUND_ALLOWED_HOSTS` | empty | Comma-separated hosts Spotlight may call for integrations and their tools, OAuth token exchanges, hooks it sends itself, and push pools' provision calls. An entry allows the host and its subdomains, compared without regard to case. Empty allows none. |
 | `OAUTH_CLIENTS` | `{}` | The deployment's OAuth clients, as JSON mapping an integration's name to `{ "id", "secret" }`, with `issuer`, the authorization server, for an MCP server it discovers. Example: `{"slack":{"id":"...","secret":"..."}}`. |
 | `HOOK_SIGNING_KEY` | none | A P-256 private key, in PEM, that signs [hook OIDC tokens](/docs/reference/terraform/hook#oidc) with ES256. `\n` in the value is read as a line break. Without it, a hook with `oidc` is rejected. |
 | `MCP_RELIST_SECONDS` | `600` | How often the tools of an integration's MCP server are listed again. |
@@ -88,7 +88,7 @@ start with `OAUTH_CLIENTS is not JSON: <error>` or
 | `SPOTLIGHT_PLATFORM_EGRESS_TOKEN` | none | The token that egress calls Spotlight with: 32 to 255 of `A-Z a-z 0-9 . _ ~ -`. Give the same value to the egress as `SPOTLIGHT_EGRESS_TOKEN`. |
 
 Give both or neither. One without the other gives
-`SPOTLIGHT_PLATFORM_EGRESS_TOKEN: goes with SPOTLIGHT_PLATFORM_EGRESS_URL. Give both to name the platform egress, or neither; generate a token with: openssl rand -hex 32`.
+`SPOTLIGHT_PLATFORM_EGRESS_TOKEN: goes with SPOTLIGHT_PLATFORM_EGRESS_URL. Set both to name the platform egress, or neither; generate a token with: openssl rand -hex 32`.
 With `NODE_ENV` `production`, a runner is not provisioned for an egress whose
 URL is not `https`.
 
@@ -131,7 +131,7 @@ upload and download through presigned URLs that last 15 minutes.
 | `S3_RUNNER_ENDPOINT` | `S3_ENDPOINT` | The endpoint in URLs presigned for runners, for when `S3_ENDPOINT` is private. |
 | `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | none | The bucket user's keys. Without both, the default AWS credential chain. |
 
-[Egress](/docs/reference/hosts/egress#admitted-hosts) always admits the
+[Egress](/docs/reference/hosts/egress#allowed-hosts) always allows the
 storage host runners reach: the host of `S3_RUNNER_ENDPOINT`, else of
 `S3_ENDPOINT`, else `<bucket>.s3.<region>.amazonaws.com`, or
 `s3.<region>.amazonaws.com` with `S3_FORCE_PATH_STYLE`.

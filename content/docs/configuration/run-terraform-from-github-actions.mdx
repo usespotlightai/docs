@@ -97,7 +97,7 @@ an apply of this root, and a revocation.
 
 In the repository's **Settings**, under **Secrets and variables** and then
 **Actions**, add these as variables, not secrets. A trust's id is not secret,
-since only a job the trust admits can use it.
+since only a job the trust matches can use it.
 
 | Variable | Value |
 | --- | --- |
@@ -169,7 +169,7 @@ other workflow.
 Open a pull request that changes the configuration. The `plan` job runs and
 shows the plan. Merge it, and the `apply` job applies it.
 
-If a job fails with `401`, the trust did not admit the job's token. Check that
+If a job fails with `401`, the trust did not accept the job's token. Check that
 the trust's `subject` matches the job: `repo:acme/platform:pull_request` for a
 pull request, `repo:acme/platform:ref:refs/heads/main` for a push to `main`.
 
@@ -180,4 +180,4 @@ lacks. Add it to the trust's `scopes` and apply the trusts root again.
 
 - [`spotlight_workspace_token_trust`](/docs/reference/terraform/workspace-token-trust): every field,
   and the settings for GitLab, CircleCI and Buildkite.
-- [Ways in: pools, trusts and tokens](/docs/administration/ways-in-pools-trusts-and-tokens)
+- [Pools, trusts and tokens](/docs/administration/pools-trusts-and-tokens)

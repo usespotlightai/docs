@@ -47,7 +47,7 @@ question in someone's inbox, a memory proposed to the team. So a replay is a run
 works on the task, and it leaves nothing behind but its own result:
 
 - Its git access is fetch-only. A push fails.
-- It is given no tools and no MCP servers, and so egress injects no secrets for it.
+- It has no tools and no MCP servers enabled, and so egress injects no secrets for it.
 - No hook runs for it.
 - It cannot reply to a pull request's review comments, propose a memory or
   read a task's trace.
@@ -59,12 +59,12 @@ works on the task, and it leaves nothing behind but its own result:
   replays apart, under Candidates on its Stations tab.
 
 The sandbox's network is not narrowed further. Egress lets a replay reach the
-hosts the host's allow-list admits, as for any run; see
+hosts the host's allow-list allows, as for any run; see
 [Limit where sandboxes can connect](/docs/security/limit-where-sandboxes-connect).
 
 ## Scored against the station as it is now
 
-A replay is scored by what the candidate itself asks for. If the candidate's
+A replay is scored by what the candidate itself requires. If the candidate's
 station drafts change stacks (`diffs: true`) and has a `check`, its change must
 pass that check. If it has a judge, the judge scores the change against its
 rubric. Where people accepted the original's change, by closing the task as
@@ -111,7 +111,7 @@ copy of each run, the rule changes a little; see
 
 A judge's score is absolute: it says how good one change is, read on its own.
 Where there is a replay to compare with, the judge can instead be shown both
-changes and asked which is better, which makes its verdict steadier and easier
+changes and prompted to say which is better, which makes its verdict steadier and easier
 to check. In the docs' view, two changes can both pass while one is plainly
 closer to what the task needed, and scores given to each on its own may not
 show it.
@@ -119,7 +119,7 @@ show it.
 So once a replay has finished, on each task where both it and the replay it is
 compared with changed something, and people accepted the original's change,
 the judge is shown the two changes together, labelled A and B, beside the
-accepted one, and asked which is better. It is not told which change is the
+accepted one, and prompted to say which is better. It is not told which change is the
 candidate's, so it cannot favour it. It reads the pair twice, once each way
 round, and when the two readings disagree, the task counts as a tie. In the
 docs' view, a model can lean to whichever change it saw first, and a
@@ -143,8 +143,8 @@ rubric versions are left out; in the docs' view, comparing them would mix two
 questions.
 
 The comparisons cost model calls. They count against the replay's ceiling,
-with room for two tries set aside before each is asked, and a pair that would
-pass the ceiling is not asked. They do not add to the replay's spend or
+with room for two tries set aside before each is requested, and a pair that would
+pass the ceiling is not requested. They do not add to the replay's spend or
 its cost per run, since they measure the change, not what running the
 candidate costs; that reason is the docs' own.
 
@@ -211,7 +211,7 @@ is unmeasured again, since the new config may be steadier or less so.
 
 A search reads the noise before it starts. With none measured, it warns that a
 small gain may be luck. With a spread larger than `min_gain` allows at the
-number of copies asked for, it warns and suggests more: the copies needed are
+number of copies requested, it warns and suggests more: the copies needed are
 the spread divided by `min_gain`, squared and rounded up, and it suggests at
 most 5. That rule takes the spread to shrink with the square root of the
 number of copies, as an average of independent tries does. More than 5 needed
@@ -231,7 +231,7 @@ now, as its health, and a search warns about each before it starts.
   config is not Worse by what a run costs. A set can also leave little room
   well below 95%, when no config could do better on its tasks; see
   [Why a set is replayed with the answer](#why-a-set-is-replayed-with-the-answer).
-- A judge that disagrees with itself. A judge is a model, and asked twice
+- A judge that disagrees with itself. A judge is a model, and prompted twice
   about the same change it can answer differently. When it passes or fails
   the same change alike less than 80% of the time, part of every score is
   chance, and a search would chase luck.
@@ -249,7 +249,7 @@ add runs, it suggests recent ones of the outcomes the set is short of, but
 never adds them itself. In the docs' view, which tasks a set should represent
 is the team's choice.
 
-Nobody has to ask for these readings. The first baseline of the live config
+Nobody has to request these readings. The first baseline of the live config
 as it is now checks the set: it replays each run at least 3 times, which
 measures the noise, and once it finishes, each change is judged and checked a
 second time. Its ceiling grows with its copies, so it costs about three times
@@ -322,7 +322,7 @@ should never delay work that people are waiting on now.
 
 ## What a replay can start from
 
-A run can be replayed only if Spotlight kept where it started. Each task run
+A run can be replayed only if Spotlight retained where it started. Each task run
 records the workspace archive it restored and the commit each repository
 started from. Runs that ended before Spotlight began recording this cannot be
 replayed.

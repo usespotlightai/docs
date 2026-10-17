@@ -54,14 +54,14 @@ the short-lived environment.
 
 Two properties of the host follow from the pattern.
 
-The host only makes outbound connections. It asks the control plane for work;
+The host only makes outbound connections. It requests work from the control plane;
 nothing connects in to it. That is why a host works behind NAT and on a home
 network, and why putting a machine to work needs no inbound firewall rule.
 
 The host never hands a sandbox its own credential. When it claims a run, the
 control plane gives it a credential for that one run, and that is what the
-sandbox receives ([Ways in: pools, trusts and
-tokens](/docs/administration/ways-in-pools-trusts-and-tokens) follows that
+sandbox receives ([Pools, trusts and
+tokens](/docs/administration/pools-trusts-and-tokens) follows that
 credential further). The pool token or workload identity that lets the host
 claim work stays with the host. A sandbox that is compromised can, at worst, act
 as its own run, and only while the run lasts.

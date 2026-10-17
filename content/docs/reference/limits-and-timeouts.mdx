@@ -84,12 +84,12 @@ runner's way out:
 | --- | --- |
 | Requests each second, for each workspace and egress process | `SPOTLIGHT_EGRESS_RATE`, default 50; `0` is no limit |
 | Open connections, for each workspace and egress process | `SPOTLIGHT_EGRESS_CONNECTIONS`, default 200; `0` is no limit |
-| Asking which runs are still active | Every 30 seconds, at most 500 run proxy credentials in one request |
+| Checking which runs are still active | Every 30 seconds, at most 500 run proxy credentials in one request |
 | A run with no request | Removed from egress memory after 2 minutes |
 | Fetching again while the runner has no lease on a run | At most every 5 seconds |
 | Sending connection records | Every 5 seconds, at most 2,000 in one call and 10,000 waiting |
 | Time a connection record keeps from egress | At most 1 hour before and 1 minute after Spotlight gets it |
-| Connection records kept | 30 days |
+| Connection records retained | 30 days |
 | Enforcement check | 3 seconds |
 | Way out authority lifetime | 48 hours |
 | Upstream connection | 30 seconds |
@@ -104,14 +104,14 @@ See [Inside a sandbox](/docs/reference/hosts/sandbox#run-phases).
 | Packed size | 2 GiB |
 | Unpacked size | 8 GiB |
 | Upload or download | 30 minutes |
-| Kept after its task finishes, or its chat stops carrying the conversation | 7 days |
-| Kept after a newer archive replaces it | 1 hour |
-| Kept after its task or chat is deleted | none; removed within a minute, even when a run started from it or a replay set pins it |
-| Kept after a run that started from it started | 30 days |
-| Kept while a run that started from it is in a replay set | until the run leaves the set, the set is deleted, or its station leaves the line |
-| An archive never sealed, kept | 24 hours |
+| Retained after its task finishes, or its chat stops carrying the conversation | 7 days |
+| Retained after a newer archive replaces it | 1 hour |
+| Retained after its task or chat is deleted | none; removed within a minute, even when a run started from it or a replay set pins it |
+| Retained after a run that started from it started | 30 days |
+| Retained while a run that started from it is in a replay set | until the run leaves the set, the set is deleted, or its station leaves the line |
+| An archive never sealed, retained | 24 hours |
 
-An archive a run started from, or one pinned by a replay set, is kept for that
+An archive a run started from, or one pinned by a replay set, is retained for that
 time even when its task has finished or a newer archive has replaced it.
 
 ## Replays
@@ -193,7 +193,7 @@ See [Change stacks and decisions](/docs/reference/app/change-stacks-and-decision
 | Diff | 6 MiB, 2,000 changes |
 | Drafting attempts | 4 in all, 30 minutes each, 30 seconds apart and doubling |
 | Waiting for a runner to check | 60 minutes |
-| Check output kept | 16,000 characters a step |
+| Check output stored | 16,000 characters a step |
 
 ## Memory
 
@@ -261,7 +261,7 @@ See [MCP servers](/docs/reference/terraform/integration#mcp-servers).
 | Session left unused | closed after 5 minutes |
 | Calls again after the server no longer has a session | 1 |
 | Discovery requests | 15 seconds each |
-| What discovery found | kept 10 minutes on each control plane server |
+| What discovery found | cached 10 minutes on each control plane server |
 | Transport | streamable HTTP |
 
 ## Hooks
@@ -272,7 +272,7 @@ See [`spotlight_hook`](/docs/reference/terraform/hook).
 | --- | --- |
 | Request timeout | `timeoutSeconds`, default 10, 1 to 30 |
 | Callback token lifetime | 15 minutes |
-| Response body kept | 16 KiB |
+| Response body stored | 16 KiB |
 | Delivery attempts | 8 in all, 2 seconds to 1 hour apart |
 | Causal chain depth | 8 |
 | Firings for the same change | 3 within 10 minutes |
@@ -292,7 +292,7 @@ See [Resource API](/docs/reference/api/resource-api#headers).
 
 | Item | Value |
 | --- | --- |
-| `Idempotency-Key` kept | 24 hours |
+| `Idempotency-Key` retained | 24 hours |
 | `Idempotency-Key` length | at most 255 characters |
 
 ## Other

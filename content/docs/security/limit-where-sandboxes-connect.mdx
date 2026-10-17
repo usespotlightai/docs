@@ -16,7 +16,7 @@ Collect the hosts your runs need:
 
 - The model provider for each harness your lines use, such as
   `api.anthropic.com` for Claude Code or `api.openai.com` for Codex. Egress injects
-  a harness key only for a host the list admits.
+  a harness key only for a host the list allows.
 - The package registries your `setup` commands and agents install from, such as
   `registry.npmjs.org` or `proxy.golang.org`.
 - The hosts of the tools and MCP servers your stations use, and of the hooks
@@ -29,7 +29,7 @@ Collect the hosts your runs need:
 
 An entry is an exact host, or `*.example.com` for the subdomains of
 `example.com`, with no scheme, port or path.
-[Admitted hosts](/docs/reference/hosts/egress#admitted-hosts) has the matching rules.
+[Allowed hosts](/docs/reference/hosts/egress#allowed-hosts) has the matching rules.
 
 ## Set the allow-list
 
@@ -75,7 +75,7 @@ A request to a host the list leaves out fails with status `403` and this
 message:
 
 ```text
-Egress doesn't let this sandbox reach <host>.
+Egress doesn't allow this sandbox to connect to <host>.
 ```
 
 A connection to an address egress never opens fails with `502`. Through a

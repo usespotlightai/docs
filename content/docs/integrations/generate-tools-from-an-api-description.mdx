@@ -2,7 +2,7 @@
 type: how-to
 icon: SquarePen
 title: Generate tools from an API description
-description: Point an integration at an OpenAPI description or a GraphQL endpoint, so Spotlight offers a tool for each of the API's operations, and give some of them to a station.
+description: Point an integration at an OpenAPI description or a GraphQL endpoint, so Spotlight offers a tool for each of the API's operations, and enable some of them at a station.
 ---
 
 An API description is an OpenAPI document or a GraphQL schema: a file that
@@ -16,8 +16,8 @@ lists every operation an API has and what each one takes. You need:
 - A Spotlight deployment that allows outbound calls to the host the description
   is read from and to the API's own host, since Spotlight reads the description
   and calls the API from its own servers.
-- If the API needs credentials: a key kept as a secret, as in
-  [Give stations a tool from an HTTP API](/docs/integrations/give-stations-a-tool-from-an-http-api#keep-the-api-key-as-a-secret),
+- If the API needs credentials: a key stored as a secret, as in
+  [Add a tool from an HTTP API](/docs/integrations/add-a-tool-from-an-http-api#store-the-api-key-as-a-secret),
   or an OAuth connection, as in
   [Connect an integration that signs in with OAuth](/docs/integrations/connect-an-integration).
 
@@ -52,7 +52,7 @@ If the description is not published anywhere, write it out as `document`
 in place of `url`, and give `baseUrl`.
 
 For a GraphQL API, add a `graphql` block instead, with the endpoint as `url`.
-Spotlight asks the endpoint for its schema, sending the block's `auth`:
+Spotlight requests the schema from the endpoint, sending the block's `auth`:
 
 ```hcl
 resource "spotlight_integration" "linear" {
@@ -138,7 +138,7 @@ Generated tools that change data wait for a person to approve each call. To
 change which ones wait, or the reason a person reads, see
 [Require approval before a tool runs](/docs/integrations/require-approval-before-a-tool-runs#tools-generated-from-an-api-description).
 
-## Give a tool to a station
+## Enable a tool at a station
 
 Name the tool through the integration's `tools` map, as for any tool:
 

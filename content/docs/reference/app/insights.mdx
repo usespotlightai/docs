@@ -488,7 +488,7 @@ request"; with none in the period, `No pull requests in this period.`
 #### Retention
 
 Spotlight purges a pull request 180 days after it closed, or, while open, 180 days
-after it last changed. One already past that when first heard of is not
+after it last changed. One already past that when Spotlight first receives it is not
 recorded. Spotlight's pull requests, and those with a Spotlight review task,
 stay counted after that. Removing the GitHub App's installation purges every
 pull request of the workspace in the same way, trying again for any that could
@@ -871,22 +871,22 @@ skills".
 
 ### Skills
 
-A run is given a skill when its station's config gave it. A run reads a skill
+A run has a skill enabled when its station's config enables it. A run reads a skill
 when one of its tool calls does either of these:
 
 - Reads, searches or runs a command on a path inside the skill's folder,
   `.claude/skills/<key>/` or `.spotlight/skills/<key>/`, whatever the run's
   harness. Listing that folder counts; a path to the skills folder itself,
   writing or editing a skill's file, and MCP calls do not.
-- Asks Claude Code's `Skill` tool for the skill by its key.
+- Calls Claude Code's `Skill` tool for the skill by its key.
 
 Spotlight's built-in skills are not counted. A key the team does not define is
 counted, and shown without a link.
 
 "Skills" lists each skill, most read first, with "Read per week" (the share of
-all runs that read it, week by week from Monday, UTC), "Given", "Read" and
+all runs that read it, week by week from Monday, UTC), "Enabled", "Read" and
 "Trend"; its "Runs" is left empty. Unfolding a skill lists each station with
-"Runs", "Given", "Read" and "Trend", and no chart. A skill's trend
+"Runs", "Enabled", "Read" and "Trend", and no chart. A skill's trend
 compares the share of all runs that read it in the last 2 weeks with the weeks
 before:
 
@@ -942,7 +942,7 @@ server reads `–` under "Server".
 
 | Tile | Counts |
 | --- | --- |
-| Active memories | The [memories](/docs/reference/glossary#memory) the team keeps now, whatever the period. |
+| Active memories | The [memories](/docs/reference/glossary#memory) the team has approved and not retired, whatever the period. |
 | Briefed | Memories briefed to the runs that ended in the period, cancelled runs included, each counted once, with `to <n> runs`, the runs that ran they were briefed to. |
 | Read | Memories the runs that ended in the period read with [`spotlight recall`](/docs/reference/cli/agent-commands#spotlight-recall), cancelled runs included, each counted once, with `by <n> runs`, the runs that ran that read them. |
 | Flagged wrong | Memories a person retired in the period. A memory replaced by a correction is not counted. |
@@ -994,7 +994,7 @@ figure on another tab narrows it further, shown as a pill that can be removed:
 | Person | Of tasks the person opened. |
 | Day | That ended on the UTC day. |
 | Week of | That ended in the week starting that Monday, UTC. |
-| Given skill, Read skill | Whose station gave the skill, or that read it. |
+| Enabled skill, Read skill | Whose station enabled the skill, or that read it. |
 | Called | That called the MCP server. |
 | A call failed on | With a failed call to the MCP server. |
 | Last call failed on | That failed where their last call to the MCP server failed. |
@@ -1014,7 +1014,7 @@ from now rather than in whole UTC days, and has no period before it. The
 traces are not part of the [Insights API](/docs/reference/api/insights).
 
 A chart of "Traces" and "Faults" over the span sits above the list. Each row
-shows "Started", "Stations", "Task", "Asked", "Answered", "Faults", "Took" and
+shows "Started", "Stations", "Task", "Input", "Output", "Faults", "Took" and
 "Cost", and opens the task's trace at `/w/<slug>/team/<teamId>/tasks/<taskId>/trace`.
 Each row starts with a checkbox. Ticking rows shows a bar reading
 `<n> selected`, with "Discuss with the agent", which opens the Agent page with

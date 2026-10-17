@@ -20,7 +20,7 @@ team's work turned out is narrower; see [Team outcomes](#team-outcomes).
 
 The web app shows the roles as Owner, Admin and Member. The person who creates
 a workspace is its owner. A person who accepts an invite joins with the role
-the invite gives, `admin` or `member`. A workspace always has at least one
+the invite assigns, `admin` or `member`. A workspace always has at least one
 owner.
 
 A deleted workspace grants nothing to anyone.
@@ -93,7 +93,7 @@ Anyone else is answered `404`, as for something that does not exist.
 ## Members
 
 `GET /api/workspaces/{slug}/members` lists everyone in the workspace, with
-their role, their teams and the roles the caller may give them. Every member
+their role, their teams and the roles the caller may assign to them. Every member
 of the workspace may read it. The web app's Members page (see
 [Web app](/docs/reference/app/web-app#workspace-pages)) is shown only to owners
 and admins; a member who opens it is sent to the workspace's own route.
@@ -107,8 +107,8 @@ person's role in the workspace, and applies in every team.
 
 - Only an owner or an admin may set roles.
 - An owner may change anyone's role, including their own.
-- An admin may change only members, and may not give the `owner` role.
-- The last owner may not be given another role.
+- An admin may change only members, and may not assign the `owner` role.
+- The last owner may not be assigned another role.
 
 For an owner or admin, setting a person's role to the one they already have
 changes nothing and is not denied. A denied change returns one of
@@ -120,10 +120,10 @@ these:
 | `403` | `Only an owner or an admin can set roles.` | The caller is not an owner or admin. |
 | `403` | `You can only set roles for people below you.` | An admin changing an owner or another admin. |
 | `403` | `You cannot change your own role.` | An admin changing their own role. |
-| `403` | `You cannot give a role above your own.` | An admin giving the `owner` role. |
-| `409` | `The workspace needs at least one owner. Please make someone else an owner first.` | The last owner given another role. |
+| `403` | `You cannot assign a role above your own.` | An admin assigns the `owner` role. |
+| `409` | `The workspace needs at least one owner. Please make someone else an owner first.` | The last owner is assigned another role. |
 
-The web app offers a role menu only where more than one role can be given.
+The web app offers a role menu only where more than one role can be assigned.
 
 ## Invites
 
@@ -145,7 +145,7 @@ token is answered `401`. A caller who is not an owner or admin of the workspace
 is answered `404` by the actions only they may take, as for a workspace that
 does not exist.
 
-- An invite gives the `admin` or `member` role. Nobody is invited as an
+- An invite assigns the `admin` or `member` role. Nobody is invited as an
   `owner`; owners and admins may both invite as `admin`.
 - One request invites 1 to 50 addresses, all with the same role and teams.
   Addresses are compared without regard to case, and a repeated address is

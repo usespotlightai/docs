@@ -39,7 +39,7 @@ The replay of a station's live config on a replay set's runs that the set's
 other replays are compared with, other than a
 [replay with the answer](/docs/reference/app/replays#replay-with-the-answer),
 which is compared with the live replay that started it. It starts the first time a set is
-replayed, again once runs are added after it or a replay asks for more copies
+replayed, again once runs are added after it or a replay requests more copies
 of each run than it has, and when a [search](#search) of the set starts. See
 [Regressions](/docs/reference/app/replays#regressions).
 
@@ -58,7 +58,7 @@ at them, in the views Backlog, Active and Completed. See
 ## Bound host
 
 A host that a secret of the run is bound to. Egress injects a secret only into
-requests to its bound hosts. For a run that reaches Spotlight's API, the
+requests to its bound hosts. For a run that uses Spotlight's API, the
 Spotlight address's host is bound to the run's Spotlight token. See
 [Run secrets](/docs/reference/hosts/egress#run-secrets) and
 [The runner's way out](/docs/reference/hosts/egress#the-runners-way-out).
@@ -80,7 +80,7 @@ proposes one as a [replay candidate](/docs/reference/api/replay-candidate); a
 ## Catalog
 
 Tools and skills Spotlight publishes, named `catalog.<name>@<version>`, such as
-`catalog.fetch-page@1.0.0`. A station gives them as it gives its own. Each item
+`catalog.fetch-page@1.0.0`. A station enables them as it enables its own. Each item
 needs a [plan](#plan). See
 [Catalog](/docs/reference/built-ins/built-in-tools-and-skills#catalog).
 
@@ -170,7 +170,7 @@ such as its tasks and notices. A [memory](#memory) is retired, not deleted. See
 The proxy between a sandbox and the network. A host starts one egress
 container beside each sandbox, and the sandbox reaches the network only
 through it. A push pool can name a shared egress, one process that serves many
-runs, in `provision.egress`. Egress admits or blocks each connection and
+runs, in `provision.egress`. Egress allows or blocks each connection and
 injects secrets into requests to the hosts they are bound to. See
 [Egress](/docs/reference/hosts/egress) and
 [`spotlight_egress`](/docs/reference/terraform/egress).
@@ -213,7 +213,7 @@ The agent command line a station runs: `claude-code` (Claude Code), `cursor`
 
 An API key or token a harness uses to reach its model provider, such as
 `ANTHROPIC_API_KEY`. A host gives them to its sandboxes from `sandbox.env`.
-Egress keeps the ones it knows, and the sandbox gets a [stand-in](#stand-in).
+Egress stores the ones it knows, and the sandbox gets a [stand-in](#stand-in).
 See [Harness keys](/docs/reference/hosts/host-configuration#harness-keys).
 
 ## Harness profile
@@ -244,7 +244,7 @@ event. See [`spotlight_hook`](/docs/reference/terraform/hook).
 ## Host
 
 A machine running `spotlight host`. It claims runs for a workspace and starts a
-fresh sandbox for each one. A host is admitted through a pull pool's token or a
+fresh sandbox for each one. A host is accepted through a pull pool's token or a
 runner trust. See [Host settings](/docs/reference/hosts/host-configuration).
 
 ## Inbox
@@ -283,7 +283,7 @@ and [Judge fields](/docs/reference/terraform/line#judge-fields).
 
 ## Label
 
-A name a runner pool or runner trust gives the runners it admits. A line's or
+A name that a runner pool or runner trust assigns to the runners it accepts. A line's or
 station's `runners` place its work on runners that carry one of the labels. See
 [Placement](/docs/reference/terraform/line#placement).
 
@@ -328,11 +328,11 @@ Something a team knows that its repository can't tell, such as a rationale, a
 rejected approach, a failure, an environment quirk, a correction or a
 preference. A station with `memories: true` drafts proposed memories after each
 completed run, from what the agent said and from what people said on the task.
-Each is kept with the steps and notes it rests on. The run's memories arrive
+Each is stored with the steps and notes it rests on. The run's memories arrive
 as one item in the inbox, where a teammate approves, edits or rejects each one.
 A memory from outside the team, such as a review of an outside author's pull
 request, cannot be approved together with other memories. Approved memories
-become active; rejected ones are kept, and the newest of them are shown to the
+become active; rejected ones are stored, and the newest of them are shown to the
 drafter. The team's Memory page
 lists the active ones, filtered by line, station, repository, path or kind. There
 you can write a memory yourself, correct one (the correction replaces it) or
@@ -386,13 +386,13 @@ See [Placement](/docs/reference/terraform/line#placement).
 
 A workspace's commercial plan: `free`, `team` or `enterprise`. Each plan
 includes the ones before it. The plan decides which catalog items a station may
-give. See [Catalog](/docs/reference/built-ins/built-in-tools-and-skills#catalog). The
+enable. See [Catalog](/docs/reference/built-ins/built-in-tools-and-skills#catalog). The
 `plan` permission is unrelated; see
 [Roles and permissions](/docs/reference/roles-and-permissions).
 
 ## Pool
 
-A runner pool: a workspace resource that admits runners. Hosts serve a pull
+A runner pool: a workspace resource that accepts runners. Hosts serve a pull
 pool and claim its runs with the pool's token. For a push pool, Spotlight calls
 a provision URL to start a runner for each run. A push pool that names an
 egress also takes runs that use secrets. See
@@ -451,7 +451,7 @@ the line's `replay_check`. CI runs it with `spotlight replay check`. See
 ## Replay set
 
 A named list of up to 50 of a work station's past task runs, replayed
-together. While a run is in a set, the workspace it started from is kept. See
+together. While a run is in a set, Spotlight retains the workspace it started from. See
 [Replay set page](/docs/reference/app/replays#replay-set-page).
 
 ## Replay set health
@@ -526,7 +526,7 @@ The container image a sandbox runs from. A host serves the images its
 
 ## Runner trust
 
-A workspace resource that admits hosts presenting an OIDC token from a named
+A workspace resource that accepts hosts presenting an OIDC token from a named
 issuer, for a named subject, in place of a pool token. See
 [`spotlight_runner_trust`](/docs/reference/terraform/runner-trust).
 
@@ -546,7 +546,7 @@ Spotlight opens a pull request with it. See [Searches](/docs/reference/app/searc
 
 ## Secret
 
-A named value a workspace keeps. Spotlight puts it in a request header or
+A named value a workspace stores. Spotlight puts it in a request header or
 query parameter on requests to the hosts it is bound to; the value never
 enters a sandbox. See
 [`spotlight_secret`](/docs/reference/terraform/secret).
@@ -563,7 +563,7 @@ It never changes a run's result. See
 
 ## Skill
 
-Reusable instructions, a `SKILL.md` with other files, that a station gives its
+Reusable instructions, a `SKILL.md` with other files, that a station enables for its
 runs. See [`spotlight_skill`](/docs/reference/terraform/skill).
 
 ## Spotlight address
@@ -613,8 +613,8 @@ integrations, hooks, skills, harness profiles and chats belong to a team. See
 
 An operation an agent calls through `spotlight` from inside a run. A tool is
 built in (such as `pull-request`), defined by an integration
-(`<integration>.<tool>`), or from the catalog. A station lists the tools its
-runs are given. See
+(`<integration>.<tool>`), or from the catalog. A station lists the tools it
+enables for its runs. See
 [Built-in tools and skills](/docs/reference/built-ins/built-in-tools-and-skills) and
 [`spotlight_integration`](/docs/reference/terraform/integration).
 

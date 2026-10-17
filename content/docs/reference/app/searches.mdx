@@ -301,7 +301,7 @@ name with its search score and range.
 | `stopped` | Stopped | yes |
 
 A search starts `seeding`: the station's live config is replayed on every run
-of the set, as many times as "Repeats" asks, and this replay becomes the set's
+of the set, as many times as "Repeats" sets, and this replay becomes the set's
 [baseline](/docs/reference/glossary#baseline). Once it finishes, the search is
 `searching`, and wants its first iteration. Each iteration runs its agent once;
 the agent proposes up to "Candidates per iteration" candidates, each replayed on
@@ -420,8 +420,8 @@ ends, or fails:
 
 | `cause` | Title | Means | Shown to do |
 | --- | --- | --- | --- |
-| `task` | The task itself | `The task is unclear, out of date, or can't be done as asked. No config would get it right.` | `Fix the task, or take it out of the replay set.` |
-| `judge` | The judge | `The work can be fine, but the judge scored it wrong. The judge's rubric asks for the wrong thing.` | `Fix the judge's rubric.` |
+| `task` | The task itself | `The task is unclear, out of date, or can't be done as written. No config would get it right.` | `Fix the task, or take it out of the replay set.` |
+| `judge` | The judge | `The work can be fine, but the judge scored it wrong. The judge's rubric requires the wrong thing.` | `Fix the judge's rubric.` |
 | `check` | The check | `The check failed for a reason that the change didn't cause, such as a broken or flaky test.` | `Fix the check.` |
 | `infra` | Around the work | `Something around the work failed the run, such as the runner, the network or a missing tool.` | `Replay it again. If it keeps failing, fix what the run needs.` |
 | `config` | The station's config | `A change to the station's config, such as prompt, model or skills, could still fix it.` | `You don't need to do anything. The search keeps trying configs for these tasks.` |
@@ -650,7 +650,7 @@ with `github-error`.
 | Code | Shown |
 | --- | --- |
 | `no-source` | Line names no repository for its Terraform |
-| `repository-unreachable` | Spotlight's GitHub App can't reach the line's repository |
+| `repository-unreachable` | Spotlight's GitHub App can't access the line's repository |
 | `file-missing` | Line's Terraform file isn't in its repository |
 | `file-unparsable` | Line's Terraform file couldn't be read |
 | `block-not-found` | Station's block isn't in the file |

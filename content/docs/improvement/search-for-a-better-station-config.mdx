@@ -142,7 +142,7 @@ Read any warning under the estimate:
   above 1.
 - If the set's success moves more than the line counts as real, select the
   button under the warning, as in **Replay each run 3 times**, to set
-  **Repeats** to what it suggests, and raise the ceiling if the estimate asks.
+  **Repeats** to what it suggests, and raise the ceiling if the estimate suggests it.
   If the warning says even 5 copies won't bring it under, read small gains
   with care, or raise the line's
   [`min_gain`](/docs/reference/terraform/line#replay-check-fields).
@@ -223,7 +223,7 @@ to check it yourself.
 </Step>
 <Step>
 
-Fix what each group asks:
+Fix what each group names:
 
 - **The task itself**: take the task's run out of the replay set, or reword
   the task. See [Pick the tasks to replay](/docs/improvement/replay-past-tasks-against-a-station-change#pick-the-tasks-to-replay).
@@ -345,7 +345,7 @@ opened**, the reason, and what Spotlight found. Fix the cause, then select
 | Reason | What to do |
 | --- | --- |
 | Line names no repository for its Terraform | Give the line a `source` block. See [Name the file that contains the line](#name-the-file-that-contains-the-line). |
-| Spotlight's GitHub App can't reach the line's repository | Install the GitHub App on that repository, or correct `source.repository`. |
+| Spotlight's GitHub App can't access the line's repository | Install the GitHub App on that repository, or correct `source.repository`. |
 | Line's Terraform file isn't in its repository | Correct `source.path`. Spotlight reads the file on the repository's default branch. |
 | Station's block isn't in the file, or Station's block appears more than once | Spotlight looks for exactly one `spotlight_line` resource whose `key` is the line's, and in it exactly one `station` block whose `key` is the station's, both written as plain text. Write them that way, or make the change by hand. |
 | Attribute is computed in Terraform. Please set it by hand. | The attribute is built from a variable, a local or another expression. The reason names the attribute, the expression and the value to set: make the change by hand. |

@@ -121,10 +121,10 @@ repositories, they name the same image or none.
 
 ## Let the hosts serve it
 
-A host serves only the images its `SPOTLIGHT_RUNNER_IMAGE` admits. Open the
+A host serves only the images its `SPOTLIGHT_RUNNER_IMAGE` allows. Open the
 host's `host.env` and add your image to that line after the entry already
 there, separated by a comma. An entry is an exact image, or a prefix ending in
-`*` that admits every image under it:
+`*` that allows every image under it:
 
 ```bash
 SPOTLIGHT_RUNNER_IMAGE=ghcr.io/usespotlightai/spotlight-runner:<release>,ghcr.io/acme/*
@@ -142,7 +142,7 @@ The host checks every minute which images lines name. Open **Settings** from
 the workspace menu, then **Runners**. In the host's row, **Images** shows the default image and `+N` for
 the others; hover over the image to see every name. If it also reads
 `N unavailable`, hover over that for each unavailable image and its reason. A reason
-saying the host's `SPOTLIGHT_RUNNER_IMAGE` does not admit it means the entry
+saying the host's `SPOTLIGHT_RUNNER_IMAGE` does not allow it means the entry
 does not match the name on the line.
 
 The host pulls the image again before every run, so a tag you push again

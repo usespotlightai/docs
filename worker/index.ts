@@ -13,6 +13,13 @@ const { rewrite: rewriteSuffix } = rewritePath(
 const MOVED: Readonly<Record<string, string>> = {
   '/docs/improvement/why-a-search-holds-tasks-back':
     '/docs/improvement/why-a-search-holds-tasks-out',
+  '/docs/administration/ways-in-pools-trusts-and-tokens':
+    '/docs/administration/pools-trusts-and-tokens',
+  '/docs/lines/give-stations-a-skill': '/docs/lines/enable-skills-at-a-station',
+  '/docs/hosts/admit-hosts-through-a-runner-trust':
+    '/docs/hosts/run-hosts-without-a-stored-token',
+  '/docs/integrations/give-stations-a-tool-from-an-http-api':
+    '/docs/integrations/add-a-tool-from-an-http-api',
 };
 
 interface Env {

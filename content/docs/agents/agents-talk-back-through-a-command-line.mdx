@@ -57,7 +57,7 @@ A command can do that too. When an agent names a station its station does not
 pass to, the command rejects it in the terminal and lists the ones it may
 choose. When a note is too long, it says how long the note is and what the
 limit is. Tools behave the same way: a missing input prints the tool's usage,
-and a tool the run was not given is rejected with the list of tools it was.
+and a tool that is not enabled for the run is rejected with the list of tools that are.
 The agent reads the error, corrects the call and runs it again, which is what
 agents already do with every other command they run.
 
@@ -73,13 +73,13 @@ not another server to run in every sandbox.
 
 ## Finding tools without listing them
 
-The same cost of context applies to the tools a run is given. An integration
-generated from an API description can give a station hundreds of tools, and
+The same cost of context applies to the tools enabled for a run. An integration
+generated from an API description can offer a station hundreds of tools, and
 listing every one at the start of a run would spend the context MCP was set
 aside to save.
 
-So the briefing names only where the run's tools come from, as in "You were
-given tools from Linear (12) and Petstore (19)", and the two commands that
+So the briefing names only where the run's tools come from, as in "Your station
+enables tools from Linear (12) and Petstore (19)", and the two commands that
 reach them. `spotlight tools search` ranks the run's tools against a few
 words, and `spotlight tools describe` prints one tool's inputs as a
 TypeScript type with a call to start from. Our view is that a model reads a

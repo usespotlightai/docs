@@ -46,7 +46,7 @@ host's list says: loopback and link-local, so that a sandbox never reaches the
 cloud's instance metadata or the host's own identity. A machine's identity lets
 it claim work and read secrets, and an agent that could borrow it would no
 longer be contained by anything on this page. [Limit where sandboxes can connect](/docs/security/limit-where-sandboxes-connect) covers the allow-list, and
-the [Egress](/docs/reference/hosts/egress) reference lists what egress admits and
+the [Egress](/docs/reference/hosts/egress) reference lists what egress allows and
 blocks.
 
 ## Keeping secrets out of the sandbox
@@ -58,7 +58,7 @@ be read by the agent, and so by anything that talks the agent into reading it.
 
 Instead the sandbox gets a stand-in. An MCP server whose environment names the
 workspace secret `LINEAR_API_KEY` sees `spotlight-egress:LINEAR_API_KEY` where
-the value would be. Egress, which is outside the sandbox, keeps the real value
+the value would be. Egress, which is outside the sandbox, holds the real value
 for the length of the run. When a request leaves for a host the secret is bound
 to, and its header or query parameter contains the stand-in, egress injects the
 value in its place. Where the host's answer repeats the value, egress swaps
@@ -80,8 +80,8 @@ and the stand-in together prevent is the value leaving the sandbox's reach and
 being sent anywhere else.
 
 The values themselves stay out of reach on the way in too. Values Spotlight
-keeps are sealed to a key egress made, for that run or, on a shared egress,
-when the egress process started, so only that egress can open them. Values kept in AWS Secrets Manager are read by egress itself with
+stores are sealed to a key egress made, for that run or, on a shared egress,
+when the egress process started, so only that egress can open them. Values stored in AWS Secrets Manager are read by egress itself with
 the host's own identity, so the control plane never sees them. The
 [`spotlight_secret`](/docs/reference/terraform/secret) reference and [Give an MCP server a secret](/docs/security/give-an-mcp-server-a-secret) have the details.
 
@@ -158,8 +158,8 @@ stand-in. [Give hosts your harness keys](/docs/hosts/give-sandboxes-your-harness
 Inside the sandbox there are two parties. The runner, which runs as root, keeps
 the run's credential, fetches the work, prepares the checkout and talks to the
 control plane. The agent runs as a separate user, and its environment carries
-none of the runner's credentials. ([Ways in: pools, trusts and
-tokens](/docs/administration/ways-in-pools-trusts-and-tokens) follows the run's
+none of the runner's credentials. ([Pools, trusts and
+tokens](/docs/administration/pools-trusts-and-tokens) follows the run's
 credential from the host to the runner.)
 
 The separate user is the part that counts. With both in one account, the agent

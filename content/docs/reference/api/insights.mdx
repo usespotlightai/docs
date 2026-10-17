@@ -27,7 +27,7 @@ and answer JSON.
 | `/setups` | How runs went against what they cost on each harness, model, effort and harness profile, with the frontier marked for each outcome. |
 | `/people` | What the team's work asks of people, and who is active: new, weekly and monthly. |
 | `/cost` | Spend by harness, model, station and repository, from model to station to repository. |
-| `/tools` | Which skills the runs were given and read, week by week, and how each MCP server they called behaved. |
+| `/tools` | Which skills were enabled for the runs and which they read, week by week, and how each MCP server they called behaved. |
 | `/memory` | The team's active memories, how many runs were briefed or read them, which were flagged wrong, and runs with memories against runs without. |
 | `/runs` | Every run that ended in the period, newest first, a page at a time. |
 | `/alerts/{alertId}` | A station alert that went off: the threshold it crossed, the run that crossed it, and the measure run by run around it. |
@@ -57,7 +57,7 @@ as long.
 | `next` | Whose next person act was `started`, `parked`, `closed`, `answered` or `sent-back`. |
 | `asked` | `true`: of tasks that asked a person in the inbox during the period. `false` narrows nothing. |
 | `week` | That ended in the week starting this UTC Monday, as `YYYY-MM-DD`. |
-| `skillGiven` | Whose station config gave this skill. |
+| `skillEnabled` | Whose station config enabled this skill. |
 | `skillUsed` | That read this skill. |
 | `server` | That called this MCP server. |
 | `serverFailed` | With a call to this MCP server that failed. |
@@ -153,11 +153,11 @@ is answered `404`. See
 | --- | --- |
 | `401` | No session or token, or an unknown, expired or revoked token. |
 | `404` | There is no such team, the team is not in the caller's workspace, the caller is a token without the `read` scope, or the caller is a person neither on the team nor an owner or admin of the workspace: `Team <teamId> not found.` For `/alerts/{alertId}`, also an alert of another team or none: `Alert <alertId> not found.` |
-| `422` | On every endpoint but `/alerts/{alertId}`, `period` is not `7d`, `30d` or `90d`, or is given twice: `Period must be 7d, 30d or 90d.` See below for the filters. |
+| `422` | On every endpoint but `/alerts/{alertId}`, `period` is not `7d`, `30d` or `90d`, or is sent twice: `Period must be 7d, 30d or 90d.` See below for the filters. |
 
 On `/runs`, where `<filter>` names the parameter as `line`, `station`,
 `outcome`, `harness`, `model`, `repository`, `station config`, `task`,
-`person`, `day`, `week`, `skill given`, `skill used`, `server`,
+`person`, `day`, `week`, `skill enabled`, `skill used`, `server`,
 `server that failed`, `server failed after`, `refused tool`,
 `refused server`, `delivery`, `next act` or
 `answer to whether the task asked`:

@@ -105,7 +105,7 @@ the copy has no registry digest.
 ### Harness keys
 
 These variables, when `SPOTLIGHT_SANDBOX_ENV` or `SPOTLIGHT_SANDBOX_PASS`
-gives them a value, are kept by egress. The sandbox gets the stand-in
+gives them a value, are stored by egress. The sandbox gets the stand-in
 `spotlight-egress:<NAME>`.
 
 | Variable | Sent to | Header |
@@ -121,20 +121,20 @@ Any other variable, including `CURSOR_API_KEY`, enters the sandbox as it is.
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `SPOTLIGHT_EGRESS_ALLOW` | none | Comma-separated hosts sandboxes may reach. An entry is an exact host, or `*.example.com` for its subdomains. `*` alone is rejected. Without it, any host is admitted; see [Admitted hosts](/docs/reference/hosts/egress#admitted-hosts). |
+| `SPOTLIGHT_EGRESS_ALLOW` | none | Comma-separated hosts sandboxes may reach. An entry is an exact host, or `*.example.com` for its subdomains. `*` alone is rejected. Without it, any host is allowed; see [Allowed hosts](/docs/reference/hosts/egress#allowed-hosts). |
 | `SPOTLIGHT_EGRESS_SECRET_ALLOW` | none | Comma-separated AWS Secrets Manager secret names or ARNs egress may read, or prefixes ending in `*`. |
 | `SPOTLIGHT_EGRESS_IMAGE` | `ghcr.io/usespotlightai/spotlight-runner:<release>`, or `:latest` for a binary built without a release | The image egress runs from. Entries in `SPOTLIGHT_RUNNER_IMAGE` do not change it. |
 | `SPOTLIGHT_EGRESS_ENV` | `egress.env` beside the config file | A file of variables only egress gets. |
 | `SPOTLIGHT_EGRESS_PASS` | none | Comma-separated names of the host's own variables to pass to egress only. |
 | `SPOTLIGHT_EGRESS_CA_BUNDLE` | none | A PEM file of certificate authorities egress trusts upstream. Sandboxes do not trust them. |
 
-See [Egress](/docs/reference/hosts/egress) for what egress admits and blocks.
+See [Egress](/docs/reference/hosts/egress) for what egress allows and blocks.
 
 ## Error reporting
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `SENTRY_DSN` | none | Where the host reports its errors. When it is set, the host gives it to each sandbox and egress it starts as `SPOTLIGHT_SENTRY_DSN`, and egress admits the server's host. |
+| `SENTRY_DSN` | none | Where the host reports its errors. When it is set, the host gives it to each sandbox and egress it starts as `SPOTLIGHT_SENTRY_DSN`, and egress allows the server's host. |
 | `SENTRY_ENVIRONMENT` | the Sentry SDK's default | The environment on each report. The host gives it to each sandbox and egress as `SPOTLIGHT_SENTRY_ENVIRONMENT`. |
 
 See [Error reporting](/docs/reference/error-reporting) for what a report contains.
@@ -164,7 +164,7 @@ together. Messages include:
 | Message | Cause |
 | --- | --- |
 | `SPOTLIGHT_URL is required` | No address. |
-| `SPOTLIGHT_TOKEN and SPOTLIGHT_TRUST are different ways in; give one` | A token together with a trust or a token file. |
+| `SPOTLIGHT_TOKEN and SPOTLIGHT_TRUST are different ways in; set one` | A token together with a trust or a token file. |
 | `SPOTLIGHT_TOKEN (a pull pool's token) is required, or SPOTLIGHT_TRUST and SPOTLIGHT_OIDC_TOKEN_FILE to claim through a runner trust` | Neither a token nor a trust. |
 | `SPOTLIGHT_OIDC_TOKEN_FILE names the workload token file, and is required with SPOTLIGHT_TRUST` | Trust without a token file. |
 | `SPOTLIGHT_CAPACITY: "<x>" is not a count of at least 1` | Bad capacity. |

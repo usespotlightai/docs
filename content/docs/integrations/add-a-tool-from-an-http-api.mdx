@@ -1,8 +1,8 @@
 ---
 type: how-to
 icon: SquarePen
-title: Give stations a tool from an HTTP API
-description: Create an integration that turns a request to an HTTP API into a tool, and give that tool to a station's agents.
+title: Add a tool from an HTTP API
+description: Create an integration that turns a request to an HTTP API into a tool, and enable that tool at a station.
 ---
 
 The agent gets a command that calls the API, and Spotlight keeps the API key,
@@ -23,7 +23,7 @@ The example uses a placeholder API at `api.acme.example` that takes a comment
 as a JSON `POST` to `/comments`. Put your own API's host, path and body in its
 place.
 
-## Keep the API key as a secret
+## Store the API key as a secret
 
 Bind the secret to the API's host, in the header and with the prefix the API
 expects. Spotlight sends it to that host only, over HTTPS.
@@ -129,7 +129,7 @@ labels = { schema = { type = "array", items = { type = "string" } } }
 If the API names a field `team_id` or `teamId`, name the input the same way:
 an input name may contain letters, digits, `_` and `-`.
 
-## Give the tool to a station
+## Enable the tool at a station
 
 Add the tool to the station's `tools` in the line. Name it through the
 integration's `tools` map, so renaming or removing the tool fails the plan
@@ -154,7 +154,7 @@ calls it as a command:
 spotlight acme comment --issue ACME-42 --body "Fixed in the linked pull request."
 ```
 
-`spotlight tools` lists the tools a run was given, with their flags.
+`spotlight tools` lists the tools enabled for a run, with their flags.
 `spotlight tools describe acme.comment` prints one with its inputs and an
 example call.
 

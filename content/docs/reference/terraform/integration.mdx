@@ -64,7 +64,7 @@ resource "spotlight_integration" "core_acme" {
 }
 ```
 
-Acme is an example name for any HTTP service. A station gives this tool as `acme.comment`.
+Acme is an example name for any HTTP service. A station enables this tool as `acme.comment`.
 
 ## Top level
 
@@ -139,7 +139,7 @@ that name themselves in a cycle, produce a warning and are then ignored.
 | `oauth2.discover` | boolean | `false` | Find the endpoints, the registration endpoint and the scopes from what the MCP server named in `mcp.url` publishes. See [Discovery](#discovery). |
 | `oauth2.authorize` | string | required unless `discover` | The host's authorization endpoint. |
 | `oauth2.token` | string | required unless `discover` | The host's token endpoint. |
-| `oauth2.scopes` | array of strings | `[]` | Scopes asked for, joined by spaces. |
+| `oauth2.scopes` | array of strings | `[]` | Scopes requested, joined by spaces. |
 | `oauth2.identity` | string | none | An expression. Names the linked account, shown as "Connected as" in the web app. Sees `response`, the token endpoint's response. |
 | `oauth2.registration` | string | none | A URL. The host's dynamic client registration endpoint (RFC 7591). Used only when the deployment has no OAuth client for the integration. See [Client registration](#client-registration). |
 | `oauth2.resource` | string | none | A URL. Sent as the `resource` parameter (RFC 8707) on the authorization URL and on every token request. |
@@ -225,7 +225,7 @@ access token as `Authorization: Bearer`.
 One renewal of a connection runs at a time, across every control-plane
 instance, under a claim that lasts 30 seconds. A request answered `401` while
 another renewal has the claim waits for it, for up to 30 seconds, and is sent
-again with the new token. A refresh token the host rotates is kept. When the
+again with the new token. A refresh token the host rotates is stored. When the
 host does not renew it, the connection is marked failed until it is made again.
 A person whose connection failed is asked to connect again the next time a
 tool needs it.
@@ -239,7 +239,7 @@ The registration is a `POST` of JSON with `client_name` `Spotlight`, the
 callback URL as the one `redirect_uris` entry, `grant_types`
 `authorization_code` and `refresh_token`, `response_types` `code` and
 `token_endpoint_auth_method` `client_secret_post`. The answer must contain a
-`client_id`; a `client_secret` is kept sealed, with its
+`client_id`; a `client_secret` is stored sealed, with its
 `client_secret_expires_at`. The client is reused until the registration
 endpoint or the callback URL changes or the client secret expires, and is then
 registered again. A client without a secret sends no `client_secret` on token
@@ -277,7 +277,7 @@ does not list `S256`, or when the protected resource metadata names a
 `resource` that is neither `mcp.url` nor on its origin above its path. Then the
 integration does not link, and beginning a connection answers `404`. Every
 request goes only to hosts on the deployment's outbound allow-list, and each
-waits at most 15 seconds. What was found is kept for 10 minutes on each control
+waits at most 15 seconds. What was found is cached for 10 minutes on each control
 plane server.
 
 The client a connection uses is bound to the authorization server it was made
@@ -285,7 +285,7 @@ with: its issuer, authorization endpoint and token endpoint.
 
 | Client | Bound by |
 | --- | --- |
-| Registered at `registration_endpoint` | Spotlight keeps the three with the registration. When a later discovery finds others, the next connection registers again, and exchanging a code or renewing a token with the old client fails. |
+| Registered at `registration_endpoint` | Spotlight stores the three with the registration. When a later discovery finds others, the next connection registers again, and exchanging a code or renewing a token with the old client fails. |
 | Configured in the deployment for the integration | Its configured `issuer`. A deployment client without an `issuer`, or with another one, is not used for a discovered server, and the integration does not link. |
 
 ## Webhook
@@ -297,7 +297,7 @@ with: its issuer, authorization endpoint and token endpoint.
 | `respond` | object | none | A handshake response. `when` (an expression that returns bool) and `body` (an expression). When `when` is true, Spotlight returns `200` with `body` and does not read the delivery further. |
 | `mine` | string | none | An expression that returns bool. When it is true, the delivery is the host echoing Spotlight's own post, and its happenings are dropped. |
 | `route` | object | none | `by` (expression). Type-checked. Deliveries go to the integration's team whatever it returns. |
-| `parse` | string | `json` | `json` or `form`. Kept in the definition. Not used when a delivery is read. |
+| `parse` | string | `json` | `json` or `form`. Stored in the definition. Not used when a delivery is read. |
 | `delivery` | string | none | An expression. The delivery's id. A delivery with an id already taken is not processed again. Without it, the SHA-256 of the raw body. |
 | `events` | array of objects | required | At least one. See [events](#events). |
 
@@ -469,7 +469,7 @@ A request appears in `actions`, `poll.request`, `lookup.request` and
 | `expect.success` | string | none | An expression that returns bool. When set, decides whether the request succeeded. |
 | `expect.status` | array of integers | none | Statuses that count as success, when `expect.success` is not set. |
 | `capture` | map of name to string | none | Values read from the response. Each value is an expression. |
-| `retry` | object | none | `times` (integer, default `0`) and `backoff` (string). Kept in the definition; a request is sent once. |
+| `retry` | object | none | `times` (integer, default `0`) and `backoff` (string). Stored in the definition; a request is sent once. |
 
 Without `expect`, a request succeeds on any `2xx` status. An expression in
 `url`, `query`, `headers` or `body` that fails to evaluate fails the request
@@ -512,7 +512,7 @@ Input:
 | `default` | string | none | The value when none is given. Sees `task`. May contain expressions. |
 | `piped` | boolean | `false` | The input may be piped to the tool command. At most one input per tool, and it must take text. |
 
-An input may not be named `json`: Spotlight keeps that name for handing a tool
+An input may not be named `json`: Spotlight reserves that name for handing a tool
 every input at once, and rejects the tool with
 `tool <integration>.<tool> cannot take reserved input json. That input hands a tool every input at once`.
 
@@ -528,7 +528,7 @@ For an integration with `connection.oauth2`, the answer to a tool call carries
 (`team` or `person`), `personId` (for a person) and `handle`, the account the
 host named. `spotlight <tool>` prints only the output. See [Holder](#holder).
 
-A tool that a station gives or a hook matches or calls cannot be removed
+A tool that a station enables or a hook matches or calls cannot be removed
 from the definition; the update fails with `409`.
 
 ### Input schemas
@@ -603,11 +603,11 @@ Spotlight reads OpenAPI 3.0 and 3.1. An `openapi` with both or neither of
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `url` | string | required | The endpoint. Generated calls are sent to it as `POST`. Without `document`, Spotlight reads the schema by asking the endpoint for it (introspection). |
-| `document` | string | none | The schema in GraphQL's schema language, read in place of asking the endpoint. |
+| `url` | string | required | The endpoint. Generated calls are sent to it as `POST`. Without `document`, Spotlight reads the schema by requesting it from the endpoint (introspection). |
+| `document` | string | none | The schema in GraphQL's schema language, read in place of a request to the endpoint. |
 | `depth` | integer | `2` | 1 to 5. How many levels of fields a generated call selects in its answer. |
 | `revision` | string | none | Any text. A change makes Spotlight read the schema again. |
-| `auth` | object | none | As a request's [`auth`](#requests). Sent when Spotlight asks for the schema, and with every generated call. |
+| `auth` | object | none | As a request's [`auth`](#requests). Sent when Spotlight requests the schema, and with every generated call. |
 | `tools` | object | `{}` | See [Choosing tools](#choosing-tools). |
 
 A generated call selects, at each level, every field that takes no required
@@ -674,7 +674,7 @@ An operation that gets no tool gives a warning at `openapi` or `graphql`, as
 | `It takes <name>, which a tool cannot take` | A GraphQL argument whose name a tool input cannot have. |
 | `It takes "<name>", which a tool cannot take` | An input named `json`, or not letters, digits, `_` and `-`. |
 | `It calls <host>. Spotlight injects the token of the connection only for the host of the description or the host that baseUrl names` | With `auth.oauth2` and no `baseUrl`, the operation's server is on another host than the description. |
-| `It needs approval and takes intent, an input that Spotlight keeps for the agent to say what it wants to do. To offer it, switch its approval off in <openapi or graphql>.tools.approval` | The operation asks a person first and has an input named `intent`. With its `tools.approval` set to `false` it is offered. |
+| `It needs approval and takes intent, an input that Spotlight reserves for the agent to say what it wants to do. To offer it, switch its approval off in <openapi or graphql>.tools.approval` | The operation asks a person first and has an input named `intent`. With its `tools.approval` set to `false` it is offered. |
 
 ### Reading the description
 
@@ -719,8 +719,8 @@ Problems include:
 | `could not be made sense of: <error>` | Reading the operations of an OpenAPI description or a GraphQL schema failed with an unexpected error, or needed more than the 1,024 MB of memory it is given. |
 | `is a Swagger 2 description. Spotlight reads only OpenAPI 3. Please convert it to OpenAPI 3` | `swagger: "2.0"`. |
 | `is not an OpenAPI 3 description. An OpenAPI 3 description says openapi: 3.0 or 3.1` | No `openapi: 3.x`. |
-| `names no server to call. Please give the openapi block a baseUrl` | No `baseUrl`, no server, and no `url`. |
-| `names the server "<server>", which is not a web address. Please give the openapi block a baseUrl` | No `baseUrl`, and the description's server cannot be made a web address. |
+| `names no server to call. Please add a baseUrl to the openapi block` | No `baseUrl`, no server, and no `url`. |
+| `names the server "<server>", which is not a web address. Please add a baseUrl to the openapi block` | No `baseUrl`, and the description's server cannot be made a web address. |
 | `is not a GraphQL schema Spotlight can read: <error>` | The answer or `document` is not a GraphQL schema. |
 
 ### Described

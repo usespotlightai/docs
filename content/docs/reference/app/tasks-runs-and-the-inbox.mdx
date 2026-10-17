@@ -82,15 +82,15 @@ Any other ending is handled as `review`, with one of these notes:
 | --- | --- |
 | No handover | `The run finished without saying where the task should go next.` |
 | No outcome reported | `The run ended without reporting an outcome.` |
-| A key that is not a station on the line | `The run asked for station "<key>". This line has no such station.` |
-| The task's current station | `The run asked for station "<key>". The task is already there.` |
-| A station with no harness | `The run asked for station "<key>". Nothing runs there to take up the task.` |
-| A station the current one does not pass to | `The run asked for station "<key>". Work does not pass there from the task's station.` |
+| A key that is not a station on the line | `The run requested station "<key>". This line has no such station.` |
+| The task's current station | `The run requested station "<key>". The task is already there.` |
+| A station with no harness | `The run requested station "<key>". Nothing runs there to take up the task.` |
+| A station the current one does not pass to | `The run requested station "<key>". Work does not pass there from the task's station.` |
 | `done` where the line does not end | `The run handed over the task as done. The task is not at the end of its line.` |
 | The run failed | `The run failed: <message>`, with a failure. See [Failure codes](#failure-codes). |
 | The runner was lost, or the host stopped the sandbox at its run timeout, on the last attempt | `The run did not finish after <n> attempts. Spotlight does not try it again.`, with the failure `runner-lost` or `timed-out`. |
 | The run was stopped | `A person stopped the run. The task is back with you.` |
-| A hook on `handover.giving` denied it | The hook's reason, then `Note from the run: <note>`. See [`spotlight_hook`](/docs/reference/terraform/hook). |
+| A hook on `handover.submitting` denied it | The hook's reason, then `Note from the run: <note>`. See [`spotlight_hook`](/docs/reference/terraform/hook). |
 
 If a reaction became a deferred move while the run worked on the task, every
 ending other than a station key moves the task to the station of the latest
@@ -110,7 +110,7 @@ A move to another station:
 
 - raises the task's revision;
 - ends the task's run, for a person's move: a queued run is cancelled, a
-  claimed run is asked to stop, and a waiting or suspended run is completed;
+  claimed run is told to stop, and a waiting or suspended run is completed;
 - finishes the task if the station is completed, and unfinishes it otherwise;
 - starts a run if the task is idle at a station with a harness.
 
@@ -125,7 +125,7 @@ When a happening finds a task, the line decides one of these outcomes:
 | --- | --- | --- |
 | nothing | The task is at the completed station, or none of the other outcomes applies. | None. |
 | moves | A reaction for the happening, from this station or from any, leads to another station, and the task has no current run. | The task moves there. |
-| deferred move | As for moves, but the task has a current run, queued, claimed, waiting or suspended, and the station is not the completed station. | A `message` note `Heard while a run worked on the task. If the run does not pass the task on, the task moves to <Station> when the run ends.`, followed by the happening's message, or else its summary. The run gets the note, and keeps the task. A later `passed` note, or a later `asked` note other than an approval, drops deferred moves; a later `stays` outcome does not. |
+| deferred move | As for moves, but the task has a current run, queued, claimed, waiting or suspended, and the station is not the completed station. | A `message` note `This arrived while a run worked on the task. If the run does not pass the task on, the task moves to <Station> when the run ends.`, followed by the happening's message, or else its summary. The run gets the note, and keeps the task. A later `passed` note, or a later `asked` note other than an approval, drops deferred moves; a later `stays` outcome does not. |
 | interrupts | As for moves, but the task has a current run and the station is the completed station, and the task does not await a person's answer to a question (a pending approval does not count). | The run ends as for a person's move, and its later handover is ignored. The task is put to its assignee, or else the person who raised it, with an `asked` note in the world voice: `<What happened> while <Station> was working. Close the task, or reply to carry on.`, where `<What happened>` is the happening's text without its final full stop, and `its station` takes the place of `<Station>` when the station is not known. |
 | notes while waiting | As for interrupts, but the task already awaits a person's answer to a question. | A `message` note in the world voice, `<What happened> while <Station> was waiting for an answer. Close the task, or reply to carry on.`, added to the open conversation, with `its station` when the station is not known. The run keeps the task, and earlier deferred moves are cancelled. |
 | answers | No reaction leads to another station, the task awaits review, and the happening carries a message (`answers: true`). | An `answered` note; the run that asked carries on, or else a run starts at the same station. |
@@ -176,9 +176,9 @@ why (optional)`. See [Approvals](#approvals).
 | --- | --- | --- |
 | | `queued` | A task or chat is dispatched: it gets a new run. |
 | `queued` | `claimed` | A runner that meets the run's placement claims it, and no other run for the same task is claimed or waiting. |
-| `queued` | `failed` | The station gives what cannot be given: a catalog item that does not exist or that the plan does not include, or a harness profile the team does not have (`refused`). A push pool could not provision a runner (`unprovisioned`). |
+| `queued` | `failed` | The station enables what cannot be enabled: a catalog item that does not exist or that the plan does not include, or a harness profile the team does not have (`refused`). A push pool could not provision a runner (`unprovisioned`). |
 | `queued` | `cancelled` | The task moved to another station or was deleted. Or the run's replay or search stopped it, its replay reached its ceiling, or no runner claimed a search's run in time. |
-| `claimed` | `queued` | The lease expired, or the host stopped the sandbox at its run timeout (`timed-out`), no stop was asked for, and the run has had fewer than 3 attempts. Or its `run.starting` hooks could not be asked, and the run is requeued to wait. |
+| `claimed` | `queued` | The lease expired, or the host stopped the sandbox at its run timeout (`timed-out`), no stop was requested, and the run has had fewer than 3 attempts. Or its `run.starting` hooks could not be asked, and the run is requeued to wait. |
 | `claimed` | `waiting` | The turn ended cleanly with the task put to a person, and the runner reports the workspace stored for the turn. Only a task's run waits; a chat run never does. |
 | `waiting` | `claimed` | The person answers while the sandbox is kept, in the inbox, in the task's Slack thread or on the run's page. The answer goes to the same session, in the same attempt. A run asked to stop is not resumed. |
 | `waiting` | `suspended` | `SPOTLIGHT_ANSWER_WAIT` passes without an answer, at once when no host started the runner, or the lease expires. |
@@ -242,13 +242,13 @@ run and a search's agent run have the composer turned off, with
 | `unprepared` | The run failed before its harness started: its workspace, checkouts, attachments, skills or harness files could not be made ready, or its host could not start a sandbox with the line's image and its egress. | no |
 | `refused` | The run could not be given what its station names, or a hook denied its start. | no |
 | `unprovisioned` | A push pool did not provision a runner for it. | no |
-| `hooks-unanswered` | Its `run.starting` hooks could not be asked. | yes |
+| `hooks-unanswered` | Its `run.starting` hooks could not be called. | yes |
 | `runner-lost` | Its runner stopped renewing the lease. | yes |
 | `timed-out` | Its host stopped its sandbox for running past `SPOTLIGHT_RUN_TIMEOUT`. | yes |
 | `cancelled` | It ended while it was queued. | no |
 | `superseded` | Its task had moved on. | no |
 
-A run whose `run.starting` hooks could not be asked is requeued and tried
+A run whose `run.starting` hooks could not be called is requeued and tried
 again, 6 attempts in all, waiting 5 seconds and doubling to at most 2 minutes.
 A run whose runner is lost, or that timed out, is queued again at once, 3
 attempts in all, counted together.
@@ -283,8 +283,8 @@ for more than one reason, the reasons are joined with `; `.
 | `harness_profile_unknown: Harness profile <profile> is not in this team. Station: <Station>` | The station's `profile` names no profile of the team. Code `refused`. |
 | `catalog_item_unknown: <reason>` | The station names a catalog item that does not exist. Code `refused`. |
 | `catalog_item_wrong_kind: <reason>` | The station names a catalog tool as a skill, or a skill as a tool. Code `refused`. |
-| `not_entitled: <reason>` | The workspace's plan does not include a catalog item the station gives. Code `refused`. |
-| `entitlement_lapsed: <reason>` | The plan that included a catalog item the station gives has lapsed. Code `refused`. |
+| `not_entitled: <reason>` | The workspace's plan does not include a catalog item the station enables. Code `refused`. |
+| `entitlement_lapsed: <reason>` | The plan that included a catalog item the station enables has lapsed. Code `refused`. |
 | `No runner was provisioned after <n> attempts. Last failure: <failure>` | No push pool started a runner. See [Provision call failures](/docs/reference/events/provision-call#failures). Code `unprovisioned`. |
 | `Hooks did not answer after <n> tries. Last error: <reason>` | Its `run.starting` hooks went unanswered on every attempt. Code `hooks-unanswered`. |
 
@@ -309,8 +309,8 @@ config. A chat's run records none.
 | Profile | The harness profile's key, rules, MCP servers and native settings. Each MCP server's environment values are kept as SHA-256 digests. |
 | Image | The line's runner image. |
 | Repositories | Each repository of the line, with its `setup` command. |
-| Skills | Each team and catalog skill given, with a SHA-256 of its files. Built-in skills are left out. |
-| Tools | The tools given. |
+| Skills | Each team and catalog skill enabled, with a SHA-256 of its files. Built-in skills are left out. |
+| Tools | The tools enabled. |
 | Decisions, memories | Whether the station drafts them. |
 | Judge | The SHA-256 of the judge's rubric, its `sample` and its `trust`, when the station has a [judge](/docs/reference/terraform/line#judge-fields). The station's alerts are not part of the config. |
 
@@ -409,9 +409,9 @@ characters) and description (up to 4,000), the run's steps from every attempt,
 and the hunks of its file changes, each file compared from before its first
 change to after its last, with 3 lines of context.
 
-| Evidence | Kept |
+| Evidence | What the judge reads |
 | --- | --- |
-| Steps | The latest, up to 80,000 characters together. A step's text is cut at 4,000 characters, and what a tool was given and returned at 2,000 each. |
+| Steps | The latest, up to 80,000 characters together. A step's text is cut at 4,000 characters, and a tool's input and output at 2,000 each. |
 | Hunks | The first that fit in 60,000 characters together. A hunk is cut to its first 200 lines, followed by `… <n> more lines`, and each line at 500 characters. A hunk that does not fit is skipped, and the ones after it are still tried. A hunk is named `<path>#<n>`, counting from 1. |
 
 The judge is told how many steps and hunks were left out.
@@ -875,7 +875,7 @@ known:
 | Memory | The memory. |
 | Kind | The kind, with what it means on hover. |
 | Applies to | "The whole team", "This line" or "This station". |
-| Files | `<paths> in <repository>`, or the repository alone for a memory about the whole repository. Only for a memory kept for a repository. |
+| Files | `<paths> in <repository>`, or the repository alone for a memory about the whole repository. Only for a memory scoped to a repository. |
 | Source | The notes and steps it was drawn from: each note with a person's name, "A teammate" or "Another tool", and each step with the run's harness or "The agent". |
 
 An undecided card has a copy icon, an edit icon, "Reject" and "Approve". The
@@ -1039,7 +1039,7 @@ rule for it as well as the team's. Of the two, the stricter wins:
 | Team | Person | Result |
 | --- | --- | --- |
 | Runs without asking | Allow | The call runs. |
-| Runs without asking | Ask me first | The call waits, and only that person can approve it. The ask reads `<Name> asks to approve each call made with their <Integration> connection.`, with `The person` when the person has no name. |
+| Runs without asking | Ask me first | The call waits, and only that person can approve it. The ask reads `<Name> wants to approve each call made with their <Integration> connection.`, with `The person` when the person has no name. |
 | Needs approval | Allow | The call waits, and the task's assignee can approve it. |
 | Needs approval | Ask me first | The call waits with the team's reason, and only that person can approve it. |
 | Either | Block | The call never runs. The call fails with `<tool> was not used, so nothing was sent: <person> blocks it on calls made with their connection.`, or `the person it acts as` in place of `<person>` when the person has no name. |
@@ -1063,14 +1063,14 @@ See [Let a person ask first or block a tool](/docs/integrations/require-approval
 A person may approve a tool call with changed inputs, given as `inputs` with
 `approve: true` when answering the inbox item.
 
-- The changes name exactly the inputs the call was asked with. Inputs cannot
+- The changes name exactly the inputs the tool was called with. Inputs cannot
   be added or removed.
 - Each value has the type of the input it replaces: any text for a `string`, a
   finite number for a `number`, `true` or `false` for a `boolean`.
 - A changed list or object is checked against the input's schema, and rejected
   naming where it does not fit. See
   [Input schemas](/docs/reference/terraform/integration#input-schemas).
-- A value may not be blank where the call was asked with one.
+- A value may not be blank where the tool was called with one.
 - A harness permission and a dismissal take no changes.
 - Changes that leave every input as it was are recorded as no change.
 
@@ -1078,7 +1078,7 @@ An answer that breaks these rules fails with `409`. See
 [Answering an approval](/docs/reference/errors-and-messages#answering-an-approval).
 
 The answer the agent reads is the person's words, or `Approved.`, followed by
-`I changed what it runs with. Call it again as you asked and it runs with these
+`I changed what it runs with. Call it again as before and it runs with these
 instead:` and every input of the changed call. A one-line value reads
 ``<input>: `<value>` ``; a longer one follows its name in a code block. Values
 over 400 characters are cut, ending in `…`.
@@ -1142,7 +1142,7 @@ root, each part made of letters, digits, `.`, `_` and `-`, and never `.` or
 `..`. Its agent is briefed to survey the repositories and the team's tools and
 to open a pull request with the team's Terraform there, with
 [`setup-pull-request`](/docs/reference/built-ins/built-in-tools-and-skills#setup-pull-request).
-The chat keeps the pull request. Its runs reach Spotlight's API with
+The chat keeps the pull request. Its runs use Spotlight's API with
 [the run's Spotlight token](/docs/reference/hosts/egress#the-runs-spotlight-token).
 A setup chat needs egress: a host that serves the workspace, or a push pool
 that names an egress. Without either, starting one fails with `422` and
@@ -1180,6 +1180,6 @@ at a station with a harness starts a run at once.
 | Property | Value |
 | --- | --- |
 | Largest file | 25 MiB |
-| Given with | A task, an answer, a message to a run, a chat message. |
+| Attached to | A task, an answer, a message to a run, a chat message. |
 | In the run | `.spotlight/attachments/<id>/<name>` in the run's workspace. |
 | In the briefing | Listed under `Attached, in the workspace:`. |

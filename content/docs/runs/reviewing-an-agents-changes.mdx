@@ -28,17 +28,17 @@ lines](/docs/reference/built-ins/built-in-lines)), and a station that writes cod
 have one as well as a station that reviews a pull request.
 
 The stack has a page of its own under the run, is linked from the task, and is
-kept as a comment on the task's pull request, updated when a newer stack is
+stored as a comment on the task's pull request, updated when a newer stack is
 ready.
 
 ### Drafted after the run, not by the agent
 
 A stack is drafted after the agent has finished. The runner diffs each
 checkout against the point where the work branched off, sends the diff to
-Spotlight, and Spotlight asks a hosted model to arrange it. The agent is not
+Spotlight, and Spotlight prompts a hosted model to arrange it. The agent is not
 involved and cannot skip it.
 
-This was not always so. Stacks began as something the agent was asked to
+This was not always so. Stacks began as something the agent was told to
 produce, then as a tool it could call, and only later became a step that happens
 on its own once a station says it wants one. Now a stack does not depend on
 whether an agent chose to make one. It is made the same way for every run and
@@ -58,7 +58,7 @@ tests, in the layer where the last of that code arrives; both sides of a move
 sit in one layer; a migration opens its cohort; and every change appears
 exactly once.
 
-If the model's first arrangement breaks a rule, it is asked again with the
+If the model's first arrangement breaks a rule, it gets a new request with the
 problems listed. If it still breaks one, the stack fails with a note saying it
 could not place every change in order, because Spotlight does not accept the
 last attempt as good enough. More stacks fail that way, and none are silently
@@ -92,7 +92,7 @@ inputs, or tried one approach and dropped it. Those are the things a reviewer
 most needs to question, and they live in the agent's own account of its work:
 what it said, thought and planned during the run.
 
-A station with `decisions: true` has these drawn out after each run and kept
+A station with `decisions: true` has these drawn out after each run and stored
 with the task. By default that is Delivery's implementation station. Each
 decision is one of a few kinds (a trade-off, an assumption, a limitation, a
 rejected approach, or a deviation from what was asked), and each has to point

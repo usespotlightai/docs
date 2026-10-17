@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Egress
-description: The proxy beside each sandbox and the shared egress of push pools, what each admits and blocks, which secrets it injects into requests to which hosts, what it records, and the responses it returns.
+description: The proxy beside each sandbox and the shared egress of push pools, what each allows and blocks, which secrets it injects into requests to which hosts, what it records, and the responses it returns.
 ---
 
 Egress is the proxy between a sandbox and the network. It has two forms:
@@ -36,17 +36,17 @@ On start, egress reads `/run/spotlight/egress.json` from the host and deletes
 it. It fetches the run's secrets from Spotlight, for up to 1 minute. It then
 listens, and writes its certificate authority for the host to lay into the
 sandbox. The host waits up to 90 seconds for it. On `SIGTERM` it stops within 5
-seconds and clears the secret values it kept.
+seconds and clears the secret values it stored.
 
-## Admitted hosts
+## Allowed hosts
 
-| `SPOTLIGHT_EGRESS_ALLOW` | Admitted |
+| `SPOTLIGHT_EGRESS_ALLOW` | Allowed |
 | --- | --- |
 | unset or empty | Any host. |
-| a list | Each exact host listed, and the subdomains of each `*.<domain>` entry. `*.example.com` admits `api.example.com`, not `example.com`. |
+| a list | Each exact host listed, and the subdomains of each `*.<domain>` entry. `*.example.com` allows `api.example.com`, not `example.com`. |
 
 Host names are compared without regard to case. The Spotlight address, and the
-storage hosts Spotlight names for the run, are always admitted. `*` alone is
+storage hosts Spotlight names for the run, are always allowed. `*` alone is
 rejected at host start.
 
 ## Blocked addresses
@@ -88,7 +88,7 @@ with its prefix, as in `authorization: Bearer spotlight-egress:OPENAI_API_KEY`.
 Egress logs one of these reasons and sends the request without the harness
 key:
 
-- `the host's allow-list does not admit <host>`
+- `the host's allow-list does not allow <host>`
 - `it is empty or more than one line`
 
 ### Run secrets
@@ -112,14 +112,14 @@ intercepted request it could not pass on with only
 
 | Secret source | How egress gets the value |
 | --- | --- |
-| Kept by Spotlight | Sealed to a key egress makes for the run (X25519, HKDF-SHA256, AES-256-GCM, bound to the run and the secret). |
-| AWS Secrets Manager | Read by egress with the host's AWS identity, from the default credential chain and `SPOTLIGHT_EGRESS_ENV`. Only a secret `SPOTLIGHT_EGRESS_SECRET_ALLOW` admits. |
+| Stored by Spotlight | Sealed to a key egress makes for the run (X25519, HKDF-SHA256, AES-256-GCM, bound to the run and the secret). |
+| AWS Secrets Manager | Read by egress with the host's AWS identity, from the default credential chain and `SPOTLIGHT_EGRESS_ENV`. Only a secret that `SPOTLIGHT_EGRESS_SECRET_ALLOW` allows. |
 
 Egress logs one of these reasons and sends the request without the run
 secret:
 
 - `the host has a key of its own for <host>`
-- `the host's allow-list does not admit <host>`
+- `the host's allow-list does not allow <host>`
 - `the host does not let egress read <secret id>`
 - `another secret is already injected in <Header> for <host>`, or
   `in ?<parameter> for <host>` for a query parameter
@@ -139,7 +139,7 @@ headers, and in a text-like body (JSON, `text/*`, HTML, XML and form-encoded),
 every spelling of the value is swapped back to its stand-in: as written,
 query-escaped, path-escaped and escaped with lowercase hex, each with and
 without the binding's prefix. A binary body, or one the host compressed, is
-passed on as it is. Egress asks the bound host for an uncompressed answer. A
+passed on as it is. Egress requests an uncompressed answer from the bound host. A
 response it rewrites loses its `Content-Length` and is sent chunked.
 
 Reading a secret from AWS Secrets Manager fails with:
@@ -148,7 +148,7 @@ Reading a secret from AWS Secrets Manager fails with:
 | --- | --- |
 | `find the host's AWS identity: <error>` | No AWS identity. |
 | `AWS Secrets Manager answered <code>` | An AWS error. |
-| `AWS Secrets Manager could not be asked: <error>` | AWS not reached. |
+| `could not call AWS Secrets Manager: <error>` | AWS not reached. |
 | `AWS Secrets Manager has no text for it` | No text value. |
 | `its value in AWS Secrets Manager is not JSON, so it has no <field> field` | `field` set, value not JSON. |
 | `its value in AWS Secrets Manager has no text at <field>` | `field` missing. |
@@ -158,9 +158,9 @@ Egress logs each failure, and the request goes out without that secret.
 ### The run's Spotlight token
 
 A run of a [setup chat](/docs/configuration/let-the-agent-write-your-first-terraform)
-reaches Spotlight's own API. When egress fetches the run's secrets, Spotlight issues a
+uses Spotlight's own API. When egress fetches the run's secrets, Spotlight issues a
 workspace token for that run's attempt alone and seals it to egress, like a
-secret it keeps.
+secret it stores.
 
 | Property | Value |
 | --- | --- |
@@ -172,15 +172,15 @@ secret it keeps.
 | Injected | In `Authorization`, in place of the stand-in or `Bearer ` and the stand-in, on requests to the Spotlight address's host. |
 
 Egress injects it whatever the host's allow-list says, since the Spotlight
-address is always admitted. When the Spotlight address is plain HTTP, as in
+address is always allowed. When the Spotlight address is plain HTTP, as in
 `http://control-plane:3000` inside the host's network, egress also injects it
 over plain HTTP, on that address's port only. No other secret is injected over
 plain HTTP. Egress does not keep the token when the host has a key of its own
 for the Spotlight address, or another secret is injected in `Authorization` for
-it, and logs `could not keep the run's Spotlight token` with the reason.
+it, and logs `could not store the run's Spotlight token` with the reason.
 
 The token is not listed among the workspace's
-[tokens](/docs/reference/api/workspace-token). A run that reaches Spotlight's
+[tokens](/docs/reference/api/workspace-token). A run that uses Spotlight's
 API is reserved for a runner a push pool provisions only when the pool names
 an egress.
 
@@ -189,8 +189,8 @@ an egress.
 | Status | Message | Cause |
 | --- | --- | --- |
 | `407` | `Egress answers only the sandbox it was started for.` | No proxy credential, or the wrong one. |
-| `400` | `Egress is a proxy. Please ask it for an absolute URL, or CONNECT to a host.` | A request that is neither `CONNECT` nor an absolute URL. |
-| `403` | `Egress doesn't let this sandbox reach <host>.` | The allow-list does not admit the host. |
+| `400` | `Egress is a proxy. Please send it an absolute URL, or CONNECT to a host.` | A request that is neither `CONNECT` nor an absolute URL. |
+| `403` | `Egress doesn't allow this sandbox to connect to <host>.` | The allow-list does not allow the host. |
 | `502` | `Egress couldn't reach <host:port>. Error: Egress never opens a connection to <ip>.` | A tunnelled `CONNECT` to an always-blocked address. |
 | `502` | `Egress couldn't reach <host:port>. Error: Egress opens a connection to private address <ip> only if the allow-list names the host.` | A tunnelled `CONNECT` to a private address the allow-list does not name. |
 | `502` | `Egress couldn't reach <host:port>. Error: <reason>` | Any other failure of a tunnelled `CONNECT`. |
@@ -211,7 +211,7 @@ These fail the run with `The sandbox's egress didn't start. Error: <error>`:
 | `pull the egress image <image>: <error>` | The egress image could not be pulled. |
 
 If Spotlight does not send the run's secrets, egress starts with no secrets to
-inject and logs `the control plane gave egress no secrets to inject`. If it cannot reach
+inject and logs `the control plane sent egress no secrets to inject`. If it cannot reach
 Spotlight within 1 minute, it logs
 `gave up fetching the run's secrets; the sandbox goes out with no injected secrets`.
 
@@ -228,7 +228,7 @@ A shared egress is `spotlight egress serve`: one long-lived process that
 serves the runs of every push pool that names it in
 [`provision.egress`](/docs/reference/terraform/runner-pool#egress). It keeps
 each run's secrets in memory while the run's runner has a lease on the run. A push pool
-without `provision.egress` has no egress: a run that uses secrets, or reaches
+without `provision.egress` has no egress: a run that uses secrets, or uses
 Spotlight's API, is never reserved for its runners.
 
 | Egress | Run by | Named in `provision.egress` as |
@@ -252,16 +252,16 @@ Spotlight's API, is never reserved for its runners.
 | `SPOTLIGHT_EGRESS_TOKEN` | required | The egress token: the `token` of the `spotlight_egress`, or `SPOTLIGHT_PLATFORM_EGRESS_TOKEN` for the platform egress. |
 | `SPOTLIGHT_EGRESS_LISTEN` | `:3128` | The address egress listens on. |
 | `SPOTLIGHT_EGRESS_TLS_CERT`, `SPOTLIGHT_EGRESS_TLS_KEY` | none | A certificate and its key, as PEM files. With both, egress serves TLS 1.2 or later. Give both or neither. |
-| `SPOTLIGHT_EGRESS_ALLOW` | none | The allow-list for every run egress serves, as a host's. See [Admitted hosts](#admitted-hosts). |
+| `SPOTLIGHT_EGRESS_ALLOW` | none | The allow-list for every run egress serves, as a host's. See [Allowed hosts](#allowed-hosts). |
 | `SPOTLIGHT_EGRESS_SECRET_ALLOW` | none | Comma-separated AWS Secrets Manager secret names or ARNs egress may read, or prefixes ending in `*`. |
 | `SPOTLIGHT_EGRESS_CA_BUNDLE` | none | A PEM file of certificate authorities egress trusts upstream, in addition to its image's system certificates. |
 | `SPOTLIGHT_EGRESS_RATE` | `50` | Requests each second for each workspace. `0` is no limit. See [Limits](#limits). |
 | `SPOTLIGHT_EGRESS_CONNECTIONS` | `200` | Open connections for each workspace. `0` is no limit. See [Limits](#limits). |
 
 Egress reads AWS Secrets Manager with its own AWS identity, from the default
-credential chain. [Admitted hosts](#admitted-hosts) and
+credential chain. [Allowed hosts](#allowed-hosts) and
 [Blocked addresses](#blocked-addresses) apply as above. The Spotlight address's
-host, and the storage hosts Spotlight names for the run, are always admitted.
+host, and the storage hosts Spotlight names for the run, are always allowed.
 
 On a problem with its settings, egress logs each one, then `egress stopped`,
 and exits `1`:
@@ -271,7 +271,7 @@ and exits `1`:
 | `SPOTLIGHT_URL must be the address of the control plane, such as https://spotlight.example.com` | `SPOTLIGHT_URL` is not an absolute URL with a host. |
 | `SPOTLIGHT_EGRESS_TOKEN is required; it is the token the control plane issued for this egress` | No token. |
 | `SPOTLIGHT_EGRESS_ALLOW: <problem>` | An allow-list entry that cannot be read, as for a host. |
-| `SPOTLIGHT_EGRESS_TLS_CERT and SPOTLIGHT_EGRESS_TLS_KEY go together; give both or neither` | Only one of the two is set. |
+| `SPOTLIGHT_EGRESS_TLS_CERT and SPOTLIGHT_EGRESS_TLS_KEY go together; set both or neither` | Only one of the two is set. |
 | `SPOTLIGHT_EGRESS_TLS_CERT and SPOTLIGHT_EGRESS_TLS_KEY: <error>` | The certificate or the key cannot be read. |
 | `SPOTLIGHT_EGRESS_RATE: "<value>" is not a number of requests each second, or 0 for no limit` | A rate that is not a number, or is below `0`. |
 | `SPOTLIGHT_EGRESS_CONNECTIONS: "<value>" is not a number of open connections, or 0 for no limit` | A count that is not a whole number, or is below `0`. |
@@ -284,31 +284,31 @@ records it still has, removes every run from its memory, and exits `0`.
 
 ### Credentials
 
-| Credential | Kept by | Lets its holder |
+| Credential | Stored by | Lets its holder |
 | --- | --- | --- |
-| Egress token | The egress process. Spotlight keeps only its hash. | Call Spotlight as the egress: admit a runner, fetch the secrets of the runs it serves, ask which runs are still active, and record their connections. No runner gets it, and only a holder of it can fetch a run's secrets. |
-| Run proxy credential | The runner, from `SPOTLIGHT_EGRESS_PROXY_CREDENTIAL`. Spotlight makes one for each runner, puts it in the [provision call](/docs/reference/events/provision-call#egress), and keeps only its hash. | Send traffic through egress. It is not accepted by Spotlight's API. |
+| Egress token | The egress process. Spotlight stores only its hash. | Call Spotlight as the egress: authorize a runner, fetch the secrets of the runs it serves, check which runs are still active, and record their connections. No runner gets it, and only a holder of it can fetch a run's secrets. |
+| Run proxy credential | The runner, from `SPOTLIGHT_EGRESS_PROXY_CREDENTIAL`. Spotlight makes one for each runner, puts it in the [provision call](/docs/reference/events/provision-call#egress), and stores only its hash. | Send traffic through egress. It is not accepted by Spotlight's API. |
 
 Egress gives Spotlight the run proxy credential with its egress token.
-Spotlight admits the runner only while the runner has not ended, its pool
+Spotlight authorizes the runner only while the runner has not ended, its pool
 names that egress, and the egress is in the runner's workspace. Egress answers a request
-with no credential, or one Spotlight does not admit, with `407`.
+with no credential, or one Spotlight does not accept, with `407`.
 
 ### Runs it serves
 
 | When | Egress |
 | --- | --- |
-| A runner's first request | Asks Spotlight to admit the runner. |
+| A runner's first request | Requests that Spotlight authorize the runner. |
 | The runner has no lease on a run yet | Lets the runner reach only the Spotlight address's host. |
-| A request to any other host, or to `/.well-known/spotlight/bound` | Fetches the run's secrets, once. While the runner has no lease on a run, it asks again at most every 5 seconds. |
-| Every 30 seconds | Asks Spotlight which of its runs are still active, and removes the secrets of the others from its memory. |
-| A run with no request open, and no request for 2 minutes | Removes the run from its memory. Its next request admits it again. |
+| A request to any other host, or to `/.well-known/spotlight/bound` | Fetches the run's secrets, once. While the runner has no lease on a run, it tries again at most every 5 seconds. |
+| Every 30 seconds | Checks with Spotlight which of its runs are still active, and removes the secrets of the others from its memory. |
+| A run with no request open, and no request for 2 minutes | Removes the run from its memory. Its next request authorizes it again. |
 
 Egress calls Spotlight with its egress token as a bearer token:
 
 | Call | Answer |
 | --- | --- |
-| `POST /api/egress/admit` | The runner, its workspace and the Spotlight address's host. `401` for a token or a run proxy credential that Spotlight does not admit. |
+| `POST /api/egress/authorize` | The runner, its workspace and the Spotlight address's host. `401` for a token or a run proxy credential that Spotlight does not accept. |
 | `POST /api/egress/secrets`, with the run proxy credential | The run's secrets, sealed. `409` while the runner has no lease on a run yet. |
 | `POST /api/egress/active-runs` | `active`: the run proxy credentials whose runner still leases its run. At most 500 credentials in one request; more is answered `422`. Egress sends them in batches. |
 | `POST /api/egress/connections` | `204`. At most 2,000 records in one call; more is answered `422`. Egress sends them in batches. |
@@ -317,10 +317,10 @@ Egress calls Spotlight with its egress token as a bearer token:
 
 A runner given `SPOTLIGHT_EGRESS_URL` sends its own calls to Spotlight, its
 git traffic and the workspace archives through egress, in `CONNECT` tunnels.
-After it claims its work, it asks egress which hosts are bound, and opens a
+After it claims its work, it gets the list of bound hosts from egress, and opens a
 local proxy, the way out, at `127.0.0.1:3128`. A bound host is a host that a
 secret of the run is bound to, or the Spotlight address's host for a run that
-reaches Spotlight's API, if the allow-list admits it.
+uses Spotlight's API, if the allow-list allows it.
 
 The harness, the setup commands and the change stack checks get the way out
 in their environment:
@@ -336,9 +336,9 @@ in their environment:
 | Request to the way out | What the way out does |
 | --- | --- |
 | `CONNECT` to port `443` of a bound host | Ends the TLS with its own certificate authority, and sends each request to egress with `Spotlight-Egress-Target: <host>:443`. Egress injects the secrets, sends the request on over HTTPS, and takes the secrets out of the answer. |
-| Any other `CONNECT` | Asks egress for a `CONNECT` tunnel to the same host and port. Egress does not decrypt it. |
+| Any other `CONNECT` | Requests a `CONNECT` tunnel from egress to the same host and port. Egress does not decrypt it. |
 | A plain-HTTP request | Sends it through a `CONNECT` tunnel to the host's port. Egress injects nothing into it. |
-| Anything else | `400` `The way out is a proxy. Please ask it for an absolute URL, or CONNECT to a host.` |
+| Anything else | `400` `The way out is a proxy. Please send it an absolute URL, or CONNECT to a host.` |
 
 With `SPOTLIGHT_EGRESS_TRAFFIC=bound`, the way out connects to other hosts
 directly, not through egress: only requests to bound hosts go to egress. The
@@ -394,7 +394,7 @@ A record contains no URL, method, header or body.
 
 | `outcome` | `reason` | When |
 | --- | --- | --- |
-| `blocked` | `not-allowed` | The allow-list does not admit the host. |
+| `blocked` | `not-allowed` | The allow-list does not allow the host. |
 | `blocked` | `private-address` | Egress blocks the address of the host. See [Blocked addresses](#blocked-addresses). |
 | `blocked` | `not-bound` | A forwarded request names a host that is not bound. |
 | `failed` | `no-such-host` | The host name has no DNS record. |
@@ -449,12 +449,12 @@ A workspace can send up to the rate's number of requests at once.
 
 | Status | Message | Cause |
 | --- | --- | --- |
-| `407` | `Egress answers only a sandbox that gives its proxy credential.` | No proxy credential. |
-| `407` | `Egress does not know this sandbox.` | Spotlight did not admit the run proxy credential. |
-| `502` | `Egress could not ask the control plane about this sandbox. Please try again.` | Spotlight could not be asked. |
+| `407` | `Egress answers only a sandbox that sends its proxy credential.` | No proxy credential. |
+| `407` | `Egress does not know this sandbox.` | Spotlight did not accept the run proxy credential. |
+| `502` | `Egress could not get an answer from the control plane about this sandbox. Please try again.` | The control plane did not answer the request. |
 | `502` | `Egress could not get the run's secrets from the control plane. Please try again.` | The run's secrets could not be fetched. |
 | `400` | `Egress takes a CONNECT, a request that names its target in Spotlight-Egress-Target, or GET /.well-known/spotlight/bound.` | Any other request. |
-| `403` | `Egress does not let this sandbox reach <host>.` | The allow-list does not admit the host, or the runner has no lease on a run and the host is not the Spotlight address's. |
+| `403` | `Egress does not allow this sandbox to connect to <host>.` | The allow-list does not allow the host, or the runner has no lease on a run and the host is not the Spotlight address's. |
 | `502` | `Egress could not reach <host:port>. Error: <reason>` | A tunnel could not be opened, an address egress blocks included. |
 | `505` | `Egress tunnels only over HTTP/1.1. Please CONNECT over HTTP/1.1.` | A `CONNECT` over HTTP/2. |
 | `400` | `Spotlight-Egress-Target must be a host and port 443, such as api.example.com:443.` | A forwarded request to another port. |
