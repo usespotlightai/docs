@@ -118,7 +118,7 @@ replay candidate may not be named starting `Planned change`.
 | `reference` | object | `{ commit, pullRequest }`. |
 | `liveFingerprint`, `candidateFingerprint` | string | The [config fingerprints](/docs/reference/glossary#config-fingerprint) of the live and planned station. |
 | `keptLive` | array of strings | What the plan changed of `check`, `judge`, `diffs` and `runners`, which the check kept as the live station has them. |
-| `threshold` | object | `{ mostRegressions, minGain, ceiling, unpricedRun }`, from the live line when the check started. `minGain` is its `replay_check.min_gain`; `ceiling` caps each replay of the check; `unpricedRun` is what an unpriced run counts against it, or null once the replay is gone. |
+| `threshold` | object | `{ maxRegressions, minGain, ceiling, unpricedRun }`, from the live line when the check started. `minGain` is its `replay_check.min_gain`; `ceiling` caps each replay of the check; `unpricedRun` is what an unpriced run counts against it, or null once the replay is gone. |
 | `repeats` | number | How many times the check replays each run of the set. |
 | `gain` | object or null | The candidate's gain in success over the baseline, `{ gain, low, high, verdict, minGain, tasks }`, as a [replay's gain](/docs/reference/api/replays#gain). It does not decide `verdict`. Null with no baseline or no replay, and while no task was scored on both sides. |
 | `verdict` | string | See [Verdicts](#verdicts). |
@@ -135,7 +135,7 @@ replay candidate may not be named starting `Planned change`.
 
 | Verdict | Shown in the web app | When |
 | --- | --- | --- |
-| `failed` | Too many regressions | More tasks regressed than `mostRegressions` allows. Decided as soon as it happens, while replays still run. A task counts only once each of its copies, on both sides, has settled. |
+| `failed` | Too many regressions | More tasks regressed than `maxRegressions` allows. Decided as soon as it happens, while replays still run. A task counts only once each of its copies, on both sides, has settled. |
 | `running` | Checking | The change's replay or its baseline is queued or running, or the baseline is still being started. |
 | `undecided` | Undecided: `<reason>` | See below. |
 | `passed` | Passed | None of the above. |
@@ -171,5 +171,5 @@ of the kind `replay-check`. Marking or unmarking a set is recorded as an
 | `401` | No session or token, or an unknown token. |
 | `403` | A change by a caller who may read the team but not plan. |
 | `404` | The team, line, station, set or check is not one the caller may see, as in `Replay check <checkId> not found.` |
-| `409` | Marking a set while another at the station guards its changes (`Another replay set already guards config changes of station <stationId>. Only one replay set of a station can guard config changes.`), or a set whose station has left its line. A line with no `replay_check` (`Line <lineKey> has no replay_check block. Please add one with most_regressions, ceiling and currency.`). A station no set guards (`No replay set guards config changes of station <stationKey>. Please turn on "Guards config changes" for one of its replay sets.`). A change with nothing to replay, `nothing-to-replay`: `There is nothing to replay. The plan changes nothing that affects how the station's runs go.`, or `There is nothing to replay. A check keeps these changed fields at their live values: <fields>`. |
+| `409` | Marking a set while another at the station guards its changes (`Another replay set already guards config changes of station <stationId>. Only one replay set of a station can guard config changes.`), or a set whose station has left its line. A line with no `replay_check` (`Line <lineKey> has no replay_check block. Please add one with max_regressions, ceiling and currency.`). A station no set guards (`No replay set guards config changes of station <stationKey>. Please turn on "Guards config changes" for one of its replay sets.`). A change with nothing to replay, `nothing-to-replay`: `There is nothing to replay. The plan changes nothing that affects how the station's runs go.`, or `There is nothing to replay. A check keeps these changed fields at their live values: <fields>`. |
 | `422` | The planned block is not one the line takes, each problem at its path under `station`. A missing `lineId` (`Line ID must name the line of the station.`) or `stationKey` (`Station key must be the key of the planned station.`), or a `reference` or `line` not in its form. `repeats` not a number (`Repeats must be a number.`) or out of range (`Replay check repeats must be from 1 to 5.`). The `409` causes are checked first, so a check of a line with no `replay_check`, of a station no set guards, or with nothing to replay answers `409` whatever its `repeats`. |
