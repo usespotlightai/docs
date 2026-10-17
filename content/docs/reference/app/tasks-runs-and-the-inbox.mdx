@@ -192,7 +192,7 @@ station has a harness, start a new run there that resumes the station's
 session. Words said to a run whose task has left its station are refused with
 `409`, and words from anyone but the task's assignee with `404`.
 Only a claimed, waiting or parked run can be stopped. The web app offers Stop
-only while a run is claimed. Attempts a run spent parked do not count toward
+only while a run is claimed. Attempts a run spent parked do not count in
 the 3. Only the task's assignee may stop a run or say
 something to it. See [Steer or stop a run](/docs/runs/steer-or-stop-a-run).
 
@@ -442,7 +442,7 @@ measure decides whether the judge is trusted; the statistics are shown under
 | 1 to 5 | Spearman's ρ, with tied ranks averaged | "Pearson correlation"; "Spearman correlation"; "Mean absolute error": the mean absolute difference between the two scores, in points on the scale; "Root mean square error": the square root of the mean squared difference. |
 | Claims | Cohen's kappa over every claim's marks, pooled across claims | "Cohen's kappa", "F1 score" and "Overall agreement", over the pooled claim marks, with Met in place of Yes. For each claim, its own Cohen's kappa, agreed share and count of runs. |
 
-On claims, a run counts once toward the runs with both scores, however many
+On claims, a run counts once in the runs with both scores, however many
 claims it has. Statistics are shown to two decimals, and "Overall agreement" as
 a percentage. A statistic that cannot be worked out reads `–`.
 
@@ -596,12 +596,12 @@ details, under the judge's score:
 | Part | Shows |
 | --- | --- |
 | "Egress" | "Enforcement": `Enforced`, `Not enforced` or `Not checked`. Hovering over `Enforced` or `Not enforced` explains it, starting `The runner reported that`. The state is what the runner in the sandbox reported, and a sandbox not under the runner's control can report `Enforced`. See [Enforcement](/docs/reference/hosts/egress#enforcement). "Connections": how many connections egress recorded. |
-| "Destinations" | One row for each destination and outcome: the host, with `:<port>` when the port is not `443`, and the bytes in and out together, or `Blocked` or `Failed`. Blocked and failed rows come first, then the rows with the most bytes. Hovering over a row shows the host, `Passed through`, `Secret added`, `Blocked` or `Failed`, the number of connections, and `<bytes> out · <bytes> in`. |
+| "Destinations" | One row for each destination and outcome: the host, with `:<port>` when the port is not `443`, and the bytes in and out together, or `Blocked` or `Failed`. Blocked and failed rows come first, then the rows with the most bytes. Hovering over a row shows the host, `Passthrough`, `Injected`, `Blocked` or `Failed`, the number of connections, and `<bytes> out · <bytes> in`. |
 
 | Outcome | Shown as | Meaning |
 | --- | --- | --- |
-| `tunnelled` | `Passed through` | Egress sent the traffic on and did not decrypt it. |
-| `forwarded` | `Secret added` | Egress decrypted the traffic, because a secret of the run is bound to the host, and added the secret. |
+| `passthrough` | `Passthrough` | Egress sent the traffic on and did not decrypt it. |
+| `injected` | `Injected` | Egress decrypted the traffic, because a secret of the run is bound to the host, and injected the secret. |
 | `blocked` | `Blocked` | Egress stopped the traffic. |
 | `failed` | `Failed` | Egress could not connect to the host. |
 
@@ -615,15 +615,15 @@ GET /api/teams/{teamId}/runs/{runId}/network
 | Field | Contains |
 | --- | --- |
 | `runId`, `attempt` | The run, and its current attempt, which the answer is for. |
-| `egress` | `enforced`, `not-enforced`, or `null` when the runner did not check. |
+| `egressEnforcement` | `enforced`, `not-enforced`, or `null` when the runner did not check. |
 | `connections` | The connections the shared egress recorded for the attempt, each with `host`, `port`, `bytesOut`, `bytesIn`, `ms`, `outcome`, `status`, `reason` and `at`. See [Connection records](/docs/reference/hosts/egress#connection-records). |
 
 #### Connections in the trace
 
-A connection that went wrong is also a row in the task trace, at the time it
+A connection with an error is also a row in the task trace, at the time it
 started. The row is under the step or span that was open at that time, else
-under the phase, else under the run. A connection went wrong when egress
-blocked it, could not open it, or forwarded a request that the host answered
+under the phase, else under the run. A connection has an error when egress
+blocked it, could not open it, or injected a secret into a request that the host answered
 with `401`, `403` or a status of `500` or more.
 
 The row shows the host in red, with `:<port>` when the port is not `443`. The
@@ -634,18 +634,18 @@ Selecting the row shows:
 
 | Property | Shows |
 | --- | --- |
-| "Outcome" | `Blocked`, `Failed`, `Refused` (`401` or `403`) or `Server error` (`500` or more). |
-| "Status" | The status the host answered with, on a forwarded request. |
+| "Outcome" | `Blocked`, `Failed`, `Auth failed` (`401` or `403`) or `Server error` (`500` or more). |
+| "Status" | The status the host answered with, on an injected request. |
 | "Reason" | `Not on the allow-list`, `Private address`, `No bound secret`, `Unknown host`, `Timed out`, `TLS failed` or `No connection`. |
-| "Times" | How many times it went wrong, when more than once. |
-| "Cause" | What went wrong, in one or two sentences. For `Refused`: the secret egress added can be wrong, expired or without the necessary permission. |
+| "Count" | How many times the same error occurred, when more than once. |
+| "Cause" | The cause of the error, in one or two sentences. For `Auth failed`: the secret egress injected can be wrong, expired or without the necessary permission. |
 
 When the runner reported that egress was not enforced, the run's row shows a warning mark after its name. Hovering over the mark
 shows `Egress not enforced` and explains it.
 
 Connection rows do not count as "Faults". The trace reads at most 500 such
 connections for each run. The run's details still list all its connections,
-and show a refused request or a server error in red, as `Refused` or
+and show an auth failure or a server error in red, as `Auth failed` or
 `Server error`.
 
 Connection records are kept for 30 days. A record's `at` is the time egress gave, or the time Spotlight got the record when the two are far apart; see [Connection records](/docs/reference/hosts/egress#connection-records). A run that the caller may not see is
@@ -881,7 +881,7 @@ the copy icon, with "Reject" and "Approve" off.
 
 Spotlight checks a work station's [alerts](/docs/reference/terraform/line#alert-fields)
 when one of its task runs ends or settles, when the pull request of a task it
-worked closes, and when its line is changed or retired. A run counts toward a measure once it has settled for that
+worked closes, and when its line is changed or retired. A run counts in a measure once it has settled for that
 measure:
 
 | Measure | A run has settled when |
@@ -916,7 +916,7 @@ raising a new one. After that, a crossing raises a new alert.
 
 If an open alert's amount or `over` is changed, the next check judges it by
 the new values: crossed, it stays open with the new reading; otherwise the
-check counts toward its recovery. An open alert whose measure or threshold is
+check counts for its recovery. An open alert whose measure or threshold is
 removed from the station recovers at once, at the station's next check, and a
 crossing after that raises a new alert. Changing or retiring a line checks
 each of its stations, those it had and those it has. Deleting a task forgets

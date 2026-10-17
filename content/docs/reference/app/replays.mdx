@@ -275,7 +275,7 @@ Then come these tiles, each with an ⓘ that explains it on hover:
 | Success | The [success](#success) as `<share>`, then `<n> scored · <what scores it>`, or `<n> scored, <n> not yet · <what scores it>` when some copies are unscored. What scores it reads `by checks and judge`, `by checks`, `by judge` or `nothing scores this station`. `–` and "No score yet" before any copy is scored. | `Likely range: <low>–<high>%.`, and `Each run <n> times.` when the replay replays each run more than once. |
 | Gain | Shown with a [gain](#gains) over the [counterpart](#counterparts): the gain as `+25 pts`, then the verdict and the counterpart's success on the tasks both scored, its label in lower case, as in `Better · live config 50%`. Without that success, the verdict shows alone. | `Likely range: <low> to <high> pts.`, then the verdict's note: `The gain on <n> tasks with a score on both sides is real. The likely range stays above zero and reaches the minimum.`, `The loss on <n> tasks with a score on both sides is real. The likely range stays below zero and reaches the minimum.`, or `The difference on <n> tasks with a score on both sides can be chance. The likely range crosses zero or falls short of the minimum.`, each ending `Minimum real gain: +<n> pts`. |
 | Side by side | Shown once any task was [set side by side](#side-by-side): `<n> wins`, then `<n> losses · <n> ties`. | `A blind judge compares each task's change with <counterpart>'s change. It counts a win if this change is closer to the accepted change, and a loss if <counterpart>'s is closer. Otherwise, it counts a tie. Wins and losses don't change the success rate.` |
-| Spent | What the replay spent, then `of <ceiling>`, or `Over the ceiling by <amount>` when runs already running took the replay past it. | `Runs <amount> · Drafting <amount> · Judging <amount>.`, with `· Side by side <amount>` before the full stop once [side-by-side judging](#side-by-side) spent anything, in the ceiling's currency. Then, when they apply: `Side-by-side judging counts against the ceiling. It doesn't count toward cost per run.`; `Runs that are underway at the ceiling still finish. A replay can end slightly over its ceiling.`; `Also spent <amount> · <amount>. These amounts are in another currency. They don't count against the ceiling.`, one sum per currency; and `Not priced: <n> runs · <n> model calls.`, counting the runs whose cost was never reported and the drafting and judging model calls that came back with no price. |
+| Spent | What the replay spent, then `of <ceiling>`, or `Over the ceiling by <amount>` when runs already running took the replay past it. | `Runs <amount> · Drafting <amount> · Judging <amount>.`, with `· Side by side <amount>` before the full stop once [side-by-side judging](#side-by-side) spent anything, in the ceiling's currency. Then, when they apply: `Side-by-side judging counts against the ceiling. It doesn't add to cost per run.`; `Runs that are underway at the ceiling still finish. A replay can end slightly over its ceiling.`; `Also spent <amount> · <amount>. These amounts are in another currency. They don't count against the ceiling.`, one sum per currency; and `Not priced: <n> runs · <n> model calls.`, counting the runs whose cost was never reported and the drafting and judging model calls that came back with no price. |
 
 ### Tasks
 
@@ -381,8 +381,8 @@ as the first thing they did on it after the run, the judge is also given the
 original's change, and scores the replay against it. A replay's judge score is
 not a run's
 [judge score](/docs/reference/app/tasks-runs-and-the-inbox#judge-score): it
-counts toward no agreement, calibration, alert or Insights figure of the team's
-runs. It counts only toward the replay's [success](#success), which the
+counts in no agreement, calibration, alert or Insights figure of the team's
+runs. It counts only in the replay's [success](#success), which the
 [Candidates](/docs/reference/app/insights#candidates) section of the Insights Stations tab shows.
 
 Each result carries reasons, shown as `<reason>: <detail>` where there is a
@@ -434,7 +434,7 @@ A failed replay run is classified by its [failure code](/docs/reference/app/task
 A run Spotlight gave up on as abandoned with no code is unscored. A failure
 code Spotlight does not know shows as the detail as it is. When an attempt is
 queued again, as after `timed-out`, its cost is not part of the run's cost:
-only the run's last attempt, and attempts parked on the way, count toward the
+only the run's last attempt, and attempts parked on the way, add to the
 replay's spend.
 
 ### Check skips
@@ -581,8 +581,8 @@ A copy not compared reads `Not judged side by side: <reason>.`:
 `no-evidence` means either change, or the accepted change, has no hunks, or
 the evidence of one of the three runs could not be read.
 
-What side-by-side judging spends counts against the replay's ceiling, but not
-toward its spend totals or its cost per run. The replay page shows it apart, as
+What side-by-side judging spends counts against the replay's ceiling, but does not add
+to its spend totals or its cost per run. The replay page shows it apart, as
 "Side by side" in the ⓘ of "Spent".
 
 ## Health
@@ -873,14 +873,14 @@ the run's task is deleted, the replay set no longer keeps it. See
 A replay's spend is the cost of its runs, every copy included, of drafting their change stacks and of
 judging them, counted in the ceiling's currency. A drafting or judging attempt
 that failed counts what it was billed. A cost in another currency is summed
-apart and does not count toward the ceiling, nor does a cost that was never
+apart and does not count against the ceiling, nor does a cost that was never
 reported, for a replay started from the app or the API. Replays a search or a
 replay check starts, and their baselines, count such a run at a fixed amount
 per run against the ceiling; a replay with the answer does the same when the
-live replay that started it does. Side-by-side judging counts against the ceiling, but not toward
+live replay that started it does. Side-by-side judging counts against the ceiling, but does not add to
 the spend; see [Side by side](#side-by-side). Each replay has its own ceiling. A baseline started beside a replay has a ceiling of its own, equal to
 the replay's, or larger when it [checks the set](#checking-the-set). The second judgings of a baseline that [checks the set](#checking-the-set)
-count against its ceiling, but not toward its success or what its runs cost.
+count against its ceiling, but not in its success or in what its runs cost.
 
 Once a replay's spend reaches its ceiling, it ends as `over-budget`: nothing
 more of it starts, its runs not yet started are withdrawn, and its runs already

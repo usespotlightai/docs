@@ -42,7 +42,7 @@ resource "spotlight_secret" "acme_api_key" {
   workspace_id = data.spotlight_workspace.acme.id
   name         = "ACME_API_KEY"
   bindings = [
-    { host = "api.acme.example", carrier = "header", name = "authorization", prefix = "Bearer " },
+    { host = "api.acme.example", location = "header", name = "authorization", prefix = "Bearer " },
   ]
   value_wo         = var.acme_api_key
   value_wo_version = 1
@@ -54,14 +54,14 @@ To rotate the key later, give the new value and raise `value_wo_version`.
 ### If the API reads the key from the query
 
 Some APIs, such as Google Maps, take the key as a query parameter. Bind the
-secret with `carrier = "query"` and the parameter's `name`:
+secret with `location = "query"` and the parameter's `name`:
 
 ```hcl
 resource "spotlight_secret" "maps_key" {
   workspace_id = data.spotlight_workspace.acme.id
   name         = "MAPS_KEY"
   bindings = [
-    { host = "maps.googleapis.com", carrier = "query", name = "key" },
+    { host = "maps.googleapis.com", location = "query", name = "key" },
   ]
   value_wo         = var.maps_key
   value_wo_version = 1

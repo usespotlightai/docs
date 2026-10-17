@@ -83,10 +83,10 @@ repositories its own work names, and only while its runner still has the lease o
 
 ### Egress tokens and run proxy credentials: a push pool's way out
 
-A push pool can name a shared egress, which adds the secrets of many runs to
+A push pool can name a shared egress, which injects the secrets of many runs into
 their requests. Two credentials split that job so that neither is worth much
 alone. The egress process keeps the egress token, and Spotlight stores it
-as a hash. It is the only credential that can redeem a run's secrets, and it
+as a hash. It is the only credential that can fetch a run's secrets, and it
 never enters a sandbox. Like a pool token, it is given once, ever, and
 rotating it refuses the old one at once.
 
@@ -95,7 +95,7 @@ and kept by the runner. It lets the run send its traffic through the egress
 its pool names, and nothing more: Spotlight's API does not accept it, and
 Spotlight admits it through the egress only while the runner has not ended. A
 stolen run proxy credential reaches no secret, since the secrets stay in the
-egress. A stolen egress token redeems secrets only together with the run proxy
+egress. A stolen egress token fetches secrets only together with the run proxy
 credential of a runner whose pool names that egress. [Send push pool runs through an
 egress](/docs/security/send-push-pool-runs-through-an-egress) sets both up.
 

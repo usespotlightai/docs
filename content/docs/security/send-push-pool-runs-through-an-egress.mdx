@@ -7,7 +7,7 @@ description: Give a push pool an egress, so that it can take runs that use secre
 
 Use this page when a push pool must take runs that use secrets, or setup
 chats. A push pool without an egress never gets these runs; they wait for a
-host. The egress is a proxy outside the sandbox. It adds each run's secrets to
+host. The egress is a proxy outside the sandbox. It injects each run's secrets into
 the requests to their hosts, so the sandbox has only stand-ins.
 
 You need:
@@ -81,7 +81,7 @@ see [Settings](/docs/reference/hosts/egress#settings).
 - To limit where runs may connect, add `SPOTLIGHT_EGRESS_ALLOW`, as for a host.
   See [Limit where sandboxes can connect](/docs/security/limit-where-sandboxes-connect#list-the-hosts).
 - If a station's secrets are in AWS Secrets Manager, give the egress an AWS
-  identity, and name the secrets in `SPOTLIGHT_EGRESS_READS`.
+  identity, and name the secrets in `SPOTLIGHT_EGRESS_SECRET_ALLOW`.
 - If you put a load balancer in front of the egress, use one that passes TCP
   through. Runners send `CONNECT` requests to the egress, and a load balancer
   that reads HTTP can refuse them.
@@ -112,7 +112,7 @@ For the platform egress, set `egress = "spotlight"` instead. Run
 
 Each provision call now carries `data.runner.egress`. Start the container
 with its `url` as `SPOTLIGHT_EGRESS_URL`, its `credential` as
-`SPOTLIGHT_EGRESS_CREDENTIAL` and its `traffic` as `SPOTLIGHT_EGRESS_TRAFFIC`,
+`SPOTLIGHT_EGRESS_PROXY_CREDENTIAL` and its `traffic` as `SPOTLIGHT_EGRESS_TRAFFIC`,
 beside `SPOTLIGHT_URL` and `SPOTLIGHT_TOKEN`, as
 in [Start the runner](/docs/hosts/provision-runners-from-your-own-platform#start-the-runner).
 The credential is good for that one runner, and only through the egress.

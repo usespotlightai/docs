@@ -47,7 +47,7 @@ question in someone's inbox, a memory proposed to the team. So a replay is a run
 works on the task, and it leaves nothing behind but its own result:
 
 - Its git access is fetch-only. A push is refused.
-- It is given no tools and no MCP servers, and so wears no secrets.
+- It is given no tools and no MCP servers, and so egress injects no secrets for it.
 - No hook runs for it.
 - It cannot answer a pull request's remarks, propose a memory or read a
   task's trace.
@@ -73,7 +73,7 @@ change and scores the replay against it. A run passes the judge on a yes, on 4 o
 rubric, or, for a judge with claims, on meeting at least its pass share of
 them. With both a check and a judge, a run must pass both.
 
-A replay's judge scores never count toward the judge's agreement with people,
+A replay's judge scores never count in the judge's agreement with people,
 its calibration, alerts or the Insights figures of the team's runs. They are only
 compared between replays.
 
@@ -122,7 +122,7 @@ the judge is shown the two changes together, labelled A and B, beside the
 accepted one, and asked which is better. It is not told which change is the
 candidate's, so it cannot favour it. It reads the pair twice, once each way
 round, and when the two readings disagree, the task counts as a tie. In the
-docs' view, a model can lean towards whichever change it saw first, and a
+docs' view, a model can lean to whichever change it saw first, and a
 preference that flips with the order was never a preference.
 
 The wins, losses and ties sit beside the success rate and never change it. The
@@ -144,7 +144,7 @@ questions.
 
 The comparisons cost model calls. They count against the replay's ceiling,
 with room for two tries set aside before each is asked, and a pair that would
-pass the ceiling is not asked. They do not count toward the replay's spend or
+pass the ceiling is not asked. They do not add to the replay's spend or
 its cost per run, since they measure the change, not what running the
 candidate costs; that reason is the docs' own.
 
@@ -262,7 +262,7 @@ the check's ceiling and stop once it would be spent; the rest are not judged
 again. A
 second judging or check never changes a run's result. In the docs' view, it
 measures the judge and the check, not the run. The second judgings also do not
-count toward what the check's runs cost.
+add to what the check's runs cost.
 
 ## Why a set is replayed with the answer
 
@@ -312,7 +312,7 @@ When that baseline also checks the set, its ceiling can be larger, so at 1 or
 [Checking the set](/docs/reference/app/replays#checking-the-set). A
 replay of the live config becomes the baseline itself when the set has none,
 or when the set's runs changed since the last one. Costs in another currency
-than the ceiling's, and costs never reported, do not count toward it. The
+than the ceiling's, and costs never reported, do not count against it. The
 replay page shows them apart from the spend the ceiling counts.
 
 Replays take runners the team's real work needs. At most 2 of a team's replay

@@ -480,9 +480,9 @@ before it is sent.
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `oauth2.connection` | boolean | `true` | Must be `true`. Sends the connection's OAuth access token as `Authorization: Bearer`: the team's, or for a tool of a `requester` integration, that of the person who started the task. See [Holder](#holder). |
-| `secrets` | array of strings | none | Secret references, `secret.<NAME>`, at least one when set. Each secret is put in its bound header or query parameter on requests to the hosts it is bound to. A request to any other host goes without it, and so does a redirect to another host. |
+| `secrets` | array of strings | none | Secret references, `secret.<NAME>`, at least one when set. Each secret is injected into its bound header or query parameter on requests to the hosts it is bound to. A request to any other host goes without it, and so does a redirect to another host. |
 
-`auth` accepts no other way, and is refused with `authenticates a request by its oauth2 connection, or by the secrets it wears toward the hosts they are bound to`. See [Bindings](/docs/reference/terraform/secret#bindings).
+`auth` accepts no other way, and is refused with `authenticates a request by its oauth2 connection, or by the secrets that Spotlight injects for the hosts they are bound to`. See [Bindings](/docs/reference/terraform/secret#bindings).
 
 Every request goes only to hosts on the deployment's outbound allow-list,
 [`OUTBOUND_ALLOWED_HOSTS`](/docs/reference/self-hosted-settings#calls-out-of-spotlight). A
@@ -673,7 +673,7 @@ An operation that gets no tool gives a warning at `openapi` or `graphql`, as
 | `It sends a body that is not JSON. A tool cannot send such a body yet` | A required request body with no JSON media type. |
 | `It takes <name>, which a tool cannot take` | A GraphQL argument whose name a tool input cannot have. |
 | `It takes "<name>", which a tool cannot take` | An input named `json`, or not letters, digits, `_` and `-`. |
-| `It calls <host>. The connection is worn only toward the host of the description or the host that baseUrl names` | With `auth.oauth2` and no `baseUrl`, the operation's server is on another host than the description. |
+| `It calls <host>. Spotlight injects the token of the connection only for the host of the description or the host that baseUrl names` | With `auth.oauth2` and no `baseUrl`, the operation's server is on another host than the description. |
 | `It needs approval and takes intent, an input that Spotlight keeps for the agent to say what it wants to do. To offer it, switch its approval off in <openapi or graphql>.tools.approval` | The operation asks a person first and has an input named `intent`. With its `tools.approval` set to `false` it is offered. |
 
 ### Reading the description
@@ -762,7 +762,7 @@ mcp = {
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `url` | string | required | The server's endpoint. Spotlight speaks MCP's streamable HTTP transport to it. |
-| `auth` | object | none | As a request's [`auth`](#requests). Sent when Spotlight lists the tools and with every call, only toward the host of `url`. |
+| `auth` | object | none | As a request's [`auth`](#requests). Sent when Spotlight lists the tools and with every call, only to the host of `url`. |
 | `tools` | object | `{}` | Which tools are offered, and which ask first. See [Choosing tools](#choosing-tools). |
 
 ### Server tools
@@ -861,7 +861,7 @@ nothing is sent.
 ## Secrets in expressions
 
 No expression may read a secret. An expression containing `secret.` or
-`secret[` is refused with `reads a secret's value. No expression may read a secret. Please name the secret in auth.secrets, and Spotlight wears it toward the hosts it is bound to`.
+`secret[` is refused with `reads a secret's value. No expression may read a secret. Please name the secret in auth.secrets, and Spotlight injects it for the hosts it is bound to`.
 
 Secret references are not checked against the workspace's secrets when the
 definition is written. A request that uses a missing secret fails with
