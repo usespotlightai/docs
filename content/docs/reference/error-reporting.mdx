@@ -47,7 +47,7 @@ is set and `SENTRY_DSN` is set, egress also admits the server's host.
 
 | Part | Reported |
 | --- | --- |
-| Spotlight | An answer with a status of 500 or more, except an error from a service upstream such as GitHub. Owed work that Spotlight gives up: a draft or a judgment that failed for the last time, or that kept being interrupted. A domain event delivery that Spotlight dead-letters after 8 attempts. A review that Spotlight gives up posting to GitHub. An exception or a rejected promise that nothing handles. |
+| Spotlight | An answer with a status of 500 or more, except an error from a service upstream such as GitHub. A pending job that Spotlight dead-letters: a draft or a judgment that failed for the last time, or that kept being interrupted. A domain event delivery that Spotlight dead-letters after 8 attempts. A review that Spotlight gives up posting to GitHub. An exception or a rejected promise that nothing handles. |
 | Web app | A page that cannot render. The page shows `This page could not be loaded.` An answer of 502, 503 or 504, which Spotlight did not send itself, as a `GatewayError`. An error that nothing handles. |
 | Host | A panic. A claim that Spotlight rejects for good. Work that cannot start: egress does not start, the sandbox does not start, or the assignment cannot be passed to the sandbox. |
 | Sandbox | A panic. A run that the runner cannot prepare or start. A runner that stops with an error. |
@@ -65,7 +65,7 @@ image that cannot be pulled, or an agent that stops with an error.
 | Error | The type, the message and the stack trace. |
 | `release`, `environment` | As set above. |
 | Trace | The trace id of the request, from its `traceparent` header. The same id is the `reqId` of Spotlight's log lines. |
-| Tags | `source`: the HTTP layer, the owed work or the event subscriber. `workspace`, `team`, `task` and `run`: the ids of the work, when known. `host`, `runner` and `role` on reports from the data plane. |
+| Tags | `source`: the HTTP layer, the job loop, such as `Judging runs`, or the event subscriber. `workspace`, `team`, `task` and `run`: the ids of the work, when known. `host`, `runner` and `role` on reports from the data plane. |
 | User | The id of the person signed in to the web app. |
 | Request | The method, the path and the headers that remain after scrubbing. |
 
