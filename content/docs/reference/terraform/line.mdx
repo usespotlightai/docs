@@ -201,10 +201,10 @@ reviews {
 | `effort` | string | none | `low`, `medium`, `high`, `xhigh` or `max`. Without it, the harness uses its own default. |
 | `profile` | string | none | The key of a team [harness profile](/docs/reference/terraform/harness-profile). A run at a station naming a profile the team does not have fails with the code `refused`. |
 | `prompt` | string | none | Markdown handed to the agent that works the station. At most 20,000 characters. |
-| `check` | string | none | A command each layer of a change stack drafted at this station is checked with, as in `npm test`. One line of at most 500 characters. See [checks](/docs/reference/app/change-stacks-and-decisions#checks). |
+| `check` | string | none | A command each layer of a change stack generated at this station is checked with, as in `npm test`. One line of at most 500 characters. See [checks](/docs/reference/app/change-stacks-and-decisions#checks). |
 | `runners` | array of strings | none | Runner labels this station's work is placed on. Without it, the line's `runners` apply. See [placement](#placement). |
-| `diffs` | boolean | `false` | Whether a change stack is drafted from each run's diff. See [Change stacks and decisions](/docs/reference/app/change-stacks-and-decisions). |
-| `decisions` | boolean | `false` | Whether decisions are drafted from each run. See [decisions](/docs/reference/app/change-stacks-and-decisions#decisions). |
+| `diffs` | boolean | `false` | Whether a change stack is generated from each run's diff. See [Change stacks and decisions](/docs/reference/app/change-stacks-and-decisions). |
+| `decisions` | boolean | `false` | Whether decisions are generated from each run. See [decisions](/docs/reference/app/change-stacks-and-decisions#decisions). |
 | `memories` | boolean | `false` | Whether proposed team memories are drafted from each completed run, for the team to approve in the inbox. They come from what the agent said, thought and planned, never tool output, and from what people said on the task since the last draft. See [memory](/docs/reference/glossary#memory). |
 | `tools` | array of strings | `[]` | The tools the station enables for its agent. See [tool names](#tool-names). Each tool once. |
 | `skills` | array of strings | `[]` | The skills the station enables for its agent: a team [skill](/docs/reference/terraform/skill) key, or a catalog skill as `catalog.<name>@<x.y.z>`. Each skill once. A key starting `spotlight-` is rejected. |

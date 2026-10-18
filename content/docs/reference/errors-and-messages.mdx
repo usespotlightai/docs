@@ -80,7 +80,7 @@ reason, the reasons are joined with `; `.
 | `catalog_item_unknown: <reason>` | The station names a catalog item that does not exist. | [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-refused-to-start) |
 | `catalog_item_wrong_kind: <reason>` | The station names a catalog tool as a skill, or a skill as a tool. | [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-refused-to-start) |
 | `not_entitled: <reason>` | The workspace's plan does not include a catalog item the station enables. | [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-refused-to-start) |
-| `entitlement_lapsed: <reason>` | The plan that included a catalog item the station enables has lapsed. | [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-refused-to-start) |
+| `entitlement_expired: <reason>` | The plan that included a catalog item the station enables has expired. | [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-refused-to-start) |
 | `No runner was provisioned after <n> attempts. Last failure: <failure>` | No push pool started a runner. The failure is a code and its detail, as in `http-error: Provision URL answered <status>.` | [Provision call failures](/docs/reference/events/provision-call#failures), [Provision runners from your own platform](/docs/hosts/provision-runners-from-your-own-platform#check-that-it-works) |
 | `Hooks did not answer after <n> tries. Last error: <reason>` | The run's `run.starting` hooks went unanswered on every attempt. | [Failure codes](/docs/reference/app/tasks-runs-and-the-inbox#failure-codes), [`spotlight_hook`](/docs/reference/terraform/hook) |
 
@@ -157,7 +157,7 @@ environment, are prefixed `egress: `.
 | `SPOTLIGHT_EGRESS_URL "<value>" is not an address such as https://egress.example.com` | Not an `http` or `https` URL with a host. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
 | `could not open the way out, so the agent goes out without its run's secrets` | A warning. The runner's way out did not open, and the agent gets no proxy. | [The runner's way out](/docs/reference/hosts/egress#the-runners-way-out) |
 | `could not trust the way out's authority, so TLS through it may fail` | A warning. The way out's authority could not be added to the image's bundles. | [The runner's way out](/docs/reference/hosts/egress#the-runners-way-out) |
-| `Change stacks are not set up on this deployment.` | A station with `diffs: true` on a deployment without drafting set up. The runner logs the error, and the checkout gets no change stack. | [Change stacks and decisions](/docs/reference/app/change-stacks-and-decisions) |
+| `Change stacks are not set up on this deployment.` | A station with `diffs: true` on a deployment without models set up. The runner logs the error, and the checkout gets no change stack. | [Change stacks and decisions](/docs/reference/app/change-stacks-and-decisions) |
 
 ### Egress log
 
@@ -551,8 +551,8 @@ list their own messages.
 
 | Message | Cause | See |
 | --- | --- | --- |
-| `Spotlight couldn't draft the change stack.` | Every drafting attempt failed. | [States](/docs/reference/app/change-stacks-and-decisions#states) |
-| `Drafting was interrupted before it finished.` | Drafting stopped without a reason. | [States](/docs/reference/app/change-stacks-and-decisions#states) |
+| `Spotlight couldn't generate the change stack.` | Every generation attempt failed. | [States](/docs/reference/app/change-stacks-and-decisions#states) |
+| `Generation was interrupted before it finished.` | Generation stopped without a reason. | [States](/docs/reference/app/change-stacks-and-decisions#states) |
 
 ### Members, invites and GitHub
 
@@ -582,7 +582,7 @@ answer with these. A caller who is not an owner or admin of the workspace gets
 | `<team> already includes this person.` | `409`. Adding a member to a team they are on. | [Invites](/docs/reference/roles-and-permissions#invites) |
 | `This person is not a member of this workspace. Please invite them first.` | `422`. Adding someone to a team who is not in the workspace. | [Invite people and change their roles](/docs/administration/invite-people-and-change-roles#add-a-member-to-a-team) |
 | `Only a workspace owner or admin can connect GitHub.` | `403`. The person is not an owner or admin. | [GitHub connection](/docs/reference/roles-and-permissions#github-connection), [Connect GitHub to a workspace](/docs/integrations/connect-github) |
-| `You are not an admin of this GitHub installation.` | `403`. The person does not administer the installation. | [GitHub connection](/docs/reference/roles-and-permissions#github-connection) |
+| `You are not an admin of this GitHub installation.` | `403`. The person is not an admin of the installation. | [GitHub connection](/docs/reference/roles-and-permissions#github-connection) |
 | `GitHub could not confirm this installation is yours. Please sign in again.` | `403`. GitHub would not say. | [GitHub connection](/docs/reference/roles-and-permissions#github-connection) |
 | `GitHub installation <id> is connected to another workspace. Please disconnect it there first.` | `409`. The installation is connected to another workspace. | [GitHub connection](/docs/reference/roles-and-permissions#github-connection) |
 

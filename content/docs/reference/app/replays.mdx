@@ -151,8 +151,8 @@ more repeats than the baseline, and these say twice the ceiling at any
 repeats.
 
 Under the ceiling, the dialog reads `The most that this replay can spend. Its
-runs count, and so do the drafting and judging of their changes. Nothing more
-starts after the replay spends it.`, then one of these notes:
+runs count, and so does the generation and judging of their change stacks.
+Nothing more starts after the replay spends it.`, then one of these notes:
 
 | When | Note |
 | --- | --- |
@@ -275,7 +275,7 @@ Then come these tiles, each with an ⓘ that explains it on hover:
 | Success | The [success](#success) as `<share>`, then `<n> scored · <what scores it>`, or `<n> scored, <n> not yet · <what scores it>` when some copies are unscored. What scores it reads `by checks and judge`, `by checks`, `by judge` or `nothing scores this station`. `–` and "No score yet" before any copy is scored. | `Likely range: <low>–<high>%.`, and `Each run <n> times.` when the replay replays each run more than once. |
 | Gain | Shown with a [gain](#gains) over the [counterpart](#counterparts): the gain as `+25 pts`, then the verdict and the counterpart's success on the tasks both scored, its label in lower case, as in `Better · live config 50%`. Without that success, the verdict shows alone. | `Likely range: <low> to <high> pts.`, then the verdict's note: `The gain on <n> tasks with a score on both sides is real. The likely range stays above zero and reaches the minimum.`, `The loss on <n> tasks with a score on both sides is real. The likely range stays below zero and reaches the minimum.`, or `The difference on <n> tasks with a score on both sides can be chance. The likely range crosses zero or falls short of the minimum.`, each ending `Minimum real gain: +<n> pts`. |
 | Side by side | Shown once any task was [set side by side](#side-by-side): `<n> wins`, then `<n> losses · <n> ties`. | `A blind judge compares each task's change with <counterpart>'s change. It counts a win if this change is closer to the accepted change, and a loss if <counterpart>'s is closer. Otherwise, it counts a tie. Wins and losses don't change the success rate.` |
-| Spent | What the replay spent, then `of <ceiling>`, or `Over the ceiling by <amount>` when runs already running took the replay past it. | `Runs <amount> · Drafting <amount> · Judging <amount>.`, with `· Side by side <amount>` before the full stop once [side-by-side judging](#side-by-side) spent anything, in the ceiling's currency. Then, when they apply: `Side-by-side judging counts against the ceiling. It doesn't add to cost per run.`; `Runs that are underway at the ceiling still finish. A replay can end slightly over its ceiling.`; `Also spent <amount> · <amount>. These amounts are in another currency. They don't count against the ceiling.`, one sum per currency; and `Not priced: <n> runs · <n> model calls.`, counting the runs whose cost was never reported and the drafting and judging model calls that came back with no price. |
+| Spent | What the replay spent, then `of <ceiling>`, or `Over the ceiling by <amount>` when runs already running took the replay past it. | `Runs <amount> · Drafting <amount> · Judging <amount>.`, with `· Side by side <amount>` before the full stop once [side-by-side judging](#side-by-side) spent anything, in the ceiling's currency. Then, when they apply: `Side-by-side judging counts against the ceiling. It doesn't add to cost per run.`; `Runs that are underway at the ceiling still finish. A replay can end slightly over its ceiling.`; `Also spent <amount> · <amount>. These amounts are in another currency. They don't count against the ceiling.`, one sum per currency; and `Not priced: <n> runs · <n> model calls.`, counting the runs whose cost was never reported and the model calls for generating change stacks or judging that came back with no price. |
 
 ### Tasks
 
@@ -397,7 +397,7 @@ detail:
 | `asked-a-person` | `Asked a person (replays can't)` | | Failed |
 | `check-failed` | `Checks failed` | The layer that failed | Failed |
 | `check-skipped` | `Checks couldn't run` | [The skip](#check-skips) | Unscored |
-| `change-undrafted` | `Change couldn't be drafted` | | Unscored |
+| `change-not-generated` | `Change couldn't be generated` | | Unscored |
 | `no-change` | `No change for the checks to run on` | | Unscored |
 | `no-change-stack` | `Files changed, but the change never reached Spotlight` | | Unscored |
 | `judged` | `Judge passed it` | The judge's reason | Succeeded |
@@ -446,14 +446,14 @@ replay's spend.
 | `no-checkout` | `checkout missing` |
 | `checkout-failed` | `checkout failed` |
 | `setup-failed` | `repository setup failed` |
-| `no-room` | `no runner to check on` |
+| `workspace-failed` | `runner couldn't open a workspace` |
 | `out-of-time` | `checks ran out of time` |
 | `no-image` | `check image missing` |
-| `unprovisioned` | `no runner could be provisioned for the check` |
-| `nobody-checked` | `no runner claimed the check in time` |
+| `provision-failed` | `no runner could be provisioned for the check` |
+| `queue-timeout` | `no runner claimed the check in time` |
 | `skipped` | `checks skipped` |
-| `undrafted` | `change never drafted` |
-| `no-check-asked` | `candidate has no check command`. Shown when the candidate has a check but no change stack ended passed, failed, skipped or undrafted. |
+| `not-generated` | `change not generated` |
+| `no-check-asked` | `candidate has no check command`. Shown when the candidate has a check but no change stack ended passed, failed, skipped or not generated. |
 
 A replay's checks run as a station's checks do. See
 [Checks](/docs/reference/app/change-stacks-and-decisions#checks).
@@ -871,17 +871,20 @@ the run's task is deleted, the replay set no longer keeps it. See
 
 ## Spend and ceiling
 
-A replay's spend is the cost of its runs, every copy included, of drafting their change stacks and of
-judging them, counted in the ceiling's currency. A drafting or judging attempt
-that failed counts what it was billed. A cost in another currency is summed
-apart and does not count against the ceiling, nor does a cost that was never
-reported, for a replay started from the app or the API. Replays a search or a
-replay check starts, and their baselines, count such a run at a fixed amount
-per run against the ceiling; a replay with the answer does the same when the
-live replay that started it does. Side-by-side judging counts against the ceiling, but does not add to
-the spend; see [Side by side](#side-by-side). Each replay has its own ceiling. A baseline started beside a replay has a ceiling of its own, equal to
-the replay's, or larger when it [checks the set](#checking-the-set). The second judgings of a baseline that [checks the set](#checking-the-set)
-count against its ceiling, but not in its success or in what its runs cost.
+A replay's spend is the cost of its runs, every copy included, of generating
+their change stacks and of judging them, counted in the ceiling's currency. A
+generation or judging attempt that failed counts what it was billed. A cost in
+another currency is summed apart and does not count against the ceiling, nor
+does a cost that was never reported, for a replay started from the app or the
+API. Replays a search or a replay check starts, and their baselines, count such
+a run at a fixed amount per run against the ceiling; a replay with the answer
+does the same when the live replay that started it does. Side-by-side judging
+counts against the ceiling, but does not add to the spend; see [Side by
+side](#side-by-side). Each replay has its own ceiling. A baseline started beside
+a replay has a ceiling of its own, equal to the replay's, or larger when it
+[checks the set](#checking-the-set). The second judgings of a baseline that
+[checks the set](#checking-the-set) count against its ceiling, but not in its
+success or in what its runs cost.
 
 Once a replay's spend reaches its ceiling, it ends as `over-budget`: nothing
 more of it starts, its runs not yet started are cancelled, and its runs already
@@ -927,7 +930,7 @@ A replay run differs from a task run:
 | Tools, MCP servers, secrets | None. |
 | Hooks | None run for it. |
 | Asking a person | Ends the run, counted as asked. Handing the task to a person, or to nowhere, does the same. |
-| Change stack | Drafted when the candidate sets `diffs: true`, checked, and never sent to GitHub. |
+| Change stack | Generated when the candidate sets `diffs: true`, checked, and never sent to GitHub. |
 | Archive | None is kept for a later run. |
 | Outcomes | Not recorded among the station's outcomes or in the Insights figures of the team's runs; its replay shows under [Candidates](/docs/reference/app/insights#candidates) on the Insights Stations tab. No memories are drafted. |
 | Priority | Below every task run and chat run. At most 2 of a team's replay runs, other than a search's, are queued or running at once. A search's replay runs keep to its own limit; see [Spend and ceiling](/docs/reference/app/searches#spend-and-ceiling). |

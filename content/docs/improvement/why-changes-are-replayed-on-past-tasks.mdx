@@ -51,7 +51,7 @@ works on the task, and it leaves nothing behind but its own result:
 - No hook runs for it.
 - It cannot reply to a pull request's review comments, propose a memory or
   read a task's trace.
-- Its change stack is drafted and checked, and never sent to GitHub.
+- Its change stack is generated and checked, and never sent to GitHub.
 - It never asks a person. A replay that would put the task to a person, by
   handing it over to one or asking permission, ends there and counts as asked.
 - It is not counted among the station's outcomes or in the Insights figures
@@ -65,7 +65,7 @@ hosts the host's allow-list allows, as for any run; see
 ## Scored against the station as it is now
 
 A replay is scored by what the candidate itself requires. If the candidate's
-station drafts change stacks (`diffs: true`) and has a `check`, its change must
+station generates change stacks (`diffs: true`) and has a `check`, its change must
 pass that check. If it has a judge, the judge scores the change against its
 rubric. Where people accepted the original's change, by closing the task as
 the first thing they did on it after the run, the judge is also shown that
@@ -300,20 +300,20 @@ another.
 
 ## What it costs
 
-A replay spends what its runs cost, and what drafting and judging their
-changes cost. Each copy of a run is a run of its own, so a replay with 3
-copies starts three times the runs. A person sets a ceiling on each replay,
-and once a replay's spend reaches it, nothing more of it starts. Runs already running finish, so a replay
-can end a little over its ceiling, and its page says by how much. The
-baseline started beside a proposed candidate has a ceiling of its own, the
-same as the replay that started it, so the two can spend twice that ceiling.
-When that baseline also checks the set, its ceiling can be larger, so at 1 or
-2 repeats the two can spend more; see
-[Checking the set](/docs/reference/app/replays#checking-the-set). A
-replay of the live config becomes the baseline itself when the set has none,
-or when the set's runs changed since the last one. Costs in another currency
-than the ceiling's, and costs never reported, do not count against it. The
-replay page shows them apart from the spend the ceiling counts.
+A replay spends what its runs cost, and what generating change stacks for their
+changes and judging them cost. Each copy of a run is a run of its own, so a
+replay with 3 copies starts three times the runs. A person sets a ceiling on
+each replay, and once a replay's spend reaches it, nothing more of it starts.
+Runs already running finish, so a replay can end a little over its ceiling, and
+its page says by how much. The baseline started beside a proposed candidate has
+a ceiling of its own, the same as the replay that started it, so the two can
+spend twice that ceiling. When that baseline also checks the set, its ceiling
+can be larger, so at 1 or 2 repeats the two can spend more; see [Checking the
+set](/docs/reference/app/replays#checking-the-set). A replay of the live config
+becomes the baseline itself when the set has none, or when the set's runs
+changed since the last one. Costs in another currency than the ceiling's, and
+costs never reported, do not count against it. The replay page shows them apart
+from the spend the ceiling counts.
 
 Replays take runners the team's real work needs. At most 2 of a team's replay
 runs run at once, apart from a search's, which keep to a limit the search

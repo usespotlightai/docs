@@ -19,21 +19,21 @@ splits each cohort into layers, in the order a reviewer should read them. A
 cohort that adds an endpoint might have a layer for the new database column,
 then one for the service that uses it, then one for the handler and its tests.
 Each cohort has a title and an intent, each layer a summary, and each file in a
-layer a note. Changes that only follow from others, such as a lockfile, are set
-aside as incidental so they do not crowd the real work.
+layer a note. Hunks that only follow from others, such as a lockfile, go into
+an incidental cohort so they do not crowd the real work.
 
-Which stations draft stacks is set on the line (see the [`spotlight_line`](/docs/reference/terraform/line)
-reference and [Built-in
-lines](/docs/reference/built-ins/built-in-lines)), and a station that writes code can
-have one as well as a station that reviews a pull request.
+Which stations generate stacks is set on the line (see the
+[`spotlight_line`](/docs/reference/terraform/line) reference and [Built-in
+lines](/docs/reference/built-ins/built-in-lines)), and a station that writes
+code can have one as well as a station that reviews a pull request.
 
 The stack has a page of its own under the run, is linked from the task, and is
 stored as a comment on the task's pull request, updated when a newer stack is
 ready.
 
-### Drafted after the run, not by the agent
+### Generated after the run, not by the agent
 
-A stack is drafted after the agent has finished. The runner diffs each
+A stack is generated after the agent has finished. The runner diffs each
 checkout against the point where the work branched off, sends the diff to
 Spotlight, and Spotlight prompts a hosted model to arrange it. The agent is not
 involved and cannot skip it.
@@ -43,7 +43,7 @@ produce, then as a tool it could call, and only later became a step that happens
 on its own once a station says it wants one. Now a stack does not depend on
 whether an agent chose to make one. It is made the same way for every run and
 every harness, and it describes the diff that was actually left instead of the
-agent's idea of what it changed. A review stack can also be drafted for a pull
+agent's idea of what it changed. A review stack can also be generated for a pull
 request that no agent in Spotlight wrote.
 
 ### Rules every stack follows
@@ -52,15 +52,15 @@ An arrangement that reads well but is in the wrong order would mislead: a
 reviewer following it would meet code before the thing it depends on. So
 Spotlight works out some facts about the diff itself, without a model, and
 applies them to every stack. The principle is that nothing arrives before what it
-depends on. Code that uses something another change defines shares its cohort
+depends on. Code that uses something another hunk defines shares its cohort
 and never sits in an earlier layer; a test shares the cohort of the code it
 tests, in the layer where the last of that code arrives; both sides of a move
-sit in one layer; a migration opens its cohort; and every change appears
+sit in one layer; a migration opens its cohort; and every hunk appears
 exactly once.
 
 If the model's first arrangement breaks a rule, it gets a new request with the
 problems listed. If it still breaks one, the stack fails with a note saying it
-could not place every change in order, because Spotlight does not accept the
+could not assign every hunk in order, because Spotlight does not accept the
 last attempt as good enough. More stacks fail that way, and none are silently
 mis-ordered. A failed stack leaves the reviewer with the plain diff, which is
 what they would have had anyway.
@@ -71,7 +71,7 @@ If the station also has a `check` command, Spotlight runs it on the whole
 change, and then on each cohort a layer at a time: the base plus the first
 layer, then plus the second, and so on. A layer that fails its check points at
 where the ordering, or the code, went wrong, and a stack with failing layers is
-given one chance to be reordered.
+given one chance to be redrafted.
 
 These checks are not run inside the run's sandbox. Each one is its own piece of
 work that a runner claims, like a run, starting from a clean checkout that the
@@ -111,7 +111,7 @@ are discarded.
 The alternative would be to keep decisions back until a change has merged, as a
 record for later only, which would keep them out of the one moment they can
 still change the outcome. Spotlight shows them from the start, as a comment on
-the pull request and beside the files they bear on in the task's change stack,
+the pull request and beside the files they cover in the task's change stack,
 and lets people dispute a decision they disagree with. Decisions on record are
 also given to later runs of the task in their briefing, so a station that picks
 the work up again knows what was already decided.

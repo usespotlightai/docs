@@ -87,7 +87,7 @@ needs a [plan](#plan). See
 ## Change stack
 
 A run's diff arranged for review as [cohorts](#cohort) of [layers](#layer).
-Spotlight drafts one after each run at a station with `diffs: true`. See
+Spotlight generates one after each run at a station with `diffs: true`. See
 [Change stacks and decisions](/docs/reference/app/change-stacks-and-decisions).
 
 ## Chat
@@ -99,7 +99,7 @@ it. See [Chats](/docs/reference/app/tasks-runs-and-the-inbox#chats).
 ## Check
 
 A station's one-line command, such as `npm test`, run against the whole change
-and then each layer of a change stack drafted at that station. See
+and then each layer of a change stack generated at that station. See
 [Checks](/docs/reference/app/change-stacks-and-decisions#checks).
 
 ## Claim
@@ -164,6 +164,13 @@ the resource API or Terraform. A workspace or a team can be deleted only when
 it has no resources left. Spotlight then deletes the records that belong to it,
 such as its tasks and notices. A [memory](#memory) is retired, not deleted. See
 [Resource API](/docs/reference/api/resource-api).
+
+## Dispute
+
+A team member's objection to a [decision](#decision), given as a reply to it
+on one of its files in the change stack page. Later runs on the task get each
+dispute in their briefing. See
+[Disputes](/docs/reference/app/change-stacks-and-decisions#disputes).
 
 ## Egress
 
@@ -247,11 +254,24 @@ A machine running `spotlight host`. It claims runs for a workspace and starts a
 fresh sandbox for each one. A host is accepted through a pull pool's token or a
 runner trust. See [Host settings](/docs/reference/hosts/host-configuration).
 
+## Hunk
+
+One block of changed lines in a diff, with its header. A change stack assigns
+each hunk of a run's diff to exactly one [layer](#layer). See
+[Structure](/docs/reference/app/change-stacks-and-decisions#structure).
+
 ## Inbox
 
 A person's list of conversations on the tasks assigned to them, across every
 team in a workspace. See
 [The inbox](/docs/reference/app/tasks-runs-and-the-inbox#the-inbox).
+
+## Incidental
+
+The kind of [cohort](#cohort) that holds lockfiles, generated files, test
+snapshots, pure renames and formatting-only changes. Spotlight assigns these
+hunks itself, and their files start collapsed on the change stack page. See
+[Structure](/docs/reference/app/change-stacks-and-decisions#structure).
 
 ## Insights
 
@@ -289,7 +309,7 @@ station's `runners` place its work on runners that carry one of the labels. See
 
 ## Layer
 
-A step of a change stack: a title, a summary and the changes it places, built
+A step of a change stack: a title, a summary and the [hunks](#hunk) assigned to it, built
 on the layers before it. A station's check runs on each layer of a `change` cohort
 together with the layers before it. See
 [Structure](/docs/reference/app/change-stacks-and-decisions#structure).
@@ -348,6 +368,13 @@ each run's page lists what it was given, briefed or recalled, and what it
 proposed, and the Memory page shows how many runs used each memory. See
 [Station fields](/docs/reference/terraform/line#station-fields) and
 [Agent commands](/docs/reference/cli/agent-commands#spotlight-recall).
+
+## Metered call
+
+The record of one call that a run made to a [catalog](#catalog) tool: the
+workspace, the run, the item, when the call started, how long it took and
+whether it succeeded. See
+[Catalog](/docs/reference/built-ins/built-in-tools-and-skills#catalog).
 
 ## Noise
 
@@ -635,6 +662,12 @@ before its agent began or for another reason outside the candidate, or changed
 nothing for its checks to run on. Unscored runs are left out of a replay's
 success. One that the judge still scored can make a task regress through a
 lower judge score. See [Results](/docs/reference/app/replays#results).
+
+## Whole change
+
+The first step of a [check](#check): the run's diff applied in full and checked
+with the station's `check` command. When it fails, the layers are not checked.
+See [Checks](/docs/reference/app/change-stacks-and-decisions#checks).
 
 ## Workspace
 

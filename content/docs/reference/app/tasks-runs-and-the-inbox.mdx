@@ -284,7 +284,7 @@ for more than one reason, the reasons are joined with `; `.
 | `catalog_item_unknown: <reason>` | The station names a catalog item that does not exist. Code `refused`. |
 | `catalog_item_wrong_kind: <reason>` | The station names a catalog tool as a skill, or a skill as a tool. Code `refused`. |
 | `not_entitled: <reason>` | The workspace's plan does not include a catalog item the station enables. Code `refused`. |
-| `entitlement_lapsed: <reason>` | The plan that included a catalog item the station enables has lapsed. Code `refused`. |
+| `entitlement_expired: <reason>` | The plan that included a catalog item the station enables has expired. Code `refused`. |
 | `No runner was provisioned after <n> attempts. Last failure: <failure>` | No push pool started a runner. See [Provision call failures](/docs/reference/events/provision-call#failures). Code `unprovisioned`. |
 | `Hooks did not answer after <n> tries. Last error: <reason>` | Its `run.starting` hooks went unanswered on every attempt. Code `hooks-unanswered`. |
 
@@ -311,7 +311,7 @@ config. A chat's run records none.
 | Repositories | Each repository of the line, with its `setup` command. |
 | Skills | Each team and catalog skill enabled, with a SHA-256 of its files. Built-in skills are left out. |
 | Tools | The tools enabled. |
-| Decisions, memories | Whether the station drafts them. |
+| Decisions, memories | Whether the station generates decisions and drafts memories. |
 | Judge | The SHA-256 of the judge's rubric, its `sample` and its `trust`, when the station has a [judge](/docs/reference/terraform/line#judge-fields). The station's alerts are not part of the config. |
 
 The run's [config fingerprint](/docs/reference/glossary#config-fingerprint) is

@@ -11,16 +11,15 @@ its [station fields](/docs/reference/terraform/line#station-fields):
 
 | Station field | Effect |
 | --- | --- |
-| `diffs: true` | After each run, a change stack is drafted for each checkout that changed. |
-| `check` | Each change stack drafted at the station is checked with this command, so it has effect only with `diffs: true`. With both set, every repository of the line must have `setup`. |
-| `decisions: true` | After each completed run, decisions are drafted from it. |
+| `diffs: true` | After each run, a change stack is generated for each checkout that changed. |
+| `check` | Each change stack generated at the station is checked with this command, so it has effect only with `diffs: true`. With both set, every repository of the line must have `setup`. |
+| `decisions: true` | After each completed run, decisions are generated from it. |
 
-Both are drafted by Spotlight after the run, not by the agent. Both need the
-deployment to have [drafting](/docs/reference/self-hosted-settings#drafting) set up; where it does not, a change stack
-fails with `Change stacks are not set up on this deployment.`, and
-no decisions are drafted.
-[Reviewing an agent's changes](/docs/runs/reviewing-an-agents-changes)
-gives the reasons.
+Spotlight, not the agent, generates both after the run. Both need the deployment
+to have [models](/docs/reference/self-hosted-settings#models) set up; where it
+does not, a change stack fails with `Change stacks are not set up on this
+deployment.`, and no decisions are generated. [Reviewing an agent's
+changes](/docs/runs/reviewing-an-agents-changes) gives the reasons.
 
 ## Change stacks
 
@@ -28,18 +27,18 @@ gives the reasons.
 
 | State | Meaning |
 | --- | --- |
-| `drafting` | The diff is received and the stack is being drafted. |
-| `ready` | Every change in the diff is placed in exactly one layer. |
-| `failed` | Drafting did not finish. The stack carries the reason. |
+| `generating` | Spotlight has the diff and generates the stack. |
+| `ready` | Every hunk of the diff is assigned to exactly one layer. |
+| `failed` | Generation did not finish. The stack carries the reason. |
 
 | Message | Cause |
 | --- | --- |
-| `Spotlight couldn't draft the change stack.` | Every drafting attempt failed. |
-| `Drafting was interrupted before it finished.` | Drafting stopped without a reason. |
+| `Spotlight couldn't generate the change stack.` | Every generation attempt failed. |
+| `Generation was interrupted before it finished.` | Generation stopped without a reason. |
 
-Drafting is attempted at most 4 times. Each attempt may take 30 minutes, and
+Generation is attempted at most 4 times. Each attempt may take 30 minutes, and
 the wait before the next starts at 30 seconds and doubles. A diff is at most
-6 MiB and 2,000 changes.
+6 MiB and 2,000 hunks.
 
 ### Structure
 
@@ -48,23 +47,23 @@ A stack is an ordered list of cohorts. A cohort is an ordered list of layers.
 | Part | Contains |
 | --- | --- |
 | Cohort | A kind, a title and an intent. |
-| Layer | A title, a summary, the changes it places, a note on each file it changes, and the earlier layers it depends on with the reason for each. |
+| Layer | A title, a summary, the hunks assigned to it, a note on each file it changes, and the earlier layers it depends on with the reason for each. |
 
 | Cohort kind | Contains |
 | --- | --- |
-| `change` | The changes a reviewer reads, in layers that build on one another. |
-| `incidental` | Lockfiles, generated files, test snapshots, pure renames and formatting-only changes. Spotlight places these itself. |
+| `change` | The hunks a reviewer reads, in layers that build on one another. |
+| `incidental` | Lockfiles, generated files, test snapshots, pure renames and formatting-only changes. Spotlight assigns these itself. |
 
-A diff whose changes are all incidental gives a ready stack at once.
+A diff whose hunks are all incidental gives a ready stack at once.
 
 ### Languages read across files
 
-Before drafting, Spotlight reads the changed files in these languages, before
+Before generating, Spotlight reads the changed files in these languages, before
 and after the change. It reads only the lines the diff shows, the changed lines
 and their context, and leaves the other lines blank. Binary files are not read.
 Each side of a file is read only when that text is at most 524,288 characters.
 
-Spotlight links each change, a hunk of the diff, to the hunks that define a
+Spotlight links each hunk of the diff to the hunks that define a
 name it uses or imports, or a route it names. The hunks may be in the same
 file. A hunk is not linked to itself. Route links come only from the after
 side.
@@ -109,7 +108,7 @@ from the line's runner image, on a runner that meets the run's placement.
 | Step | Checked tree |
 | --- | --- |
 | The whole change | The run's diff applied in full. Always first. |
-| Each `change` layer, in order | The incidental changes and every layer up to and including this one. |
+| Each `change` layer, in order | The incidental hunks and every layer up to and including this one. |
 
 - Each checked tree borrows git objects from the host's
   [mirror](/docs/reference/hosts/host-configuration#state) of the repository,
@@ -128,9 +127,9 @@ from the line's runner image, on a runner that meets the run's placement.
   65 minutes after the claim.
 - A check is claimed at most 3 times.
 - A check that has waited more than 60 minutes is skipped with
-  `nobody-checked` while no runner has a lease on it.
+  `queue-timeout` while no runner has a lease on it.
 
-| Check state | Meaning |
+| Check status | Meaning |
 | --- | --- |
 | `waiting` | Waiting for a runner to claim and run it. |
 | `checked` | Every step ran. Each step passed or failed. |
@@ -142,11 +141,11 @@ from the line's runner image, on a runner that meets the run's placement.
 | `no-checkout` | Spotlight does not know which checkout the changes are from. |
 | `checkout-failed` | Spotlight could not lay out a copy of the checkout to check. |
 | `setup-failed` | The setup of the checkout failed before the check ran. |
-| `no-room` | The runner had no room to check the layers. |
+| `workspace-failed` | The runner could not open a workspace to check the layers. |
 | `out-of-time` | There was no time left to check the layers. |
 | `no-image` | The host couldn't pull the runner image that the line names. |
-| `nobody-checked` | No runner checked the layers in time. The check had waited more than 60 minutes, and no runner had a lease on it. |
-| `unprovisioned` | Spotlight couldn't provision a runner to check the layers. |
+| `queue-timeout` | No runner checked the layers in time. The check had waited more than 60 minutes, and no runner had a lease on it. |
+| `provision-failed` | Spotlight couldn't provision a runner to check the layers. |
 
 A push pool receives a check as provision work of kind `check`. See
 [Provision call](/docs/reference/events/provision-call).
@@ -178,26 +177,26 @@ A push pool receives a check as provision work of kind `check`. See
 | `title` | string | At most 120 characters. |
 | `why` | string | The reasons, at most 2,000 characters. |
 | `alternatives` | array of strings | What was weighed and set aside. At most 5, each at most 300 characters. |
-| `paths` | array of strings | The files the decision bears on. 1 to 20. |
-| `steps` | array of integers | The steps of the run the decision is drawn from. 1 to 20. |
+| `paths` | array of strings | The files the decision covers. 1 to 20. |
+| `journalSteps` | array of integers | The journal steps of the run the decision is drawn from. 1 to 20. |
 | `disputes` | array of objects | Each has the file, the person and the reason. |
 
-A drafted decision that breaks these limits is dropped.
+A generated decision that breaks these limits is dropped.
 
-### Drafting
+### Generation
 
-- Decisions are drafted after a run completes at a station with
+- Decisions are generated after a run completes at a station with
   `decisions: true`, unless the task reviews a pull request.
-- A task has one set of decisions. Each later drafting replaces it.
-- Drafting is attempted as for a change stack. When every attempt fails, the
+- A task has one set of decisions. Each later generation replaces it.
+- Generation is attempted as for a change stack. When every attempt fails, the
   task keeps the decisions it had.
 
 ### Status
 
 | Status | Meaning |
 | --- | --- |
-| `proposed` | Drafted, and open to disputes. Later runs may replace it. |
-| `merged` | The task's pull request merged. Nothing is drafted for the task again. |
+| `proposed` | Generated, and open to disputes. Later runs may replace it. |
+| `merged` | The task's pull request merged. Nothing is generated for the task again. |
 
 When the pull request is closed without merging, the decisions are discarded.
 Merged decisions are listed by
@@ -211,9 +210,9 @@ its files in the change stack page. A reason is 1 to 1,000 characters.
 
 ### Where decisions are shown
 
-- The change stack page, beside the files each decision bears on.
+- The change stack page, beside the files each decision covers.
 - A comment on the task's pull request, when the workspace is connected to
-  GitHub. It is withdrawn when the task has no decisions.
+  GitHub. Spotlight deletes it when the task has no decisions.
 - The briefing of each later run on the task, under `## Decisions on record`,
   with each dispute. A run at a station with `decisions: true` is also briefed
   under `## Say what you decide`. See

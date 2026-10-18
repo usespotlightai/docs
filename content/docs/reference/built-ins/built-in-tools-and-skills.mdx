@@ -130,11 +130,13 @@ Spotlight publishes catalog tools and skills, named
 | `catalog.research@1.0.0` | skill | `team` | uses `catalog.web-search@1.1.0` and `catalog.fetch-page@1.0.0` |
 
 A workspace's plan is `free`, `team` or `enterprise`, and each plan includes
-the ones before it. A workspace with no plan set, or whose plan has lapsed,
+the ones before it. A workspace with no plan set, or whose plan has expired,
 is on `free`.
 
 - A line that enables a catalog item the workspace's plan does not include is
   rejected when it is written.
 - A run at such a station fails with the code `refused`.
-- A catalog skill is laid out in the folder `spotlight-catalog-<name>`, and
-  brings the catalog tools it uses.
+- A catalog skill is laid out in the folder `spotlight-catalog-<name>`. The
+  run also gets the catalog tools that the skill uses.
+- Spotlight records each call that a run makes to a catalog tool: when the
+  call started, how long it took and whether it succeeded.
