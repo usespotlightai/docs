@@ -836,6 +836,14 @@ query parameter on requests to the hosts it is bound to; the value never
 enters a sandbox. See
 [`spotlight_secret`](/docs/reference/terraform/secret).
 
+## Secret grant
+
+Permission for one run to use one [secret](#secret) on one host, for the
+run's current [lease](#lease). Egress gets only the secrets that the run's
+grants name. Spotlight removes the grants when the lease ends, and purges them
+7 days after the run ends. See
+[Run secrets](/docs/reference/hosts/egress#run-secrets).
+
 ## Seed
 
 The first replay of a [search](#search): a replay of the station's live config
