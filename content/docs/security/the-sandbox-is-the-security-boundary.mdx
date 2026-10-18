@@ -171,8 +171,9 @@ cosmetic.
 Some things do not yet go through this design, and each is a gap because it
 leaves a credential or a route outside what egress controls.
 
-Cursor's API key still enters the sandbox. The host has no destination for it in
-its table, so it passes into the sandbox as it is. Logins that refresh their own
+Cursor's API key still enters the sandbox, and so do OpenCode Zen's key and the
+key of any OpenCode provider other than Anthropic and OpenAI. The host has no
+destination for them in its table, so they pass into the sandbox as they are. Logins that refresh their own
 tokens, such as Codex signed in with ChatGPT or Claude signed in through a
 browser, are not injected by egress; an API key, or a token from `claude
 setup-token`, is. Egress cannot itself sit behind a corporate proxy.

@@ -116,17 +116,22 @@ Every harness gets the servers when its session starts. Cursor also gets them in
 | `claude-code` | an object | Claude Code settings JSON |
 | `codex` | a string of TOML | Codex `config.toml` |
 | `cursor` | an object | Cursor CLI config JSON |
+| `opencode` | an object | OpenCode config JSON (`opencode.json`) |
 
-A key that names no harness, a `claude-code` or `cursor` value that is not an
-object, and a `codex` value that does not parse as TOML are rejected with `422`.
+A key that names no harness, a `claude-code`, `cursor` or `opencode` value that
+is not an object, and a `codex` value that does not parse as TOML are rejected with `422`.
 
 ## How each harness receives it
 
-A run's harness gets the profile's settings as files in the run's state
-directory, `.spotlight/state` within the run's workspace. See
+A run's harness, other than OpenCode, gets the profile's settings as files in
+the run's state directory, `.spotlight/state` within the run's workspace. See
 [Inside a sandbox](/docs/reference/hosts/sandbox#files). Spotlight does not remove a
 repository's own settings files, such as `.claude/settings.json` or
 `AGENTS.md`.
+
+OpenCode gets no files. Its settings go into the JSON of the
+`OPENCODE_CONFIG_CONTENT` environment variable, with the model. See
+[Harness environment](/docs/reference/hosts/harnesses#harness-environment).
 
 | Harness | Files | Directory variable | Also |
 | --- | --- | --- | --- |
@@ -139,6 +144,27 @@ repository's own settings files, such as `.claude/settings.json` or
 | `claude-code` | `permissions.allow` and `permissions.defaultMode` from the rules, then `native.claude-code` layered over them. `defaultMode` is `acceptEdits` unless `edit` is not allowed. Each MCP server is allowed as `mcp__<name>`. |
 | `codex` | `config.toml` is `native.codex` as written. `spotlight.rules` contains a `prefix_rule` for each `execute` rule with a pattern. |
 | `cursor` | `cli-config.json` contains `permissions.allow` and `permissions.deny` from the rules, then `native.cursor` layered over them. `mcp.json` contains the MCP servers. |
+| `opencode` | `OPENCODE_CONFIG_CONTENT` contains `permission` from the rules, then `native.opencode` layered over it. See [OpenCode permissions](#opencode-permissions). |
+
+### OpenCode permissions
+
+Each kind of rule is written to OpenCode tools:
+
+| Kind | OpenCode keys |
+| --- | --- |
+| `read` | `permission.read`, and `permission.glob` and `permission.grep` |
+| `edit` | `permission.edit` |
+| `execute` | `permission.bash` |
+
+`permission.read`, `permission.edit` and `permission.bash` are each an object
+of pattern to decision: `"*"` first, with the kind's bare rule, then one entry
+for each rule with a pattern. OpenCode applies the last pattern that matches.
+`permission.glob` and `permission.grep` get only the bare `read` decision,
+because they match search patterns, not paths. An `ask` decision becomes an
+ACP permission request, which Spotlight puts to a person as for the other
+harnesses.
+
+OpenCode gets the MCP servers when its session starts.
 
 ## Warnings
 
@@ -148,7 +174,7 @@ the approximation. The write succeeds. Warnings include:
 | Harness | Case | Effect |
 | --- | --- | --- |
 | `claude-code` | A looser patterned rule under a bare `deny`, or under a bare `ask` for `read` | The bare rule applies to the whole kind. |
-| `claude-code`, `cursor` | `native` sets a key the rules also write | The native value replaces it. |
+| `claude-code`, `cursor`, `opencode` | `native` sets a key the rules also write | The native value replaces it. |
 | `codex` | Any `read` rule other than `allow` | Does not apply; Codex reads what its sandbox can see. |
 | `codex` | A bare `edit` rule other than `allow`, or any `edit` rule with a pattern | Does not apply; edits are decided by the sandbox. |
 | `codex` | A bare `execute` rule other than `allow` | Does not apply; only patterned `execute` rules apply. |
@@ -160,6 +186,7 @@ the approximation. The write succeeds. Warnings include:
 | `cursor` | An `ask` rule under an allowed kind | Denied instead. |
 | `cursor` | An `execute` pattern of more than one word | Written for the command's first word only. |
 | `cursor` | Any MCP server | May not load: Cursor asks a person to approve each server, and ACP carries no such request. |
+| `opencode` | A `read` rule with a pattern whose decision differs from the bare `read` rule | Does not apply to glob and grep searches, which follow the bare rule. |
 
 ## Delete
 

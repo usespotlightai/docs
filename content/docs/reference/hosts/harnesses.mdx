@@ -6,23 +6,23 @@ description: The agent CLIs Spotlight runs, how each is installed, started and g
 ---
 
 A harness is the agent CLI a station runs. A station names one by its id in
-`harness`. Spotlight runs three. The runner starts each over the Agent Client
+`harness`. Spotlight runs four. The runner starts each over the Agent Client
 Protocol (ACP), in `/workspace`, as the `agent` user.
 
 ## Built-in harnesses
 
-| | Claude Code | Cursor | Codex |
-| --- | --- | --- | --- |
-| Id | `claude-code` | `cursor` | `codex` |
-| Name | Claude Code | Cursor CLI | Codex |
-| ACP command | `claude-agent-acp` | `cursor-agent acp` | `codex-acp` |
-| Model binding | `ANTHROPIC_MODEL` environment variable | `--model <model>` argument | `model` in the JSON of `CODEX_CONFIG` |
-| Effort binding | `CLAUDE_CODE_EFFORT_LEVEL` environment variable | appended to the model as `<model>[effort=<effort>]`, when a model is set | `model_reasoning_effort` in the JSON of `CODEX_CONFIG` |
-| Model discovery | `GET https://api.anthropic.com/v1/models` | `cursor-agent models` | `GET https://api.openai.com/v1/models`, ids starting `gpt`, `o<digit>` or `codex` |
-| Key model discovery sends | `ANTHROPIC_API_KEY`, else `CLAUDE_CODE_OAUTH_TOKEN` | none; `cursor-agent models` signs in by itself | `CODEX_API_KEY`, else `OPENAI_API_KEY` |
-| Version probe | the bundled `claude` CLI's `--version` | `cursor-agent --version` | `codex-acp cli -V` |
-| Skills directory | `.claude/skills`, read by the harness | `.spotlight/skills`, listed in the briefing | `.spotlight/skills`, listed in the briefing |
-| Native settings format | JSON object | JSON object | `config.toml` text |
+| | Claude Code | Cursor | Codex | OpenCode |
+| --- | --- | --- | --- | --- |
+| Id | `claude-code` | `cursor` | `codex` | `opencode` |
+| Name | Claude Code | Cursor CLI | Codex | OpenCode |
+| ACP command | `claude-agent-acp` | `cursor-agent acp` | `codex-acp` | `opencode acp` |
+| Model binding | `ANTHROPIC_MODEL` environment variable | `--model <model>` argument | `model` in the JSON of `CODEX_CONFIG` | `model` in the JSON of `OPENCODE_CONFIG_CONTENT`, as `provider/model` |
+| Effort binding | `CLAUDE_CODE_EFFORT_LEVEL` environment variable | appended to the model as `<model>[effort=<effort>]`, when a model is set | `model_reasoning_effort` in the JSON of `CODEX_CONFIG` | the ACP session option `effort`, set when the session opens. See [OpenCode effort](#opencode-effort). |
+| Model discovery | `GET https://api.anthropic.com/v1/models` | `cursor-agent models` | `GET https://api.openai.com/v1/models`, ids starting `gpt`, `o<digit>` or `codex` | `opencode models` |
+| Key model discovery sends | `ANTHROPIC_API_KEY`, else `CLAUDE_CODE_OAUTH_TOKEN` | none; `cursor-agent models` signs in by itself | `CODEX_API_KEY`, else `OPENAI_API_KEY` | none; `opencode models` reads the provider keys by itself |
+| Version probe | the bundled `claude` CLI's `--version` | `cursor-agent --version` | `codex-acp cli -V` | `opencode --version` |
+| Skills directory | `.claude/skills`, read by the harness | `.spotlight/skills`, listed in the briefing | `.spotlight/skills`, listed in the briefing | `.opencode/skills`, read by the harness |
+| Native settings format | JSON object | JSON object | `config.toml` text | JSON object (OpenCode's `opencode.json`) |
 
 Spotlight's runner image holds no harness. A team installs each harness in its
 own image, built `FROM` that image. See [Installation](#installation).
@@ -47,6 +47,12 @@ The runner sets these for the harness, besides the model and effort bindings.
 | `claude-code` | `OTEL_EXPORTER_OTLP_ENDPOINT` | the runner's loopback telemetry address |
 | `claude-code` | `OTEL_TRACES_EXPORT_INTERVAL` | `1000` |
 | `codex` | `CODEX_HOME` | `${SPOTLIGHT_STATE_DIR}/codex` |
+| `opencode` | `OPENCODE_DB` | `${SPOTLIGHT_STATE_DIR}/opencode.db` |
+| `opencode` | `OPENCODE_DISABLE_AUTOUPDATE` | `1` |
+| `opencode` | `OPENCODE_CONFIG_CONTENT` | a JSON object with `"share": "disabled"` and `"autoupdate": false`, the model, and the permissions of the harness profile |
+
+OpenCode keeps its sessions in `OPENCODE_DB`, so a later run can resume the
+session.
 
 A [harness profile](/docs/reference/terraform/harness-profile) adds the harness's native
 settings, MCP servers and permission rules. See
@@ -58,13 +64,22 @@ of the agent's environment.
 The runner journals the token usage each harness reports at the end of every
 turn. Claude Code reports input, output, cache-read and cache-write tokens.
 Codex reports no cache-write tokens, and its counts cover only the last request
-of each turn. Cursor's counts are not confirmed. See
+of each turn. OpenCode reports input, output, total and cache-read tokens. Cursor's counts
+are not confirmed. See
 [Spend](/docs/reference/app/tasks-runs-and-the-inbox#spend).
 
 ## Efforts
 
 Every harness takes the same efforts, from least to most: `low`, `medium`,
 `high`, `xhigh`, `max`. A station with no effort sets none.
+
+### OpenCode effort
+
+OpenCode calls effort levels "variants", and each model has its own set, for
+example `low`, `high`, `max` and `default`. If the model has no variant with
+the station's effort, the runner logs
+`the harness refused an optional setting, so it runs without it` and the run
+continues without it.
 
 ## Models
 
@@ -75,25 +90,31 @@ prints, kept when it matches:
 ^[a-z0-9][a-z0-9._:@/-]*$
 ```
 
+`opencode models` prints one `provider/model` per line, for example
+`anthropic/claude-sonnet-4-5`. It lists the models of each provider that has a
+key in the environment, and the free OpenCode Zen models (`opencode/...`).
+
 A discovery command that fails, or does not finish within 15 seconds, lists no
 models. Model discovery runs behind an egress, which injects the host's harness
 keys into requests to the model endpoints.
 
 ## Installation
 
-| | Claude Code | Cursor | Codex |
-| --- | --- | --- | --- |
-| Example Dockerfile | `claude-code.Dockerfile` | `cursor.Dockerfile` | `codex.Dockerfile` |
-| Installs | npm `@anthropic-ai/claude-code` and `@agentclientprotocol/claude-agent-acp` | Cursor's install script, from `https://cursor.com/install`, into `/opt/cursor` | npm `@agentclientprotocol/codex-acp` |
-| Executable on `PATH` | `claude-agent-acp` | `cursor-agent`, linked at `/usr/local/bin/cursor-agent` | `codex-acp` |
-| Build arguments | `CLAUDE_CODE_VERSION`, `CLAUDE_AGENT_ACP_VERSION` | none | `CODEX_ACP_VERSION` |
-| Credentials | `ANTHROPIC_API_KEY`, or `CLAUDE_CODE_OAUTH_TOKEN` from `claude setup-token` | `CURSOR_API_KEY` | `CODEX_API_KEY` or `OPENAI_API_KEY`. A ChatGPT sign-in is not supported. |
+| | Claude Code | Cursor | Codex | OpenCode |
+| --- | --- | --- | --- | --- |
+| Example Dockerfile | `claude-code.Dockerfile` | `cursor.Dockerfile` | `codex.Dockerfile` | `opencode.Dockerfile` |
+| Installs | npm `@anthropic-ai/claude-code` and `@agentclientprotocol/claude-agent-acp` | Cursor's install script, from `https://cursor.com/install`, into `/opt/cursor` | npm `@agentclientprotocol/codex-acp` | npm `opencode-ai` |
+| Executable on `PATH` | `claude-agent-acp` | `cursor-agent`, linked at `/usr/local/bin/cursor-agent` | `codex-acp` | `opencode` |
+| Build arguments | `CLAUDE_CODE_VERSION`, `CLAUDE_AGENT_ACP_VERSION` | none | `CODEX_ACP_VERSION` | `OPENCODE_VERSION`, default `1` |
+| Credentials | `ANTHROPIC_API_KEY`, or `CLAUDE_CODE_OAUTH_TOKEN` from `claude setup-token` | `CURSOR_API_KEY` | `CODEX_API_KEY` or `OPENAI_API_KEY`. A ChatGPT sign-in is not supported. | the provider's key, for example `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`, or `OPENCODE_API_KEY` for OpenCode Zen. A ChatGPT or GitHub Copilot sign-in is not supported. |
 
 The example Dockerfiles are in
 [`.docker/runner/examples`](https://github.com/usespotlightai/spotlight/tree/main/.docker/runner/examples)
 in the Spotlight repository. Each takes the build argument `BASE`, the image
 it is built on, with the default `ghcr.io/usespotlightai/spotlight-runner:latest`.
-A version argument has the default `latest`. An image built from one example
+A version argument has the default `latest`, except `OPENCODE_VERSION`.
+Spotlight supports OpenCode major version 1. The npm `dev` tag of
+`opencode-ai` publishes version 2, which Spotlight does not support. An image built from one example
 can be the `BASE` of another, so that one image holds more than one harness.
 
 The `claude` and `codex` command lines alone do not count as installed.
@@ -106,7 +127,7 @@ for the credentials egress keeps.
 ## Installed harnesses
 
 A harness counts as installed in an image when its ACP executable
-(`claude-agent-acp`, `cursor-agent` or `codex-acp`) is on `PATH`. The host
+(`claude-agent-acp`, `cursor-agent`, `codex-acp` or `opencode`) is on `PATH`. The host
 runs `spotlight runner harnesses '<json>'` in each image it serves, within 2
 minutes, and reports each installed harness with its models and version. The
 [Runners page](/docs/reference/app/web-app#workspace-pages) shows them.

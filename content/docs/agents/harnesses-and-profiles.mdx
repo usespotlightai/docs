@@ -2,12 +2,12 @@
 type: concept
 icon: Lightbulb
 title: Harnesses and harness profiles
-description: Why a station runs an agent CLI such as Claude Code, Codex or Cursor instead of calling a model, why the model and the harness version follow from the harness and its image, and what a harness profile says to each harness.
+description: Why a station runs an agent CLI such as Claude Code, Codex, Cursor or OpenCode instead of calling a model, why the model and the harness version follow from the harness and its image, and what a harness profile says to each harness.
 ---
 
 A station in Spotlight does not call a language model directly. It names a
 harness, an agent program that people also run in their own terminals: Claude
-Code, Codex or Cursor's CLI. For each run, the runner starts that program in the
+Code, Codex, Cursor's CLI or OpenCode. For each run, the runner starts that program in the
 sandbox, hands it the briefing, and lets it work. Reading files, editing them,
 running commands and deciding what to do next all happen inside the harness,
 with the harness's own tools. The model is one of the harness's settings.
@@ -37,10 +37,10 @@ line](/docs/agents/agents-talk-back-through-a-command-line)).
 
 ## One protocol for every harness
 
-Claude Code, Codex and Cursor each come with their own command-line interface,
-flags and output. The runner does not deal with any of that. It speaks the
-Agent Client Protocol (ACP) to all three:
-Cursor's CLI speaks it directly, and Claude Code and Codex speak it through
+Claude Code, Codex, Cursor and OpenCode each come with their own command-line
+interface, flags and output. The runner does not deal with any of that. It
+speaks the Agent Client Protocol (ACP) to all four:
+Cursor's CLI and OpenCode speak it directly, and Claude Code and Codex speak it through
 bridge programs that are installed beside them in the runner image. Over that one protocol the runner
 starts a session, sends the briefing, streams the agent's output to the run's
 journal, passes on what a person says while the agent is still working, and
@@ -48,14 +48,18 @@ hears the harness's permission requests.
 
 Adding a harness therefore comes down to describing how to start it. Cursor
 was added that way, started exactly as Claude Code is, with no change to how
-the runner launches an agent. The per-harness details that do remain, such as
+the runner launches an agent. OpenCode needed one addition: it takes its effort
+as an option of the ACP session, so the runner can now set session options
+after the session opens. The per-harness details that do remain, such as
 how a model or an effort is passed, are in the [Harnesses](/docs/reference/hosts/harnesses)
 reference.
 
 ## The model belongs to the harness
 
 A model id means something only to the harness that takes it. Claude Code
-takes Anthropic's ids, Codex takes OpenAI's, and Cursor's CLI takes its own. So a
+takes Anthropic's ids, Codex takes OpenAI's, and Cursor's CLI takes its own.
+OpenCode takes a provider and a model together, such as
+`anthropic/claude-sonnet-4-5`, for each provider it has a key for. So a
 station names its harness first, and then a model within it.
 
 Spotlight keeps no list of models either. When a host looks inside a runner
@@ -67,7 +71,10 @@ model passes none, and the harness falls back to its own default.
 
 Effort is handled differently. The five levels, from `low` to `max`, are
 Spotlight's own, the same for every harness, and each harness receives the
-level in its own form. Unset, it passes nothing, like the model.
+level in its own form. Unset, it passes nothing, like the model. OpenCode is
+the one harness where a level can be missing: its levels differ from model to
+model, and when a model has no level of that name, the run continues without
+one.
 
 ## The image contains the version
 
@@ -94,12 +101,13 @@ its image ([Run a line in your own runner image](/docs/hosts/run-a-line-in-your-
 it ran in, and a host that finds a harness gone after an image changes fails
 the runs that needed it, instead of starting them without it.
 
-## One profile, three dialects
+## One profile, four dialects
 
 The harnesses agree on very little about configuration. Claude Code reads a
 JSON settings file with allow, ask and deny lists; Codex reads `config.toml`
 and a separate rules file for commands; Cursor's CLI reads its own JSON, with
-allow and deny lists but no way to ask. A team that runs more than one harness,
+allow and deny lists but no way to ask; OpenCode reads its own JSON too, with
+one rule set for each tool, in which the last pattern that matches wins. A team that runs more than one harness,
 or wants to switch, would otherwise write the same intent once per harness, in
 each harness's format and with each one's edge cases.
 
@@ -116,7 +124,8 @@ the files and flags of whichever harness the station runs.
 The translation cannot always be exact. Cursor has no ask rules, so a rule that
 asks about part of what is otherwise allowed becomes a deny there. Codex
 decides edits by its own sandbox and cannot restrict reads. Cursor matches a
-command by its first word only. Spotlight accepts a profile with these gaps and
+command by its first word only. OpenCode checks a path only when it reads a
+file, so a read rule for a path does not apply to its file searches. Spotlight accepts a profile with these gaps and
 reports them: the profile's `warnings` name each place where a harness got an
 approximation, and what it got instead. A team can
 then decide whether the approximation is acceptable for the stations that run
@@ -128,6 +137,8 @@ A repository often carries its own agent settings: a `.claude/settings.json`,
 an `AGENTS.md`. Spotlight leaves those alone. The profile is written at the
 harness's user level, in the run's own state directory, and the repository's
 settings still apply on top of it, as they would on a developer's machine.
+OpenCode gets its profile in the environment variable
+`OPENCODE_CONFIG_CONTENT` instead, so no file is written for it.
 
 That leaves the repository able to loosen what the profile allows. For the
 rules that must apply, Spotlight goes further where a harness gives it a place

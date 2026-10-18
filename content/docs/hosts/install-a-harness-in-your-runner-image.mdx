@@ -2,7 +2,7 @@
 type: how-to
 icon: SquarePen
 title: Install a harness in your runner image
-description: Build a runner image that holds Claude Code, Codex or Cursor, so your hosts can start agent runs.
+description: Build a runner image that holds Claude Code, Codex, Cursor or OpenCode, so your hosts can start agent runs.
 ---
 
 Spotlight's runner image, `ghcr.io/usespotlightai/spotlight-runner:<release>`,
@@ -35,6 +35,7 @@ The Spotlight repository has one example Dockerfile for each harness, in
 | Claude Code | `claude-code.Dockerfile` | `@anthropic-ai/claude-code` and `@agentclientprotocol/claude-agent-acp` |
 | Codex | `codex.Dockerfile` | `@agentclientprotocol/codex-acp` |
 | Cursor | `cursor.Dockerfile` | `cursor-agent`, from Cursor's install script |
+| OpenCode | `opencode.Dockerfile` | `opencode-ai`, major version 1 |
 
 Download the example for your harness into an empty directory, and build it
 with `BASE` set to Spotlight's image at your hosts' release. For Claude Code:
@@ -50,8 +51,9 @@ docker build --file claude-code.Dockerfile \
 Always set `BASE`. Without it, the example builds on `:latest`, which can be a
 different release from the one your hosts run. To pin a harness version, also
 set its build argument: `CLAUDE_CODE_VERSION` and `CLAUDE_AGENT_ACP_VERSION`
-for Claude Code, or `CODEX_ACP_VERSION` for Codex. Each one is `latest` by
-default.
+for Claude Code, `CODEX_ACP_VERSION` for Codex, or `OPENCODE_VERSION` for
+OpenCode. The OpenCode argument is `1` by default, because Spotlight supports
+only OpenCode version 1. The other arguments are `latest` by default.
 
 To put more than one harness in one image, build the examples one on top of
 the other. Set `BASE` of the second build to the tag of the first:
@@ -71,7 +73,7 @@ If you write your own Dockerfile, obey these rules:
 - Install as `root`, where every user's `PATH` finds the harness. The harness
   runs as the `agent` user.
 - Install the ACP executable that Spotlight looks for: `claude-agent-acp`,
-  `codex-acp` or `cursor-agent`. The `claude` or `codex` command line alone is
+  `codex-acp`, `cursor-agent` or `opencode`. The `claude` or `codex` command line alone is
   not sufficient.
 
 To check that the image holds the harness, find its executable:
