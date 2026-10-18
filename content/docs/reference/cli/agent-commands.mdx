@@ -208,8 +208,8 @@ removed first.
 
 | File | Contains |
 | --- | --- |
-| `index.md` | A table of the runs: each run, linked to its journal, then its task's title, config, ending, checks, the next person act, delivery, round, cost, steps, duration and start. A run with no recorded outcome shows its state as its ending. Then each config, oldest first: its fingerprint, its file, how many of the runs used it, what changed since the config before it, and the prompt's change as a diff. |
-| `configs/<fingerprint>.yml` | One config, as YAML: `fingerprint`, `harness`, `model`, `effort`, `image`, `profile`, `repositories`, `skills`, `tools`, `decisions`, `memories`, `judge` and `prompt`. `judge` contains `rubricDigest`, `sample` and `trust`, or is `null`. |
+| `index.md` | A table of the runs: each run, linked to its journal, then its task's title, config, ending, checks, the first human action, the pull request state, the visit, cost, steps, duration and start. A run with no recorded outcome shows its state as its ending. Then each config, oldest first: its fingerprint, its file, how many of the runs used it, what changed since the config before it, and the prompt's change as a diff. |
+| `configs/<fingerprint>.yml` | One config, as YAML: `fingerprint`, `harness`, `model`, `effort`, `image`, `profile`, `repositories`, `skills`, `tools`, `decisions`, `memories`, `judge` and `prompt`. `judge` contains `rubricHash`, `sample` and `minAgreement`, or is `null`. |
 | `runs/<run>/journal.md` | The run's steps and spans: each step's text, a tool's input and output, and each file change as a diff. |
 | `runs/<run>/outcome.json` | `runId`, `taskId`, `fingerprint` and `outcome`, which is `null` for a run with no recorded outcome. |
 | `runs/<run>/diff.patch` | The run's file changes as a unified diff. Written only for a run that changed files. Files are taken in the order they were first changed. A file whose text before and after is over 256,000 characters together, or does not fit in what is left of the run's 1,000,000 characters of changed-file text, is listed as `Omitted <path>: too large to send whole`. |
@@ -232,18 +232,18 @@ is written, beyond `--last` if need be. The folder also contains:
 | File | Contains |
 | --- | --- |
 | `current.json` | The station block the search started from, the live config when it began. |
-| `index.md` | After the runs and configs, a "Candidates" table: each candidate, linked to its `score.json`, its config, how many of its replay runs succeeded and were scored, its repeats, its rate, and its hypothesis. When a candidate replayed each run more than once, a line under the table says where its copies are and how its rate is worked out. |
+| `index.md` | After the runs and configs, a "Candidates" table: each candidate, linked to its `score.json`, its config, how many of its replay runs succeeded and were scored, its repeats, its rate, and its hypothesis. When a candidate replayed each run more than once, a line under the table says where its repeats are and how its rate is worked out. |
 | `candidates/<name>/block.json` | The candidate's station block. |
 | `candidates/<name>/changes.diff` | How `block.json` differs from `current.json`, as a unified diff. Left out when they are the same. |
 | `candidates/<name>/hypothesis.md` | What the agent that proposed it expected it to improve. |
-| `candidates/<name>/score.json` | `succeeded` and `scored` (replay runs, copies included), `repeats` (copies of each run), `tasksScored` (runs of the set with a scored copy), `rate` (for each of those, the share of its scored copies that succeeded, averaged; `null` while none was scored), `failed` (the tasks it failed, each once), `verdicts` (how many runs the judge passed and failed, as `pass` and `fail`), `spent` (per currency) and `unpriced` (runs with no cost). |
-| `candidates/<name>/runs/<original run>/journal.md` | The replay run's steps, as for a run. When the candidate replayed each run more than once, each copy is under `runs/<original run>/<copy>/` instead, numbered from 1, and so are the two files below. |
-| `candidates/<name>/runs/<original run>/result.json` | `runId`, `original`, `repeat` (which copy, from 1), `taskId`, `fingerprint`, `state`, `cost`, `succeeded`, `reasons` and `verdict` (`pass`, `fail` or `null`). |
+| `candidates/<name>/score.json` | `succeeded` and `scored` (replay runs, repeats included), `repeats` (repeats of each run), `tasksScored` (runs of the set with a scored repeat), `rate` (for each of those, the share of its scored repeats that succeeded, averaged; `null` while none was scored), `failed` (the tasks it failed, each once), `verdicts` (how many runs the judge passed and failed, as `pass` and `fail`), `spent` (per currency) and `unpriced` (runs with no cost). |
+| `candidates/<name>/runs/<original run>/journal.md` | The replay run's steps, as for a run. When the candidate replayed each run more than once, each repeat is under `runs/<original run>/<repeat>/` instead, numbered from 1, and so are the two files below. |
+| `candidates/<name>/runs/<original run>/result.json` | `runId`, `original`, `repeat` (which repeat, from 1), `taskId`, `fingerprint`, `state`, `cost`, `succeeded`, `reasons` and `verdict` (`pass`, `fail` or `null`). |
 | `candidates/<name>/runs/<original run>/diff.patch` | The replay run's file changes, when it changed files. |
 
 The candidate named `seed` is the live config the search started from,
 replayed on the searched tasks. A candidate's runs are its replay's runs on the
-searched tasks, one per task run of the set and copy.
+searched tasks, one per task run of the set and repeat.
 
 ### Outcome words
 
@@ -255,8 +255,8 @@ ended runs are searched, and `--last` of the matches are kept.
 | --- | --- |
 | Ending | `completed`, `failed`, `stopped`, `exhausted`, `cancelled`, `superseded`. See [Run endings](/docs/reference/app/tasks-runs-and-the-inbox#run-endings). |
 | Failure code | A failed or superseded run's code, such as `exited`. See [Failure codes](/docs/reference/app/tasks-runs-and-the-inbox#failure-codes). |
-| Next person act | `started`, `parked`, `closed`, `answered`, `approved`, `refused`, `sent-back` |
-| Delivery | `open`, `merged`, `closed` |
+| First human action | `started`, `parked`, `accepted`, `answered`, `approved`, `refused`, `sent-back` |
+| Pull request state | `open`, `merged`, `closed` |
 | Checks | `checks-passed`, `checks-failed`, `checks-skipped` |
 
 [Station outcomes](/docs/reference/app/tasks-runs-and-the-inbox#station-outcomes)
@@ -314,12 +314,12 @@ The last line says where the memory came from:
 `The team remembers nothing about "<words>". Try other words.`
 
 Every memory a recall returns is recorded against the run, and shows under
-"Supplied to the agent" in "Remembered" on its Run page; the recall itself is a
+"Supplied to the agent" in "Memories" on its Run page; the recall itself is a
 `spotlight.recall` span in the task's trace.
 
 Given a handle, such as `M-12` or `m-12`, it prints that one memory in full: its
 kind, its status (`active` or `retired`), its body, where it applies, the steps
-and notes it rests on, the `spotlight trace` command for its task, the memory
+and notes it cites, the `spotlight trace` command for its task, the memory
 it replaced, and, once retired, why and what replaced it.
 
 | Message | Cause |
@@ -339,8 +339,8 @@ spotlight recall M-12
 spotlight remember --kind <kind> --body <text> [--path <path>]... [--scope <scope>] [--supersedes <handle>]
 ```
 
-Proposes a memory from inside the run. It rests on the step the agent ran the
-command from; where that step can't be found, on the last thing the agent said.
+Proposes a memory from inside the run. It cites the step the agent ran the
+command from; where that step can't be found, it cites the last thing the agent said.
 It waits in the inbox beside the run, with anything drafted from the run, until
 a teammate approves, edits or rejects it, and is stored only once approved. A
 memory from a task that came from outside the team cannot be approved together with other memories. Proposing the same memory twice from one run keeps one.
@@ -349,7 +349,7 @@ memory from a task that came from outside the team cannot be approved together w
 | --- | --- | --- |
 | `--kind` | yes | `rationale`, `rejected-approach`, `failure`, `environment`, `preference` or `correction`. |
 | `--body` | yes | What to remember, at most 1,000 characters. Omitted, `-` or `/dev/stdin`: read from standard input. |
-| `--path` | no | A file or folder the memory bears on, relative to the current directory or absolute. It must be inside one of the run's checkouts, and every `--path` in one repository. Within its repository, at most 500 characters. Repeat for more, up to 20 different paths. |
+| `--path` | no | A file or folder the memory is about, relative to the current directory or absolute. It must be inside one of the run's checkouts, and every `--path` in one repository. Within its repository, at most 500 characters. Repeat for more, up to 20 different paths. |
 | `--scope` | no | Where it applies: `team`, `line` or `station`. Default: `line`. |
 | `--supersedes` | no | The handle of an active memory of the team that this one corrects. Approving it retires that one. |
 
@@ -364,7 +364,7 @@ memory waits for a person's approval.
 | `A memory kind must be one of rationale, rejected-approach, failure, environment, preference, correction, not <kind>.` | `--kind` names no kind. |
 | `A memory scope must be one of team, line, station, not <scope>.` | `--scope` names no scope level. |
 | `<path> is outside the repositories this run checked out; name a path inside one of: <directories>` | A `--path` is outside every checkout. |
-| `A memory bears on paths of one repository at a time.` | The paths are in different repositories. |
+| `A memory is about paths of one repository at a time.` | The paths are in different repositories. |
 | `A memory must be at most 1000 characters.` | The body is more than 1,000 characters. |
 | `A memory path must be at most 500 characters.` | A `--path` is more than 500 characters within its repository. |
 | `A memory can cover at most 20 paths.` | More than 20 different paths. |

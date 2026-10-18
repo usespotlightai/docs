@@ -125,15 +125,15 @@ See [Replays](/docs/reference/app/replays).
 | Runs offered to add to a set | the station's latest 50 ended task runs |
 | Replay runs of a team queued or running at once, not counting a search's | 2 |
 | Ceiling | above 0, at most 1,000, in a three-letter currency |
-| Copies of each run in a replay (repeats) | 1 to 5, default 1 |
+| Repeats of each run in a replay | 1 to 5, default 1 |
 | Resamples behind a 95% interval | 2,000 |
 | Tasks scored on both sides before a gain can read better or worse | 5 |
 | `min_gain` | above 0, at most 1, default 0.05 |
-| Copies of each run when a baseline checks a set | at least 3 |
-| Fewest runs in a set a baseline checks | 5 |
+| Repeats of each run in a calibration | at least 3 |
+| Fewest runs in a set a calibration checks | 5 |
 | Live config success above which a set has almost no room to improve | 95% |
 | Judge agreement below which its verdicts read as partly chance | 80% |
-| Copies of each run in a replay with the answer (repeats) | those of the live replay that started it |
+| Repeats of each run in a replay with the answer | those of the live replay that started it |
 | Attempts to queue a replay run | 10 |
 | `spotlight replay watch` interval | default 15 seconds, at least 1 second |
 | Replays read for Candidates on the Insights Stations tab | the newest 500 started in the period; see [Replayed candidates API](/docs/reference/api/replayed-candidates) |
@@ -150,8 +150,8 @@ See [Searches](/docs/reference/app/searches).
 | Candidates per iteration | 1 to 5 |
 | Proposals an iteration may try, rejected ones included | 3 times its candidates |
 | Replay runs of a search queued or running at once | 1 to 10, default 4, apart from the team's 2 |
-| Copies of each run in its replays (repeats) | 1 to 5, default 1 |
-| Searches of a station under way at once | 1 |
+| Repeats of each run in its replays | 1 to 5, default 1 |
+| Searches of a station in progress at once | 1 |
 | Ceiling | above 0, at most 1,000, in a three-letter currency |
 | Share of the ceiling for the agent's runs | a tenth |
 | Least a replay run may be given | 0.01 of the ceiling's currency |
@@ -173,10 +173,10 @@ See [Replay checks API](/docs/reference/api/replay-checks).
 
 | Item | Value |
 | --- | --- |
-| Sets guarding a station's changes | at most 1 |
+| Sets gating a station's changes | at most 1 |
 | `maxRegressions` | 0 or more, default 0 |
 | `minGain` | above 0, at most 1, default 0.05 |
-| Copies of each run in a check (repeats) | 1 to 5, default 1 |
+| Repeats of each run in a check | 1 to 5, default 1 |
 | Ceiling, each replay a check starts | above 0, at most 1,000, default 10 `USD` |
 | Replays a check starts | 1, or 2 when the set has no baseline of the live config |
 | Planned repositories sent with a check | at most 64,000 characters |
@@ -204,9 +204,9 @@ See [Memory](/docs/reference/glossary#memory) and
 | --- | --- |
 | A memory | 1 to 1,000 characters |
 | Reason for retiring a memory | 1 to 500 characters |
-| A path a memory bears on | 1 to 500 characters, within its repository |
-| Paths a memory bears on | at most 20 |
-| Steps and notes a memory rests on | at most 20 steps and 20 notes |
+| A path a memory is about | 1 to 500 characters, within its repository |
+| Paths a memory is about | at most 20 |
+| Steps and notes a memory cites | at most 20 steps and 20 notes |
 | Words a recall looks for | 1 to 500 characters |
 | Memories a recall prints | at most 10 |
 | Memories in a run's briefing | at most 8, and 3,000 characters together; see [Briefing](/docs/reference/hosts/sandbox#briefing) |

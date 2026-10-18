@@ -306,13 +306,13 @@ config. A chat's run records none.
 | --- | --- |
 | Prompt | The station's prompt. |
 | Harness, model, effort | As the run was given them. |
-| Profile | The harness profile's key, rules, MCP servers and native settings. Each MCP server's environment values are kept as SHA-256 digests. |
+| Profile | The harness profile's key, rules, MCP servers and native settings. Each MCP server's environment values are kept as SHA-256 hashes. |
 | Image | The line's runner image. |
 | Repositories | Each repository of the line, with its `setup` command. |
 | Skills | Each team and catalog skill enabled, with a SHA-256 of its files. Built-in skills are left out. |
 | Tools | The tools enabled. |
 | Decisions, memories | Whether the station generates decisions and drafts memories. |
-| Judge | The SHA-256 of the judge's rubric, its `sample` and its `trust`, when the station has a [judge](/docs/reference/terraform/line#judge-fields). The station's alerts are not part of the config. |
+| Judge | The SHA-256 of the judge's rubric, its `sample` and its `minAgreement`, when the station has a [judge](/docs/reference/terraform/line#judge-fields). The station's alerts are not part of the config. |
 
 The run's [config fingerprint](/docs/reference/glossary#config-fingerprint) is
 a SHA-256 of these parts. The task's title, description and marks are not part
@@ -337,7 +337,7 @@ The web app words each change as one phrase, in the names of the groups under
 | Skill | `Skill <key> added`, `Skill <key> removed`, `Skill <key> changed` |
 | Tool | `Tool <name> added`, `Tool <name> removed` |
 | Decisions, memories | `Decisions on`, `Decisions off`, `Memories on`, `Memories off` |
-| Judge | `Judge added`, `Judge removed`, `Judge rubric changed`, `Judge sample <was> → <now>`, `Judge trust <was> → <now>`, with sample and trust as percentages |
+| Judge | `Judge added`, `Judge removed`, `Judge rubric changed`, `Judge sample <was> → <now>`, `Judge min agreement <was> → <now>`, with sample and minimum agreement as percentages |
 
 For example: `Effort high → xhigh`.
 
@@ -355,8 +355,8 @@ The archive is kept for 30 days after the run started; see
 
 ### Spend
 
-Once a run has ended and its journal has been digested, Spotlight records
-what it spent. `GET /api/teams/{teamId}/runs/{runId}/conversation` returns it
+Once a run has ended and Spotlight has recorded the usage of its journal, it records
+what the run spent. `GET /api/teams/{teamId}/runs/{runId}/conversation` returns it
 under `spend`:
 
 | Field | Contains |
@@ -424,10 +424,10 @@ not read is dropped.
 A judge with claims answers each claim, in order, met or not, with 1 to 3
 reasons of its own in the same form. It is told that a claim the steps and
 hunks do not show to be true is not met. Its score is the share of claims met,
-and each claim keeps its mark and its reasons.
+and each claim keeps its result and its reasons.
 
 A score is recorded against the rubric version: the SHA-256 of the rubric, the
-claims and the pass share together.
+claims and the pass threshold together.
 
 | Failure | When | Tried again |
 | --- | --- | --- |
@@ -445,14 +445,14 @@ A judged run's people's score is the latest grade a person gave it on the
 judge's scale. A grade counts only for the rubric version it was given under:
 the version of the run's judge score, or else the station's rubric at the time.
 On a yes-or-no scale, a run no one graded takes its people's score from its
-[next act](#station-outcomes): Yes when it was Closed, No when it was Sent
+[first human action](#station-outcomes): Yes when it was Accepted, No when it was Sent
 back; failing those, Yes when its pull request merged and No when it closed
-unmerged. Approving or refusing an approval is never a next act. A 1 to 5
+unmerged. Approving or refusing an approval is never a human action. A 1 to 5
 scale and claims use grades only.
 
 Agreement is measured from the station's latest 500 judge scores, across
 rubric versions, grouped by version, from the runs with both scores. The
-measure decides whether the judge is trusted; the statistics are shown under
+measure decides whether the judge is qualified; the statistics are shown under
 "Statistics" on the station's view on Insights (see
 [One station](/docs/reference/app/insights#one-station)):
 
@@ -460,7 +460,7 @@ measure decides whether the judge is trusted; the statistics are shown under
 | --- | --- | --- |
 | Yes or no | Cohen's kappa | "Cohen's kappa"; "F1 score": twice the runs both scored Yes, over the runs the judge scored Yes plus the runs people scored Yes; "Overall agreement": the share of runs where both scores are the same. |
 | 1 to 5 | Spearman's ρ, with tied ranks averaged | "Pearson correlation"; "Spearman correlation"; "Mean absolute error": the mean absolute difference between the two scores, in points on the scale; "Root mean square error": the square root of the mean squared difference. |
-| Claims | Cohen's kappa over every claim's marks, pooled across claims | "Cohen's kappa", "F1 score" and "Overall agreement", over the pooled claim marks, with Met in place of Yes. For each claim, its own Cohen's kappa, agreed share and count of runs. |
+| Claims | Cohen's kappa over every claim's results, pooled across claims | "Cohen's kappa", "F1 score" and "Overall agreement", over the pooled claim results, with Met in place of Yes. For each claim, its own Cohen's kappa, agreed share and count of runs. |
 
 On claims, a run counts once in the runs with both scores, however many
 claims it has. Statistics are shown to two decimals, and "Overall agreement" as
@@ -486,28 +486,28 @@ absolute error" and "Root mean square error" have no reading.
 | 0 to below 0.5 | Weak correlation |
 | Below 0 | Inverse correlation |
 
-The judge's scores show only when the station's current rubric is trusted:
+The judge's scores show only when the station's current rubric is qualified:
 
 | Calibration | When | Reads |
 | --- | --- | --- |
-| Trusted | At least 10 runs have both scores, and the measure is at least the judge's `trust`. | `Trusted. <measure>: <value> over <n> runs. Minimum required: <trust>` |
+| Qualified | At least 10 runs have both scores, and the measure is at least the judge's `minAgreement`. | `Qualified. <measure>: <value> over <n> runs. Minimum required: <minAgreement>` |
 | Hidden: too few runs | Fewer than 10 runs have both scores. | `Hidden until more runs have scores from both the judge and people. Runs so far: <n>` |
 | Hidden: no agreement | The measure cannot be worked out, as when every score so far is the same. | `Hidden. Agreement can't be measured while all scores are identical.` |
-| Hidden: below trust | The measure is below `trust`. | `Hidden. <measure>: <value>. Minimum required: <trust>` |
+| Hidden: below minimum agreement | The measure is below `minAgreement`. | `Hidden. <measure>: <value>. Minimum required: <minAgreement>` |
 | Hidden: unreadable rubric | The rubric's scale cannot be read. | `Hidden. The rubric names a scale that cannot be read.` |
 
-The measure reads "Cohen's kappa" or "Spearman's ρ", and the value and `trust`
+The measure reads "Cohen's kappa" or "Spearman's ρ", and the value and `minAgreement`
 are shown to two decimals.
 
-While the judge is not trusted, a run's score and its reasons are both hidden.
+While the judge is not qualified, a run's score and its reasons are both hidden.
 A score given under an earlier rubric version stays hidden, whatever the
 calibration. A new rubric version starts with no runs that have both scores.
 
-The station's view on Insights shows, under "How far to trust the judge", the
+The station's view on Insights shows, under "How far the judge agrees with people", the
 measure with the calibration, then how many of the station's latest 200 ended
 runs, less those cancelled, have "Both scores", "Judge only", "People only"
-and "Neither", each with `<share> of the last <n>`. A trusted judge's calibration there reads
-`Trusted. Minimum required: <trust>`. With no judged runs, it reads "No judged
+and "Neither", each with `<share> of the last <n>`. A qualified judge's calibration there reads
+`Qualified. Minimum required: <minAgreement>`. With no judged runs, it reads "No judged
 runs yet" and
 `Judge agreement with people shows here per rubric once the judge scores runs.`
 To a person who may not read it, `Only team members can see judge agreement`.
@@ -516,9 +516,9 @@ Each rubric version then shows:
 | Card | Shows |
 | --- | --- |
 | Statistics | The statistics above. Hovering over one shows what it measures, with its reading when it has one. |
-| Score comparison | Runs counted by the judge's score, in rows, against people's, in columns. On claims, it counts claim marks. Shown when runs have both scores. |
-| Distribution | How often each score was given, by the judge and by people, over runs with both scores. On claims, it counts the pooled claim marks. Shown when runs have both scores. |
-| Trend over time | The judge's and people's scores by day, as `share scored yes, by day`, `mean score, by day` or `share of claims met, by day`. The judge's line shows only on the current rubric while it is trusted; otherwise its legend reads "Judge hidden". |
+| Score comparison | Runs counted by the judge's score, in rows, against people's, in columns. On claims, it counts claim results. Shown when runs have both scores. |
+| Distribution | How often each score was given, by the judge and by people, over runs with both scores. On claims, it counts the pooled claim results. Shown when runs have both scores. |
+| Trend over time | The judge's and people's scores by day, as `share scored yes, by day`, `mean score, by day` or `share of claims met, by day`. The judge's line shows only on the current rubric while it is qualified; otherwise its legend reads "Judge hidden". |
 | By claim | For a judge with claims: "Claim", "Cohen's kappa", "Agreed" and "Runs" for each claim. On an earlier rubric version, a claim reads `Claim <n>`. |
 
 "Rubric" picks the version when the judge has judged runs under more than one:
@@ -538,11 +538,11 @@ Anyone else is answered `404`. See [Team outcomes](/docs/reference/roles-and-per
 
 A station with no judge reads "No judge" and `Only people score runs here.`
 Otherwise "Judge" shows `<sample>`, as a percentage, with "of runs judged".
-Then, when the agreement value and `trust` are both known, the measure and its
-value on a bar marked at `trust`; see [Agreement](#agreement). Under it, a trusted
-judge reads `Trusted above <trust> over <n> runs`, and any other judge its
+Then, when the agreement value and `minAgreement` are both known, the measure and its
+value on a bar marked at `minAgreement`; see [Agreement](#agreement). Under it, a qualified
+judge reads `Qualified above <minAgreement> over <n> runs`, and any other judge its
 calibration. When the agreement cannot be read, the part reads
-`Trusted from <trust> agreement`. A judge with claims lists them under
+`Qualified from <minAgreement> agreement`. A judge with claims lists them under
 "Claims", numbered, then `A run passes when it meets every claim.`, or
 `A run passes when it meets at least <share> of its claims.` "Show rubric"
 opens the rubric, and "Hide rubric" closes it, when the judge has one. "How it
@@ -551,13 +551,13 @@ agrees with people" opens the station's view on Insights at `#judge`; see
 
 `Alert rules · <n>` lists the alerts in the order written, on a track that
 scrolls sideways. When they do not all fit, arrows and dots page through them.
-Each alert shows the measure's label, then the threshold: `+<change>` for
-`risesBy`, `−<change>` for `fallsBy`, `> <amount>` for `above` and
-`< <amount>` for `below`, with a change in a rate as `<n> pts`. Under it, how
+Each alert shows the measure's label, then the condition: `+<change>` for
+`risesBy`, `−<change>` for `fallsBy`, `> <threshold>` for `above` and
+`< <threshold>` for `below`, with a change in a rate as `<n> pts`. Under it, how
 many runs it compares: `over <over> runs`. With `over` set to 1, this reads
 `from one run to the next` for `risesBy` and `fallsBy`, and `in a single run`
 for `above` and `below`. See [Station alerts](#station-alerts) for when an
-alert goes off.
+alert fires.
 
 | Measure | Label |
 | --- | --- |
@@ -572,15 +572,15 @@ Each alert also has a one-line description: the accessible name of its slide,
 and the title of the chart on its inbox item. It reads
 `Alerts when the <measure>`, with the measure's label in lower case, then:
 
-| Threshold | Reads |
+| Condition | Reads |
 | --- | --- |
 | `risesBy` | `rises <change> or more over <over> runs` |
 | `fallsBy` | `falls <change> or more over <over> runs` |
-| `above` | `goes above <amount> over <over> runs` |
-| `below` | `drops below <amount> over <over> runs` |
+| `above` | `goes above <threshold> over <over> runs` |
+| `below` | `drops below <threshold> over <over> runs` |
 
-In the description, a change in a rate is in points, as `20 points`, and an
-amount of a rate is a percentage. Cost is a number, to two decimals, or four
+In the description, a change in a rate is in points, as `20 points`, and a
+threshold of a rate is a percentage. Cost is a number, to two decimals, or four
 under 0.01, with no currency on the slide and in the currency of the
 station's runs on the inbox item. With `over` set to 1, the description ends
 with `from one run to the next` or `in a single run`, as on the slide. For
@@ -590,11 +590,11 @@ example: `Alerts when the sent-back rate rises 20 points or more over 20 runs`.
 
 A judged run's score shows in the [task trace](/docs/reference/app/web-app#team-pages).
 The judge's score is `Yes`, `No`, `<n> of 5` or `<n> of <m> claims met`, and it
-is shown when the station's current rubric is trusted and the score was given
+is shown when the station's current rubric is qualified and the score was given
 under it. While it is shown, the run's row in the trace carries it. Selecting
 the row shows "Judge" in the run's details: "Score", the judge's score or
 `Hidden`, and "People", people's grades, with `(you)` beside the reader's
-own. While the judge is not trusted, its calibration is shown beneath. A
+own. While the judge is not qualified, its calibration is shown beneath. A
 shown score lists its reasons under it, each with the steps and hunks it
 cites, as `Step <n>` or the file's name and hunk header. Selecting a step shows
 `Step <n>` with its tool or kind, and its text; selecting a hunk shows its
@@ -706,24 +706,24 @@ A run's outcome:
 | --- | --- | --- |
 | Ending | Completed, Failed, Stopped, Exhausted, Cancelled, Superseded | How the run ended. See [Run endings](#run-endings). |
 | Failure | A [failure code](#failure-codes) | Shown beside an ending that has one: Failed, Exhausted, Cancelled or Superseded. |
-| Round | 1, 2, … | 1 plus the number of the task's earlier runs at the station that completed or failed. |
+| Visit | 1, 2, … | The visit: 1 plus the number of the task's earlier runs at the station that completed or failed. |
 | Checks | Checks passed, Checks failed, Checks skipped | The station's check on the run's change. See [Checks](/docs/reference/app/change-stacks-and-decisions#checks). |
-| Next | Started, Parked, Closed, Answered, Sent back | The first thing a person did with the task in answer to the run, or after it. See the table below. |
-| Delivery | PR open, Merged, PR closed | The state of the task's pull request. |
+| Human action | Started, Parked, Accepted, Answered, Sent back | The first human action: the first thing a person did with the task in answer to the run, or after it. See the table below. |
+| Pull request | PR open, Merged, PR closed | The state of the task's pull request. |
 | Took, Cost | | How long the run took and what it cost, from its journal. |
 
-| Next | The person |
+| Human action | The person |
 | --- | --- |
 | Started | Moved the task to a work station. |
 | Parked | Moved the task to the backlog. |
-| Closed | Moved the task to the completed station. |
+| Accepted | Moved the task to the completed station. |
 | Answered | Answered the conversation without a decision. |
 | Sent back | Said something to a run of the task while it had no current run, other than an answer to an open question that asks for no approval. |
 
-Only Closed accepts a run, and only Sent back sends it back. Approving or
-refusing an approval is never a next act: it does not decide whether a run was
-accepted or sent back. When two acts come at the same moment, the first of
-Sent back, Closed, Answered, Parked and Started counts.
+Only the Accepted action accepts a run, and only the Sent back action sends it back. Approving or
+refusing an approval is never a human action: it does not decide whether a run was
+accepted or sent back. When two actions come at the same moment, the first of
+Sent back, Accepted, Answered, Parked and Started counts.
 
 A tally counts:
 
@@ -733,8 +733,8 @@ A tally counts:
 | Failed | Runs that ended Failed. |
 | Stopped | Runs that ended Stopped. |
 | Checks passed, Checks failed | Runs whose check passed or failed. |
-| Accepted | Runs whose next act was Closed. |
-| Sent back | Runs whose next act was Sent back. |
+| Accepted | Runs whose first human action was Accepted. |
+| Sent back | Runs whose first human action was Sent back. |
 | Passed | Runs that passed their task to another station. |
 | Merged | Tasks the group's runs worked whose pull request merged. |
 | Cancelled | Runs that ended Cancelled. |
@@ -744,15 +744,15 @@ A tally counts:
 "Latest runs on this config" shows "Runs", "Accepted", "Sent back", "Failed",
 "Cost" and "Median". "Runs by config" shows each group's shares, median, cost
 and days. The other figures are returned only by
-`GET /api/teams/{teamId}/lines/{lineId}/stations/{stationId}/outcomes`; the
+`GET /api/teams/{teamId}/lines/{lineId}/stations/{stationId}/insights`; the
 Insights [Stations tab](/docs/reference/app/insights#runs-at-each-station)
 counts them in the same way.
 
 On "Runs by config", each group shows "Checks" as `<share> passed`, of the
-runs whose check passed or failed; "Next" as `<share> accepted` and
-"Delivery" as `<share> merged`, of its runs; "Took", the median; "Cost"; and
+runs whose check passed or failed; "Human action" as `<share> accepted` and
+"Pull request" as `<share> merged`, of its runs; "Took", the median; "Cost"; and
 "Ended", the day or days its runs ended. Each run row shows the ending,
-linked to the run, then the failure, "Round", "Checks", "Next", "Delivery",
+linked to the run, then the failure, "Visit", "Checks", "Human action", "Pull request",
 "Took", "Cost" and "Ended". A part with no value shows `–`.
 
 ## The inbox
@@ -906,7 +906,7 @@ known:
 
 | Measure | A run is measured when |
 | --- | --- |
-| `sent_back_rate`, `accepted_rate` | Its [next act](#station-outcomes) is known. |
+| `sent_back_rate`, `accepted_rate` | Its [first human action](#station-outcomes) is known. |
 | `checks_failed_rate` | Its check passed or failed. |
 | `failed_rate` | It ended. |
 | `merged_rate` | Its task's pull request merged or closed unmerged. |
@@ -919,33 +919,33 @@ station's latest runs, 4 times as many as its alerts need at most. Until enough
 runs are measured, or while the measure cannot be worked out, as for cost with
 no priced runs, the alert is not checked.
 
-| Threshold | Goes off when |
+| Condition | Fires when |
 | --- | --- |
 | `risesBy` | The measure over the latest runs, less the measure over the runs before, is at least `risesBy`. |
 | `fallsBy` | The measure over the runs before, less the measure over the latest runs, is at least `fallsBy`. |
 | `above` | The measure is higher than `above`. |
 | `below` | The measure is lower than `below`. |
 
-An alert goes off once per crossing. While it is open, later checks do not
-raise it again. It recovers once it has stayed within its threshold for `over`
+An alert fires once each time its condition is met. While it is open, later checks do not
+fire it again. It resolves once its condition has stayed unmet for `over`
 further measured runs: each check whose newest measured run is a new one, and
-finds the alert no longer crossed, counts one, and a check that finds it
-crossed again starts the count over. For `over` measured runs after it
-recovers, a crossing reopens the same alert, and its inbox item, instead of
-raising a new one. After that, a crossing raises a new alert.
+finds the condition no longer met, counts one, and a check that finds it
+met again starts the count over. For `over` measured runs after it
+resolves, a new firing reopens the same alert, and its inbox item, instead of
+firing a new one. After that, a firing makes a new alert.
 
-If an open alert's amount or `over` is changed, the next check judges it by
-the new values: crossed, it stays open with the new reading; otherwise the
-check counts for its recovery. An open alert whose measure or threshold is
-removed from the station recovers at once, at the station's next check, and a
-crossing after that raises a new alert. Changing or deleting a line checks
+If an open alert's threshold or `over` is changed, the next check judges it by
+the new values: when the condition is met, it stays open with the new reading; otherwise the
+check counts for its resolution. An open alert whose measure or condition is
+removed from the station resolves at once, at the station's next check, and a
+firing after that makes a new alert. Changing or deleting a line checks
 each of its stations, those it had and those it has. Deleting a task deletes
-the alerts raised on it.
+the alerts fired on it.
 
-When an alert goes off, the task of the run that set off the check gets an
+When an alert fires, the task of the run that set off the check gets an
 inbox item: the run that ended or was measured, or, when a pull request closed, the
 task's latest run at the station. The item reads
-`Station crossed an alert threshold.` and, once the alert recovers,
+`Station crossed an alert threshold.` and, once the alert resolves,
 `Station back within its alert threshold.` A reopened alert opens its item again. It reaches the task's assignee, or
 everyone on the team when the task has no assignee. It never reaches a person
 who is neither on the team nor an owner or admin of the workspace, and to
@@ -956,11 +956,11 @@ The item shows:
 
 | Part | Shows |
 | --- | --- |
-| Heading | `Alert raised at <station>`, with the day it went off. |
-| Reading | What the runs did, then the threshold, with cost in the currency of the station's runs. For a rate, `<value> of the last <over> runs <did>.`, where `<did>` is "were sent back", "were accepted", "were merged", "failed" or "failed their checks". For cost, `The last <over> runs cost <value> each on average.` For `risesBy` and `fallsBy`, the comparison follows before the full stop: `, up from <value> in the <over> before`, or `down from` or `the same as`. Then `The alert is set at a <change>-point rise.` (or `fall`), `a rise of <amount>` for cost, or `The alert is set at above <amount>.` (or `below`). With `over` set to 1, `the last run` and `the one before`, with "was sent back", "was accepted", "was merged", "failed" or "failed its checks", and `The last run cost <value>` for cost. |
-| Recovery | `The station has been back under the threshold since <day>.`, or `over` in place of `under` for `fallsBy` and `below`, once the alert has recovered. |
-| Chart | The measure over the `over` measured runs up to each run, from 2 × `over` runs before the run that crossed it to `over` runs after. Its legend names "Alert level" with the amount, for `above` and `below`; "Before" with the measure over the runs before, for `risesBy` and `fallsBy`; and "The run it went off at". It is drawn from the station's latest 500 runs; without that run among them, it reads `There is no chart to show. The runs behind this alert are deleted.` |
-| Links | "Open the station", which opens its "Overview" tab; "Open in Insights", which opens the [Stations tab](/docs/reference/app/insights#runs-at-each-station) at the station's row, `#station-<stationId>`, over the shortest period that covers the day it went off; and "Improve", while the station is on one of the team's lines, which opens the Agent page with the station attached to a new chat. |
+| Heading | `Alert fired at <station>`, with the day it fired. |
+| Reading | What the runs did, then the alert rule, with cost in the currency of the station's runs. For a rate, `<value> of the last <over> runs <did>.`, where `<did>` is "were sent back", "were accepted", "were merged", "failed" or "failed their checks". For cost, `The last <over> runs cost <value> each on average.` For `risesBy` and `fallsBy`, the comparison follows before the full stop: `, up from <value> in the <over> before`, or `down from` or `the same as`. Then `The alert is set at a <change>-point rise.` (or `fall`), `a rise of <threshold>` for cost, or `The alert is set at above <threshold>.` (or `below`). With `over` set to 1, `the last run` and `the one before`, with "was sent back", "was accepted", "was merged", "failed" or "failed its checks", and `The last run cost <value>` for cost. |
+| Recovery | `The station has been back under the threshold since <day>.`, or `over` in place of `under` for `fallsBy` and `below`, once the alert has resolved. |
+| Chart | The measure over the `over` measured runs up to each run, from 2 × `over` runs before the run that fired it to `over` runs after. Its legend names "Alert level" with the threshold, for `above` and `below`; "Before" with the measure over the runs before, for `risesBy` and `fallsBy`; and "The run it fired at". It is drawn from the station's latest 500 runs; without that run among them, it reads `There is no chart to show. The runs behind this alert are deleted.` |
+| Links | "Open the station", which opens its "Overview" tab; "Open in Insights", which opens the [Stations tab](/docs/reference/app/insights#runs-at-each-station) at the station's row, `#station-<stationId>`, over the shortest period that covers the day it fired; and "Improve", while the station is on one of the team's lines, which opens the Agent page with the station attached to a new chat. |
 
 ### Requests to connect
 

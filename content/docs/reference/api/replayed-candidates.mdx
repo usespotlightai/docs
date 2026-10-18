@@ -21,12 +21,12 @@ success rate here is a replay's, scored by the candidate's own checks and judge
 on past tasks, and says nothing of how live runs went. A replay set contains runs,
 and a task may have more than one run in it. Success rates, their intervals
 and gains are worked out over the set's runs, each run counted once however
-many copies of it were replayed (see [Success](/docs/reference/app/replays#success)).
+many repeats of it were replayed (see [Success](/docs/reference/app/replays#success)).
 `compared` and `regressions` count the set's runs, and `scored` counts replay
-runs, copies included.
+runs, repeats included.
 
 An `interval` is `{ rate, low, high }`: the success rate with its 95% interval.
-A gain is `{ gain, low, high, verdict, minGain, tasks }`, as in the
+A gain is `{ gain, low, high, significance, minGain, tasks }`, as in the
 [Replays API](/docs/reference/api/replays#gain).
 
 ## Parameters
@@ -67,18 +67,18 @@ Each item of a station's `sets`, the newest replayed first:
 | `setId` | string | |
 | `name` | string | |
 | `stationGone` | boolean | Whether its station has left its line. |
-| `guardsChanges` | boolean | Whether it [guards its station's changes](/docs/reference/app/searches#guarding-a-stations-changes). |
+| `gatesChanges` | boolean | Whether it [gates its station's changes](/docs/reference/app/searches#gating-a-stations-changes). |
 | `health` | object | `{ tasks, runs, oldestRunEndedAt, newestRunEndedAt, lastAddedAt, noise, saturation, judge, checks, oracle, minGain }`. `runs` counts the runs the set contains now, and `tasks` the different tasks they worked. The three times are when the oldest and the newest of its runs ended, and when a run was last added to it; each is null while there is none. `noise`, `saturation`, `judge`, `checks` and `oracle` are the set's health, as in the [Replays API](/docs/reference/api/replays#set-health); `minGain` the smallest gain its line counts as real. |
 | `baseline` | object or null | Its newest baseline that is queued, running or finished, whatever the period. Null while it has none. See [Baseline](#baseline). |
 | `chartCurrency` | string or null | The currency its cost and success chart is drawn in: the baseline's, or else that of its newest replayed candidate. Null with neither. |
-| `candidates` | array | The candidates replayed over it in the period, the greatest `againstLive.gain` first and those without one last, the newest replayed first among equals. See [Candidate](#candidate). |
+| `candidates` | array | The candidates replayed over it in the period, the greatest `gainOverLive.gain` first and those without one last, the newest replayed first among equals. See [Candidate](#candidate). |
 
 ### Baseline
 
 | Field | Type | Description |
 | --- | --- | --- |
 | `replayId` | string | |
-| `state` | string | `queued`, `running`, `finished`, `stopped` or `over-budget`. |
+| `state` | string | `queued`, `running`, `finished`, `stopped` or `ceiling-reached`. |
 | `fingerprint` | string or null | The [config fingerprint](/docs/reference/glossary#config-fingerprint) of the live config it replayed. |
 | `scored` | number | How many of its runs were scored. |
 | `successRate` | number or null | Its [success](/docs/reference/app/replays#success) over the whole set, 0 to 1. Null while none was scored. |
@@ -86,7 +86,7 @@ Each item of a station's `sets`, the newest replayed first:
 | `costPerRun` | number or null | What it spent per scored run. Null while any of its spend went unpriced or was in another currency than its ceiling's. |
 | `currency` | string | Its ceiling's currency, which `costPerRun` is in. |
 | `endedAt` | string or null | |
-| `charted` | string | Whether it is drawn on the set's chart. See [Charted](#charted). |
+| `chartStatus` | string | Whether it is drawn on the set's chart. See [Chart status](#chart-status). |
 
 ### Candidate
 
@@ -102,11 +102,11 @@ Each item of a station's `sets`, the newest replayed first:
 | `replayState` | string or null | That replay's state, as for a baseline. |
 | `replayedAt` | string or null | When that replay started. Null while a searched candidate's replay cannot be found. |
 | `tasks` | number | How many different tasks its replay covers: the searched ones for a searched candidate. |
-| `runs` | number | How many runs of the set its replay covers, each once however many copies. |
+| `runs` | number | How many runs of the set its replay covers, each once however many repeats. |
 | `successRate` | number or null | Its replay success, 0 to 1. For a searched candidate, its [search score](/docs/reference/app/searches#scores), as its search page gives it; for a proposed one, its replay's success. |
 | `interval` | object or null | `successRate` with its 95% interval. |
 | `scored` | number | How many of its runs were scored. |
-| `heldOut` | object or null | `{ replayId, state, score, interval, tasks, runs }`: its replay on the tasks its search held out, kept apart from `successRate`. `score` is its success there, 0 to 1, once that replay finished, else null; `tasks` is how many different tasks the search held out, and `runs` how many held-out replay runs, copies included, it was scored on. Null for a candidate not replayed there, and for every proposed candidate. |
+| `heldOut` | object or null | `{ replayId, state, score, interval, tasks, runs }`: its replay on the tasks its search held out, kept apart from `successRate`. `score` is its success there, 0 to 1, once that replay finished, else null; `tasks` is how many different tasks the search held out, and `runs` how many held-out replay runs, repeats included, it was scored on. Null for a candidate not replayed there, and for every proposed candidate. |
 | `costPerRun` | number or null | What its replay spent per scored run. Null while any of its spend went unpriced or was in another currency. |
 | `currency` | string | The currency `costPerRun` is in: its search's ceiling's, or its replay's. |
 | `live` | object or null | `{ successRate, interval, costPerRun, currency }`: how the set's baseline did on the compared runs alone. `currency` is the baseline's, and may differ from the candidate's. Null without a baseline. |
@@ -115,19 +115,19 @@ Each item of a station's `sets`, the newest replayed first:
 | `costPerRunOnCompared` | number or null | What the candidate spent per run on the compared runs alone, in its own `currency`, to set beside `live.costPerRun`. Null without a baseline, and while any of that spend went unpriced. |
 | `regressions` | number or null | How many of the compared runs it [regressed](/docs/reference/app/replays#regressions) on, as its replay page counts them. Null without a baseline. |
 | `compared` | number | The compared runs: how many of its runs the baseline replayed too. |
-| `againstLive` | object or null | Its gain over the baseline on the compared runs, paired run by run, against the line's `min_gain`. Null without a baseline. |
+| `gainOverLive` | object or null | Its gain over the baseline on the compared runs, paired run by run, against the line's `min_gain`. Null without a baseline. |
 | `onFrontier` | boolean or null | Whether it is on its search's [frontier](/docs/reference/app/searches#frontier). Null unless `searched`. |
-| `search` | object or null | `{ searchId, state, objective, startedAt, seed }`: the search that proposed it. `state` is `seeding`, `searching`, `holding-out`, `finished` or `stopped`. `objective` is `success` or `cost`, the search's [aim](/docs/reference/app/searches#aims), which decides `onFrontier`. `seed` is `{ successRate, interval, costPerRun, scored, charted }`: the live config the search started from, scored on the same searched runs as its candidates, as the search page gives the live config's search score, with its cost per run in the candidate's `currency`. Its `charted` counts it as finished. Null unless `searched`. |
+| `search` | object or null | `{ searchId, state, objective, startedAt, seed }`: the search that proposed it. `state` is `seeding`, `searching`, `holding-out`, `finished` or `stopped`. `objective` is `success` or `cost`, the search's [aim](/docs/reference/app/searches#aims), which decides `onFrontier`. `seed` is `{ successRate, interval, costPerRun, scored, chartStatus }`: the live config the search started from, scored on the same searched runs as its candidates, as the search page gives the live config's search score, with its cost per run in the candidate's `currency`. Its `chartStatus` counts it as finished. Null unless `searched`. |
 | `pullRequest` | object or null | `{ id, state, url, reason }`: the [config pull request](/docs/reference/api/searches#config-pull-request) picking it opened. Null until a person picks it, and for every proposed candidate. |
-| `charted` | string | Whether it is drawn on the set's chart. See [Charted](#charted). |
+| `chartStatus` | string | Whether it is drawn on the set's chart. See [Chart status](#chart-status). |
 | `shown` | object | The figures to set beside the live config. See [Shown](#shown). |
 
-### Charted
+### Chart status
 
-`charted` says whether a baseline, a candidate or a search's `seed` is drawn
+`chartStatus` says whether a baseline, a candidate or a search's `seed` is drawn
 on its set's chart, in the set's `chartCurrency`:
 
-| `charted` | When |
+| `chartStatus` | When |
 | --- | --- |
 | `unfinished` | Its replay has not finished. |
 | `unscored` | It has no success rate. |

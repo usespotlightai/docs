@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Insights
-description: The team's Insights page, its period and eight tabs, what each figure counts, how pull requests are recorded, typed and followed to merge, a station's own view, config changes and their impact, setups and replayed candidates compared, which skills, MCP servers and memories runs use, the Runs filters, and the Traces tab.
+description: The team's Insights page, its period and eight tabs, what each figure counts, how pull requests are recorded, typed and followed to merge, a station's own view, config changes and their impact, agent configs and replayed candidates compared, which skills, MCP servers and memories runs use, the Runs filters, and the Traces tab.
 ---
 
 The Insights page sums up how a team's runs, tasks and pull requests went over
@@ -70,15 +70,15 @@ Only task runs at a station are recorded; chat runs are not.
 | --- | --- |
 | p50 | The median. With an even count, the mean of the two middle values, rounded to a whole number, with a half rounded up. |
 | p75, p90, p95 | The nearest-rank 75th, 90th and 95th percentiles. |
-| Next act | The first thing a person did with the task after the run: the act names the run, or else it follows the task's last run at that station. It is one of Started, Parked, Closed, Answered and Sent back. Of acts at the same moment, the first of Sent back, Closed, Answered, Parked and Started counts. Approving or refusing an approval is never a next act. |
-| Accepted | A run whose next act was Closed. |
-| Sent back | A run whose next act was Sent back. |
-| Person act | A person moving a task, answering, approving, refusing or sending a run back. |
+| First human action | The first thing a person did with the task after the run: the action names the run, or else it follows the task's last run at that station. It is one of Started, Parked, Accepted, Answered and Sent back. Of actions at the same moment, the first of Sent back, Accepted, Answered, Parked and Started counts. Approving or refusing an approval is never a first human action. |
+| Accepted | A run whose first human action was Accepted. |
+| Sent back | A run whose first human action was Sent back. |
+| Human action | A person moving a task, answering, approving, refusing or sending a run back. |
 | Activity | A person opening a task, acting on one, or starting an agent chat on the team. |
 
 Outcomes are recorded as runs end and as people act. Nothing that happened
-before recording began is counted. A deleted task's runs, pull request and acts
-are removed.
+before recording began is counted. A deleted task's runs, pull request and human
+actions are removed.
 
 Overview and "Where work waits" count a task's pull request when the task had
 one of the team's runs that ended in the period, the period before, or the
@@ -114,7 +114,7 @@ or narrow the Productivity tab's pull request list:
 | Selecting | Opens |
 | --- | --- |
 | A tile's figure | The Runs, Cost or People tab, or the pull request list, narrowed to what the tile counts where it can. |
-| A day's "Runs" in "Output against cost", `<n> runs` and `Runs with config` on Overview, a cost slice, a person's name in "What each person did", "Tasks" in "Where tasks wait", "Runs" and "Failed" in "By station", a failure reason, a skill's week, "Given", "Read" or station, an MCP server's counts, and a refused tool's count | The Runs tab, narrowed to those runs. |
+| A day's "Runs" in "Output against cost", `<n> runs` and `Runs with config` on Overview, a cost slice, a person's name in "What each person did", "Tasks" in "Where tasks wait", "Runs" and "Failed" in "By station", a failure reason, a skill's week, "Briefed", "Recalled" or station, an MCP server's counts, and a refused tool's count | The Runs tab, narrowed to those runs. |
 | A count in "Spotlight's share", "Week by week", "By repository", "Spotlight against people", "What Spotlight ships" and "Review depth" | The pull request list, narrowed to those pull requests. |
 
 ## Overview
@@ -126,7 +126,7 @@ or narrow the Productivity tab's pull request list:
 | Merge rate | Merged, of the task pull requests merged or closed unmerged in the period. Its change is in points. | good |
 | Cost per merged PR | Spend divided by PRs merged. | bad |
 | Task to merge | For pull requests merged in the period, the p50 time from the task opening to the merge, and the p90. | bad |
-| Human touches per task | Person acts in the period on the tasks the period's runs worked, per task, with `<acts> over <tasks> tasks`. | bad |
+| Human actions per task worked | Human actions in the period on the tasks the period's runs worked, per task, with `<actions> over <tasks> tasks`. | bad |
 | Active people | People with an activity in the period. | good |
 
 "Spend" and "PRs merged" each draw their figure day by day under it. A tile's
@@ -159,7 +159,7 @@ than all stations' together in the period:
 
 | Signal | Rate |
 | --- | --- |
-| Sent back | Runs whose next act was Sent back, of runs. |
+| Sent back | Runs whose first human action was Sent back, of runs. |
 | Checks failed | Failed checks, of passed and failed checks. |
 | Run failures | Failed runs, of runs. |
 | Task failures per run | Task failures raised at the station, per run. |
@@ -214,7 +214,7 @@ harnesses report tokens.
 | --- | --- | --- |
 | Inbox asks per task | Times a station asked a person in the period, per task, with `<n> asks`. | bad |
 | Time to answer | The p50 time from an ask to its answer, with the p90 and `<n> unanswered`. | bad |
-| Sent-back rate | Runs whose next act was Sent back, of runs, with `<n> runs sent back`. Its change is in points. | bad |
+| Sent-back rate | Runs whose first human action was Sent back, of runs, with `<n> runs sent back`. Its change is in points. | bad |
 | Refused approvals | Approvals a person refused in the period, tool approvals and harness permissions alike. It opens the Runs tab at the tasks with a refusal, when there are at most 200. | bad |
 
 "Who is using Spotlight":
@@ -226,7 +226,7 @@ harnesses report tokens.
 | Weekly active | People with an activity in the last 7 days, whatever the period. |
 | Monthly active | People with an activity in the last 30 days, whatever the period, and the share of them active weekly. |
 
-"What each person did" lists each active person's "Tasks opened", "Acts",
+"What each person did" lists each active person's "Tasks opened", "Actions",
 "Chats" (agent chats they started), "First seen" and "Last active". A new
 adopter is marked "New".
 
@@ -244,7 +244,7 @@ the p50 of:
 | --- | --- | --- |
 | Queued | A run is queued. | The run starts in its image on a runner. |
 | Running | The run starts in its image on a runner. | The run ends. |
-| In the inbox | The station asks a person. | The first person act on the task after the ask, at any station, before the task's next ask. |
+| In the inbox | The station asks a person. | The first human action on the task after the ask, at any station, before the task's next ask. |
 
 Its table adds the p90 of each on hover, "Tasks" with its change, "Runs",
 "Asks" (times the station asked a person) and "Unanswered".
@@ -301,9 +301,9 @@ it again shows every type.
 
 A stage's colour runs from "flows freely" to "jammed": its time against the
 longest stage's, at the percentile, for the same type. The longest stage is
-the worst jam: its name is red, a badge under it reads
-`Worst jam | <time>`, with `mostly <part>` at a station, and in the table a
-red dot marks it, `Worst jam: the stage with the longest wait` on hover. Hovering over a station's name shows its
+the worst bottleneck: its name is red, a badge under it reads
+`Worst bottleneck | <time>`, with `mostly <part>` at a station, and in the table a
+red dot marks it, `Worst bottleneck: the stage with the longest wait` on hover. Hovering over a station's name shows its
 time queued, running and in the inbox. "Play" sets the chart moving, and
 "Pause" stops it. Its table groups the stages under "At the stations" and "On
 the pull request", with "Stage", "Time", and for stations "Queued", "Running"
@@ -358,7 +358,7 @@ Each pull request is written by one of:
 | `author` | "Written by" | The pull request |
 | --- | --- | --- |
 | `spotlight` | Spotlight | A task opened it. |
-| `touched` | Others, with a Spotlight review task | Someone else opened it, and a Spotlight review task was opened on it. |
+| `reviewed` | Others, with a Spotlight review task | Someone else opened it, and a Spotlight review task was opened on it. |
 | `bots` | Bots alone | A bot opened it, with no Spotlight review task. |
 | `people` | People alone | Any other. |
 
@@ -514,8 +514,8 @@ The Stations tab, `?tab=stations`, has the sections "Runs at each station",
 | --- | --- | --- |
 | Runs | Runs that ran, drawn day by day. The other figures count only these. | neither |
 | Failed | Runs that ended Failed, with `<share> of runs`, drawn day by day. | bad |
-| Accepted | Runs whose next act was Closed. Shown when above 0 in the period or the period before. | good |
-| Sent back | Runs whose next act was Sent back. Shown in the same way. | bad |
+| Accepted | Runs whose first human action was Accepted. Shown when above 0 in the period or the period before. | good |
+| Sent back | Runs whose first human action was Sent back. Shown in the same way. | bad |
 | Merged | Tasks among the runs whose pull request merged, at any time. Shown in the same way. | good |
 | Cost | The runs' cost, when all are in one currency. | neither |
 | Median run | The median time the runs took, with the p90. | bad |
@@ -531,8 +531,8 @@ runs per day, failures in red, beside the change in its runs. Then:
 | Failed | Runs that ended Failed. |
 | Stopped | Runs a person stopped. |
 | Checks passed, Checks failed | Runs whose check passed or failed. |
-| Accepted | Runs whose next act was Closed. |
-| Sent back | Runs whose next act was Sent back. |
+| Accepted | Runs whose first human action was Accepted. |
+| Sent back | Runs whose first human action was Sent back. |
 | Passed | Runs that passed their task to another station. |
 | Merged | Tasks among the runs whose pull request merged, at any time. |
 | Cancelled | Runs cancelled before they ran. |
@@ -557,7 +557,7 @@ agrees with people", which opens it at `#judge`.
 | Over this period | The tiles of "The whole team", for the station's runs alone. "Runs" and "Failed" open the Runs tab at the station's runs, or its failed ones. With task failures and no runs, the tiles read 0. With neither in the period, `No runs at this station in this period.` |
 | Why runs failed | Shown when the station has failed runs or task failures in the period. See below. |
 | Runs by config | The station's latest 50 runs, whatever the period, grouped by config. See below. |
-| How far to trust the judge | Shown when the station has a judge, at `#judge`. See below. |
+| How far the judge agrees with people | Shown when the station has a judge, at `#judge`. See below. |
 
 "Why runs failed" lists the station's failed runs by reason, the reason or
 `No reason given`, with how many runs, most first; and its task failures by
@@ -576,21 +576,21 @@ config that ran before it, with `+<n> more`, or `Config <fingerprint>`, the firs
 the group of runs before any recorded config reads
 `Before the first run with a config`. A group whose runs never started on its
 config is marked "Never started". Each group shows "Checks" as
-`<share> passed`, "Next" as `<share> accepted`, "Delivery" as
+`<share> passed`, "Human action" as `<share> accepted`, "Pull request" as
 `<share> merged`, "Took" (the median), "Cost" and "Ended", and "Impact" when
 it has changes (see [Impact](#impact)). Unfolding it lists its runs, with
-"Run", "Round", "Checks", "Next", "Delivery", "Took", "Cost" and "Ended". With
+"Run", "Visit", "Checks", "Human action", "Pull request", "Took", "Cost" and "Ended". With
 no runs, the card reads "No runs yet".
 
-"How far to trust the judge" shows the judge's measure of agreement with
-people, with `Trusted. Minimum required: <trust>` or why its scores are hidden, then how
+"How far the judge agrees with people" shows the judge's measure of agreement with
+people, with `Qualified. Minimum required: <minimum agreement>` or why its scores are hidden, then how
 many of the station's last runs have "Both scores", "Judge only", "People
 only" and "Neither". When the judge has judged runs under more than one rubric
 version, "Rubric" picks the version. Each version shows "Statistics"; "Score
 comparison" and "Distribution" when it has runs with both scores; "Trend over
 time" when it has a trend to draw; and "By claim" for a judge with claims. With no judged runs, it reads "No judged runs yet". See
 [Agreement](/docs/reference/app/tasks-runs-and-the-inbox#agreement) for how
-agreement is measured and when a judge is trusted.
+agreement is measured and when a judge is qualified.
 
 ### Config changes
 
@@ -632,13 +632,13 @@ started, or ended where it never started:
 | Row | Counts |
 | --- | --- |
 | Runs | Runs that ran. The other rows count only these. |
-| Sent-back rate | Runs whose next act was Sent back, of the runs whose next act is known. |
-| Accepted rate | Runs whose next act was Closed, of the runs whose next act is known. |
+| Sent-back rate | Runs whose first human action was Sent back, of the runs whose first human action is known. |
+| Accepted rate | Runs whose first human action was Accepted, of the runs whose first human action is known. |
 | Checks-failed rate | Failed checks, of passed and failed checks. |
 | Failed rate | Runs that ended Failed, of runs. |
 | Merged rate | Tasks whose pull request merged, of the tasks of the runs whose pull request merged or closed unmerged. |
 | Cost per run | The cost of the priced runs, per priced run. |
-| Judge score | Only while the station's judge is trusted: the mean judge score on each side, or `–`. Hovering shows `Over <n> judged runs before and <m> after. Opens how often the judge agrees with people.`, and the label opens [the station's judge](#one-station). |
+| Judge score | Only while the station's judge is qualified: the mean judge score on each side, or `–`. Hovering shows `Over <n> judged runs before and <m> after. Opens how often the judge agrees with people.`, and the label opens [the station's judge](#one-station). |
 
 Each row but "Runs" counts, on each side, the runs measured for it, as for
 [station alerts](/docs/reference/app/tasks-runs-and-the-inbox#station-alerts).
@@ -658,54 +658,54 @@ station".
 
 #### Harness, model, effort and profile
 
-This card sets how runs turned out against what they cost, for each setup: a
+This card sets how runs turned out against what they cost, for each agent config: a
 harness, model, effort and [harness profile](/docs/reference/glossary#harness-profile)
 together, as each run recorded them. It counts the runs that ran and ended in
-the period; a run with no recorded setup is left out. Its description names
-the outcome charted, the fewest runs a setup needs for the frontier, and the
-size rules. The filters sit in a menu, "Filter the setups", which counts those
+the period; a run with no recorded agent config is left out. Its description names
+the outcome charted, the fewest runs an agent config needs for the frontier, and the
+size rules. The filters sit in a menu, "Filter the agent configs", which counts those
 applied.
 
 | Filter | Narrows to |
 | --- | --- |
-| Outcome | The outcome charted: "Accepted", the default, "Sent back", "Passed", "Checks passed", "Merged", or "Judge score" when any setup has judged runs. |
+| Outcome | The outcome charted: "Accepted", the default, "Sent back", "Passed", "Checks passed", "Merged", or "Judge score" when any agent config has judged runs. |
 | Station | "Every station", or the runs at one work station. |
 | Task size | "Every size", or the runs of one size. |
 
-| Outcome | Of a setup's runs |
+| Outcome | Of an agent config's runs |
 | --- | --- |
-| Accepted | Runs whose next act was Closed, of the runs whose next act is known. |
-| Sent back | Runs whose next act was Sent back, of the runs whose next act is known. Lower is better. |
-| Passed | Runs that passed their task to another station, of the runs with a next act or that passed their task. |
+| Accepted | Runs whose first human action was Accepted, of the runs whose first human action is known. |
+| Sent back | Runs whose first human action was Sent back, of the runs whose first human action is known. Lower is better. |
+| Passed | Runs that passed their task to another station, of the runs with a first human action or that passed their task. |
 | Checks passed | Passed checks, of passed and failed checks. |
 | Merged | Tasks whose pull request merged, of the tasks of the runs whose pull request merged or closed unmerged. |
 | Judge score | The mean judge score, as under [Impact](#impact). |
 
 Judge scores are counted only with a station picked, and only while that
-station's judge is trusted. With a station picked that has a judge and runs
+station's judge is qualified. With a station picked that has a judge and runs
 in the period, the card adds `Judge scores count only for judges that agree with people often enough.`
-and names the station, linked to its judge, as `trusted` or `hidden`.
+and names the station, linked to its judge, as `qualified` or `hidden`.
 
-A setup's cost per run is the cost of its priced runs, per priced run, when
-they are all in one currency. The setups are compared in the currency most of
+An agent config's cost per run is the cost of its priced runs, per priced run, when
+they are all in one currency. The agent configs are compared in the currency most of
 them are priced in, or the first in alphabetical order on a tie.
 
-For each outcome, a setup is on the frontier when it has at least 3 runs, a
-cost per run in that currency and a value, and no other such setup costs no
+For each outcome, an agent config is on the frontier when it has at least 3 runs, a
+cost per run in that currency and a value, and no other such agent config costs no
 more and does as well or better, with either a lower cost or a better value.
 
-The chart plots each setup priced in that currency with a value for the
+The chart plots each agent config priced in that currency with a value for the
 outcome, cost per run across and the outcome up, as "On the frontier" or
-"Other setups". Each frontier setup is labelled with its name. A dot's size
-is its runs, with a "Runs" legend of sizes under the chart. Hovering over a
-setup shows its name, `<outcome> <value> · <cost> a run`, and `<n> runs`, with
-`· on the frontier` for a frontier setup. With no runs, the card reads
-`No runs match these filters in this period.`, and with no priced setup that
+"Other agent configs". Each frontier agent config is labelled with its name. A dot's size
+is its runs, with a "Runs" legend of sizes under the chart. Hovering over an
+agent config shows its name, `<outcome> <value> · <cost> a run`, and `<n> runs`, with
+`· on the frontier` for a frontier agent config. With no runs, the card reads
+`No runs match these filters in this period.`, and with no priced agent config that
 has a value for the outcome,
 `No priced runs to chart. Show the table for outcomes alone.`
-The table groups the setups by harness, each as model, `<effort> effort` and
+The table groups the agent configs by harness, each as model, `<effort> effort` and
 `<profile> profile`, as far as each is set, with "Runs", "Cost per run" and
-each outcome; a trophy, "Best value", marks a setup on the frontier of the
+each outcome; a trophy, "Best value", marks an agent config on the frontier of the
 charted outcome.
 
 A run's size is told by the lines it changed: the lines removed and added
@@ -722,28 +722,28 @@ attempts it kept.
 A run whose cost was never worked out has no size and is left out when a size
 is picked.
 
-#### Replayed candidates beside the setups
+#### Replayed candidates beside the agent configs
 
 With a station picked, the chart also draws the station's replayed candidates,
 the same points [Candidates](#chart) draws, hollow, for the replay sets
-charted in the currency the setups are compared in; with no such currency,
+charted in the currency the agent configs are compared in; with no such currency,
 none are drawn. The legend names them "Searched", "Proposed" and "Live config,
 replayed", and the side of the chart reads `<outcome> · replay success`. A replayed point's height
 is its replay success, scored by the candidate's own checks and judge,
-whatever outcome the card charts; it is not the live outcome the setups show.
+whatever outcome the card charts; it is not the live outcome the agent configs show.
 Hovering over one shows it as under [Chart](#chart). "Task size" does not
-narrow replayed points, and they are not joined to the setups' frontier.
+narrow replayed points, and they are not joined to the agent configs' frontier.
 
 | Note under the chart | When |
 | --- | --- |
 | `Replayed points show replay success on up to <n> runs of past tasks, not live outcomes. Each candidate's own checks and judge score it. The task-size filter doesn't apply.` | Replayed points are drawn. `<n>` is the most runs any of them was scored on. |
 | `Replayed points show success only. They're hidden while the chart shows Sent back.` | "Sent back" is charted. |
-| `Replayed candidates aren't drawn. No live setup has a priced outcome. The table lists them.` | The station has replayed points to draw, and the setups have a currency, but no priced setup has a value for the outcome charted. |
+| `Replayed candidates aren't drawn. No live agent config has a priced outcome. The table lists them.` | The station has replayed points to draw, and the agent configs have a currency, but no priced agent config has a value for the outcome charted. |
 | `The replayed candidates could not be loaded.`, with "Try again" | Reading them failed. The rest of the tab still shows. |
 
 While replayed points are drawn, the card's description adds
 `Replayed points show replay success on past tasks.` Whenever the station has
-replayed points and the setups have a currency, except while "Sent back" is
+replayed points and the agent configs have a currency, except while "Sent back" is
 charted, the table adds a second table, one group per replay set reading
 `<set> replayed`, with "Config", "Source", "Runs scored", "Cost per run",
 "Replay success" and "Held out".
@@ -769,8 +769,8 @@ times the set's runs.
 
 The live config shows only as the replays it was compared with, and the
 candidates of
-[replay checks](/docs/reference/app/searches#guarding-a-stations-changes) do
-not show: a check's verdict is on its pull request and on its
+[replay checks](/docs/reference/app/searches#gating-a-stations-changes) do
+not show: a check's result is on its pull request and on its
 [replay set page](/docs/reference/app/replays#replay-set-page). A set's health
 and baseline are current, whatever the period.
 
@@ -792,7 +792,7 @@ were replayed over, the newest replayed first:
 | Name | The set's name, linked to its [page](/docs/reference/app/replays#replay-set-page). |
 | Size | `<n> tasks`, the different tasks its runs worked, with `(<m> runs)` when it contains more runs than tasks, or "No tasks yet". |
 | Warning icon | When a [health](/docs/reference/app/replays#health) reading is a warning, or a trust check was not run. Hovering lists each warning as `<reading>: <what it says>.`, then `<n> of <m> trust checks not run: <readings>.` |
-| Shield icon | When the set [checks the station's pull requests](/docs/reference/app/searches#guarding-a-stations-changes). Hovering explains it, starting `Checks pull requests.` |
+| Shield icon | When the set [checks the station's pull requests](/docs/reference/app/searches#gating-a-stations-changes). Hovering explains it, starting `Checks pull requests.` |
 | Station gone | When its station has left the line. |
 | No baseline | `The live config hasn't been replayed on this set. Nothing is compared with live.` when the set has no [baseline](/docs/reference/glossary#baseline). |
 
@@ -807,9 +807,9 @@ Each row ends with a "Changes" link, described below the table:
 | Config | The candidate's name, a trophy ("Best value") when it is on its search's [frontier](/docs/reference/app/searches#frontier), and its replay's [state](/docs/reference/app/replays#replay-states) until that replay has finished. Selecting it shows the whole row. |
 | What changed | How its config differs from the live config, as a plan. |
 | Source | "Search", "Proposed", or "Live" for the live config. Hovering over the heading explains each, and the trophy. |
-| Replay success | A bar from 0% to 100%: the candidate's success, with its 95% range on hover, against a mark for the live config's, coloured by the verdict against live. |
+| Replay success | A bar from 0% to 100%: the candidate's success, with its 95% range on hover, against a mark for the live config's, coloured by the significance of the gain over live. |
 | Candidate, Live | The candidate's success and the live config's, as percentages. |
-| Against live | Its [gain](/docs/reference/app/replays#gains) over the live config in points, as in `+16 pts`, with the verdict and the set's minimum real gain on hover; or "Not compared". |
+| Against live | Its [gain](/docs/reference/app/replays#gains) over the live config in points, as in `+16 pts`, with the significance and the set's minimum real gain on hover; or "Not compared". |
 | Cost per run, Live cost | What each spent per run. When the live config is priced in another currency, the candidate's cost is over all its scored runs, as its hover says, and "Live cost" reads `–`. |
 | Held out | Only when a candidate has a held-out replay: its held-out score, "Replaying" while that replay is queued or running, or `–`. |
 | Runs | The runs the figures cover. |
@@ -944,12 +944,12 @@ server reads `–` under "Server".
 | --- | --- |
 | Active memories | The [memories](/docs/reference/glossary#memory) the team has approved and not retired, whatever the period. |
 | Briefed | Memories briefed to the runs that ended in the period, cancelled runs included, each counted once, with `to <n> runs`, the runs that ran they were briefed to. |
-| Read | Memories the runs that ended in the period read with [`spotlight recall`](/docs/reference/cli/agent-commands#spotlight-recall), cancelled runs included, each counted once, with `by <n> runs`, the runs that ran that read them. |
+| Recalled | Memories the runs that ended in the period read with [`spotlight recall`](/docs/reference/cli/agent-commands#spotlight-recall), cancelled runs included, each counted once, with `by <n> runs`, the runs that ran that read them. |
 | Flagged wrong | Memories a person retired in the period. A memory replaced by a correction is not counted. |
 | Solved with memories | `–`, with `No benchmark yet`. |
 
 "Runs with memories and without" sets the period's runs that were briefed or
-read a memory against its other runs, under "Without", "With" and "Change",
+recalled a memory against its other runs, under "Without", "With" and "Change",
 with the rows of [Impact](#impact) but "Judge score". Only runs that ran are
 counted. "Change" reads as under Impact, `Too few runs` and `No change`
 included.
@@ -959,7 +959,7 @@ its handle, linked to the memory, and its text; "Reason", or `–`; "Flagged
 by", or "A former member"; and "Date". With none, it reads
 `No memory flagged wrong in this period.`
 
-With no active memories, and none briefed, read or flagged wrong in the
+With no active memories, and none briefed, recalled or flagged wrong in the
 period, the section reads "No memories yet", with "Open the team's memory".
 
 ## Runs
@@ -974,7 +974,7 @@ in reverse order of their ID, by character code:
 | Failure | The run's failure, or `–`. |
 | Station | The station. |
 | Person | Who opened the task, "No one", or "A former member". |
-| Setup | The harness and model, as `<harness> · <model>`, or `<harness> · Harness default` for a run with no model set. |
+| Agent config | The harness and model, as `<harness> · <model>`, or `<harness> · Harness default` for a run with no model set. |
 | Took, Cost, Ended | How long the run took, what it cost, and when it ended. |
 
 "Station" (work stations only) and "Outcome" narrow the list. Following a
@@ -984,7 +984,7 @@ figure on another tab narrows it further, shown as a pill that can be removed:
 | --- | --- |
 | Line | On the line. |
 | Pull request | Whose task's pull request is now Merged, Closed unmerged or Open. |
-| Then | Whose next act was Started, Parked, Closed, Answered or Sent back. |
+| Then | Whose first human action was Started, Parked, Accepted, Answered or Sent back. |
 | Asked a person | Of tasks that asked a person in the period. |
 | Harness | Run by the harness. |
 | Model | Run with the model. "Harness default" is a run with no model set. |

@@ -41,14 +41,14 @@ station {
   # ...
 
   judge {
-    rubric = file("${path.module}/judges/core/delivery/implementation.md")
-    sample = 0.2
-    trust  = 0.6
+    rubric        = file("${path.module}/judges/core/delivery/implementation.md")
+    sample        = 0.2
+    min_agreement = 0.6
   }
 }
 ```
 
-Set `sample` to the share of runs to judge, and `trust` to the agreement with
+Set `sample` to the share of runs to judge, and `min_agreement` to the agreement with
 people the judge needs before its scores show, both from 0 to 1. Agreement is
 Cohen's kappa on a yes-or-no rubric and on claims, and Spearman's ρ on a 1 to 5
 rubric, so `0.6` is not 60% of runs.
@@ -88,9 +88,9 @@ judge {
     "The change adds a test that fails without it.",
     "The change touches only what the task names.",
   ]
-  pass_share = 1
-  sample     = 0.2
-  trust      = 0.6
+  pass_threshold = 1
+  sample         = 0.2
+  min_agreement  = 0.6
 }
 ```
 
@@ -99,7 +99,7 @@ A rubric beside claims needs no `scores:` line.
 </Step>
 <Step>
 
-If a replayed run may pass without meeting every claim, set `pass_share` to the
+If a replayed run may pass without meeting every claim, set `pass_threshold` to the
 share it must meet, such as `0.5`. Leave it out to require every claim.
 
 </Step>
@@ -111,7 +111,7 @@ Run `terraform apply`.
 </Steps>
 
 The judge then marks each claim met or not, with its own reasons. Changing a
-claim, its order or `pass_share` starts a new rubric version, and the judge's
+claim, its order or `pass_threshold` starts a new rubric version, and the judge's
 agreement with people is measured again from nothing.
 
 ## Set alerts
@@ -155,7 +155,7 @@ If Terraform rejects the line, the message names the field.
 A judge or alert on the backlog or the completed station is rejected, because
 nothing runs there.
 
-When an alert goes off, the task of the run that crossed it gets an inbox item
+When an alert fires, the task of the run that fired it gets an inbox item
 that reads **Station crossed an alert threshold.** It reaches only
 people on the team and the workspace's owners and admins. See
 [Answer the inbox](/docs/inbox/answer-the-inbox#look-into-a-station-alert).

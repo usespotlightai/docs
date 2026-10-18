@@ -149,14 +149,14 @@ Under **Replay under**, choose the candidate.
 <Step>
 
 Under **Repeats**, enter how many times to replay each run, from 1 to 5. More
-copies narrow the range around the result, and cost as many more runs. See
+repeats narrow the range around the result, and cost as many more runs. See
 [Read the set's health](#read-the-sets-health).
 
 </Step>
 <Step>
 
 Under **Ceiling**, enter the most the replay may spend and its currency, as
-in `5.00` and `USD`. The ceiling covers the replay's runs, every copy of them,
+in `5.00` and `USD`. The ceiling covers the replay's runs, every repeat of them,
 the change stacks that Spotlight generates for their changes, and the judging
 of these changes.
 
@@ -190,20 +190,20 @@ because it was never replayed or runs were added since:
 - Under **Live config**, the replay becomes the baseline.
 - Under a proposed candidate, a baseline starts beside it, with a ceiling of its
   own the same as yours, so the two may spend up to twice the ceiling. At 1
-  or 2 repeats, they may spend more when that baseline also checks the set,
+  or 2 repeats, they may spend more when that baseline is also a calibration,
   as below.
 
-If the set has a baseline covering its runs, with at least as many copies of
+If the set has a baseline covering its runs, with at least as many repeats of
 each as you asked for, a **Live config** replay runs beside it, and no new
 baseline starts. Otherwise a new baseline starts as above, with your number of
 repeats.
 
-The first baseline of the live config as it is now also checks the set, when
+The first baseline of the live config as it is now is also a calibration of the set, when
 the set contains 5 runs or more. At fewer than 3 repeats, it replays each run 3
 times, and its ceiling can be larger than yours. Once it finishes, each change is
 judged and checked a second time, within its ceiling. A set of fewer than 5
-runs is never checked. Before you set the ceiling, see
-[Checking the set](/docs/reference/app/replays#checking-the-set) for that
+runs is never calibrated. Before you set the ceiling, see
+[Calibration](/docs/reference/app/replays#calibration) for that
 baseline's ceiling, and
 [Replay set page](/docs/reference/app/replays#replay-set-page) for what the
 replay and its baseline may spend together and which notes the dialog shows.
@@ -234,10 +234,10 @@ budget**: nothing more starts, and runs already running finish.
 
 **Success** gives the replay's success rate; hover over its ⓘ for the range it
 likely falls in. **Gain** gives its gain in points over the replay it is
-compared with, as in `+12 pts`, with a verdict of **Better**, **Worse** or
+compared with, as in `+12 pts`, with a significance of **Better**, **Worse** or
 **Within noise** and that replay's success on the tasks both scored, as in
 `Better · baseline 50%`. Its ⓘ gives the gain's range. See
-[Gains](/docs/reference/app/replays#gains) for when each verdict shows.
+[Gains](/docs/reference/app/replays#gains) for when each significance shows.
 
 Act on **Better** or **Worse**. If a result you expected to matter reads
 **Within noise**, add runs of more tasks to the set, or replay with more
@@ -248,8 +248,8 @@ Under **Tasks**, the replay's page lists each task, regressions first. A
 regressed task has a red warning sign beside its title. See
 [Regressions](/docs/reference/app/replays#regressions) for when a task
 regresses. Hover over a result for its reasons, such as **Checks failed**.
-With more than one copy, a task shows how many copies succeeded; hover over it
-for each copy's result.
+With more than one repeat, a task shows how many repeats succeeded; hover over it
+for each repeat's result.
 
 Select a task to open its details beside the list: each run's result, why it
 succeeded, failed or went unscored, its checks and what it changed. Select
@@ -296,7 +296,7 @@ reading for its advice. A reading marked with a warning sign found a problem:
 The readings belong to the station's config as it is now. Once an applied
 change gives the station a new config fingerprint, they read **Not
 measured** or **Not checked** until the first baseline of the new config
-checks the set. A replay of the live config with 2 or more repeats, started
+calibrates the set. A replay of the live config with 2 or more repeats, started
 any other way, measures the noise too once it finishes.
 See [Health](/docs/reference/app/replays#health) for every reading.
 
@@ -381,7 +381,7 @@ better for no more cost.
 </Step>
 <Step>
 
-To see the candidates beside the setups the station's live runs used, go to
+To see the candidates beside the agent configs that the station's live runs used, go to
 **Harness, model, effort and profile** under **Config changes** and choose the
 station under **Station**. The replayed candidates are drawn hollow. Their
 height is replay success on past tasks, not how live runs turned out. They are
@@ -417,7 +417,7 @@ station's view on Insights. See
 [Check whether it helped](/docs/improvement/improve-a-station-from-its-runs#check-whether-it-helped).
 
 To have every pull request that changes the station replayed on a set before
-it merges, turn on **Guards config changes** on the set's page. See
+it merges, turn on **Gates config changes** on the set's page. See
 [Check Terraform pull requests for station regressions](/docs/configuration/check-terraform-pull-requests-for-station-regressions).
 
 To let go of a set you no longer need, select **Delete** on its page. Its

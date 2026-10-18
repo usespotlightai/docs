@@ -23,14 +23,14 @@ and answer JSON.
 | `/pull-requests/list` | Every pull request opened or closed in the period, or still open, the latest first, a page at a time. |
 | `/shipping` | How fast Spotlight's pull requests ship against people's alone: time to merge by day and by type, review depth by week, time to first review, review bots, and how long merged pull requests spent at each stage. See [`/shipping`](#shipping). |
 | `/stations` | Each station's tally, per day and against the period before, with its task failures apart from its run failures. |
-| `/changes` | Every station config change in the period, with the station's runs before and after it, and the judge's scores where its judge is trusted. |
-| `/setups` | How runs went against what they cost on each harness, model, effort and harness profile, with the frontier marked for each outcome. |
+| `/changes` | Every station config change in the period, with the station's runs before and after it, and the judge's scores where its judge is qualified. |
+| `/agent-configs` | How runs went against what they cost on each agent config (harness, model, effort and harness profile), with the frontier marked for each outcome. |
 | `/people` | What the team's work asks of people, and who is active: new, weekly and monthly. |
 | `/cost` | Spend by harness, model, station and repository, from model to station to repository. |
 | `/tools` | Which skills were enabled for the runs and which they read, week by week, and how each MCP server they called behaved. |
-| `/memory` | The team's active memories, how many runs were briefed or read them, which were flagged wrong, and runs with memories against runs without. |
+| `/memory` | The team's active memories, how many runs were briefed with or recalled them, which were flagged wrong, and runs with memories against runs without. |
 | `/runs` | Every run that ended in the period, newest first, a page at a time. |
-| `/alerts/{alertId}` | A station alert that went off: the threshold it crossed, the run that crossed it, and the measure run by run around it. |
+| `/alerts/{alertId}` | A station alert that fired: the rule that fired, the run that fired it, and the measure run by run around it. |
 
 ## Parameters
 
@@ -53,8 +53,8 @@ as long.
 | `taskIds` | Of these tasks, comma-separated, at most 200. |
 | `personId` | Of tasks this person opened. |
 | `day` | That ended on this UTC day, as `YYYY-MM-DD`. |
-| `delivery` | Of tasks whose pull request is now `merged`, `closed` or `open`. |
-| `next` | Whose next person act was `started`, `parked`, `closed`, `answered` or `sent-back`. |
+| `pullRequestState` | Of tasks whose pull request is now `merged`, `closed` or `open`. |
+| `humanAction` | Whose first human action was `started`, `parked`, `accepted`, `answered` or `sent-back`. |
 | `asked` | `true`: of tasks that asked a person in the inbox during the period. `false` narrows nothing. |
 | `week` | That ended in the week starting this UTC Monday, as `YYYY-MM-DD`. |
 | `skillEnabled` | Whose station config enabled this skill. |
@@ -67,7 +67,7 @@ as long.
 | `page` | Which page, from 1 to the last page with runs, at most 10,000. A value that is not a whole number above 0 is read as 1. |
 | `size` | Runs per page. Default: 50. At most 200; a larger number is read as 200. |
 
-`/setups` also takes:
+`/agent-configs` also takes:
 
 | Parameter | Narrows to runs |
 | --- | --- |
@@ -79,7 +79,7 @@ as long.
 | Parameter | Narrows to pull requests |
 | --- | --- |
 | `repository` | In these repositories, comma-separated or repeated, at most 50. |
-| `author` | Written by `spotlight`, `touched`, `people` or `bots`. |
+| `author` | Written by `spotlight`, `reviewed`, `people` or `bots`. |
 | `type` | Of type `feature`, `fix`, `refactor`, `tests`, `chore` or `other`. |
 | `state` | `merged` or `closed` in the period, or still `open`. |
 | `week` | Closed in the week starting this UTC day, as `YYYY-MM-DD`. |
@@ -108,21 +108,21 @@ how each is measured.
 | --- | --- | --- |
 | `period` | object | `name`, `from`, `to`, `previousFrom`, `previousTo` and `days`, every UTC day in the period, oldest first. |
 | `toMerge` | by-author | Opened to merged, for pull requests merged in the period. |
-| `toMergeChanges` | object | `spotlight` and `people`, each with `p50`, `p75`, `p90` and `p95`: a change against the period before, or `null`. |
+| `toMergeChanges` | object | `spotlight` and `people`, each with `p50`, `p75`, `p90` and `p95`: a delta against the period before, or `null`. |
 | `mergeDays[]` | object | For each day of the period: `day`, `daily` (by-author, for pull requests merged that day) and `rolling` (by-author, merged in the 7 days ending that day). |
 | `types[]` | object | For each type with a pull request merged: `type`, `merged` (Spotlight's and people's alone) and `toMerge` (by-author). |
 | `slowestFirst` | object | `p50`, `p75`, `p90` and `p95`: the types in `types`, slowest first by Spotlight's time at that percentile, those with none last. |
 | `depth[]` | object | For each week, from its UTC Monday: `week`, `merged`, and `rounds[]`, a rounds count for each of `0`, `1`, `2` and `3+`. |
 | `depthTotals[]` | rounds count | The weeks in `depth` summed, for each number of review rounds. |
 | `reviewDays[]` | object | For each day of the period: `toFirstReviewDaily` and `toFirstReviewRolling` (percentiles, for pull requests first reviewed that day, or in the 7 days ending that day), `awaiting` (pull requests ready and not yet reviewed as the day ended) and `humanReviews` (reviews people submitted that day). |
-| `bots[]` | object | Each review bot, the most comments first: `login`, `comments`, `reviews` and `resolvedShare`, from 0 to 1, or `null` where it started no thread. |
+| `bots[]` | object | Each review bot, the most comments first: `login`, `comments`, `reviews` and `resolvedRate`, from 0 to 1, or `null` where it started no thread. |
 | `pipeline` | object | `merged` (Spotlight's pull requests merged in the period whose task opened in the period, the period before, or the last 30 days where that reaches further), `types[]` (`type` and `merged`) and `layouts`: `stations` (a stage for each station the tasks ran at, in order of first use, then the review stages) and `stages` (coding as one stage, then the review stages). |
-| `shippedAny` | boolean | Whether `pipeline.merged` is above 0, `types` is not empty, or any day of `reviewDays` has `awaiting` or `humanReviews` above 0. Pull requests written by `bots` or `touched` never count for the first two, and people's count only in the repositories Spotlight merged into. |
+| `shippedAny` | boolean | Whether `pipeline.merged` is above 0, `types` is not empty, or any day of `reviewDays` has `awaiting` or `humanReviews` above 0. Pull requests written by `bots` or `reviewed` never count for the first two, and people's count only in the repositories Spotlight merged into. |
 
 A percentiles object has `p50Ms`, `p75Ms`, `p90Ms` and `p95Ms`, each `null`
 when nothing was measured, and `count`. A by-author object has `spotlight` and
 `people`, each a percentiles object. A rounds count has `rounds`, `merged` and
-`share`, from 0 to 1, or `null` where nothing merged. A change has `unit`
+`rate`, from 0 to 1, or `null` where nothing merged. A delta has `unit`
 (`percent` or `points`), `by` (`null` when it rose from 0), `fromZero`,
 `direction` (`up`, `down` or `same`) and `tone` (`good`, `bad` or `flat`).
 
@@ -135,7 +135,7 @@ type that went through it. Each times object has:
 | --- | --- |
 | `total` | Percentiles of the stage's time. |
 | `parts` | At a station, `queued`, `running` and `inbox`, each percentiles; otherwise `null`. |
-| `jam` | `p50`, `p75`, `p90` and `p95`: the stage's time over the longest stage's in the same layout, for the same type, from 0 to 1. |
+| `bottleneckRatio` | `p50`, `p75`, `p90` and `p95`: the stage's time over the longest stage's in the same layout, for the same type, from 0 to 1. |
 | `worst` | `p50`, `p75`, `p90` and `p95`: whether this is the longest stage in the layout for the same type; the first on a tie. |
 | `longestPart` | At a station, `p50`, `p75`, `p90` and `p95`: the part that took longest, `queued` first on a tie, or `null` where no part took any time. Otherwise `null`. |
 
@@ -159,13 +159,13 @@ On `/runs`, where `<filter>` names the parameter as `line`, `station`,
 `outcome`, `harness`, `model`, `repository`, `station config`, `task`,
 `person`, `day`, `week`, `skill enabled`, `skill used`, `server`,
 `server that failed`, `server failed after`, `refused tool`,
-`refused server`, `delivery`, `next act` or
+`refused server`, `pull request state`, `human action` or
 `answer to whether the task asked`:
 
 | Cause | Message |
 | --- | --- |
 | `taskIds` names more than 200 tasks. | `Run filter takes at most 200 tasks.` |
-| `outcome`, `delivery`, `next` or `asked` names a value it does not take. | `Run filter <filter> must be one of <values>, not <value>.`, as in `Run filter next act must be one of started, parked, closed, answered, sent-back, not approved.` |
+| `outcome`, `pullRequestState`, `humanAction` or `asked` names a value it does not take. | `Run filter <filter> must be one of <values>, not <value>.`, as in `Run filter human action must be one of started, parked, accepted, answered, sent-back, not approved.` |
 | A filter that takes one value is given more than once. | `Run filter takes one <filter>, not <count>.` |
 | `day` is not a day of the period written `YYYY-MM-DD`. | `Run filter day must be a date in the period, in the form YYYY-MM-DD, not <value>.` |
 | `week` is not a Monday written `YYYY-MM-DD`. | `Run filter week must be a Monday in the form YYYY-MM-DD, not <value>.` |
@@ -183,5 +183,5 @@ On `/pull-requests/list`, where `<filter>` names the parameter as `author`,
 | A filter that takes one value is given more than once. | `Pull request filter takes one <filter>, not <count>.` |
 | `week` does not match `YYYY-MM-DD`, or cannot be read as a date. A day past the end of its month, as in `2026-02-31`, is read as a day of the next month. | `Pull request filter week must be a date in the form YYYY-MM-DD, not <value>.` |
 
-On `/setups`, a `size` other than `small`, `medium` or `large`:
-`Setup filter size must be one of small, medium, large, not <value>.`
+On `/agent-configs`, a `size` other than `small`, `medium` or `large`:
+`Agent config filter size must be one of small, medium, large, not <value>.`

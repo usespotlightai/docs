@@ -67,10 +67,10 @@ hosts the host's allow-list allows, as for any run; see
 A replay is scored by what the candidate itself requires. If the candidate's
 station generates change stacks (`diffs: true`) and has a `check`, its change must
 pass that check. If it has a judge, the judge scores the change against its
-rubric. Where people accepted the original's change, by closing the task as
+rubric. Where people accepted the original's change, by moving the task to the completed station as
 the first thing they did on it after the run, the judge is also shown that
 change and scores the replay against it. A run passes the judge on a yes, on 4 or more on a 1 to 5
-rubric, or, for a judge with claims, on meeting at least its pass share of
+rubric, or, for a judge with claims, on meeting at least its pass threshold of
 them. With both a check and a judge, a run must pass both.
 
 A replay's judge scores never count in the judge's agreement with people,
@@ -104,8 +104,8 @@ bring back, such as an earlier model release or a dependency that has since
 moved, and a baseline replayed now meets the same conditions the candidate
 meets. A task regresses when the baseline succeeded on it and the candidate
 did not, or when the judge scored the candidate lower. With more than one
-copy of each run, the rule changes a little; see
-[Copies of the same run](#copies-of-the-same-run).
+repeat of each run, the rule changes a little; see
+[Repeats of the same run](#repeats-of-the-same-run).
 
 ## Side by side with the baseline
 
@@ -121,17 +121,17 @@ compared with changed something, and people accepted the original's change,
 the judge is shown the two changes together, labelled A and B, beside the
 accepted one, and prompted to say which is better. It is not told which change is the
 candidate's, so it cannot favour it. It reads the pair twice, once each way
-round, and when the two readings disagree, the task counts as a tie. In the
+round, and when the two passes disagree, the task counts as a tie. In the
 docs' view, a model can lean to whichever change it saw first, and a
 preference that flips with the order was never a preference.
 
 The wins, losses and ties sit beside the success rate and never change it. The
-success rule, the gain and its verdict stay as they are. In the docs' view, a
+success rule, the gain and its significance stay as they are. In the docs' view, a
 comparison that counts only tasks both sides changed and people accepted
 covers too few tasks to replace the rate, but where the rate reads Within
 noise, it can say which way the candidate leans.
 
-A replay other than a baseline keeps one counterpart, chosen when it
+A replay other than a baseline keeps one reference replay, chosen when it
 starts: a proposed candidate the baseline that was current then, a search's candidates
 the live config the search replayed when it started, and a replay with the
 answer the live replay whose finishing started it. Its task-by-task rows and
@@ -178,44 +178,44 @@ small that is.
 A replay check reads its gain the same way, but the gain does not decide the
 check: a pull request still passes or fails on its count of regressions.
 
-## Copies of the same run
+## Repeats of the same run
 
 A replay can replay each run up to 5 times. Each task's success is then the
-share of its copies that succeeded, so one task can count as two thirds of a
-success. The rate is averaged over tasks, not over copies, so a task replayed
-more often does not weigh more, and the range is drawn over tasks. More copies
+share of its repeats that succeeded, so one task can count as two thirds of a
+success. The rate is averaged over tasks, not over repeats, so a task replayed
+more often does not weigh more, and the range is drawn over tasks. More repeats
 make each task's score steadier, which narrows the range. They add no tasks: a
 set that is too small, or whose tasks are too alike, stays so.
 
-With copies, a task regresses only once every copy on both sides has ended.
-Counted by success, it regresses when the share of the baseline's copies that
-succeeded is higher than the candidate's share by more than 50 points. One copy
-failing where the baseline succeeded every time is not enough. With one copy each, this is the rule above: the
+With repeats, a task regresses only once every repeat on both sides has ended.
+Counted by success, it regresses when the share of the baseline's repeats that
+succeeded is higher than the candidate's share by more than 50 points. One repeat
+failing where the baseline succeeded every time is not enough. With one repeat each, this is the rule above: the
 baseline succeeded and the candidate did not. A judge's scores are compared as
-the average over each side's copies.
+the average over each side's repeats.
 
-The baseline a replay is compared with must have at least as many copies of
+The baseline a replay is compared with must have at least as many repeats of
 each run. When it has fewer, a new baseline starts beside the replay with the
-same number of copies.
+same number of repeats.
 
 ## How noisy a set is
 
-Replaying the live config with copies shows how far a set's success moves when
-nothing changed: the spread between the copies' success rates, and which tasks
+Replaying the live config with repeats shows how far a set's success moves when
+nothing changed: the spread between the repeats' success rates, and which tasks
 went both ways. That spread is the set's noise, and the replay set's page
 shows it once measured. It is measured on the station's config as it is now,
-from the newest finished replay of the live config with at least 2 copies.
+from the newest finished replay of the live config with at least 2 repeats.
 Once a change gives the station a new
 [config fingerprint](/docs/reference/glossary#config-fingerprint), the noise
 is unmeasured again, since the new config may be steadier or less so.
 
 A search reads the noise before it starts. With none measured, it warns that a
 small gain may be luck. With a spread larger than `min_gain` allows at the
-number of copies requested, it warns and suggests more: the copies needed are
+number of repeats requested, it warns and suggests more: the repeats needed are
 the spread divided by `min_gain`, squared and rounded up, and it suggests at
 most 5. That rule takes the spread to shrink with the square root of the
-number of copies, as an average of independent tries does. More than 5 needed
-means no search of that set, at any number of copies, can tell such a gain
+number of repeats, as an average of independent tries does. More than 5 needed
+means no search of that set, at any number of repeats, can tell such a gain
 from noise. A search starts all the same; the warning is advice.
 
 ## Whether a set can tell configs apart
@@ -250,14 +250,14 @@ never adds them itself. In the docs' view, which tasks a set should represent
 is the team's choice.
 
 Nobody has to request these readings. The first baseline of the live config
-as it is now checks the set: it replays each run at least 3 times, which
+as it is now is also the set's calibration: it replays each run at least 3 times, which
 measures the noise, and once it finishes, each change is judged and checked a
-second time. Its ceiling grows with its copies, so it costs about three times
+second time. Its ceiling grows with its repeats, so it costs about three times
 a single replay. In the docs' view, a set is only worth reading once it has
-been checked, and the first baseline has to replay the live config anyway. A
-set of fewer than 5 runs is never checked, since it is too small to measure
+been calibrated, and the first baseline has to replay the live config anyway. A
+set of fewer than 5 runs is never calibrated, since it is too small to measure
 noise on. A search's starting replay and a pull request check's baseline are
-never the check. The second judgings cost model calls, so they count against
+never the calibration. The second judgings cost model calls, so they count against
 the check's ceiling and stop once it would be spent; the rest are not judged
 again. A
 second judging or check never changes a run's result. In the docs' view, it
@@ -301,15 +301,15 @@ another.
 ## What it costs
 
 A replay spends what its runs cost, and what generating change stacks for their
-changes and judging them cost. Each copy of a run is a run of its own, so a
-replay with 3 copies starts three times the runs. A person sets a ceiling on
+changes and judging them cost. Each repeat of a run is a run of its own, so a
+replay with 3 repeats starts three times the runs. A person sets a ceiling on
 each replay, and once a replay's spend reaches it, nothing more of it starts.
 Runs already running finish, so a replay can end a little over its ceiling, and
 its page says by how much. The baseline started beside a proposed candidate has
 a ceiling of its own, the same as the replay that started it, so the two can
-spend twice that ceiling. When that baseline also checks the set, its ceiling
-can be larger, so at 1 or 2 repeats the two can spend more; see [Checking the
-set](/docs/reference/app/replays#checking-the-set). A replay of the live config
+spend twice that ceiling. When that baseline is also a calibration, its ceiling
+can be larger, so at 1 or 2 repeats the two can spend more; see
+[Calibration](/docs/reference/app/replays#calibration). A replay of the live config
 becomes the baseline itself when the set has none, or when the set's runs
 changed since the last one. Costs in another currency than the ceiling's, and
 costs never reported, do not count against it. The replay page shows them apart
@@ -341,14 +341,14 @@ any, to apply. The Candidates section of the Stations tab on the team's
 Insights page sets every candidate replayed in a period beside the live config
 replayed on the same replay set, station by station, and its Config changes
 section can draw a station's replayed candidates on the same chart as the
-setups its live runs used.
+agent configs its live runs used.
 
-The two kinds of point measure different things. A live setup's height is
+The two kinds of point measure different things. A live agent config's height is
 what happened to real runs: whether a person accepted the work, sent it back,
 or merged its pull request. A replayed candidate's height is replay success:
 the share of replayed past runs that passed the candidate's own check and
 judge. The
-setups chart under Config changes draws replayed points apart, as a series of their own, and says
+agent configs chart under Config changes draws replayed points apart, as a series of their own, and says
 what their height is, so neither is read as the other.
 
 A candidate is read against the live config replayed on the same runs, not
@@ -358,7 +358,7 @@ search's own runs, and a proposed candidate beside the set's baseline.
 A search's held-out score is never drawn as a point. In the docs' view, it
 comes from other tasks than the search score, so one point cannot show
 both, and it is the score to trust, so it is given as a figure of its own.
-The candidates of a pull request's replay check are left out: their verdict is
+The candidates of a pull request's replay check are left out: their result is
 on the pull request and on the replay set's page.
 
 ## A replay changes nothing

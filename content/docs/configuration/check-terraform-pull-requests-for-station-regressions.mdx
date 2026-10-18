@@ -40,7 +40,7 @@ images your hosts run with `SPOTLIGHT_RUNNER_IMAGE`. See
 
 ## Choose the tasks each check replays
 
-Each station has at most one replay set that guards its changes. A check of the
+Each station has at most one replay set that gates its changes, its gating set. A check of the
 station replays that set.
 
 <Steps>
@@ -53,7 +53,7 @@ contains runs the station did well as well as runs it did badly.
 </Step>
 <Step>
 
-Under **Checks**, turn on **Guards config changes**. If another set at the station guards its
+Under **Checks**, turn on **Gates config changes**. If another set at the station gates its
 changes already, turn it off there first.
 
 </Step>
@@ -172,9 +172,9 @@ replace `latest/download` with `download/<version>`. See
 [Install](/docs/reference/cli/replay-command#install).
 
 To replay each run of the set more than once, add `--repeats` and a number
-up to 5. Each copy is a run, and the line's `ceiling` covers them all, so
+up to 5. Each repeat is a run, and the line's `ceiling` covers them all, so
 raise it to match. See
-[Copies of the same run](/docs/improvement/why-changes-are-replayed-on-past-tasks#copies-of-the-same-run).
+[Repeats of the same run](/docs/improvement/why-changes-are-replayed-on-past-tasks#repeats-of-the-same-run).
 
 The command waits for the checks, up to 60 minutes unless you pass
 `--timeout`. A check still running then keeps running in Spotlight, and the
@@ -185,11 +185,11 @@ job ends with exit code `3` and the check's link.
 | Exit code | Meaning |
 | --- | --- |
 | `0` | Every changed station passed, or the plan changes nothing a check replays. |
-| `1` | A check could not start or failed to run, such as for a line with no `replay_check` or a station whose changes no set guards. |
+| `1` | A check could not start or failed to run, such as for a line with no `replay_check` or a station whose changes no set gates. |
 | `2` | A change regressed on more tasks than its line allows. |
 | `3` | A check is undecided, or still running at the timeout. |
 
-The job's summary gets a table with one row per station: its verdict, how many
+The job's summary gets a table with one row per station: its result, how many
 tasks regressed, how the change and the live config did, each with its range,
 the change's gain over the live config with `better`, `worse` or
 `within noise`, what the check spent, and a link to its replay in Spotlight. Each
@@ -206,8 +206,8 @@ it depends on. A changed secret makes every work station undecided.
 Running the check again on the same change, against the same live config,
 the same runs of the set, the same threshold and the same scoring, answers
 with the earlier check while it is running, passed or failed. Each check also
-shows on the guarding set's page, under **Checks**. [Verdicts](/docs/reference/cli/replay-command#verdicts) lists every
-verdict and why a check can be undecided.
+shows on the gating set's page, under **Checks**. [Results](/docs/reference/cli/replay-command#results) lists every
+result and why a check can be undecided.
 
 ## Related
 
