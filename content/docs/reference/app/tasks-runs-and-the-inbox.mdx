@@ -221,7 +221,7 @@ Counts of runs that ran leave out cancelled runs.
 | --- | --- | --- |
 | The run waits on a person's answer to a question that is not an approval. | `Answer the question to continue the run…` | `Answer <Station>` |
 | The task is at the run's station with nothing running and no open question, and the station has a harness. Words start a new run there. | `Say what to change. <Station> starts again…` | `Send it back to <Station>` |
-| Otherwise. | `Say something…` | `Say something to <Station>` |
+| Otherwise. | `Write a message…` | `Message <Station>` |
 
 The "+" button, "Attach files", adds files, and so does dropping or pasting
 them on the composer. Images show above the text; other files show by name
@@ -318,7 +318,7 @@ The run's [config fingerprint](/docs/reference/glossary#config-fingerprint) is
 a SHA-256 of these parts. The task's title, description and marks are not part
 of it.
 
-The config in force at a station shows under "Config" on the station's
+The live config of a station shows under "Config" on the station's
 "Overview" tab, and the station's view on Insights groups its runs by config
 under "Runs by config"; see [Station outcomes](#station-outcomes).
 `GET /api/teams/{teamId}/runs/{runId}/config` returns a run's config and its
@@ -447,7 +447,7 @@ the version of the run's judge score, or else the station's rubric at the time.
 On a yes-or-no scale, a run no one graded takes its people's score from its
 [first human action](#station-outcomes): Yes when it was Accepted, No when it was Sent
 back; failing those, Yes when its pull request merged and No when it closed
-unmerged. Approving or refusing an approval is never a human action. A 1 to 5
+unmerged. Approving or dismissing an approval is never a human action. A 1 to 5
 scale and claims use grades only.
 
 Agreement is measured from the station's latest 500 judge scores, across
@@ -654,7 +654,7 @@ Selecting the row shows:
 
 | Property | Shows |
 | --- | --- |
-| "Outcome" | `Blocked`, `Failed`, `Auth failed` (`401` or `403`) or `Server error` (`500` or more). |
+| "Error" | `Blocked`, `Failed`, `Auth failed` (`401` or `403`) or `Server error` (`500` or more). |
 | "Status" | The status the host answered with, on an injected request. |
 | "Reason" | `Not on the allow-list`, `Private address`, `No bound secret`, `Unknown host`, `Timed out`, `TLS failed` or `No connection`. |
 | "Count" | How many times the same error occurred, when more than once. |
@@ -686,9 +686,9 @@ are shown in these places:
 
 | Where | Shows |
 | --- | --- |
-| "Latest runs on this config", on the station's "Overview" tab | Tiles for "Runs", "Accepted", "Sent back", "Failed", "Cost" and "Median", over the config in force: the newest config that ran, in its newest group and in earlier groups of it that only groups that never started separate from it. The newest group of another config that ran ends it and is not counted. "Accepted", "Sent back" and "Failed" add `of <n> runs` and a bar of that share. "Runs" draws the endings of the newest group with a recorded config as a strip, oldest first; "Cost" and "Median" draw that group's costs and durations run by run, when they vary. The tiles are not shown until a run has run a recorded config, or when the outcomes cannot be read. |
+| "Latest runs on this config", on the station's "Overview" tab | Tiles for "Runs", "Accepted", "Sent back", "Failed", "Cost" and "Median", over the live config: the newest config that ran, in its newest group and in earlier groups of it that only groups that never started separate from it. The newest group of another config that ran ends it and is not counted. "Accepted", "Sent back" and "Failed" add `of <n> runs` and a bar of that share. "Runs" draws the endings of the newest group with a recorded config as a strip, oldest first; "Cost" and "Median" draw that group's costs and durations run by run, when they vary. The tiles are not shown until a run has run a recorded config, or when the outcomes cannot be read. |
 | "Recent runs", on the station's "Overview" tab | The latest 8 runs of the newest group with a recorded config, whether its runs started or not, one row each. With none, "No runs on this config yet" and `Runs on earlier configs are under All runs.`, or, when the station has no runs, "No runs yet" and `Latest runs show here once tasks reach this station.` To a person who may not read the outcomes, `Only team members can see this station's runs`. "All runs" opens the Insights Runs tab at the station. |
-| "Version", in the station's "Config" on the "Overview" tab | The newest group with a recorded config, whether its runs started or not: `Since <day>`, the day its first run ended, or "In force", with `Version <fingerprint>`, the first 8 characters. "View pull request" opens the pull request a picked search candidate opened for that config, when there is one, and "History" opens the station's view on Insights. Before any such group, "None yet" and `The station's first run sets the first version.`; when the outcomes cannot be read, "Unknown" and `Sorry, the station's runs couldn't be loaded.` |
+| "Config fingerprint", in the station's "Config" on the "Overview" tab | The newest group with a recorded config, whether its runs started or not: `Live since <day>`, the day its first run ended, or "Live", with `Config <fingerprint>`, the first 8 characters. "View pull request" opens the pull request a picked search candidate opened for that config, when there is one, and "History" opens the station's view on Insights. Before any such group, "None yet" and `The first run of the station sets the first config fingerprint.`; when the outcomes cannot be read, "Unknown" and `Sorry, the station's runs couldn't be loaded.` |
 | "Runs by config", on the station's view on Insights | Every group, newest first. With no runs, "No runs yet" and `Runs show here by config once tasks reach this station.` To a person who may not read the outcomes, `Only team members can see this station's runs`. See [One station](/docs/reference/app/insights#one-station). |
 
 Runs are grouped by config, in the order they started: each group contains runs
@@ -710,7 +710,7 @@ A run's outcome:
 | Checks | Checks passed, Checks failed, Checks skipped | The station's check on the run's change. See [Checks](/docs/reference/app/change-stacks-and-decisions#checks). |
 | Human action | Started, Parked, Accepted, Answered, Sent back | The first human action: the first thing a person did with the task in answer to the run, or after it. See the table below. |
 | Pull request | PR open, Merged, PR closed | The state of the task's pull request. |
-| Took, Cost | | How long the run took and what it cost, from its journal. |
+| Duration, Cost | | How long the run took and what it cost, from its journal. |
 
 | Human action | The person |
 | --- | --- |
@@ -721,7 +721,7 @@ A run's outcome:
 | Sent back | Said something to a run of the task while it had no current run, other than an answer to an open question that asks for no approval. |
 
 Only the Accepted action accepts a run, and only the Sent back action sends it back. Approving or
-refusing an approval is never a human action: it does not decide whether a run was
+dismissing an approval is never a human action: it does not decide whether a run was
 accepted or sent back. When two actions come at the same moment, the first of
 Sent back, Accepted, Answered, Parked and Started counts.
 
@@ -735,7 +735,7 @@ A tally counts:
 | Checks passed, Checks failed | Runs whose check passed or failed. |
 | Accepted | Runs whose first human action was Accepted. |
 | Sent back | Runs whose first human action was Sent back. |
-| Passed | Runs that passed their task to another station. |
+| Passed on | Runs that passed their task to another station. |
 | Merged | Tasks the group's runs worked whose pull request merged. |
 | Cancelled | Runs that ended Cancelled. |
 | Cost | The runs' cost together, when all are in one currency. |
@@ -750,10 +750,10 @@ counts them in the same way.
 
 On "Runs by config", each group shows "Checks" as `<share> passed`, of the
 runs whose check passed or failed; "Human action" as `<share> accepted` and
-"Pull request" as `<share> merged`, of its runs; "Took", the median; "Cost"; and
+"Pull request" as `<share> merged`, of its runs; "Duration", the median; "Cost"; and
 "Ended", the day or days its runs ended. Each run row shows the ending,
 linked to the run, then the failure, "Visit", "Checks", "Human action", "Pull request",
-"Took", "Cost" and "Ended". A part with no value shows `–`.
+"Duration", "Cost" and "Ended". A part with no value shows `–`.
 
 ## The inbox
 
@@ -949,8 +949,8 @@ the alerts fired on it.
 When an alert fires, the task of the run that set off the check gets an
 inbox item: the run that ended or was measured, or, when a pull request closed, the
 task's latest run at the station. The item reads
-`Station crossed an alert threshold.` and, once the alert resolves,
-`Station back within its alert threshold.` A reopened alert opens its item again. It reaches the task's assignee, or
+`Station alert fired.` and, once the alert resolves,
+`Station alert resolved.` A reopened alert opens its item again. It reaches the task's assignee, or
 everyone on the team when the task has no assignee. It never reaches a person
 who is neither on the team nor an owner or admin of the workspace, and to
 anyone else it is not found: its card reads
@@ -1002,12 +1002,12 @@ first", or when the harness profile's `ask` rules match a harness action. See
 
 | Status | Meaning |
 | --- | --- |
-| `asked` | Waiting on a person, as an inbox item. |
-| `granted` | Approved. The grant is spent by the call it allows. |
-| `refused` | Dismissed. The dismissal stays valid. |
+| `pending` | Waiting on a person, as an inbox item. |
+| `approved` | Approved. The grant is spent by the call it allows. |
+| `dismissed` | Dismissed. The dismissal stays valid. |
 
 In the inbox, the card's title reads "Waiting for your approval" while it is
-`asked`, then "Request approved", "Request approved with changes" or "Request
+`pending`, then "Request approved", "Request approved with changes" or "Request
 dismissed". An undecided card offers copy and, for a tool call with inputs,
 edit, beside "Dismiss" and "Approve". For a call that asks because of a
 person's own rule, everyone else sees `Only <Name> can approve this`, with
@@ -1015,13 +1015,13 @@ person's own rule, everyone else sees `Only <Name> can approve this`, with
 
 When a run asks, Spotlight looks for the latest approval of the same subject at
 the same station. The subject is the tool with the same inputs, or the same
-harness permission. An approval granted with changed inputs also matches a
-call with the changed inputs.
+harness permission. An approval with changed inputs also
+matches a call with the changed inputs.
 
 | Latest approval | Result |
 | --- | --- |
-| `refused` | The call fails with `<tool> was dismissed, so nothing was sent.`, followed by the recorded reason. Nothing is asked. |
-| `granted`, not spent | The call goes ahead, and the grant is spent. Where the person changed the inputs, the tool runs with the changed inputs, and the `tool.using` hook and the run's steps see them. |
+| `dismissed` | The call fails with `<tool> was dismissed, so nothing was sent.`, followed by the recorded reason. Nothing is asked. |
+| `approved`, not spent | The call goes ahead, and the grant is spent. Where the person changed the inputs, the tool runs with the changed inputs, and the `tool.using` hook and the run's steps see them. |
 | none, or spent | The task is put to a person with an approval. A tool call fails with `<tool> needs a person's approval before it runs, and they have been asked in their inbox. Nothing was sent. Stop here and end your turn: their answer comes back to you in this conversation.` A harness permission request cancels the turn, and the run waits for the decision. |
 
 - A grant is spent by one call. The next call asks again.
@@ -1105,7 +1105,7 @@ It is kept with the approval and never passed to the tool.
 | --- | --- |
 | With an intent | `Spotlight would like to <intent>.` |
 | Without one | `Spotlight would like to use <name>. <because>` |
-| Granted with changed inputs | `Spotlight asked to <intent>. You edited its inputs.`, with `use <name>` in place of a missing intent. |
+| Approved with changed inputs | `Spotlight asked to <intent>. You edited its inputs.`, with `use <name>` in place of a missing intent. |
 
 ## Chats
 
