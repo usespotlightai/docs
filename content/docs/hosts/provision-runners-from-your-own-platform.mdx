@@ -30,6 +30,9 @@ You need:
 - A platform that can start a container which reaches your Spotlight address
   over HTTPS.
 - An API key for each harness your lines use.
+- A runner image that holds those harnesses, built as in
+  [Install a harness in your runner image](/docs/hosts/install-a-harness-in-your-runner-image).
+  Push it to a registry that your platform can pull from.
 
 ## Create the pool
 
@@ -117,7 +120,7 @@ The body is JSON of type `work.provision`. Read these fields from `data`:
 | `runner.id` | Name the container or job after it. |
 | `runner.token` | Pass it as `SPOTLIGHT_TOKEN`. It is good for this one piece of work. |
 | `spotlightUrl` | Pass it as `SPOTLIGHT_URL`. |
-| `image` | The image to start. When it is `null`, start the image hosts use by default, `ghcr.io/usespotlightai/spotlight-runner:<release>`, where `<release>` is a Spotlight release tag. |
+| `image` | The image to start. When it is `null`, start your own default runner image: one built `FROM ghcr.io/usespotlightai/spotlight-runner:<release>` with the harnesses your stations use, where `<release>` is a Spotlight release tag. Spotlight's image holds no harness. |
 | `claimBy` | The container must have claimed the work by this time. |
 | `runner.egress` | When it is not `null`, pass `url` as `SPOTLIGHT_EGRESS_URL`, `credential` as `SPOTLIGHT_EGRESS_PROXY_CREDENTIAL` and `traffic` as `SPOTLIGHT_EGRESS_TRAFFIC`. |
 
@@ -195,7 +198,7 @@ the cause:
 | `not-allowed` | Spotlight's deployment does not allow outbound calls to the endpoint's host, or the URL is not `https`. With `Egress URL must be https.`, give the egress an `https` URL. |
 | `lapsed` | The endpoint accepted, but no runner claimed the work in time. Check that the container started and can reach `spotlightUrl`, or the egress when the call names one. |
 | `unusable` | Spotlight cannot open the pool's provision secret: set the secret again with a new `secret_version`. Or the pool's `provision.egress` names an egress that does not exist: correct it. |
-| `harness-missing` | The image does not have the station's harness installed. |
+| `harness-missing` | The image does not have the station's harness installed. Install it as in [Install a harness in your runner image](/docs/hosts/install-a-harness-in-your-runner-image). |
 
 ## Related
 

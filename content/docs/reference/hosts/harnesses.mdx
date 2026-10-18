@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Harnesses
-description: The agent CLIs Spotlight runs, how each is started and given a model and effort, and how a host finds which ones an image contains.
+description: The agent CLIs Spotlight runs, how each is installed, started and given a model and effort, and how a host finds which ones an image holds.
 ---
 
 A harness is the agent CLI a station runs. A station names one by its id in
@@ -23,6 +23,9 @@ Protocol (ACP), in `/workspace`, as the `agent` user.
 | Version probe | the bundled `claude` CLI's `--version` | `cursor-agent --version` | `codex-acp cli -V` |
 | Skills directory | `.claude/skills`, read by the harness | `.spotlight/skills`, listed in the briefing | `.spotlight/skills`, listed in the briefing |
 | Native settings format | JSON object | JSON object | `config.toml` text |
+
+Spotlight's runner image holds no harness. A team installs each harness in its
+own image, built `FROM` that image. See [Installation](#installation).
 
 A station names its harness; there is no default, and a station without one
 runs nothing. The work stations of the [built-in lines](/docs/reference/built-ins/built-in-lines)
@@ -76,6 +79,30 @@ A discovery command that fails, or does not finish within 15 seconds, lists no
 models. Model discovery runs behind an egress, which injects the host's harness
 keys into requests to the model endpoints.
 
+## Installation
+
+| | Claude Code | Cursor | Codex |
+| --- | --- | --- | --- |
+| Example Dockerfile | `claude-code.Dockerfile` | `cursor.Dockerfile` | `codex.Dockerfile` |
+| Installs | npm `@anthropic-ai/claude-code` and `@agentclientprotocol/claude-agent-acp` | Cursor's install script, from `https://cursor.com/install`, into `/opt/cursor` | npm `@agentclientprotocol/codex-acp` |
+| Executable on `PATH` | `claude-agent-acp` | `cursor-agent`, linked at `/usr/local/bin/cursor-agent` | `codex-acp` |
+| Build arguments | `CLAUDE_CODE_VERSION`, `CLAUDE_AGENT_ACP_VERSION` | none | `CODEX_ACP_VERSION` |
+| Credentials | `ANTHROPIC_API_KEY`, or `CLAUDE_CODE_OAUTH_TOKEN` from `claude setup-token` | `CURSOR_API_KEY` | `CODEX_API_KEY` or `OPENAI_API_KEY`. A ChatGPT sign-in is not supported. |
+
+The example Dockerfiles are in
+[`.docker/runner/examples`](https://github.com/usespotlightai/spotlight/tree/main/.docker/runner/examples)
+in the Spotlight repository. Each takes the build argument `BASE`, the image
+it is built on, with the default `ghcr.io/usespotlightai/spotlight-runner:latest`.
+A version argument has the default `latest`. An image built from one example
+can be the `BASE` of another, so that one image holds more than one harness.
+
+The `claude` and `codex` command lines alone do not count as installed.
+Model discovery and version probes run `sh`, `curl`, `jq` and, for Claude
+Code, `node`. Spotlight's runner image contains them. See
+[Install a harness in your runner image](/docs/hosts/install-a-harness-in-your-runner-image)
+for the steps, and [Harness keys](/docs/reference/hosts/host-configuration#harness-keys)
+for the credentials egress keeps.
+
 ## Installed harnesses
 
 A harness counts as installed in an image when its ACP executable
@@ -84,22 +111,31 @@ runs `spotlight runner harnesses '<json>'` in each image it serves, within 2
 minutes, and reports each installed harness with its models and version. The
 [Runners page](/docs/reference/app/web-app#workspace-pages) shows them.
 
-A run goes only to an image that contains its station's harness. If an image
-changes and no longer contains it, the run fails with
+A run goes only to an image that holds its station's harness. An image that
+holds no harness still runs change-stack checks, but no agent run. If an image
+changes and no longer holds the harness, the run fails with
 `Runner image <digest> no longer has the <harness> harness.`
+
+For each image that it can use and that holds no harness, the host logs
+`the runner image holds no harness, so it runs checks but no agent run; install a harness in an image built from it`.
+When all the images that a host can use hold no harness, the
+[Runners page](/docs/reference/app/web-app#workspace-pages) shows "None" in
+red under "Harnesses".
 
 ## Versions
 
 A harness's version is the one built into the runner image. The image digest
-pins it. The default image is built from `.docker/runner/Dockerfile` in the
-[Spotlight repository](https://github.com/usespotlightai/spotlight), with these
-build arguments. Cursor is installed at its latest release.
+pins it. To install a particular version, set the version build arguments of
+the example Dockerfile. Cursor's install script installs Cursor's latest
+release.
+
+Spotlight's runner image is built from `.docker/runner/Dockerfile` in the
+[Spotlight repository](https://github.com/usespotlightai/spotlight), with this
+build argument:
 
 | Argument | Default | Installs |
 | --- | --- | --- |
-| `CLAUDE_CODE_VERSION` | `latest` | `@anthropic-ai/claude-code` |
-| `CLAUDE_AGENT_ACP_VERSION` | `latest` | `@agentclientprotocol/claude-agent-acp` |
-| `CODEX_ACP_VERSION` | `latest` | `@agentclientprotocol/codex-acp` |
-| `TERRAFORM_VERSION` | `1.16.4` | Terraform | See
-[Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image)
-for an image with other versions.
+| `TERRAFORM_VERSION` | `1.16.4` | Terraform |
+
+See [Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image)
+for an image with a line's own tools.

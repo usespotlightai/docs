@@ -353,7 +353,7 @@ field names, as in `risesBy`, also for a line written in Terraform.
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `name` | string | required | `owner/name`. Each repository once per line. |
-| `image` | string | none | The runner image every station of the line runs in, as in `ghcr.io/acme/api-runner:main`. Without it, the host's default image. Lower case except the tag, at most 255 characters, with an optional tag or `@sha256:` digest. The image is built `FROM ghcr.io/usespotlightai/spotlight-runner`. |
+| `image` | string | none | The runner image every station of the line runs in, as in `ghcr.io/acme/api-runner:main`. Without it, the host's default image. Lower case except the tag, at most 255 characters, with an optional tag or `@sha256:` digest. The image is built `FROM ghcr.io/usespotlightai/spotlight-runner` and holds the harness of each station. |
 | `setup` | string | none | A command run in the checkout, as the agent, before each run's agent starts, and before a change stack check wherever a layer changes a lockfile. One line of at most 500 characters. |
 
 The repositories of one line name at most one distinct `image`. A read returns

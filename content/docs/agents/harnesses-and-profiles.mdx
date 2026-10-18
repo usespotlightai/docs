@@ -41,7 +41,7 @@ Claude Code, Codex and Cursor each come with their own command-line interface,
 flags and output. The runner does not deal with any of that. It speaks the
 Agent Client Protocol (ACP) to all three:
 Cursor's CLI speaks it directly, and Claude Code and Codex speak it through
-bridge programs installed in the runner image. Over that one protocol the runner
+bridge programs that are installed beside them in the runner image. Over that one protocol the runner
 starts a session, sends the briefing, streams the agent's output to the run's
 journal, passes on what a person says while the agent is still working, and
 hears the harness's permission requests.
@@ -76,6 +76,14 @@ installer puts only `spotlight` on the machine, and every run takes its
 harness from the image it starts in. Keeping harnesses in one place also
 removed a mismatch that existed when both the installer and the image
 installed an ACP bridge, each its own package.
+
+The image that Spotlight publishes holds no harness. It is a base: the
+`spotlight` program, the agent's user, and the tools that the harnesses need.
+Each team builds its own image on it, with the harness that its subscription
+covers, from an example that Spotlight gives for each harness
+([Install a harness in your runner image](/docs/hosts/install-a-harness-in-your-runner-image)).
+So the team, not Spotlight, chooses which harnesses its runs can use. An image
+without a harness still runs change-stack checks, which need no agent.
 
 It follows that the image decides which release of a harness a run gets, and
 the image digest is the only pin. Stations once had a setting of their own

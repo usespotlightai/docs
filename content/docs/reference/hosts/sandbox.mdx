@@ -11,17 +11,20 @@ gives the reasons.
 
 ## Runner image
 
-The default image is `ghcr.io/usespotlightai/spotlight-runner:<release>`.
-A line can name an image of its own, built `FROM` it. See
+Spotlight's runner image is `ghcr.io/usespotlightai/spotlight-runner:<release>`.
+It holds no harness. A team builds its own image `FROM` it with a harness, as in
+[Install a harness in your runner image](/docs/hosts/install-a-harness-in-your-runner-image).
+A host's default image is the first exact entry of its `SPOTLIGHT_RUNNER_IMAGE`.
+A line can name an image of its own. See
 [Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image).
+
+Spotlight's runner image contains:
 
 | Part | Value |
 | --- | --- |
 | Base | `debian:bookworm-slim` |
 | Packages | `git`, `jq`, `curl`, `ca-certificates`, `bash`, `unzip`, Node.js 20 |
 | Terraform | `1.16.4`, at `/usr/local/bin/terraform`, checked against HashiCorp's SHA-256 sums |
-| npm packages | `@anthropic-ai/claude-code`, `@agentclientprotocol/claude-agent-acp`, `@agentclientprotocol/codex-acp` |
-| Cursor | `cursor-agent`, installed under `/opt/cursor` and linked at `/usr/local/bin/cursor-agent` |
 | `spotlight` | `/usr/local/bin/spotlight` |
 | Agent user | `agent`, uid `2000`, shell `/bin/bash`, home `/home/agent` |
 | `/workspace` | owned by `agent`, mode `0700` |
@@ -30,8 +33,8 @@ A line can name an image of its own, built `FROM` it. See
 | `ENTRYPOINT` | `["spotlight", "runner"]` |
 
 The runner runs as root. The harness, setup commands and the agent's own
-commands run as `agent`. See [Harnesses](/docs/reference/hosts/harnesses) for what
-each harness package provides.
+commands run as `agent`. See [Harnesses](/docs/reference/hosts/harnesses#installation) for
+what each harness installs.
 
 ## Files
 

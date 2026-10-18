@@ -15,6 +15,8 @@ claims. Before you install one, have ready:
 - `git`, which the host uses to keep mirrors of the repositories runs check out.
 - An API key for the harness your lines use, such as an Anthropic key for
   Claude Code.
+- A runner image that holds that harness. Spotlight's runner image holds no
+  harness. You can build your own after you install the host.
 
 ## Install the host
 
@@ -43,6 +45,12 @@ The script ends with:
 spotlight host: serving https://app.usespotlight.ai: this machine shows on the workspace's Runners page once it reports
 ```
 
+If you did not give the script an image in `SPOTLIGHT_RUNNER_IMAGE`, it pulls
+Spotlight's runner image, `ghcr.io/usespotlightai/spotlight-runner:<release>`.
+Before the last line, it prints that this image holds no harness. The host
+runs change-stack checks, but no agent run, until it serves an image that
+holds a harness.
+
 If you install as yourself on Linux and the machine should keep serving after
 you log out, run the command the script prints:
 
@@ -53,6 +61,13 @@ loginctl enable-linger $USER
 If you want to run the host under your own supervisor instead of a service,
 add `SPOTLIGHT_NO_SERVICE=1` to the install command. The script then prints the
 command to start it.
+
+## Give the host a harness
+
+Build an image `FROM` Spotlight's runner image, with the harness your lines
+use, and make it the first entry of `SPOTLIGHT_RUNNER_IMAGE` in `host.env`.
+[Install a harness in your runner image](/docs/hosts/install-a-harness-in-your-runner-image)
+gives the steps.
 
 ## Give the host your harness key
 
@@ -111,7 +126,10 @@ If `/usr/local/bin` was writable when you installed, the binary is at
 Open **Settings** from the workspace menu, then **Runners**. The machine
 appears in its own row
 with its name, the pool it came through under **Serves**, and the harnesses its
-runner image contains. Its status reads **Idle** until it claims a run.
+runner images hold under **Harnesses**. Its status reads **Idle** until it claims a run.
+
+If **Harnesses** reads **None** in red, the host's images hold no harness. See
+[Check that it is served](/docs/hosts/install-a-harness-in-your-runner-image#check-that-it-is-served).
 
 If the machine does not appear within a minute, read the host's log:
 
@@ -129,4 +147,5 @@ token belongs to a pool that still exists and has not been rotated.
 - [Host settings](/docs/reference/hosts/host-configuration): every setting the
   host reads.
 - [Install script](/docs/reference/cli/install-script)
+- [Install a harness in your runner image](/docs/hosts/install-a-harness-in-your-runner-image)
 - [Why every run gets a fresh sandbox](/docs/hosts/why-every-run-gets-a-fresh-sandbox)
