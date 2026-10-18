@@ -11,17 +11,20 @@ gives the reasons.
 
 ## Runner image
 
-The default image is `ghcr.io/usespotlightai/spotlight-runner:<release>`.
-A line can name an image of its own, built `FROM` it. See
+Spotlight's runner image is `ghcr.io/usespotlightai/spotlight-runner:<release>`.
+It holds no harness. A team builds its own image `FROM` it with a harness, as in
+[Install a harness in your runner image](/docs/hosts/install-a-harness-in-your-runner-image).
+A host's default image is the first exact entry of its `SPOTLIGHT_RUNNER_IMAGE`.
+A line can name an image of its own. See
 [Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image).
+
+Spotlight's runner image contains:
 
 | Part | Value |
 | --- | --- |
 | Base | `debian:bookworm-slim` |
 | Packages | `git`, `jq`, `curl`, `ca-certificates`, `bash`, `unzip`, Node.js 20 |
 | Terraform | `1.16.4`, at `/usr/local/bin/terraform`, checked against HashiCorp's SHA-256 sums |
-| npm packages | `@anthropic-ai/claude-code`, `@agentclientprotocol/claude-agent-acp`, `@agentclientprotocol/codex-acp` |
-| Cursor | `cursor-agent`, installed under `/opt/cursor` and linked at `/usr/local/bin/cursor-agent` |
 | `spotlight` | `/usr/local/bin/spotlight` |
 | Agent user | `agent`, uid `2000`, shell `/bin/bash`, home `/home/agent` |
 | `/workspace` | owned by `agent`, mode `0700` |
@@ -30,8 +33,8 @@ A line can name an image of its own, built `FROM` it. See
 | `ENTRYPOINT` | `["spotlight", "runner"]` |
 
 The runner runs as root. The harness, setup commands and the agent's own
-commands run as `agent`. See [Harnesses](/docs/reference/hosts/harnesses) for what
-each harness package provides.
+commands run as `agent`. See [Harnesses](/docs/reference/hosts/harnesses#installation) for
+what each harness installs.
 
 ## Files
 
@@ -41,9 +44,10 @@ each harness package provides.
 | `/workspace/<repository>` | Each checkout, named by the repository's name without its owner. `acme/api` is at `/workspace/api`. |
 | `/workspace/.spotlight/attachments/<attachment id>/<name>` | Each file attached to the task, or to a message during the run. |
 | `/workspace/.spotlight/memory` | Every active team [memory](/docs/reference/glossary#memory) that applies to the run's team, line, station and repositories, as Markdown files named by handle, such as `M-12.md`. A memory kept for a repository is in `repositories/<owner>/<name>/`, or, when it bears on paths, in `repositories/<owner>/<name>/<path>/` once for each path. Any other memory is in `team/`, `line/` or `station/`. Each file contains the handle and kind, the memory, where it applies, and who kept it and from where; then the memory it replaced, if any, and the `spotlight trace` command for the task it came from, if any. Laid afresh each run; changing the files changes nothing the team remembers. When the team's memory cannot be read, the folder contains only `README.md`. A search's agent run gets no memory files. |
-| `/workspace/.spotlight/state` | The harness's state directory, `SPOTLIGHT_STATE_DIR`. Contains the harness's sessions and the files a [harness profile](/docs/reference/terraform/harness-profile) lays down. |
+| `/workspace/.spotlight/state` | The harness's state directory, `SPOTLIGHT_STATE_DIR`. Contains the harness's sessions, such as OpenCode's `opencode.db`, and the files a [harness profile](/docs/reference/terraform/harness-profile) lays down. |
 | `/workspace/.claude/skills` | Skills, for Claude Code. |
 | `/workspace/.spotlight/skills` | Skills, for Cursor and Codex. |
+| `/workspace/.opencode/skills` | Skills, for OpenCode. OpenCode also reads `.claude/skills` and `.agents/skills`. |
 | `/workspace/.spotlight/outcome.json` | Read if the agent never runs `spotlight handover`. Removed at the start of each run. See [Agent commands](/docs/reference/cli/agent-commands#without-a-handover). |
 | `/run/spotlight/handed.json` | The work the host handed the sandbox, mode `0400`. The runner deletes it after reading it. |
 | `/etc/spotlight/egress/authority.pem` | The run's egress certificate authority. On a runner of a push pool that names an egress, the authority of the runner's way out. |
@@ -113,13 +117,13 @@ harness starts has the failure code `unprepared`; from the harness start on,
 | Checkout | Each repository is cloned into `/workspace/<repository>`, from the host's mirror when there is one, or fetched when the checkout already exists. The run's branch or ref is checked out; a ref the checkout already has is not fetched again. A replay run checks out the commit the run it replays started from, and may only fetch: a push fails with `this run may only fetch`. A branch the checkout already has is fast-forwarded to what was pushed to it, unless it has also moved in the workspace or uncommitted changes block it. Runs as root. | 10 minutes for all checkouts | Fails the run: `The runner couldn't prepare the run. Error: prepare: <error>`, or `The runner couldn't prepare the run. Error: prepare: preparing <path> did not finish within 10m0s`. |
 | Starting point | A task's run records the archive it restored and the commit each checkout is at. See [Starting point](/docs/reference/app/tasks-runs-and-the-inbox#starting-point). | | Recorded under `start`. The run continues. |
 | Attachments | Each attachment is written to `.spotlight/attachments/<id>/<name>`. | | Fails the run: `The runner couldn't prepare the run. Error: fetch attachment <id>: <error>`. |
-| Skills | For a task's run, skills from earlier runs are removed from both skill directories, and the station's skills are written. | | Fails the run. |
+| Skills | For a task's run, skills from earlier runs are removed from every skill directory, and the station's skills are written. | | Fails the run. |
 | Memory | The memory folder from earlier runs is cleared, and every active memory that applies to the run is written under `.spotlight/memory`. | | Recorded. The run continues, with only a `README.md` in the folder saying the team's memory could not be read. |
 | Harness files | For a task's run, files a harness profile laid in an earlier run are removed from `.spotlight/state`, and the station's harness profile's files are written there. | | Fails the run. |
 | Ownership | `/workspace` is given to `agent`. Files `agent` already owns are left alone. | | Fails the run: `The runner couldn't prepare the run. Error: hand over workspace: <error>`. |
 | Setup | Each repository's `setup` runs in its checkout as `agent`, with `/bin/sh -c`. | 15 minutes per checkout | Recorded. The run continues. |
 | Egress check | A runner given `SPOTLIGHT_EGRESS_URL` tries a direct connection to the Spotlight address, and records `egress.checked`. See [Enforcement](/docs/reference/hosts/egress#enforcement). | 3 seconds | |
-| Harness start | The harness starts in `/workspace` as `agent`, over the Agent Client Protocol. The previous session is resumed, or a new session opens. A session the harness no longer has opens a new one. | | Fails the run: `The runner couldn't start the agent. Error: start agent: <error>`, `The runner couldn't start the agent. Error: resume the session: <error>` or `The runner couldn't start the agent. Error: open a session: <error>`. |
+| Harness start | The harness starts in `/workspace` as `agent`, over the Agent Client Protocol. The previous session is resumed, or a new session opens. A session the harness no longer has opens a new one. The harness command's session options, such as OpenCode's `effort`, are then set on the session. | | Fails the run: `The runner couldn't start the agent. Error: start agent: <error>`, `The runner couldn't start the agent. Error: resume the session: <error>`, `The runner couldn't start the agent. Error: open a session: <error>` or `The runner couldn't start the agent. Error: set the harness's <option> to <value>: <error>`. A session option marked optional that the harness refuses is logged, and the run continues without it. |
 | Prompt | The [briefing](#briefing) is sent. Each message a person sends during the turn cancels the turn and is sent next. When a turn ends, messages waiting are sent as the next prompt. With none, the run completes, or waits for a person's answer with the harness kept open. | | See below. |
 | Change stacks | For a station with `diffs: true`, each checkout's changes are sent for a change stack. A replay run sends them when its turn ends, before it completes. | | Skipped for that checkout. |
 | Archive | The workspace is packed and stored at the end of every turn. A replay run stores none. | 2 GiB packed, 8 GiB unpacked; 30 minutes to upload | Skipped. |

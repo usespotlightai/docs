@@ -118,6 +118,7 @@ Each follows `The sandbox's egress didn't start. Error: `.
 | `the control plane will not have this host; it stops claiming and lets its sandboxes finish` | Spotlight did not accept the host. It exits `3`. | [Exit codes](/docs/reference/cli/spotlight-command#exit-codes) |
 | `Missing, rotated or unknown pool token, or a workload the trust does not admit` | Spotlight did not accept the host's credential, with `401`. | [Admission](/docs/reference/terraform/runner-trust#admission), [Run hosts without a stored token](/docs/hosts/admit-hosts-through-a-runner-trust) |
 | `could not pull the runner image, so it runs the copy it has` | A pull failed, and the host has a copy of the image. | [Pull runner images from a private registry](/docs/hosts/pull-images-from-a-private-registry#check-that-it-pulls) |
+| `the runner image holds no harness, so it runs checks but no agent run; install a harness in an image built from it` | A warning. The image holds none of the harnesses Spotlight looks for. | [Installed harnesses](/docs/reference/hosts/harnesses#installed-harnesses), [Install a harness in your runner image](/docs/hosts/install-a-harness-in-your-runner-image) |
 | `another spotlight host already serves from <state>: <error>` | Another host uses the state directory. | [Validation](/docs/reference/hosts/host-configuration#validation) |
 | `spotlight host: <config path> is not ready to serve: <problems>` | `spotlight host install` found the host configuration invalid. | [spotlight host install](/docs/reference/cli/spotlight-command#spotlight-host-install) |
 | ``spotlight host: installing a service on <os> is not supported; run `spotlight host` under your own supervisor`` | `spotlight host install` on a platform other than Linux or macOS. | [spotlight host install](/docs/reference/cli/spotlight-command#spotlight-host-install) |
@@ -216,7 +217,8 @@ Every message goes to standard error, prefixed `spotlight host: `.
 | `could not download spotlight from <url>` | The binary download failed. | [Install script](/docs/reference/cli/install-script#messages) |
 | `could not download the checksum from <url>.sha256` | The checksum download failed. | [Install script](/docs/reference/cli/install-script#messages) |
 | `spotlight failed its checksum: expected <sha256>, got <sha256>` | The download does not match its checksum. | [Install script](/docs/reference/cli/install-script#messages) |
-| `could not pull <image>` | The image pull failed. | [Install script](/docs/reference/cli/install-script#messages) |
+| `could not pull <image>` | The pull of the first entry of `SPOTLIGHT_RUNNER_IMAGE` failed. | [Install script](/docs/reference/cli/install-script#messages) |
+| `<image> holds no harness, so this host runs checks but no agent run.` | The script installed Spotlight's runner image, which holds no harness. | [Install script](/docs/reference/cli/install-script#messages), [Install a harness in your runner image](/docs/hosts/install-a-harness-in-your-runner-image) |
 
 ## Inside a sandbox
 
@@ -467,6 +469,13 @@ these reasons.
 | `Image can't be inspected. Error: <error>` | The image could not be inspected. | [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-task-shows-in-progress-but-nothing-happens), [Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image) |
 | `Runner is on release <release>. Minimum version required: <release>` | The image's runner release is too old. | [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-task-shows-in-progress-but-nothing-happens) |
 | `Runner doesn't report its release number. Minimum version required: <release>` | The image's runner reports no release. | [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-task-shows-in-progress-but-nothing-happens) |
+
+A host whose usable images hold no harness reads "None" in red under
+"Harnesses". Its hover reads:
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `The images of this host hold no harness. The host runs checks, but no agent run. Install Claude Code, Codex, Cursor or OpenCode in an image built from the Spotlight runner image, and name it in SPOTLIGHT_RUNNER_IMAGE.` | Every image the host can use holds no harness. | [Install a harness in your runner image](/docs/hosts/install-a-harness-in-your-runner-image#check-that-it-is-served) |
 
 ### Replays
 

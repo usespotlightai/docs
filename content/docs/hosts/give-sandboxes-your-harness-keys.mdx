@@ -2,11 +2,13 @@
 type: how-to
 icon: SquarePen
 title: Give hosts your harness keys
-description: Hand a host the API keys its harnesses need, so agents reach Claude, OpenAI or Cursor models from their sandboxes.
+description: Hand a host the API keys its harnesses need, so agents reach their models from their sandboxes.
 ---
 
 Start from an installed host (see
-[Install a host](/docs/hosts/run-a-host)). Its
+[Install a host](/docs/hosts/run-a-host)) whose runner image holds your
+harness (see
+[Install a harness in your runner image](/docs/hosts/install-a-harness-in-your-runner-image)). Its
 sandboxes get their [harness keys](/docs/reference/glossary#harness-key), the
 API keys the harnesses reach their models with, from a file beside the host's
 configuration.
@@ -31,18 +33,21 @@ Use the variable for your harness:
 | Claude Code, with a Claude subscription | `CLAUDE_CODE_OAUTH_TOKEN` |
 | Codex | `OPENAI_API_KEY` or `CODEX_API_KEY` |
 | Cursor | `CURSOR_API_KEY` |
+| OpenCode | the key of the model's provider, for example `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`, or `OPENCODE_API_KEY` for OpenCode Zen |
 
 For a Claude subscription, run `claude setup-token` on your own computer and
 use the token it prints as `CLAUDE_CODE_OAUTH_TOKEN`.
 
 Use API keys or a token from `claude setup-token`. Logins that refresh their
 own tokens, such as Codex signed in with ChatGPT or Claude signed in through a
-browser, do not work through egress.
+browser, do not work through egress. OpenCode signed in with ChatGPT or GitHub
+Copilot does not work either.
 
 <Callout type="warn">
 
-`CURSOR_API_KEY` is not one of the keys egress keeps. It enters the sandbox as
-it is, where the agent can read it.
+`CURSOR_API_KEY` and `OPENCODE_API_KEY` are not keys that egress keeps. They
+enter the sandbox as they are, where the agent can read them. The same is true
+for the key of an OpenCode provider other than Anthropic or OpenAI.
 
 </Callout>
 
@@ -80,7 +85,8 @@ does not add the key. See [Limit where sandboxes can connect](/docs/security/lim
 
 ## Related
 
-- [Harnesses](/docs/reference/hosts/harnesses): what each harness reads.
+- [Harnesses](/docs/reference/hosts/harnesses#installation): what each harness
+  installs and reads.
 - [Harness keys](/docs/reference/hosts/host-configuration#harness-keys), for the keys
   egress keeps and the host each one is sent to.
 - [The sandbox is the security boundary](/docs/security/the-sandbox-is-the-security-boundary)

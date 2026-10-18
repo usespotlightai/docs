@@ -20,7 +20,8 @@ provide. Here that is your own computer, which Spotlight calls a host.
 By the end you will have:
 
 - created a workspace
-- set up your computer so agents can run on it
+- set up your computer so agents can run on it, with Claude Code in the
+  container image they run in
 - given a task to the first station of a line, and answered the question its
   agent asks you
 
@@ -131,13 +132,16 @@ looks like this, with the pool's token in place of `<pool token>`:
 curl -fsSL https://app.usespotlight.ai/api/install.sh | SPOTLIGHT_TOKEN=<pool token> sh
 ```
 
-The command downloads the `spotlight` program and the container image agents
-run in, then sets the program to keep running in the background. The image
+The command downloads the `spotlight` program and Spotlight's container
+image, then sets the program to keep running in the background. The image
 download takes a few minutes. The last line reads:
 
 ```text
 spotlight host: serving https://app.usespotlight.ai: this machine shows on the workspace's Runners page once it reports
 ```
+
+Above it, four lines say that the image holds no harness. You add Claude Code
+to it in the next section.
 
 If it stops with `no container runtime answered`, Docker, or whichever of the
 tools above you use, isn't running. Start it and run the command again.
@@ -148,9 +152,61 @@ tools above you use, isn't running. Start it and run the command again.
 Watch the last step, **Wait for the host to connect**. Within a minute of the
 command finishing, your computer connects and Spotlight opens the **Runners**
 page. Your computer appears in its own row, with **Pool my-computer-1** under
-**Serves**. Under **Harnesses** are the logos of the coding tools it can run,
-Claude Code among them. Its status reads
-**Idle**: it is connected and waiting for work.
+**Serves**. Its status reads **Idle**: it is connected and waiting for work.
+Under **Harnesses** it reads **None**, in red: the image holds no coding tool
+yet, so no agent can run.
+
+</Step>
+</Steps>
+
+## Add a harness to the image
+
+Spotlight's image holds no harness, so you build an image on top of it that
+holds Claude Code. Spotlight gives an example file for this.
+
+<Steps>
+<Step>
+
+In the terminal, download the example into a new folder:
+
+```bash
+mkdir -p ~/spotlight-runner && cd ~/spotlight-runner
+curl -fsSLO https://raw.githubusercontent.com/usespotlightai/spotlight/main/.docker/runner/examples/claude-code.Dockerfile
+```
+
+</Step>
+<Step>
+
+Build the image on the same release of Spotlight's image that the install
+command downloaded. The first command reads that image from the file the
+install command wrote:
+
+```bash
+base="$(sed -n 's/^SPOTLIGHT_RUNNER_IMAGE=//p' ~/.spotlight/host.env)"
+docker build --file claude-code.Dockerfile --build-arg BASE="$base" --tag my-runner:claude-code .
+```
+
+With Podman, write `podman` in place of `docker`. The build takes a few
+minutes. Near the end, its output names `my-runner:claude-code`.
+
+</Step>
+<Step>
+
+Tell Spotlight on your computer to use the new image, then restart it:
+
+```bash
+sed -i.bak 's|^SPOTLIGHT_RUNNER_IMAGE=.*|SPOTLIGHT_RUNNER_IMAGE=my-runner:claude-code|' ~/.spotlight/host.env
+~/.spotlight/bin/spotlight host install
+```
+
+If the install command printed `installed /usr/local/bin/spotlight`, run
+`/usr/local/bin/spotlight host install` instead.
+
+</Step>
+<Step>
+
+Go back to the **Runners** page. Within a minute, **Harnesses** shows the
+Claude Code logo in place of **None**.
 
 </Step>
 <Step>
@@ -304,8 +360,8 @@ Spotlight stops it. The task moves to Completed, the end of the line, and the
 
 ## What you built
 
-You created a workspace and set up your own computer to run its agents. You
-gave a task to Triage. Spotlight sent the work to your computer, which started
+You created a workspace and set up your own computer to run its agents, in an
+image that you built with Claude Code in it. You gave a task to Triage. Spotlight sent the work to your computer, which started
 a fresh container, and Claude Code worked on the task inside it using your
 Anthropic key. The agent asked you a question through the inbox, took your
 answer, and you closed the task by moving it to Completed.

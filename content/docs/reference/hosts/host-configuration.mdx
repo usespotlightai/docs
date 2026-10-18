@@ -42,7 +42,7 @@ Exactly one of `SPOTLIGHT_TOKEN`, or `SPOTLIGHT_TRUST` with
 | --- | --- | --- |
 | `SPOTLIGHT_CAPACITY` | `1` | Sandboxes the host runs at once. At least `1`. |
 | `SPOTLIGHT_ANSWER_WAIT` | `5m` | A Go duration. How long a sandbox whose run asked a person stays up for the answer, still using its place in `SPOTLIGHT_CAPACITY`, before the run is parked. `0` parks at once. Counts as part of `SPOTLIGHT_RUN_TIMEOUT`. |
-| `SPOTLIGHT_RUNNER_IMAGE` | `ghcr.io/usespotlightai/spotlight-runner:<release>`, or `:latest` for a binary built without a release | Comma-separated images the host serves. Each entry is an exact image reference, or a prefix ending in `*` such as `ghcr.io/acme/*`. The first exact entry is the default image, used by every line that names none. If no entry is exact, the built-in default is added. |
+| `SPOTLIGHT_RUNNER_IMAGE` | `ghcr.io/usespotlightai/spotlight-runner:<release>`, or `:latest` for a binary built without a release | Comma-separated images the host serves. Each entry is an exact image reference, or a prefix ending in `*` such as `ghcr.io/acme/*`. The first exact entry is the default image, used by every line that names none. If no entry is exact, the built-in default is added. The built-in default holds no harness; see [Install a harness in your runner image](/docs/hosts/install-a-harness-in-your-runner-image). |
 | `SPOTLIGHT_REGISTRY_CONFIG` | `$DOCKER_CONFIG/config.json`, else `~/.docker/config.json` | A Docker config file whose `auths` the host pulls with. Read on every pull. See [registry credentials](#registry-credentials). |
 | `SPOTLIGHT_RUN_TIMEOUT` | `6h` | A Go duration. A sandbox running longer is stopped and destroyed, and its run reported `timed-out`. |
 | `SPOTLIGHT_SANDBOX_ENV` | `sandbox.env` beside the config file | A file of variables every sandbox gets. A missing default file is ignored; a missing named file is an error. |
@@ -64,6 +64,12 @@ The sandbox environment, from `SPOTLIGHT_SANDBOX_ENV` and
 `SPOTLIGHT_ANSWER_WAIT`, and may
 not carry the pool token in any variable. The same applies to the egress
 environment.
+
+A run goes only to an image that holds its station's harness. An image that
+holds no harness runs change-stack checks only. For each image that it can
+use and that holds no harness, the host logs
+`the runner image holds no harness, so it runs checks but no agent run; install a harness in an image built from it`.
+See [Harnesses](/docs/reference/hosts/harnesses#installed-harnesses).
 
 ### Registry credentials
 
@@ -115,7 +121,7 @@ gives them a value, are kept by egress. The sandbox gets the stand-in
 | `OPENAI_API_KEY` | `api.openai.com` | `authorization: Bearer` |
 | `CODEX_API_KEY` | `api.openai.com` | `authorization: Bearer` |
 
-Any other variable, including `CURSOR_API_KEY`, enters the sandbox as it is.
+Any other variable, including `CURSOR_API_KEY` and `OPENCODE_API_KEY`, enters the sandbox as it is.
 
 ## Egress
 

@@ -1,0 +1,145 @@
+---
+type: how-to
+icon: SquarePen
+title: Install a harness in your runner image
+description: Build a runner image that holds Claude Code, Codex, Cursor or OpenCode, so your hosts can start agent runs.
+---
+
+Spotlight's runner image, `ghcr.io/usespotlightai/spotlight-runner:<release>`,
+holds no harness. A host that serves only that image runs change-stack checks,
+but no agent run. Build your own image `FROM` it, with the harness that your
+subscription covers, and let your hosts serve that image. You need Docker or
+Podman on the machine that builds the image, and access to each host's
+`host.env`.
+
+## Find the release your hosts run
+
+Open **Settings** from the workspace menu, then **Runners**. **Release** shows
+the release of each host. The install script also writes Spotlight's image at
+that release to `host.env`:
+
+```bash
+grep SPOTLIGHT_RUNNER_IMAGE ~/.spotlight/host.env
+```
+
+For a host installed as root, the file is `/etc/spotlight/host.env`. Use this
+release as `<release>` in the steps below.
+
+## Build the image
+
+The Spotlight repository has one example Dockerfile for each harness, in
+[`.docker/runner/examples`](https://github.com/usespotlightai/spotlight/tree/main/.docker/runner/examples):
+
+| Harness | Example | Installs |
+| --- | --- | --- |
+| Claude Code | `claude-code.Dockerfile` | `@anthropic-ai/claude-code` and `@agentclientprotocol/claude-agent-acp` |
+| Codex | `codex.Dockerfile` | `@agentclientprotocol/codex-acp` |
+| Cursor | `cursor.Dockerfile` | `cursor-agent`, from Cursor's install script |
+| OpenCode | `opencode.Dockerfile` | `opencode-ai`, major version 1 |
+
+Download the example for your harness into an empty directory, and build it
+with `BASE` set to Spotlight's image at your hosts' release. For Claude Code:
+
+```bash
+mkdir -p ~/spotlight-runner && cd ~/spotlight-runner
+curl -fsSLO https://raw.githubusercontent.com/usespotlightai/spotlight/main/.docker/runner/examples/claude-code.Dockerfile
+docker build --file claude-code.Dockerfile \
+  --build-arg BASE=ghcr.io/usespotlightai/spotlight-runner:<release> \
+  --tag ghcr.io/acme/spotlight-runner-claude-code:<release> .
+```
+
+Always set `BASE`. Without it, the example builds on `:latest`, which can be a
+different release from the one your hosts run. To pin a harness version, also
+set its build argument: `CLAUDE_CODE_VERSION` and `CLAUDE_AGENT_ACP_VERSION`
+for Claude Code, `CODEX_ACP_VERSION` for Codex, or `OPENCODE_VERSION` for
+OpenCode. The OpenCode argument is `1` by default, because Spotlight supports
+only OpenCode version 1. The other arguments are `latest` by default.
+
+To put more than one harness in one image, build the examples one on top of
+the other. Set `BASE` of the second build to the tag of the first:
+
+```bash
+curl -fsSLO https://raw.githubusercontent.com/usespotlightai/spotlight/main/.docker/runner/examples/codex.Dockerfile
+docker build --file codex.Dockerfile \
+  --build-arg BASE=ghcr.io/acme/spotlight-runner-claude-code:<release> \
+  --tag ghcr.io/acme/spotlight-runner:<release> .
+```
+
+If you write your own Dockerfile, obey these rules:
+
+- Build `FROM` Spotlight's runner image. Model discovery and version probes
+  need `sh`, `curl`, `jq` and, for Claude Code, `node`. The base image has
+  them.
+- Install as `root`, where every user's `PATH` finds the harness. The harness
+  runs as the `agent` user.
+- Install the ACP executable that Spotlight looks for: `claude-agent-acp`,
+  `codex-acp`, `cursor-agent` or `opencode`. The `claude` or `codex` command line alone is
+  not sufficient.
+
+To check that the image holds the harness, find its executable:
+
+```bash
+docker run --rm --entrypoint sh ghcr.io/acme/spotlight-runner-claude-code:<release> \
+  -c 'command -v claude-agent-acp'
+```
+
+The command prints the path of the executable. If it prints nothing, the
+harness is not on `PATH`.
+
+## Push the image
+
+If more than one machine serves the image, push it to a registry that your
+hosts can pull from:
+
+```bash
+docker push ghcr.io/acme/spotlight-runner-claude-code:<release>
+```
+
+If the registry is private, set up the hosts as in
+[Pull runner images from a private registry](/docs/hosts/pull-images-from-a-private-registry).
+A host on the machine that built the image can use it without a registry.
+
+## Let the hosts serve it
+
+Open the host's `host.env` and make your image the first entry of
+`SPOTLIGHT_RUNNER_IMAGE`, in place of Spotlight's image:
+
+```bash
+SPOTLIGHT_RUNNER_IMAGE=ghcr.io/acme/spotlight-runner-claude-code:<release>
+```
+
+The first exact entry is the default image, which every line that names no
+image runs in. Then [restart the host](/docs/hosts/run-a-host#restart-the-host).
+
+You can also give the image to the install script, as
+`SPOTLIGHT_RUNNER_IMAGE=<your image>` in the install command. The script pulls
+the image, so it must be in a registry. When you run the script again, it keeps
+the image that `host.env` names.
+
+Give the host the key or token for the harness, as in
+[Give hosts your harness keys](/docs/hosts/give-sandboxes-your-harness-keys).
+
+## Check that it is served
+
+Open **Settings** from the workspace menu, then **Runners**. In the host's row,
+**Harnesses** shows the logo of each harness that its images hold.
+
+If **Harnesses** reads **None** in red, the images that the host can use hold
+no harness. Hover over it for the reason. Check that the first entry of
+`SPOTLIGHT_RUNNER_IMAGE` is your image, and that the host was restarted. The
+host log also has the warning
+`the runner image holds no harness, so it runs checks but no agent run; install a harness in an image built from it`.
+
+## Rebuild for a new release
+
+A host cannot use an image whose runner is older than the release Spotlight
+needs. When your hosts move to a new release, build the image again with
+`BASE` at that release, and update the tag in `SPOTLIGHT_RUNNER_IMAGE`.
+
+## Related
+
+- [Harnesses](/docs/reference/hosts/harnesses): what Spotlight looks for in an
+  image, and what each harness reads.
+- [Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image):
+  add a line's toolchain and dependencies to the image.
+- [Host settings](/docs/reference/hosts/host-configuration#sandboxes)

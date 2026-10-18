@@ -12,27 +12,35 @@ to each host's `host.env`.
 
 ## Build the image
 
-Build `FROM` Spotlight's runner image, at the release your hosts run. Keep
-these rules:
+Build `FROM` Spotlight's runner image at the release your hosts run, or `FROM`
+an image that you built on it. Keep these rules:
 
 - Build as `agent` (uid 2000), or hand what you bake to `agent`. Switch back to
   `root` at the end, since the runner starts as root.
 - Bake each repository's checkout at `/workspace/<name>`, where `<name>` is the
   repository's name without its owner. A run then only fetches and switches
   branches.
-- Keep the harnesses the base image contains. A run goes only to an image that
-  contains its station's harness.
+- Install the harness that the line's stations use, as root. Spotlight's
+  runner image holds no harness, and a run goes only to an image that holds
+  its station's harness. See
+  [Install a harness in your runner image](/docs/hosts/install-a-harness-in-your-runner-image).
 
-For a Node.js repository `acme/web`:
+For a Node.js repository `acme/web`, with Claude Code:
 
 ```dockerfile
 FROM ghcr.io/usespotlightai/spotlight-runner:<release>
+RUN npm install -g @anthropic-ai/claude-code @agentclientprotocol/claude-agent-acp \
+    && npm cache clean --force
 USER agent
 RUN git clone https://github.com/acme/web /workspace/web
 WORKDIR /workspace/web
 RUN npm ci
 USER root
 ```
+
+The examples below leave out the harness. Add its install step after `FROM`,
+or build `FROM` an image that already holds it, such as
+`ghcr.io/acme/spotlight-runner-claude-code:<release>`.
 
 For a Go repository `acme/api`, with Go copied in from its official image:
 
@@ -127,14 +135,16 @@ there, separated by a comma. An entry is an exact image, or a prefix ending in
 `*` that admits every image under it:
 
 ```bash
-SPOTLIGHT_RUNNER_IMAGE=ghcr.io/usespotlightai/spotlight-runner:<release>,ghcr.io/acme/*
+SPOTLIGHT_RUNNER_IMAGE=ghcr.io/acme/spotlight-runner-claude-code:<release>,ghcr.io/acme/*
 ```
 
 Keep the first entry as it is: the first exact image is the default for lines
 that name none. Then [restart the host](/docs/hosts/run-a-host#restart-the-host).
 
-Reinstalling resets this line to the default image, so add your entry back
-after running the install script again.
+When you run the install script again, it keeps this line if its first entry
+is your own image. If the first entry is Spotlight's runner image, the script
+replaces the whole line with that image at the release it installs, so add your
+entries back.
 
 ## Check that it is served
 
