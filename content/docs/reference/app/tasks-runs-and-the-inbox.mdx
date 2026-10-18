@@ -5,7 +5,7 @@ title: Tasks, runs and the inbox
 description: Task fields and states, notes, handovers and moves, run states, failure codes, configs, spend, a station's judge and alerts, station outcomes, the inbox and its notices, grades, memory reviews, station alerts, approvals, chats and attachments.
 ---
 
-A task stands at one station of a line. Runs work it; people answer it from the
+A task is at one station of a line. Runs work it; people answer it from the
 inbox. The terms are defined in the [glossary](/docs/reference/glossary).
 
 ## Tasks
@@ -16,7 +16,7 @@ inbox. The terms are defined in the [glossary](/docs/reference/glossary).
 | --- | --- |
 | Title | Up to 200 characters. Fixed once the task is created. |
 | Description | Markdown, up to 20,000 characters. Optional. Fixed once the task is created. |
-| Station | The station the task stands at. |
+| Station | The task's current station. |
 | Assignee | The person whose inbox the task's conversations reach. A task created by a person is assigned to them. |
 | Raised by | The person who created the task, if a person did. |
 | Attachments | Files given with the task. See [Attachments](#attachments). |
@@ -37,7 +37,7 @@ whether it is finished.
 | State | Condition | Board label |
 | --- | --- | --- |
 | Awaiting review | The latest `asked` note has no later `answered` or `passed` note. | Waiting for you |
-| Running | A run holds the task, queued or claimed. | In progress |
+| Running | The task has a current run, queued or claimed. | In progress |
 | Finished | The task was moved to the completed station, or its run declared `done`. | none |
 | Idle | None of the above. | none |
 
@@ -59,7 +59,7 @@ trail, and a note's words never change.
 | `said` | A person says something to a running run, a happening arrives that leaves the task where it is, or a different failure arrives while the task awaits review. |
 
 Each note has a voice, `station`, `person` or `world` (a happening), and a
-form: `words`, `setup`, `settled`, `approval`, `failure` or `connection`.
+form: `words`, `setup`, `resolved`, `approval`, `failure` or `connection`.
 
 A conversation runs from an `asked` note to the next `passed` note. It is open
 until that `passed` note is written.
@@ -74,7 +74,7 @@ without regard to case.
 | --- | --- | --- |
 | a station key | The station is on the line, is not the current station, has a harness, and the current station passes to it. | The task moves to the back of that station with a `passed` note, its revision goes up, and a run starts there. |
 | `review` | Always. | An `asked` note is written and the task awaits review. An unassigned task is assigned to the person who raised it. |
-| `done` | The current station has `ends: true`. | The task is finished at the station where it stands, with a `passed` note, and its revision goes up. |
+| `done` | The current station has `ends: true`. | The task is finished at its current station, with a `passed` note, and its revision goes up. |
 
 Any other ending is handled as `review`, with one of these notes:
 
@@ -83,28 +83,28 @@ Any other ending is handled as `review`, with one of these notes:
 | No declaration | `The run finished without saying where the task should go next.` |
 | No outcome reported | `The run ended without reporting an outcome.` |
 | A key that is not a station on the line | `The run asked for station "<key>". This line has no such station.` |
-| The station the task stands at | `The run asked for station "<key>". The task already stands there.` |
+| The task's current station | `The run asked for station "<key>". The task is already there.` |
 | A station with no harness | `The run asked for station "<key>". Nothing runs there to take up the task.` |
 | A station the current one does not pass to | `The run asked for station "<key>". Work does not pass there from the task's station.` |
 | `done` where the line does not end | `The run said the work is done. The task is not at the end of its line.` |
 | The run failed | `The run failed: <message>`, with a failure. See [Failure codes](#failure-codes). |
 | The runner was lost, or the host stopped the sandbox at its run timeout, on the last attempt | `Spotlight gave up on the run after <n> attempts. The run did not finish.`, with the failure `runner-lost` or `timed-out`. |
 | The run was stopped | `A person stopped the run. The task is back with you.` |
-| A hook on `handover.giving` refused it | The hook's reason, then `The run said: <note>`. See [`spotlight_hook`](/docs/reference/terraform/hook). |
+| A hook on `handover.giving` denied it | The hook's reason, then `The run said: <note>`. See [`spotlight_hook`](/docs/reference/terraform/hook). |
 
-If a reaction was held back while the run held the task, every ending other
-than a station key moves the task to the latest held-back station instead of
-the ending above. So does a hook stopped for looping while a run holds the
-task: the run is let go, and the `passed` note carries the hook's failure. See
+If a reaction became a deferred move while the run worked on the task, every
+ending other than a station key moves the task to the station of the latest
+deferred move instead of the ending above. So does a hook stopped for looping
+while the task has a current run: the run is let go, and the `passed` note carries the hook's failure. See
 [Moves](#moves).
 
 ## Moves
 
 | Mover | How | Placed | Effect |
 | --- | --- | --- | --- |
-| Person | Dragging on the board, the selection bar's "Move to", or the task's "Station" property. Only from the backlog to a work station, from a work station to the backlog, from anywhere to the completed station, or within one station. Any other move is refused with `422` and `Task cannot move from <from> to <to>. <reason>`, where `<reason>` is `A completed task stays completed.` or `Only runs move a task between work stations.` | Below the task it is dropped under (`afterTaskId`), or at the top. | A `passed` note `Moved to <Station>.` is written. |
-| Reaction | A happening that a line's reaction names, when no run holds the task. See [`spotlight_line`](/docs/reference/terraform/line). | At the top of the station. | A `passed` note in the world voice, carrying what the happening said. |
-| Held-back reaction | The run that held the task when a reaction was held back ends other than by passing the task on. | At the top of the station. | A `passed` note in the station voice, `Moved to <Station> when the run ended. An event arrived while the run worked.`, followed by the run's note if it gave one; for a failure or a lost runner, that ending's note with its failure; for a missing outcome, that ending's note; for a console stop, `A person stopped the run.` |
+| Person | Dragging on the board, the selection bar's "Move to", or the task's "Station" property. Only from the backlog to a work station, from a work station to the backlog, from anywhere to the completed station, or within one station. Any other move is denied with `422` and `Task cannot move from <from> to <to>. <reason>`, where `<reason>` is `A completed task stays completed.` or `Only runs move a task between work stations.` | Below the task it is dropped under (`afterTaskId`), or at the top. | A `passed` note `Moved to <Station>.` is written. |
+| Reaction | A happening that a line's reaction names, when the task has no current run. See [`spotlight_line`](/docs/reference/terraform/line). | At the top of the station. | A `passed` note in the world voice, carrying what the happening said. |
+| Deferred move | The run that worked on the task when a reaction became a deferred move ends other than by passing the task on. | At the top of the station. | A `passed` note in the station voice, `Moved to <Station> when the run ended. An event arrived while the run worked.`, followed by the run's note if it gave one; for a failure or a lost runner, that ending's note with its failure; for a missing outcome, that ending's note; for a console stop, `A person stopped the run.` |
 
 A move to another station:
 
@@ -116,27 +116,27 @@ A move to another station:
 
 A person who moves an unassigned task from the backlog to a work station becomes
 its assignee. A person's move names the task's current revision; a stale
-revision is refused with `409`. A move to the station the task already stands
+revision fails with `409`. A move to the station the task is already
 at only reorders it.
 
 When a happening finds a task, the line decides one of these outcomes:
 
 | Outcome | Condition | Effect |
 | --- | --- | --- |
-| nothing | The task stands at the completed station, or none of the other outcomes applies. | None. |
-| moves | A reaction for the happening, from this station or from any, leads to another station, and no run holds the task. | The task moves there. |
-| held back | As for moves, but a run holds the task, queued, claimed, waiting or parked, and the station is not the completed station. | A `said` note `Heard while a run held the task. If the run does not pass the task on, the task moves to <Station> when the run ends.`, followed by what the happening said. The run is told, and keeps the task. A later `passed` note, or a later `asked` note other than an approval, drops held-back moves; a later `stays` outcome does not. |
-| interrupts | As for moves, but a run holds the task and the station is the completed station, and the task does not await a person's answer to a question (a pending approval does not count). | The run ends as for a person's move, and its later handover is ignored. The task is put to its assignee, or else the person who raised it, with an `asked` note in the world voice: `<What happened> while <Station> was working. Close the task, or reply to carry on.`, where `<What happened>` is the happening's text without its final full stop, and `its station` takes the place of `<Station>` when the station is not known. |
-| notes while waiting | As for interrupts, but the task already awaits a person's answer to a question. | A `said` note in the world voice, `<What happened> while <Station> was waiting for an answer. Close the task, or reply to carry on.`, added to the open conversation, with `its station` when the station is not known. The run keeps the task, and earlier held-back moves are cancelled. |
+| nothing | The task is at the completed station, or none of the other outcomes applies. | None. |
+| moves | A reaction for the happening, from this station or from any, leads to another station, and the task has no current run. | The task moves there. |
+| deferred move | As for moves, but the task has a current run, queued, claimed, waiting or parked, and the station is not the completed station. | A `said` note `Heard while a run worked on the task. If the run does not pass the task on, the task moves to <Station> when the run ends.`, followed by what the happening said. The run is told, and keeps the task. A later `passed` note, or a later `asked` note other than an approval, drops deferred moves; a later `stays` outcome does not. |
+| interrupts | As for moves, but the task has a current run and the station is the completed station, and the task does not await a person's answer to a question (a pending approval does not count). | The run ends as for a person's move, and its later handover is ignored. The task is put to its assignee, or else the person who raised it, with an `asked` note in the world voice: `<What happened> while <Station> was working. Close the task, or reply to carry on.`, where `<What happened>` is the happening's text without its final full stop, and `its station` takes the place of `<Station>` when the station is not known. |
+| notes while waiting | As for interrupts, but the task already awaits a person's answer to a question. | A `said` note in the world voice, `<What happened> while <Station> was waiting for an answer. Close the task, or reply to carry on.`, added to the open conversation, with `its station` when the station is not known. The run keeps the task, and earlier deferred moves are cancelled. |
 | answers | No reaction leads to another station, the task awaits review, and the happening carries a person's words. | An `answered` note; the run that asked carries on, or else a run starts at the same station. |
-| stays | A reaction applies and leads to the station the task stands at, and the happening does not answer. | A `said` note. |
+| stays | A reaction applies and leads to the task's current station, and the happening does not answer. | A `said` note. |
 
 ## Runs
 
 A run is one execution of a harness, for a task at a station or for a chat. A
-replay run, which runs a past task run again under a candidate config, holds no
+replay run, which runs a past task run again under a candidate config, has no
 task and is described in [Replays](/docs/reference/app/replays#replay-runs). A
-search's agent run, which proposes candidates, holds no task either; see
+search's agent run, which proposes candidates, has no task either; see
 [The search's agent run](/docs/reference/app/searches#the-searchs-agent-run).
 
 ### Run states
@@ -144,9 +144,9 @@ search's agent run, which proposes candidates, holds no task either; see
 | State | Meaning | Final |
 | --- | --- | --- |
 | `queued` | Waiting for a runner. | no |
-| `claimed` | A runner holds it under a 60-second lease that the runner renews. | no |
-| `waiting` | The run asked a person and waits for the answer. Its runner still holds it and keeps the sandbox, for up to the host's `SPOTLIGHT_ANSWER_WAIT`. | no |
-| `parked` | The run asked a person, and its runner let the sandbox go; no runner holds it. An answer puts it back in the queue. | no |
+| `claimed` | A runner has a 60-second lease on it, and the runner renews the lease. | no |
+| `waiting` | The run asked a person and waits for the answer. Its runner still has the lease on it and keeps the sandbox, for up to the host's `SPOTLIGHT_ANSWER_WAIT`. | no |
+| `parked` | The run asked a person, and its runner let the sandbox go; no runner has a lease on it. An answer puts it back in the queue. | no |
 | `completed` | Ended without a failure. A stopped run ends here. | yes |
 | `failed` | Ended with a failure code. | yes |
 | `superseded` | Withdrawn before it started, or failed after its task had moved on. | yes |
@@ -174,7 +174,7 @@ why (optional)`. See [Approvals](#approvals).
 | --- | --- | --- |
 | | `queued` | A task or chat is handed to a run. |
 | `queued` | `claimed` | A runner that meets the run's placement claims it, and no other run for the same task is claimed or waiting. |
-| `queued` | `failed` | The station gives what cannot be given: a catalog item that does not exist or that the plan does not include, or a harness profile the team does not hold (`refused`). A push pool could not provision a runner (`unprovisioned`). |
+| `queued` | `failed` | The station gives what cannot be given: a catalog item that does not exist or that the plan does not include, or a harness profile the team does not have (`refused`). A push pool could not provision a runner (`unprovisioned`). |
 | `queued` | `superseded` | The task moved to another station or was deleted. |
 | `claimed` | `queued` | The lease lapsed, or the host stopped the sandbox at its run timeout (`timed-out`), no stop was asked for, and the run has had fewer than 3 attempts. Or its `run.starting` hooks could not be asked, and the run is handed back to wait. |
 | `claimed` | `waiting` | The turn ended cleanly with the task put to a person, and the runner reports the workspace stored for the turn. Only a task's run waits; a chat run never does. |
@@ -184,15 +184,15 @@ why (optional)`. See [Approvals](#approvals).
 | `parked` | `queued` | The person answers. The run is queued as its next attempt, and restores the stored workspace wherever it is claimed. |
 | `waiting`, `parked` | `completed` | The task is moved or deleted, or the run is stopped. |
 | `claimed` | `completed` | The runner reports an outcome without a failure, or the run is stopped, or its lease lapses after it was asked to stop. |
-| `claimed` | `failed` | The harness failed (`exited`), or the run failed before its harness started (`unprepared`). A hook on `run.starting` refused it (`refused`). Its hooks could not be asked after the last hand-back (`hooks-unanswered`). Its lease lapsed on the last attempt, and no stop was asked for (`runner-lost`). Its host stopped it at its run timeout on the last attempt, and no stop was asked for (`timed-out`). |
+| `claimed` | `failed` | The harness failed (`exited`), or the run failed before its harness started (`unprepared`). A hook on `run.starting` denied it (`refused`). Its hooks could not be asked after the last hand-back (`hooks-unanswered`). Its lease lapsed on the last attempt, and no stop was asked for (`runner-lost`). Its host stopped it at its run timeout on the last attempt, and no stop was asked for (`timed-out`). |
 | `failed` | `superseded` | The run's task has moved on. |
 
-Words said to a run at the station where its task stands idle, when that
+Words said to a run at the station where its task is idle, when that
 station has a harness, start a new run there that resumes the station's
-session. Words said to a run whose task has left its station are refused with
+session. Words said to a run whose task has left its station fail with
 `409`, and words from anyone but the task's assignee with `404`.
 Only a claimed, waiting or parked run can be stopped. The web app offers Stop
-only while a run is claimed. Attempts a run spent parked do not count toward
+only while a run is claimed. Attempts a run spent parked do not count in
 the 3. Only the task's assignee may stop a run or say
 something to it. See [Steer or stop a run](/docs/runs/steer-or-stop-a-run).
 
@@ -201,14 +201,14 @@ something to it. See [Steer or stop a run](/docs/runs/steer-or-stop-a-run).
 | When | Placeholder | Accessible name |
 | --- | --- | --- |
 | The run waits on a person's answer to a question that is not an approval. | `Answer the question to continue the run…` | `Answer <Station>` |
-| The task stands at the run's station with nothing running and no open question, and the station has a harness. Words start a new run there. | `Say what to change. <Station> starts again…` | `Send it back to <Station>` |
+| The task is at the run's station with nothing running and no open question, and the station has a harness. Words start a new run there. | `Say what to change. <Station> starts again…` | `Send it back to <Station>` |
 | Otherwise. | `Say something…` | `Say something to <Station>` |
 
 The "+" button, "Attach files", adds files, and so does dropping or pasting
 them on the composer. Images show above the text; other files show by name
 in the text. The composer shows the station's harness, model and effort and
 the line's repositories, and none of them can be changed there. While a
-runner holds the run and the composer is empty, "Send" becomes "Stop".
+runner has a lease on the run and the composer is empty, "Send" becomes "Stop".
 
 Once the task has left the run's station, the composer is replaced by
 `The task has moved to another station. Messages here reach no one.` A replay
@@ -221,7 +221,7 @@ run and a search's agent run have the composer turned off, with
 | --- | --- | --- |
 | `exited` | The runner reported that the run failed once its harness had started, or the harness did not start. | no |
 | `unprepared` | The run failed before its harness started: its workspace, checkouts, attachments, skills or harness files could not be made ready, or its host could not start a sandbox with the line's image and its egress. | no |
-| `refused` | The run could not be given what its station names, or a hook refused its start. | no |
+| `refused` | The run could not be given what its station names, or a hook denied its start. | no |
 | `unprovisioned` | A push pool did not provision a runner for it. | no |
 | `hooks-unanswered` | Its `run.starting` hooks could not be asked. | yes |
 | `runner-lost` | Its runner stopped renewing the lease. | yes |
@@ -248,9 +248,9 @@ for more than one reason, the reasons are joined with `; `.
 
 | Message | Cause |
 | --- | --- |
-| `Runner image <image> can't be pulled. Error: <error>` | The host could not pull the line's image and holds no copy of it. Unreadable registry credentials fail the pull even when the host holds a copy, unless the image is named by digest or the copy has no registry digest. Code `unprepared`. |
-| `Runner image <image> is refused. <reason>` | The host does not serve the image. The reasons are those the Runners page shows for the image. Code `unprepared`. |
-| `Runner image <digest> no longer holds the <harness> harness.` | The image changed and lost the station's harness. Code `unprepared`. |
+| `Runner image <image> can't be pulled. Error: <error>` | The host could not pull the line's image and has no copy of it. Unreadable registry credentials fail the pull even when the host has a copy, unless the image is named by digest or the copy has no registry digest. Code `unprepared`. |
+| `Runner image <image> is unavailable. <reason>` | The host does not serve the image. The reasons are those the Runners page shows for the image. Code `unprepared`. |
+| `Runner image <digest> no longer has the <harness> harness.` | The image changed and lost the station's harness. Code `unprepared`. |
 | `The sandbox's egress didn't start. Error: <error>` | See [Egress start failures](/docs/reference/hosts/egress#egress-start-failures). Code `unprepared`. |
 | `The runner couldn't prepare the run. Error: prepare: git clone <path>: <error>: <output>` | A repository could not be cloned. Code `unprepared`. |
 | `The runner couldn't prepare the run. Error: prepare: preparing <path> did not finish within 10m0s` | The checkouts took longer than their time limit. Code `unprepared`. |
@@ -279,10 +279,10 @@ the phase each runner message comes from.
 ### Config
 
 When a task's run is queued at a station with a harness, it records the
-station's config as it stands then. A replay run records its candidate's
+station's config at that time. A replay run records its candidate's
 config. A chat's run records none.
 
-| Part | Holds |
+| Part | Contains |
 | --- | --- |
 | Prompt | The station's prompt. |
 | Harness, model, effort | As the run was given them. |
@@ -339,7 +339,7 @@ Once a run has ended and its journal has been digested, Spotlight records
 what it spent. `GET /api/teams/{teamId}/runs/{runId}/conversation` returns it
 under `spend`:
 
-| Field | Holds |
+| Field | Contains |
 | --- | --- |
 | `cost`, `currency` | What the run cost. |
 | `inputTokens` | Fresh input tokens. |
@@ -372,7 +372,7 @@ What each harness reports:
 
 When a task's run ends at a station with a
 [judge](/docs/reference/terraform/line#judge-fields), the run is judged if all
-of these hold:
+of these are true:
 
 - It ended Completed or Stopped. Failed, abandoned, withdrawn and superseded
   runs are not judged.
@@ -403,7 +403,7 @@ not read is dropped.
 
 A judge with claims answers each claim, in order, met or not, with 1 to 3
 reasons of its own in the same form. It is told that a claim the steps and
-hunks do not show to hold is not met. Its score is the share of claims met,
+hunks do not show to be true is not met. Its score is the share of claims met,
 and each claim keeps its mark and its reasons.
 
 A score is recorded against the rubric version: the SHA-256 of the rubric, the
@@ -412,7 +412,7 @@ claims and the pass share together.
 | Failure | When | Tried again |
 | --- | --- | --- |
 | `no-evidence` | The run left no steps and no hunks. | no |
-| `refused` | The model refused to answer. | up to 4 attempts, from 30 seconds to 10 minutes apart |
+| `request-failed` | The request to the model failed. | up to 4 attempts, from 30 seconds to 10 minutes apart |
 | `unreadable` | The answer could not be read, gave more than 5 reasons, or a score off the scale. With claims: it did not answer each claim once, in order, or gave a claim no reasons or more than 3. | up to 3 attempts, from 30 seconds to 5 minutes apart |
 | `ungrounded` | Half the reasons or fewer cited what the judge read. With claims: half or fewer of any one claim's reasons. | up to 3 attempts, from 30 seconds to 5 minutes apart |
 | `errored` | Another error. | up to 4 attempts, from 30 seconds to 10 minutes apart |
@@ -442,7 +442,7 @@ measure decides whether the judge is trusted; the statistics are shown under
 | 1 to 5 | Spearman's ρ, with tied ranks averaged | "Pearson correlation"; "Spearman correlation"; "Mean absolute error": the mean absolute difference between the two scores, in points on the scale; "Root mean square error": the square root of the mean squared difference. |
 | Claims | Cohen's kappa over every claim's marks, pooled across claims | "Cohen's kappa", "F1 score" and "Overall agreement", over the pooled claim marks, with Met in place of Yes. For each claim, its own Cohen's kappa, agreed share and count of runs. |
 
-On claims, a run counts once toward the runs with both scores, however many
+On claims, a run counts once in the runs with both scores, however many
 claims it has. Statistics are shown to two decimals, and "Overall agreement" as
 a percentage. A statistic that cannot be worked out reads `–`.
 
@@ -468,7 +468,7 @@ absolute error" and "Root mean square error" have no reading.
 
 The judge's scores show only when the station's current rubric is trusted:
 
-| Standing | When | Reads |
+| Calibration | When | Reads |
 | --- | --- | --- |
 | Trusted | At least 10 runs have both scores, and the measure is at least the judge's `trust`. | `Trusted. <measure>: <value> over <n> runs. Minimum required: <trust>` |
 | Hidden: too few runs | Fewer than 10 runs have both scores. | `Hidden until more runs have scores from both the judge and people. Runs so far: <n>` |
@@ -481,12 +481,12 @@ are shown to two decimals.
 
 While the judge is not trusted, a run's score and its reasons are both hidden.
 A score given under an earlier rubric version stays hidden, whatever the
-standing. A new rubric version starts with no runs that have both scores.
+calibration. A new rubric version starts with no runs that have both scores.
 
 The station's view on Insights shows, under "How far to trust the judge", the
-measure with the standing, then how many of the station's latest 200 ended
+measure with the calibration, then how many of the station's latest 200 ended
 runs, less those withdrawn, have "Both scores", "Judge only", "People only"
-and "Neither", each with `<share> of the last <n>`. A trusted judge's standing there reads
+and "Neither", each with `<share> of the last <n>`. A trusted judge's calibration there reads
 `Trusted. Minimum required: <trust>`. With no judged runs, it reads "No judged
 runs yet" and
 `Judge agreement with people shows here per rubric once the judge scores runs.`
@@ -521,7 +521,7 @@ Otherwise "Judge" shows `<sample>`, as a percentage, with "of runs judged".
 Then, when the agreement value and `trust` are both known, the measure and its
 value on a bar marked at `trust`; see [Agreement](#agreement). Under it, a trusted
 judge reads `Trusted above <trust> over <n> runs`, and any other judge its
-standing. When the agreement cannot be read, the part reads
+calibration. When the agreement cannot be read, the part reads
 `Trusted from <trust> agreement`. A judge with claims lists them under
 "Claims", numbered, then `A run passes when it meets every claim.`, or
 `A run passes when it meets at least <share> of its claims.` "Show rubric"
@@ -574,7 +574,7 @@ is shown when the station's current rubric is trusted and the score was given
 under it. While it is shown, the run's row in the trace carries it. Selecting
 the row shows "Judge" in the run's details: "Score", the judge's score or
 `Hidden`, and "People", people's grades, with `(you)` beside the reader's
-own. While the judge is not trusted, its standing is shown beneath. A
+own. While the judge is not trusted, its calibration is shown beneath. A
 shown score lists its reasons under it, each with the steps and hunks it
 cites, as `Step <n>` or the file's name and hunk header. Selecting a step shows
 `Step <n>` with its tool or kind, and its text; selecting a hunk shows its
@@ -596,12 +596,12 @@ details, under the judge's score:
 | Part | Shows |
 | --- | --- |
 | "Egress" | "Enforcement": `Enforced`, `Not enforced` or `Not checked`. Hovering over `Enforced` or `Not enforced` explains it, starting `The runner reported that`. The state is what the runner in the sandbox reported, and a sandbox not under the runner's control can report `Enforced`. See [Enforcement](/docs/reference/hosts/egress#enforcement). "Connections": how many connections egress recorded. |
-| "Destinations" | One row for each destination and outcome: the host, with `:<port>` when the port is not `443`, and the bytes in and out together, or `Blocked` or `Failed`. Blocked and failed rows come first, then the rows with the most bytes. Hovering over a row shows the host, `Passed through`, `Secret added`, `Blocked` or `Failed`, the number of connections, and `<bytes> out · <bytes> in`. |
+| "Destinations" | One row for each destination and outcome: the host, with `:<port>` when the port is not `443`, and the bytes in and out together, or `Blocked` or `Failed`. Blocked and failed rows come first, then the rows with the most bytes. Hovering over a row shows the host, `Passthrough`, `Injected`, `Blocked` or `Failed`, the number of connections, and `<bytes> out · <bytes> in`. |
 
 | Outcome | Shown as | Meaning |
 | --- | --- | --- |
-| `tunnelled` | `Passed through` | Egress sent the traffic on and did not decrypt it. |
-| `forwarded` | `Secret added` | Egress decrypted the traffic, because a secret of the run is bound to the host, and added the secret. |
+| `passthrough` | `Passthrough` | Egress sent the traffic on and did not decrypt it. |
+| `injected` | `Injected` | Egress decrypted the traffic, because a secret of the run is bound to the host, and injected the secret. |
 | `blocked` | `Blocked` | Egress stopped the traffic. |
 | `failed` | `Failed` | Egress could not connect to the host. |
 
@@ -612,18 +612,18 @@ neither part.
 GET /api/teams/{teamId}/runs/{runId}/network
 ```
 
-| Field | Holds |
+| Field | Contains |
 | --- | --- |
 | `runId`, `attempt` | The run, and its current attempt, which the answer is for. |
-| `egress` | `enforced`, `not-enforced`, or `null` when the runner did not check. |
+| `egressEnforcement` | `enforced`, `not-enforced`, or `null` when the runner did not check. |
 | `connections` | The connections the shared egress recorded for the attempt, each with `host`, `port`, `bytesOut`, `bytesIn`, `ms`, `outcome`, `status`, `reason` and `at`. See [Connection records](/docs/reference/hosts/egress#connection-records). |
 
 #### Connections in the trace
 
-A connection that went wrong is also a row in the task trace, at the time it
+A connection with an error is also a row in the task trace, at the time it
 started. The row is under the step or span that was open at that time, else
-under the phase, else under the run. A connection went wrong when egress
-blocked it, could not open it, or forwarded a request that the host answered
+under the phase, else under the run. A connection has an error when egress
+blocked it, could not open it, or injected a secret into a request that the host answered
 with `401`, `403` or a status of `500` or more.
 
 The row shows the host in red, with `:<port>` when the port is not `443`. The
@@ -634,18 +634,18 @@ Selecting the row shows:
 
 | Property | Shows |
 | --- | --- |
-| "Outcome" | `Blocked`, `Failed`, `Refused` (`401` or `403`) or `Server error` (`500` or more). |
-| "Status" | The status the host answered with, on a forwarded request. |
+| "Outcome" | `Blocked`, `Failed`, `Auth failed` (`401` or `403`) or `Server error` (`500` or more). |
+| "Status" | The status the host answered with, on an injected request. |
 | "Reason" | `Not on the allow-list`, `Private address`, `No bound secret`, `Unknown host`, `Timed out`, `TLS failed` or `No connection`. |
-| "Times" | How many times it went wrong, when more than once. |
-| "Cause" | What went wrong, in one or two sentences. For `Refused`: the secret egress added can be wrong, expired or without the necessary permission. |
+| "Count" | How many times the same error occurred, when more than once. |
+| "Cause" | The cause of the error, in one or two sentences. For `Auth failed`: the secret egress injected can be wrong, expired or without the necessary permission. |
 
 When the runner reported that egress was not enforced, the run's row shows a warning mark after its name. Hovering over the mark
 shows `Egress not enforced` and explains it.
 
 Connection rows do not count as "Faults". The trace reads at most 500 such
 connections for each run. The run's details still list all its connections,
-and show a refused request or a server error in red, as `Refused` or
+and show an auth failure or a server error in red, as `Auth failed` or
 `Server error`.
 
 Connection records are kept for 30 days. A record's `at` is the time egress gave, or the time Spotlight got the record when the two are far apart; see [Connection records](/docs/reference/hosts/egress#connection-records). A run that the caller may not see is
@@ -671,7 +671,7 @@ are shown in these places:
 | "Version", in the station's "Config" on the "Overview" tab | The newest group with a recorded config, whether its runs started or not: `Since <day>`, the day its first run ended, or "In force", with `Version <fingerprint>`, the first 8 characters. "View pull request" opens the pull request a picked search candidate opened for that config, when there is one, and "History" opens the station's view on Insights. Before any such group, "None yet" and `The station's first run sets the first version.`; when the outcomes cannot be read, "Unknown" and `Sorry, the station's runs couldn't be loaded.` |
 | "Runs by config", on the station's view on Insights | Every group, newest first. With no runs, "No runs yet" and `Runs show here by config once tasks reach this station.` To a person who may not read the outcomes, `Only team members can see this station's runs`. See [One station](/docs/reference/app/insights#one-station). |
 
-Runs are grouped by config, in the order they started: each group holds runs
+Runs are grouped by config, in the order they started: each group contains runs
 that started one after another with the same fingerprint. A config that
 returns after another starts a new group. A group is named by the first of its
 [changes](#config) from the last config that ran before it, or
@@ -698,7 +698,7 @@ A run's outcome:
 | Parked | Moved the task to the backlog. |
 | Closed | Moved the task to the completed station. |
 | Answered | Answered the conversation without a decision. |
-| Sent back | Said something to a run of the task while no run held it, other than an answer to an open question that asks for no approval. |
+| Sent back | Said something to a run of the task while it had no current run, other than an answer to an open question that asks for no approval. |
 
 Only Closed accepts a run, and only Sent back sends it back. Approving or
 refusing an approval is never a next act: it does not decide whether a run was
@@ -737,7 +737,7 @@ linked to the run, then the failure, "Round", "Checks", "Next", "Delivery",
 
 ## The inbox
 
-A person's inbox holds every conversation, open or resolved, on every task in
+A person's inbox contains every conversation, open or resolved, on every task in
 the workspace that is assigned to them, and the [notices](#notices) put to
 them. Items are ordered by their latest note, notices by when they were
 raised, newest first, in the sections "Open" and "Resolved".
@@ -745,17 +745,17 @@ raised, newest first, in the sections "Open" and "Resolved".
 | Flag | Set when |
 | --- | --- |
 | resolved | A `passed` note has closed the conversation. |
-| working | The conversation is open, a run holds the task, and the task does not await a person. |
+| working | The conversation is open, the task has a current run, and the task does not await a person. |
 | unread | An `asked` note in the conversation has not been read. Opening the item reads it. |
-| failure | The conversation holds a failure. Shown as `×N` once it has occurred N times, N being 2 or more. |
+| failure | The conversation contains a failure. Shown as `×N` once it has occurred N times, N being 2 or more. |
 
 Only the task's assignee can answer an item, and only an open conversation can
 be answered. An answer writes an `answered` note. The run that asked carries
-on; if no run holds the task and the station has a harness, a run starts there,
+on; if the task has no current run and the station has a harness, a run starts there,
 taking up the harness session where the last run left it.
 
 A resolved item shows no answer box. In its place it reads
-`The task is settled here. Nothing is left to answer.` while the task stands at
+`The conversation is closed here. Nothing is left to answer.` while the task is at
 the item's station, or `The task moved on to <Station>. Nothing is left to answer.`
 
 ### Notices
@@ -773,8 +773,8 @@ Nothing waits on it, and it cannot be answered.
 
 | Flag | Set when |
 | --- | --- |
-| unread | Its person has not opened it, and it is not settled. |
-| resolved | Its person opened it, which settles it. A settled notice shows under "Resolved" for 30 days after it was settled, then leaves the inbox. |
+| unread | Its person has not opened it, and it is not resolved. |
+| resolved | Its person opened it, which resolves it. A resolved notice shows under "Resolved" for 30 days after it was resolved, then leaves the inbox. |
 
 Its row shows a lightbulb, the headline, an unread dot, the day it was raised,
 and the first point. Its page, `/w/<slug>/inbox/notices/<noticeId>`, shows when
@@ -783,8 +783,8 @@ opens the link.
 
 A notice reaches only its person, and only while they are a member of its
 team's workspace. To anyone else, and once it has left the inbox, its page
-reads `No longer waiting for you.` Settling is
-`POST /api/workspaces/{slug}/inbox/notices/{noticeId}/settle`, answering
+reads `No longer waiting for you.` Resolving is
+`POST /api/workspaces/{slug}/inbox/notices/{noticeId}/resolve`, answering
 `204`, or `404` for a notice not put to the caller. Disbanding
 a team forgets its notices.
 
@@ -815,7 +815,7 @@ judge marked it reads `Claim <n>`. The judge's score is not shown on it.
 
 - Any person on the team, and any owner or admin of the workspace, can grade
   a run. Anyone else is answered `404`, and the card reads
-  `Only team members can grade this run`. One grade settles the item for
+  `Only team members can grade this run`. One grade resolves the item for
   everyone.
 - A person's later grade of the same run replaces their earlier one.
 - A run is graded on its judge's scale, else on the scale of its station's
@@ -829,7 +829,7 @@ An item is raised for a run when it proposes at least one
 [memory](/docs/reference/glossary#memory): drafted after the run at a station
 with `memories: true`, or proposed by the agent with
 [`spotlight remember`](/docs/reference/cli/agent-commands#spotlight-remember).
-The item reads `A run proposed memories for the team.` It settles, and reads
+The item reads `A run proposed memories for the team.` It is resolved, and reads
 `Proposed memories decided.`, once no memory of the run is left to decide:
 every one is approved or rejected, or a later run's drafting has dropped the
 undecided ones.
@@ -864,7 +864,7 @@ edited, "Reject" becomes "Cancel", which puts the memory back, and "Approve",
 which keeps it as edited, is off while the text is empty. A decided card keeps
 the copy icon, with "Reject" and "Approve" off.
 
-- An approved memory stands, with a new handle. If it corrects a standing
+- An approved memory becomes active, with a new handle. If it corrects an active
   memory, that one is retired in its favour.
 - A rejected memory is kept and never briefed. When a station drafts
   memories, the drafter is shown the 20 newest memories the team rejected in
@@ -880,11 +880,11 @@ the copy icon, with "Reject" and "Approve" off.
 ### Station alerts
 
 Spotlight checks a work station's [alerts](/docs/reference/terraform/line#alert-fields)
-when one of its task runs ends or settles, when the pull request of a task it
-worked closes, and when its line is changed or retired. A run counts toward a measure once it has settled for that
-measure:
+when one of its task runs ends or is measured, when the pull request of a task it
+worked closes, and when its line is changed or retired. A run counts in a measure once what that measure needs is
+known:
 
-| Measure | A run has settled when |
+| Measure | A run is measured when |
 | --- | --- |
 | `sent_back_rate`, `accepted_rate` | Its [next act](#station-outcomes) is known. |
 | `checks_failed_rate` | Its check passed or failed. |
@@ -893,10 +893,10 @@ measure:
 | `cost_per_run` | Its cost was worked out. |
 
 Only runs that ran count, ordered by when they ended. An alert reads its
-measure over the latest `over` settled runs and, for `risesBy` and `fallsBy`,
-over the `over` settled runs before those. Settled runs are looked for among the
+measure over the latest `over` measured runs and, for `risesBy` and `fallsBy`,
+over the `over` measured runs before those. Measured runs are looked for among the
 station's latest runs, 4 times as many as its alerts need at most. Until enough
-runs have settled, or while the measure cannot be worked out, as for cost with
+runs are measured, or while the measure cannot be worked out, as for cost with
 no priced runs, the alert is not checked.
 
 | Threshold | Goes off when |
@@ -908,22 +908,22 @@ no priced runs, the alert is not checked.
 
 An alert goes off once per crossing. While it is open, later checks do not
 raise it again. It recovers once it has stayed within its threshold for `over`
-further settled runs: each check whose newest settled run is a new one, and
+further measured runs: each check whose newest measured run is a new one, and
 finds the alert no longer crossed, counts one, and a check that finds it
-crossed again starts the count over. For `over` settled runs after it
+crossed again starts the count over. For `over` measured runs after it
 recovers, a crossing reopens the same alert, and its inbox item, instead of
 raising a new one. After that, a crossing raises a new alert.
 
 If an open alert's amount or `over` is changed, the next check judges it by
 the new values: crossed, it stays open with the new reading; otherwise the
-check counts toward its recovery. An open alert whose measure or threshold is
+check counts for its recovery. An open alert whose measure or threshold is
 removed from the station recovers at once, at the station's next check, and a
 crossing after that raises a new alert. Changing or retiring a line checks
 each of its stations, those it had and those it has. Deleting a task forgets
 the alerts raised on it.
 
 When an alert goes off, the task of the run that set off the check gets an
-inbox item: the run that ended or settled, or, when a pull request closed, the
+inbox item: the run that ended or was measured, or, when a pull request closed, the
 task's latest run at the station. The item reads
 `Station crossed an alert threshold.` and, once the alert recovers,
 `Station back within its alert threshold.` A reopened alert opens its item again. It reaches the task's assignee, or
@@ -939,14 +939,14 @@ The item shows:
 | Heading | `Alert raised at <station>`, with the day it went off. |
 | Reading | What the runs did, then the threshold, with cost in the currency of the station's runs. For a rate, `<value> of the last <over> runs <did>.`, where `<did>` is "were sent back", "were accepted", "were merged", "failed" or "failed their checks". For cost, `The last <over> runs cost <value> each on average.` For `risesBy` and `fallsBy`, the comparison follows before the full stop: `, up from <value> in the <over> before`, or `down from` or `the same as`. Then `The alert is set at a <change>-point rise.` (or `fall`), `a rise of <amount>` for cost, or `The alert is set at above <amount>.` (or `below`). With `over` set to 1, `the last run` and `the one before`, with "was sent back", "was accepted", "was merged", "failed" or "failed its checks", and `The last run cost <value>` for cost. |
 | Recovery | `The station has been back under the threshold since <day>.`, or `over` in place of `under` for `fallsBy` and `below`, once the alert has recovered. |
-| Chart | The measure over the `over` settled runs up to each run, from 2 × `over` runs before the run that crossed it to `over` runs after. Its legend names "Alert level" with the amount, for `above` and `below`; "Before" with the measure over the runs before, for `risesBy` and `fallsBy`; and "The run it went off at". It is drawn from the station's latest 500 runs; without that run among them, it reads `There is no chart to show. The runs behind this alert are deleted.` |
+| Chart | The measure over the `over` measured runs up to each run, from 2 × `over` runs before the run that crossed it to `over` runs after. Its legend names "Alert level" with the amount, for `above` and `below`; "Before" with the measure over the runs before, for `risesBy` and `fallsBy`; and "The run it went off at". It is drawn from the station's latest 500 runs; without that run among them, it reads `There is no chart to show. The runs behind this alert are deleted.` |
 | Links | "Open the station", which opens its "Overview" tab; "Open in Insights", which opens the [Stations tab](/docs/reference/app/insights#runs-at-each-station) at the station's row, `#station-<stationId>`, over the shortest period that covers the day it went off; and "Improve", while the station is on one of the team's lines, which opens the Agent page with the station attached to a new chat. |
 
 ### Requests to connect
 
 When a run calls a tool of an integration whose `connection.holder` is
 `requester`, and the person who started the task has not connected it or the
-host refused to renew their connection, nothing is sent. The task is assigned
+host could not renew their connection, nothing is sent. The task is assigned
 to that person and put to them with an `asked` note of form `connection`:
 
 ```text
@@ -955,7 +955,7 @@ I need to use `<tool>`, which acts as you in <integration>, and you haven't conn
 Connect <integration> and I will carry on. Nothing has been sent yet.
 ```
 
-For a refused renewal, `<integration> refused to renew your connection, so it
+For a failed renewal, `<integration> could not renew your connection, so it
 has to be made again` takes the place of `you haven't connected <integration>
 yet`. `<integration>` is the integration's `name`.
 
@@ -976,11 +976,11 @@ first", or when the harness profile's `ask` rules match a harness action. See
 [Person rules](#person-rules) and
 [`spotlight_harness_profile`](/docs/reference/terraform/harness-profile).
 
-| Standing | Meaning |
+| Status | Meaning |
 | --- | --- |
 | `asked` | Waiting on a person, as an inbox item. |
 | `granted` | Approved. The grant is spent by the call it allows. |
-| `refused` | Dismissed. The dismissal stands. |
+| `refused` | Dismissed. The dismissal stays valid. |
 
 In the inbox, the card's title reads "Waiting for your approval" while it is
 `asked`, then "Request approved", "Request approved with changes" or "Request
@@ -1005,7 +1005,7 @@ call with the changed inputs.
 - Only a person can approve or dismiss. A workspace token cannot.
 - A call that asks because of a person's own tool rule can be approved only
   by that person. See [Person rules](#person-rules).
-- An approval is decided once. A second decision is refused with `409`.
+- An approval is decided once. A second decision fails with `409`.
 - An answer without a decision answers the conversation and leaves the approval
   undecided.
 - A decision without words is recorded as `Approved.` or `Dismissed.`.
@@ -1026,7 +1026,7 @@ rule for it as well as the team's. Of the two, the stricter wins:
 
 - When a call waits because of a person's rule, the task is put to that
   person: they become its assignee.
-- Approving it by anyone else is refused with `409`. Whoever may answer the
+- Approving it by anyone else fails with `409`. Whoever may answer the
   task can still dismiss it.
 - A grant from someone else does not cover such a call. It asks that person
   again.
@@ -1047,14 +1047,14 @@ A person may approve a tool call with changed inputs, given as `inputs` with
   be added or removed.
 - Each value has the type of the input it replaces: any text for a `string`, a
   finite number for a `number`, `true` or `false` for a `boolean`.
-- A changed list or object is checked against the input's schema, and refused
+- A changed list or object is checked against the input's schema, and rejected
   naming where it does not fit. See
   [Input schemas](/docs/reference/terraform/integration#input-schemas).
 - A value may not be blank where the call was asked with one.
 - A harness permission and a dismissal take no changes.
 - Changes that leave every input as it was are recorded as no change.
 
-A refused answer is `409`. See
+An answer that breaks these rules fails with `409`. See
 [Answering an approval](/docs/reference/errors-and-messages#answering-an-approval).
 
 The answer the agent reads is the person's words, or `Approved.`, followed by
@@ -1090,7 +1090,7 @@ list or read it. Each chat names its harness, and optionally a model, an
 effort, repositories and a work station it is improving. The harness and the
 repositories are fixed when the chat starts. A message may name another model
 or effort. The agent answers that message, and the messages after it, with
-the model and effort it names. A chat message holds up to 20,000 characters and at most 20 traces.
+the model and effort it names. A chat message has up to 20,000 characters and at most 20 traces.
 
 The Agent page's composer reads "What do you want to plan?", and a chat's
 composer reads "Reply…". One picker in the composer names the harness, then the
@@ -1125,7 +1125,7 @@ to open a pull request with the team's Terraform there, with
 The chat keeps the pull request. Its runs reach Spotlight's API with
 [the run's Spotlight token](/docs/reference/hosts/egress#the-runs-spotlight-token).
 A setup chat needs egress: a host that serves the workspace, or a push pool
-that names an egress. Without either, starting one is refused with `422` and
+that names an egress. Without either, starting one fails with `422` and
 `A setup chat needs egress. No host serves this workspace, and no push pool names an egress. Please connect a host, or name an egress in a push pool.`
 
 Chat runs have priority over task runs.
@@ -1145,10 +1145,10 @@ naming a line and a station by key.
 | `created` | Task created | |
 | `dismissed` | Dismissed | |
 
-Each proposal shows in the chat as a card titled by its state. "Task" holds
+Each proposal shows in the chat as a card titled by its state. "Task" shows
 the proposed title, linked to the task once it is created. "Station" reads
 `<Line> › <Station>`, or "Station deleted" once the station is gone. "Details"
-holds the description, when there is one. "Dismiss" and "Create task" act
+shows the description, when there is one. "Dismiss" and "Create task" act
 only on an open proposal, and "Create task" is off while the station is
 deleted. `Copy <title>` copies the title and the description.
 

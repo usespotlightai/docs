@@ -63,7 +63,7 @@ of the kind `replay-candidate`.
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `name` | string | required | Tells the candidate from the station's other candidates. 1 to 100 characters, with no space at either end and no `/`. A name starting `Live config`, `Planned change` or `With the answer`, in any case, is refused: they name the snapshots Spotlight takes to replay as a baseline, the changes [replay checks](/docs/reference/api/replay-checks) replay, and the [replays with the answer](/docs/reference/app/replays#replay-with-the-answer) Spotlight starts. Used once per station. |
+| `name` | string | required | Tells the candidate from the station's other candidates. 1 to 100 characters, with no space at either end and no `/`. A name starting `Live config`, `Planned change` or `With the answer`, in any case, is rejected: they name the snapshots Spotlight takes to replay as a baseline, the changes [replay checks](/docs/reference/api/replay-checks) replay, and the [replays with the answer](/docs/reference/app/replays#replay-with-the-answer) Spotlight starts. Used once per station. |
 | `station` | object | required | The station block to replay under, in the shape of one entry of a line's `stations`. See [Station fields](/docs/reference/terraform/line#station-fields). Its `key` must be the station's key. |
 | `teamId` | string | read-only | The station's team. |
 | `lineId` | string | read-only | The station's line. |
@@ -88,12 +88,12 @@ path `station.<field>`, as in `station.judge.rubric`.
 
 | Message | Path | Cause |
 | --- | --- | --- |
-| `is a station block, as a line holds it` | `station` | `station` is not an object. |
+| `is a station block, as in a line` | `station` | `station` is not an object. |
 | `keeps the station's key, <key>` | `station.key` | `key` names another station. |
 | `names a harness a runner can start` | `station.harness` | The block runs no harness Spotlight can start. |
 | `Candidate name must be 1 to 100 characters.` | `name` | `name` is empty or too long. |
 | `Candidate name cannot start or end with a space.` | `name` | `name` starts or ends with a space. |
-| `Candidate name cannot contain /.` | `name` | `name` holds `/`. |
+| `Candidate name cannot contain /.` | `name` | `name` contains `/`. |
 | `Candidate name cannot start with the reserved prefix "Live config".` | `name` | `name` starts with `Live config`. |
 | `Candidate name cannot start with the reserved prefix "Planned change".` | `name` | `name` starts with `Planned change`. |
 | `Candidate name cannot start with the reserved prefix "With the answer".` | `name` | `name` starts with `With the answer`. |

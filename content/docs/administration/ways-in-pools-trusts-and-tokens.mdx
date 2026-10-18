@@ -7,7 +7,7 @@ description: The credentials that let a machine or a pipeline act in a Spotlight
 
 People reach a Spotlight workspace by signing in. Everything else that acts in
 it, a machine running agents or a pipeline applying Terraform, needs a
-credential of its own. Spotlight has eight kinds, and they differ in who holds
+credential of its own. Spotlight has eight kinds, and they differ in who keeps
 them, how long they last, and what can be done with one that is stolen.
 
 The eight split into two families. Pool tokens, runner trusts, one-run
@@ -22,7 +22,7 @@ A pool token cannot define a line, and a workspace token cannot claim a run.
 
 ### Pool tokens: a secret the host keeps
 
-A pull pool is a named group of hosts that share one token. A host holds the
+A pull pool is a named group of hosts that share one token. A host keeps the
 token and presents it every time it asks for work. Spotlight keeps only a hash
 of it, and a token Spotlight issues is shown only once.
 
@@ -65,8 +65,8 @@ wildcards. [Run hosts without a stored token](/docs/hosts/admit-hosts-through-a-
 Neither the pool token nor the workload token ever enters a sandbox. When a
 host claims a run, Spotlight answers with a credential that is good for that
 one run and nothing else, and that is what the host passes into the sandbox. A
-runner that holds it can take exactly one piece of work; asking for a second
-is refused. Inside the sandbox, the runner reads the credential from the file
+runner that has it can take exactly one piece of work; asking for a second
+fails. Inside the sandbox, the runner reads the credential from the file
 the host laid down and deletes the file. The agent's processes do not inherit
 the runner's Spotlight settings or its credential; from the runner they get a
 local address and a token for handing the task over.
@@ -77,25 +77,25 @@ could do with what it was given ends when the run does. The credential that
 lets a host keep working stays on the host.
 
 The same thinking reaches git. A sandbox clones and pushes through Spotlight,
-which holds the GitHub App's credential and adds it on the way to GitHub. The
+which keeps the GitHub App's credential and adds it on the way to GitHub. The
 app's credential is never sent to a runner. A run can reach only the
-repositories its own work names, and only while it still holds that work.
+repositories its own work names, and only while its runner still has the lease on that work.
 
 ### Egress tokens and run proxy credentials: a push pool's way out
 
-A push pool can name a shared egress, which adds the secrets of many runs to
+A push pool can name a shared egress, which injects the secrets of many runs into
 their requests. Two credentials split that job so that neither is worth much
-alone. The egress token is held by the egress process and stored by Spotlight
-as a hash. It is the only credential that can redeem a run's secrets, and it
+alone. The egress process keeps the egress token, and Spotlight stores it
+as a hash. It is the only credential that can fetch a run's secrets, and it
 never enters a sandbox. Like a pool token, it is given once, ever, and
-rotating it refuses the old one at once.
+after a rotation the old one stops working at once.
 
 The run proxy credential is made for one runner, sent in the provision call,
-and held by the runner. It lets the run send its traffic through the egress
+and kept by the runner. It lets the run send its traffic through the egress
 its pool names, and nothing more: Spotlight's API does not accept it, and
 Spotlight admits it through the egress only while the runner has not ended. A
 stolen run proxy credential reaches no secret, since the secrets stay in the
-egress. A stolen egress token redeems secrets only together with the run proxy
+egress. A stolen egress token fetches secrets only together with the run proxy
 credential of a runner whose pool names that egress. [Send push pool runs through an
 egress](/docs/security/send-push-pool-runs-through-an-egress) sets both up.
 
@@ -140,11 +140,11 @@ would admit any workload its issuer signs a token for, which on a public CI
 service means anyone's. So a pattern must name its owner before its first
 wildcard, as in `repo:acme/*`.
 
-A trust is also tied to whoever stands behind it, and its tokens to the trust
-as it stood when they were minted; [`spotlight_workspace_token_trust`](/docs/reference/terraform/workspace-token-trust) lists those rules and the
+A trust's tokens act for the person who defined the trust, and are tied to the
+trust as it was when they were minted; [`spotlight_workspace_token_trust`](/docs/reference/terraform/workspace-token-trust) lists those rules and the
 lifetimes. [Run Terraform from GitHub Actions without a stored token](/docs/configuration/run-terraform-from-github-actions) shows the whole setup.
 
-### A setup chat's token: held by egress, never by the agent
+### A setup chat's token: kept by egress, never by the agent
 
 The [setup chat](/docs/configuration/let-the-agent-write-your-first-terraform)
 plans Terraform against the workspace, so its run needs a token. A token in the
@@ -152,7 +152,7 @@ agent's environment would be one the agent could print, or send anywhere the
 sandbox reaches.
 
 Spotlight mints a token for that run alone, which may read and plan and
-nothing more, and seals it to the run's egress. The agent holds a stand-in,
+nothing more, and seals it to the run's egress. The agent has a stand-in,
 and egress swaps the token in only on requests to Spotlight. The token expires
 within the hour and is revoked when the run or its attempt ends; see
 [The run's Spotlight token](/docs/reference/hosts/egress#the-runs-spotlight-token).

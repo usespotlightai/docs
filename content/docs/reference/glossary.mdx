@@ -17,7 +17,7 @@ and [Station alerts](/docs/reference/app/tasks-runs-and-the-inbox#station-alerts
 
 A person's decision on one tool call, or one harness permission, that a run
 asked to use. A person may change a tool call's inputs before approving it. A
-grant is spent by the call it allows; a dismissal stands at the station that
+grant is spent by the call it allows; a dismissal stays valid at the station that
 asked. See [Approvals](/docs/reference/app/tasks-runs-and-the-inbox#approvals).
 
 ## Attachment
@@ -52,12 +52,12 @@ happened when its hooks run. See [Events](/docs/reference/terraform/hook#events)
 ## Board
 
 A line's page in the web app. It shows the line's stations and the tasks
-standing at them, in the views Backlog, Active and Completed. See
+at them, in the views Backlog, Active and Completed. See
 [Web app](/docs/reference/app/web-app#team-pages).
 
 ## Bound host
 
-A host that a secret of the run is bound to. Egress adds a secret only to
+A host that a secret of the run is bound to. Egress injects a secret only into
 requests to its bound hosts. For a run that reaches Spotlight's API, the
 Spotlight address's host is bound to the run's Spotlight token. See
 [Run secrets](/docs/reference/hosts/egress#run-secrets) and
@@ -161,8 +161,8 @@ Spotlight draws from what an agent said during a run at a station with
 The proxy between a sandbox and the network. A host starts one egress
 container beside each sandbox, and the sandbox reaches the network only
 through it. A push pool can name a shared egress, one process that serves many
-runs, in `provision.egress`. Egress admits or refuses each connection and
-adds secrets to requests to the hosts they are bound to. See
+runs, in `provision.egress`. Egress admits or blocks each connection and
+injects secrets into requests to the hosts they are bound to. See
 [Egress](/docs/reference/hosts/egress) and
 [`spotlight_egress`](/docs/reference/terraform/egress).
 
@@ -204,7 +204,7 @@ The agent command line a station runs: `claude-code` (Claude Code), `cursor`
 
 An API key or token a harness uses to reach its model provider, such as
 `ANTHROPIC_API_KEY`. A host gives them to its sandboxes from `sandbox.env`.
-Egress holds the ones it knows, and the sandbox gets a [stand-in](#stand-in).
+Egress keeps the ones it knows, and the sandbox gets a [stand-in](#stand-in).
 See [Harness keys](/docs/reference/hosts/host-configuration#harness-keys).
 
 ## Harness profile
@@ -218,7 +218,7 @@ settings. A station names one in its `profile`. See
 One of the tasks of a replay set that a [search](#search) keeps from its
 agent, about 30% of them. Only the best candidates are replayed on them, once
 the search stops searching, to check they did not just fit the tasks the agent
-saw. See [Why a search holds tasks back](/docs/improvement/why-a-search-holds-tasks-back).
+saw. See [Why a search holds tasks out](/docs/improvement/why-a-search-holds-tasks-out).
 
 ## Hook
 
@@ -303,12 +303,12 @@ Each is kept with the steps and notes it rests on. The run's memories arrive
 as one item in the inbox, where a teammate approves, edits or rejects each one.
 A memory from outside the team, such as a review of an outside author's pull
 request, cannot be approved together with other memories. Approved memories
-stand; rejected ones are kept, and the newest of them are shown to the
+become active; rejected ones are kept, and the newest of them are shown to the
 drafter. The team's Memory page
-lists what stands, filtered by line, station, repository, path or kind. There
+lists the active ones, filtered by line, station, repository, path or kind. There
 you can write a memory yourself, correct one (the correction replaces it) or
 retire one with a reason; retired memories stay readable under Retired. Each
-standing memory has a handle, such as `M-12`, and runs are briefed with the ones
+active memory has a handle, such as `M-12`, and runs are briefed with the ones
 that bear most closely on their work, whatever harness they run. Every memory
 that applies to a run is also laid out in its workspace under
 `.spotlight/memory`, for the agent to search; it can also search with
@@ -340,7 +340,7 @@ change. See [Notes](/docs/reference/app/tasks-runs-and-the-inbox#notes).
 
 An inbox entry that tells one person about their team's work, outside any
 task, such as a [search](#search) they started that stalled. Nothing waits on
-it; its person dismisses it. See [Notices](/docs/reference/app/tasks-runs-and-the-inbox#notices).
+it; its person resolves it. See [Notices](/docs/reference/app/tasks-runs-and-the-inbox#notices).
 
 ## Occurrence
 
@@ -378,7 +378,7 @@ until the person accepts it, which creates the task, or dismisses it. See
 ## Reaction
 
 A line's rule that moves a task to a station when a happening arrives,
-optionally only while the task stands at a given station. See
+optionally only while the task is at a given station. See
 [`spotlight_line`](/docs/reference/terraform/line) and
 [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves).
 
@@ -530,10 +530,10 @@ deployment's own settings.
 
 ## Stand-in
 
-The value `spotlight-egress:<NAME>` a sandbox holds in place of a harness key
+The value `spotlight-egress:<NAME>` a sandbox has in place of a harness key
 or a run secret. Egress replaces it with the real value in the request header
 or query parameter.
-See [What egress adds to requests](/docs/reference/hosts/egress#what-egress-adds-to-requests).
+See [What egress injects into requests](/docs/reference/hosts/egress#what-egress-injects-into-requests).
 
 ## Starting point
 
@@ -549,7 +549,7 @@ and the stations it passes to. See [`spotlight_line`](/docs/reference/terraform/
 
 ## Task
 
-A unit of work. A task stands at one station of one line at a time, and
+A unit of work. A task is at one station of one line at a time, and
 carries a title, a description, attachments, a trail of notes, marks and an
 assignee. See [Tasks](/docs/reference/app/tasks-runs-and-the-inbox#tasks).
 
@@ -587,7 +587,7 @@ lower judge score. See [Results](/docs/reference/app/replays#results).
 
 ## Workspace
 
-The top-level account in Spotlight, with a name and a URL slug. It holds teams,
+The top-level account in Spotlight, with a name and a URL slug. It has teams,
 members and their roles, the GitHub connection, secrets, runner pools and
 trusts, and workspace tokens. See
 [`spotlight_workspace`](/docs/reference/terraform/workspace).

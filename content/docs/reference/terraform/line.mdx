@@ -176,7 +176,7 @@ reviews {
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `key` | string | required | Names the line within its team. Lowercase words joined by dashes, at most 64 characters. Fixed: an update that changes it is refused; Terraform replaces the resource. |
+| `key` | string | required | Names the line within its team. Lowercase words joined by dashes, at most 64 characters. Fixed: an update that changes it is rejected; Terraform replaces the resource. |
 | `name` | string | required | What the line is called. At most 100 characters. |
 | `role` | string | none | The role the line plays for its team, as in `delivery` or `review`. Lowercase words joined by dashes, at most 64 characters. A role names one line per team. |
 | `repositories` | array of objects | `[]` | The repositories the line works on. See [repositories](#repository-fields). |
@@ -199,7 +199,7 @@ reviews {
 | `harness` | string | none | The [harness](/docs/reference/hosts/harnesses) that works tasks here: `claude-code`, `cursor` or `codex`. At most 60 characters. A station without one runs nothing, and no run may hand a task on to it. |
 | `model` | string | none | The model the harness uses. At most 60 characters. Without it, the harness uses its own default. |
 | `effort` | string | none | `low`, `medium`, `high`, `xhigh` or `max`. Without it, the harness uses its own default. |
-| `profile` | string | none | The key of a team [harness profile](/docs/reference/terraform/harness-profile). A run at a station naming a profile the team does not hold is refused. |
+| `profile` | string | none | The key of a team [harness profile](/docs/reference/terraform/harness-profile). A run at a station naming a profile the team does not have fails with the code `refused`. |
 | `prompt` | string | none | Markdown handed to the agent that works the station. At most 20,000 characters. |
 | `check` | string | none | A command each layer of a change stack drafted at this station is checked with, as in `npm test`. One line of at most 500 characters. See [checks](/docs/reference/app/change-stacks-and-decisions#checks). |
 | `runners` | array of strings | none | Runner labels this station's work is placed on. Without it, the line's `runners` apply. See [placement](#placement). |
@@ -207,7 +207,7 @@ reviews {
 | `decisions` | boolean | `false` | Whether decisions are drafted from each run. See [decisions](/docs/reference/app/change-stacks-and-decisions#decisions). |
 | `memories` | boolean | `false` | Whether proposed team memories are drafted from each completed run, for the team to approve in the inbox. They come from what the agent said, thought and planned, never tool output, and from what people said on the task since the last draft. See [memory](/docs/reference/glossary#memory). |
 | `tools` | array of strings | `[]` | The tools given to the agent. See [tool names](#tool-names). Each tool once. |
-| `skills` | array of strings | `[]` | The skills given to the agent: a team [skill](/docs/reference/terraform/skill) key, or a catalog skill as `catalog.<name>@<x.y.z>`. Each skill once. A key starting `spotlight-` is refused. |
+| `skills` | array of strings | `[]` | The skills given to the agent: a team [skill](/docs/reference/terraform/skill) key, or a catalog skill as `catalog.<name>@<x.y.z>`. Each skill once. A key starting `spotlight-` is rejected. |
 | `passesTo` | array of strings | `[]` | The keys of the stations a run here may hand a task on to. |
 | `ends` | boolean | `false` | Whether a run here may finish the task by handing over with `done`. From any other station, `done` goes to a person instead. |
 | `judge` | object | none | Scores the station's runs against a rubric, a list of claims, or both. Only on a `work` station. See [judge fields](#judge-fields). A read leaves it out when none is set. |
@@ -309,7 +309,7 @@ Each is returned with `422` at the path `stations[<n>].judge.<field>`.
 | `fallsBy` | number | none | The measure over the last `over` runs is this much lower than over the `over` runs before. |
 | `above` | number | none | The measure across the last `over` runs is higher than this. |
 | `below` | number | none | The measure across the last `over` runs is lower than this. |
-| `over` | number | required | How many runs are compared, and how many further settled runs an alert that went off must stay within its threshold to recover. A whole number, at least 1. |
+| `over` | number | required | How many runs are compared, and how many further measured runs an alert that went off must stay within its threshold to recover. A whole number, at least 1. |
 
 In Terraform, `risesBy` and `fallsBy` are `rises_by` and `falls_by`. An alert
 sets exactly one of `risesBy`, `fallsBy`, `above` and `below`; a read returns
@@ -322,11 +322,11 @@ the others as `null`.
 
 A station may have any number of alerts, but not two on the same measure with
 the same kind of threshold: of two alerts that both set `risesBy` on
-`sent_back_rate`, the later one is refused.
+`sent_back_rate`, the later one is rejected.
 Alerts are not part of the station's config, so changing them does not change
 the [config fingerprint](/docs/reference/glossary#config-fingerprint). Alerts
 are kept with the line, exported, listed on the Station page, and checked as
-the station's runs end and settle. See
+the station's runs end and are measured. See
 [Station alerts](/docs/reference/app/tasks-runs-and-the-inbox#station-alerts).
 
 | Message | Cause |
@@ -364,8 +364,8 @@ repositories sorted by name.
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `happening` | string | required | What happens, source first, as in `github.checks.failed`. Matches `^[a-z0-9]+(\.[a-z0-9][a-z0-9_-]*)+$`. |
-| `from` | string | none | The key of the station the task must stand at for the reaction to apply. Without it, the reaction applies at any station. |
-| `to` | string | required | The key of the station the task moves to. While a run holds the task, the move waits until the run ends, and is dropped if the run passes the task on. A move to the completed station instead stops the run and asks a person, or, if the task awaits an answer to the run's question, adds a note to it. See [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves). |
+| `from` | string | none | The key of the station the task must be at for the reaction to apply. Without it, the reaction applies at any station. |
+| `to` | string | required | The key of the station the task moves to. While the task has a current run, the move waits until the run ends, and is dropped if the run passes the task on. A move to the completed station instead stops the run and asks a person, or, if the task awaits an answer to the run's question, adds a note to it. See [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves). |
 
 See [GitHub events](/docs/reference/events/github-events) for the happenings GitHub
 raises. An [integration](/docs/reference/terraform/integration) raises its own.
@@ -388,7 +388,7 @@ is chosen and the task it opens.
 ## Replay check fields [#replay-check-fields]
 
 The replay check (`replayCheck`, in Terraform `replay_check`) sets the threshold
-a planned change of one of the line's work stations is held to by
+that a planned change of one of the line's work stations must meet in
 [`spotlight replay check`](/docs/reference/cli/replay-command#spotlight-replay-check).
 A check reads it from the line as it is applied, never from the plan. A line
 read through the team's `GET /api/teams/{teamId}/lines` carries it as
@@ -411,7 +411,7 @@ See [Replay checks API](/docs/reference/api/replay-checks).
 
 ## Source fields
 
-The source (`source`) names the file that holds this `spotlight_line`
+The source (`source`) names the file that contains this `spotlight_line`
 resource. A picked [search](/docs/reference/app/searches#the-pull-request)
 candidate is opened as a pull request against it.
 
@@ -420,7 +420,7 @@ candidate is opened as a pull request against it.
 | `repository` | string | required | The GitHub repository, `owner/name`. Spotlight's GitHub App must be installed on it. |
 | `path` | string | required | The `.tf` file, from the repository's root, with forward slashes and no leading slash, as in `teams/core/delivery.tf`. 1 to 1,024 characters, with no empty, `.` or `..` part. |
 
-For Spotlight to edit the station, the file must hold exactly one
+For Spotlight to edit the station, the file must contain exactly one
 `resource "spotlight_line"` with the line's `key` written as a plain string,
 and in it exactly one `station` block with the station's `key` written the same
 way. An attribute a search may change that is read from a file must be read
@@ -446,7 +446,7 @@ the workspace qualifies.
 A label is one a [runner pool](/docs/reference/terraform/runner-pool) or [runner trust](/docs/reference/terraform/runner-trust)
 gives the runners it admits. A pool's `key` is not a label. Each entry,
 trimmed of surrounding whitespace, is shaped as a label is, lowercase words joined by dashes of at most 64
-characters, and named once; any other entry is refused.
+characters, and named once; any other entry is rejected.
 
 | Message | Cause |
 | --- | --- |
@@ -463,7 +463,7 @@ images a host serves.
 
 ## Layout rules
 
-A line's stations are refused unless they follow every rule below.
+A line's stations are rejected unless they follow every rule below.
 
 - A line must have at least one station.
 - Each station key must be used once.
@@ -478,11 +478,11 @@ A line's stations are refused unless they follow every rule below.
   `setup`.
 - A line must name `reviews` only if its `role` is `review`.
 - Only a `work` station may have a `judge` or `alerts`. On a backlog the
-  refusal reads `Line <line> station <station> is a backlog and has no runs to judge.`,
+  error reads `Line <line> station <station> is a backlog and has no runs to judge.`,
   and on the completed station
   `Line <line> station <station> is the completed station and has no runs to judge.`;
   for alerts both end `and has no runs to alert on.` `<line>` and `<station>`
-  are keys. The refusal is returned at `stations[<n>].judge` or
+  are keys. The error is returned at `stations[<n>].judge` or
   `stations[<n>].alerts`.
 
 ## Reserved station keys
@@ -496,8 +496,8 @@ A line's stations are refused unless they follow every rule below.
 
 | Operation | Behaviour |
 | --- | --- |
-| update | Replaces the whole definition. A station whose key is kept keeps its identity and the tasks at it. Changing `key` is refused with `422`. Dropping a station where any task stands is refused with `409` `in-use`, naming the stations and how many tasks stand at each. |
-| delete | Refused with `409` `in-use` while any task stands on the line. |
+| update | Replaces the whole definition. A station whose key is kept keeps its identity and the tasks at it. Changing `key` fails with `422`. Dropping a station that has any task fails with `409` `in-use`, naming the stations and how many tasks are at each. |
+| delete | Fails with `409` `in-use` while the line has any task. |
 
-A second line claiming a role another line of the team holds is refused with
+A second line claiming a role another line of the team has fails with
 `422` on `role`.

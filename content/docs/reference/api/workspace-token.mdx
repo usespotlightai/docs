@@ -48,10 +48,10 @@ describe or revoke a token. Reading, importing and listing need `read`.
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `name` | string | required | Lowercase words joined by dashes, at most 64 characters. Fixed: an update that changes it is refused. |
-| `scopes` | array of strings | required | At least one, each once. See [scopes](#scopes). Fixed: an update that changes it is refused. |
+| `name` | string | required | Lowercase words joined by dashes, at most 64 characters. Fixed: an update that changes it is rejected. |
+| `scopes` | array of strings | required | At least one, each once. See [scopes](#scopes). Fixed: an update that changes it is rejected. |
 | `description` | string | `""` | At most 255 characters. The only field an update changes. |
-| `expiresAt` | string or null | `null` | An RFC 3339 time when the token stops admitting anyone. Must be in the future. Null never expires. Fixed: an update that changes it is refused. |
+| `expiresAt` | string or null | `null` | An RFC 3339 time when the token stops admitting anyone. Must be in the future. Null never expires. Fixed: an update that changes it is rejected. |
 | `workspaceId` | string | read-only | The workspace the token acts in, and the only one. |
 | `issuedBy` | string | read-only | The person who issued it. |
 | `issuedAt` | string | read-only | When it was issued, as an RFC 3339 time. |
@@ -76,7 +76,7 @@ Each is returned at the path `scopes`.
   read the [configuration changes](/docs/reference/api/resource-api#configuration-changes).
 - Open a workspace. A workspace token acts only inside its own workspace.
 
-A request a token's scopes do not allow is refused with `403` and a problem
+A request a token's scopes do not allow gets `403` and a problem
 naming the missing permission. A resource the token cannot see returns `404`.
 
 ## Value
@@ -88,4 +88,4 @@ naming the missing permission. A resource the token cannot see returns `404`.
 | Kept | As a SHA-256 hash only. |
 | Sent as | `Authorization: Bearer <token>` |
 
-A token that is revoked, or past `expiresAt`, is refused with `401`.
+A token that is revoked, or past `expiresAt`, gets `401`.

@@ -49,10 +49,10 @@ sandbox, the container the agent works in. It has three choices:
 - Ask a person. The task stays where it is and waits in the inbox of the person
   it is assigned to, or of the person who raised it if nobody is assigned.
 - At a station allowed to finish tasks, such as Code Review, finish the task
-  where it stands.
+  at its current station.
 
 Spotlight checks the choice while the agent can still correct it. If the agent
-names a station it can't pass to, the command refuses and lists the ones it
+names a station it can't pass to, the command rejects it and lists the ones it
 can. [Why agents talk back through a command
 line](/docs/agents/agents-talk-back-through-a-command-line) explains why this is
 a command.
@@ -111,14 +111,14 @@ the pull request sends the task back to Implementation, a comment or a request
 for changes on the pull request brings it back to Code Review, and a merged
 pull request moves it to Completed. These rules are part of the line's
 definition, and Spotlight calls them reactions. Unlike a person's move, a
-reaction waits while a run holds the task and applies when the run ends,
+reaction waits while the task has a current run and applies when the run ends,
 unless the run passes the task on first. A move to Completed, such as a merged
 pull request, is the exception: it stops the run and asks a person whether to
 close the task, or, if the task already waits on an answer to the run's
 question, adds itself to that question. [How outside events reach a
 task](/docs/getting-started/how-outside-events-reach-a-task) explains how
-Spotlight works out which task an event is about, and what happens when a run
-holds it.
+Spotlight works out which task an event is about, and what happens when it
+has a current run.
 
 ## When two moves happen at once
 
@@ -131,23 +131,23 @@ has been moved elsewhere or put to a person in the meantime, whatever the run sa
 ignored, and a run that ends in failure is recorded as superseded rather than
 failed.
 
-A person's move is refused if the task has moved or finished since their board
+A person's move fails if the task has moved or finished since their board
 last showed it. So moving a task on a board that hasn't caught up can't undo
 a move the person never saw.
 
 ## Finishing a task and moving it are separate
 
 A task keeps no single status. Its station says where it is, and whether it is
-running, waiting or finished comes from other facts: a run holding it, a
+running, waiting or finished comes from other facts: a current run on it, a
 question on it that has no answer, and the moment a station finished it or it
 reached Completed.
 
-So a task can be finished and still stand at a station. When Delivery's Code
+So a task can be finished and still be at a station. When Delivery's Code
 Review finishes a task, the task stays at Code Review with its pull request
 open. It moves to Completed later, when the pull request is merged. The board
 shows where the work is, and the pull request shows what is left to do.
 
 The inbox and the board also show the same task from two sides. A task waiting
-for a person still stands at its station on the board, marked as awaiting
+for a person is still at its station on the board, marked as awaiting
 review, and the question it is waiting on is in the inbox. [Asking a
 person](/docs/inbox/asking-a-person) covers that side.

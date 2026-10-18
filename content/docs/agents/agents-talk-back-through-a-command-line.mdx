@@ -54,10 +54,10 @@ should fail in front of the agent, with enough information to fix it, and not
 later in the control plane after the agent has stopped.
 
 A command can do that too. When an agent names a station its station does not
-hand on to, the command refuses in the terminal and lists the ones it may
+hand on to, the command rejects it in the terminal and lists the ones it may
 choose. When a note is too long, it says how long the note is and what the
 limit is. Tools behave the same way: a missing input prints the tool's usage,
-and a tool the run was not given is refused with the list of tools it was.
+and a tool the run was not given is rejected with the list of tools it was.
 The agent reads the error, corrects the call and runs it again, which is what
 agents already do with every other command they run.
 
@@ -114,7 +114,7 @@ The decision is about Spotlight's own channel, the one through which an agent
 reports back. It says nothing against MCP in general. A team that has MCP
 servers it wants its agents to use can name them in a [harness
 profile](/docs/reference/terraform/harness-profile), and each harness gets them in its
-own format, with any secrets they need added to their requests by egress. A team that would rather
+own format, with any secrets they need injected into their requests by egress. A team that would rather
 describe an HTTP API as tools can do that on an
 [integration](/docs/reference/terraform/integration), and its agents call those tools
 through the same `spotlight` command as everything else.

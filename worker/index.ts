@@ -10,6 +10,11 @@ const { rewrite: rewriteSuffix } = rewritePath(
   `${docsContentRoute}{/*path}/content.md`,
 );
 
+const MOVED: Readonly<Record<string, string>> = {
+  '/docs/improvement/why-a-search-holds-tasks-back':
+    '/docs/improvement/why-a-search-holds-tasks-out',
+};
+
 interface Env {
   ASSETS: { fetch: (input: Request | URL) => Promise<Response> };
 }
@@ -25,7 +30,16 @@ async function markdown(env: Env, request: Request, path: string, vary: boolean)
 
 export default {
   async fetch(request: Request, env: Env) {
-    const { pathname } = new URL(request.url);
+    const { pathname, search } = new URL(request.url);
+
+    const asMarkdown = pathname.endsWith('.md') ? '.md' : '';
+    const moved = MOVED[pathname.replace(/(\.md|\/)$/, '')];
+    if (moved) {
+      return Response.redirect(
+        new URL(moved + asMarkdown + search, request.url),
+        301,
+      );
+    }
 
     const suffix = rewriteSuffix(pathname);
     if (suffix) return markdown(env, request, suffix, false);

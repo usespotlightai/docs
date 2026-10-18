@@ -15,7 +15,7 @@ You need:
 - An account at the service that may grant the scopes the integration asks for.
 - The integration defined for the team with a `connection.oauth2` block, as
   below.
-- An OAuth client for the integration. Either Spotlight's deployment holds one,
+- An OAuth client for the integration. Either Spotlight's deployment has one,
   registered at the service with the redirect URL
   `https://app.usespotlight.ai/api/integrations/oauth/callback` (on a
   self-hosted Spotlight, your deployment's address in its place) and looked up
@@ -67,10 +67,10 @@ If the integration's tools should act as the person who started each task, set
 `holder = "requester"` in `connection`. A hook cannot call these tools.
 
 For a remote MCP server whose connection discovers its endpoints, a client
-the deployment holds must also name the `issuer` of the server's authorization
+the deployment has must also name the `issuer` of the server's authorization
 server; see [Discovery](/docs/reference/terraform/integration#discovery).
 
-If the deployment holds no OAuth client for the integration, set
+If the deployment has no OAuth client for the integration, set
 `registration` to the service's client registration endpoint. If the service
 asks which resource the grant is for, set `resource` to its address:
 
@@ -152,7 +152,7 @@ disconnect someone else.
 ## Answer a request to connect
 
 If a run on a task you started calls a tool that acts as you, and you have not
-connected the integration, or the service refused to renew your grant, nothing
+connected the integration, or the service could not renew your grant, nothing
 is sent. The task is assigned to you and your inbox gets an item saying which
 tool needs your connection. Select **Connect** in it and authorize at the
 service. Once you are back, the item is answered with `Connected <Name>.` and
@@ -175,11 +175,11 @@ shows "Could not connect. Try again." instead of taking you anywhere, Spotlight
 would not begin. Either you may not make that
 connection (the team's needs an owner or admin; your own needs you to be on the
 team and the integration to have `holder = "requester"`), or Spotlight has no
-OAuth client for the integration: the deployment holds none and the definition
-has no `registration`, or the service refused to register one.
+OAuth client for the integration: the deployment has none and the definition
+has no `registration`, or the service did not register one.
 
 If you authorized at the service but land on Spotlight's start page instead of
-the page you started from, the connection was refused, and Spotlight shows no
+the page you started from, the connection failed, and Spotlight shows no
 message. Check that:
 
 - you may make the connection, as above;
@@ -188,7 +188,7 @@ message. Check that:
 - you approved the request at the service rather than declining it.
 
 Then select **Connect** again. If it fails every time, the service may be
-refusing Spotlight's client or its redirect URL, which whoever runs your
+rejecting Spotlight's client or its redirect URL, which whoever runs your
 Spotlight deployment can check.
 
 ## Related

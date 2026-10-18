@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Searches
-description: The Searches card on a Station page, the Start a search dialog, its aims and its warnings, the search page, search and iteration states, stalls and why a search stalled, scores, gains, the frontier and candidates whose gain showed only on seen tasks, the pull request a picked candidate opens and why one is refused, and a replay set that guards a station's changes.
+description: The Searches card on a Station page, the Start a search dialog, its aims and its warnings, the search page, search and iteration states, stalls and why a search stalled, scores, gains, the frontier and candidates whose gain showed only on seen tasks, the pull request a picked candidate opens and why one fails, and a replay set that guards a station's changes.
 ---
 
 A [search](/docs/reference/glossary#search) has an agent propose changed
@@ -32,14 +32,14 @@ first, one row each:
 | Search | `Search <n>`, numbered from the station's first search, linked to its page. |
 | State | Its [state](#search-states). Hovering over it shows its [ending](#search-endings), once it has one. |
 | Replay set | The set it searches on, or `–`. |
-| Best | Its [best candidate](#best-candidate)'s name, or "Live config", with its [reading](#only-on-seen-tasks) when it has one. Without one, "No best candidate yet", or `No candidate holds its success yet` for a search that aims for the same success for less. |
+| Best | Its [best candidate](#best-candidate)'s name, or "Live config", with its [reading](#only-on-seen-tasks) when it has one. Without one, "No best candidate yet", or `No candidate matches the live config’s success yet` for a search that aims for the same success for less. |
 | Success | The best candidate's score as a percentage, or `–`. Hovering over it shows `This score is from the held-out tasks.` or `This score is from the searched tasks.`, with `Likely range: <range>`. |
 | Iterations | `<run> / <budget>`. |
 | Spent | `<spent> / <ceiling>`. |
 | Started | When it started. |
 
-"Start a search" opens the [Start a search](#start-a-search) dialog. It is
-refused, with the reason on hover, while a search of the station is under way
+"Start a search" opens the [Start a search](#start-a-search) dialog. It
+cannot be selected, with the reason on hover, while a search of the station is under way
 (`A search of this station is underway.`), when the station has no set
 (`Create a replay set first.`), or when no set covers runs of 5 different tasks
 (`No replay set covers 5 different tasks yet.`). While the station's sets load,
@@ -55,7 +55,7 @@ With no searches, the card reads "No searches yet" and
 
 The dialog's description reads `An agent proposes configs for this station.
 Each config replays on most of the set's tasks. Then the best configs replay
-on held-out tasks to check that they hold up. The station doesn't change until
+on held-out tasks to check that they still do well. The station doesn't change until
 you pick a config.`
 
 | Field | Values |
@@ -102,7 +102,7 @@ The estimate always holds out as many tasks as the search will, and assumes
 the choice of tasks whose runs cost most, so the search's own split costs as
 much or less. Its counts of runs and its allotments count every copy. Under
 it: `An agent run may slightly overspend. The search may end a little over its
-ceiling.` When the endpoint refuses, the estimate shows the refusal, or `Please
+ceiling.` When the endpoint rejects the inputs, the estimate shows the error, or `Please
 fix the marked field to see an estimate.` when every problem it names is at
 a field.
 
@@ -123,7 +123,7 @@ Under either `Success moved` warning, unless "Repeats" is the suggestion
 already, `Replay each run <n> times` sets "Repeats" to the copies needed, at
 most 5. A warning does not stop the search from starting. "Start search",
 which cannot be selected until the harnesses are known, reads "Starting…" while
-it is sent, then opens the new search's page. A refusal is shown at its field, such as a
+it is sent, then opens the new search's page. An error is shown at its field, such as a
 ceiling too low to give each replay run at least 0.01 of its currency.
 
 ## Search page
@@ -158,7 +158,7 @@ An ⓘ beside a tile's label shows its note on hover.
 
 | Tile | Shows | Note |
 | --- | --- | --- |
-| Best | The [best candidate](#best-candidate)'s name, or "Live config", then its score as a percentage with `held out` or `searched`, and its [reading](#only-on-seen-tasks) when it has one. Without one, `–` and "No best candidate yet". Labelled "Cheapest" when the search aims for the same success for less, and then `No candidate holds its success yet` without one. | `The search aims for <aim>.` and the aim's note, as under "Aim for", then `Likely range: <range>.` |
+| Best | The [best candidate](#best-candidate)'s name, or "Live config", then its score as a percentage with `held out` or `searched`, and its [reading](#only-on-seen-tasks) when it has one. Without one, `–` and "No best candidate yet". Labelled "Cheapest" when the search aims for the same success for less, and then `No candidate matches the live config’s success yet` without one. | `The search aims for <aim>.` and the aim's note, as under "Aim for", then `Likely range: <range>.` |
 | Live config | The live config's search score as a percentage, and `of <n> runs scored`; or `–` and "Not scored yet". | `Likely range: <range>.` and `Minimum real gain: <min_gain>.`, as in `+5 pts`. |
 | Iterations | `<n> of <m>`, the iterations run of its budget, and `<n> candidates proposed` ("candidate" for 1). | `Each iteration tries <n> candidates, <n> at once. Each run once. Search agent: <harness> · <model> · <effort>`, with `Each run <n> times` for more copies, and only the parts its agent has. |
 | Tasks | The searched tasks, and `searched · <n> held out`. | `The search agent sees only the searched tasks and their scores. It doesn't see the held-out tasks. After the search, the best candidates replay on the held-out tasks to check that they don't only fit what the agent saw.`, then `Held out: <titles>.` with each held-out task's title in the set, or `Task <first 8 characters of its id>`. |
@@ -198,13 +198,13 @@ It is one table:
 | Cost per run | What it spent per scored searched run, or "Unpriced". |
 | Pull request | `–` until it is picked, "Opening…", "Opened", linked to the pull request on GitHub, or "Not opened" with a warning icon, "Why", whose hover reads `<reason>. <message>`: the [reason](#config-pull-request-reasons) in words, then Spotlight's message. |
 
-The first row, "Started from", holds the live config. Then each iteration has
+The first row, "Started from", shows the live config. Then each iteration has
 a row `Iteration <n>`, followed by its candidates. An iteration's row reads
 `· Looked for why it stalled` for a [reflection](#reflections), its
 [state](#iteration-states) unless it ended, and "Agent run", linked to the
 agent run's Run page, titled `Iteration <n> of Search <m>`. Hovering over `Iteration <n>` shows
 `<state>. The search took <n> of <m> proposals. The search agent spent
-<spent>.`: refused proposals count among the second, a reflection has no
+<spent>.`: rejected proposals count among the second, a reflection has no
 count of proposals, and what its agent spent shows once known.
 
 An iteration with no candidates reads `Nothing proposed yet.` while its agent
@@ -345,7 +345,7 @@ and stops its replays.
 
 Each iteration is of one kind: `propose`, whose agent proposes candidates, or
 `reflect`, a [reflection](#reflections), whose agent proposes nothing and
-records causes. A reflection counts toward "Iterations" like any other.
+records causes. A reflection counts in "Iterations" like any other.
 
 An agent run no runner takes within 60 minutes is withdrawn, and its iteration
 fails. An agent run whose spend is not known 15 minutes after it ended is
@@ -357,14 +357,14 @@ Each iteration's agent run is a run of its own kind:
 
 | | Search agent run |
 | --- | --- |
-| Task | Holds no task. |
+| Task | Has no task. |
 | Placement | Where the station's runs go: the station's `runners`, else the line's. Its priority is below every task run and chat run. |
 | Workspace | No repository is checked out, and no skills, settings files or team memories are laid out. |
 | Briefing | The station's live config as the search started, the budget left, how many candidates it may propose, how many tasks are held out, what counts as better for the search's [aim](#aims), what a candidate may change, and how to propose one. After a reflection that went on, also each `config` cause it recorded, with its task, evidence and suggestion. A reflection's briefing instead names the config whose failures it looks into, lists each failing task with its original run and the replay run that failed it, describes the five [causes](#causes), and says how to record one. |
-| `spotlight history` | Only the searched station. The held-out tasks' runs are left out; the searched runs are always written. A `candidates/` folder holds each candidate so far. See [`spotlight history`](/docs/reference/cli/agent-commands#spotlight-history). |
-| `spotlight candidate` | Proposes a candidate. Refused in a reflection. See [`spotlight candidate`](/docs/reference/cli/agent-commands#spotlight-candidate). |
+| `spotlight history` | Only the searched station. The held-out tasks' runs are left out; the searched runs are always written. A `candidates/` folder contains each candidate so far. See [`spotlight history`](/docs/reference/cli/agent-commands#spotlight-history). |
+| `spotlight candidate` | Proposes a candidate. Not allowed in a reflection. See [`spotlight candidate`](/docs/reference/cli/agent-commands#spotlight-candidate). |
 | `spotlight cause` | Records a task's cause, in a reflection only. See [`spotlight cause`](/docs/reference/cli/agent-commands#spotlight-cause). |
-| Refused | Messages from people, git, tools, `spotlight reply`, `spotlight recall` and `spotlight remember`. `spotlight trace` finds no held-out task. |
+| Not allowed | Messages from people, git, tools, `spotlight reply`, `spotlight recall` and `spotlight remember`. `spotlight trace` finds no held-out task. |
 | Asking a person | Ends the run, and its iteration fails. |
 
 ## Stalls
@@ -547,7 +547,7 @@ The candidate first in the order of the search's [aim](#aims): by held-out
 score and held-out gain once any candidate has a held-out score, else by
 search score and searched gain. When it aims for more success, that is the one
 that succeeds most, then the cheaper; when it aims for the same success for
-less, the cheapest that holds its success, read "Cheapest". When the live
+less, the cheapest that keeps its success, read "Cheapest". When the live
 config comes first, the best reads "Live config".
 
 ## Spend and ceiling
@@ -576,7 +576,7 @@ runs or after. The live config's details have no "Pick".
 | not picked | "Pick", with `Picking opens a pull request that changes the station to this config.` A [marked](#only-on-seen-tasks) candidate also reads `The gain showed only on searched tasks. You can still pick this candidate, but the gain may not carry over to new work.` | "Pick" |
 | `opening` | `Opening a pull request…` | |
 | `opened` | "Pull request opened", linked to it | |
-| `refused` | "No pull request opened", the [reason](#config-pull-request-reasons) in words, Spotlight's message, and, for an attribute, `At <attribute>, computed by <expression>. Please set it by hand to <value>`, each part only when known | "Retry" |
+| `failed` | "No pull request opened", the [reason](#config-pull-request-reasons) in words, Spotlight's message, and, for an attribute, `At <attribute>, computed by <expression>. Please set it by hand to <value>`, each part only when known | "Retry" |
 
 While the pick is sent, the button reads "Picking…". "Retry" tries again,
 reading the line's `source` afresh.
@@ -624,26 +624,26 @@ is the station's. It changes only the attributes the candidate changes:
 | --- | --- |
 | A plain value or heredoc | Replaced in place. |
 | `file("${path.module}/<path>")`, for `prompt`, `description`, `harness`, `model`, `effort` or `profile` | The new value is written to the station's own file beside the `.tf` file: `prompts/<team>/<line>/<station>.md` for `prompt`, the file the export writes, and `prompts/<team>/<line>/<station>.<attribute>.md` for the others. If the attribute was already read from that file, and nothing else reads it, the file is changed in place. Otherwise a new file is written, with `-2`, `-3` and on added to its name when one is taken, and `file()` is pointed at it. |
-| A reference to a resource in the same file, as for `profile`, `skills` and `tools` | Followed to its value. A new value is written as a reference when a resource in the file holds it. |
+| A reference to a resource in the same file, as for `profile`, `skills` and `tools` | Followed to its value. A new value is written as a reference when a resource in the file contains it. |
 | Not written | Added after the block's last attribute. |
-| Anything else, such as a variable or a local | Refused, `computed-attribute`. |
+| Anything else, such as a variable or a local | Fails with `computed-attribute`. |
 
 Before it writes, the edit checks that every attribute the candidate may change,
-the station's `check` and `passes_to`, and its `judge` block hold the values the
-search started from, and refuses with `drifted` otherwise. An attribute it
+the station's `check` and `passes_to`, and its `judge` block still have the values the
+search started from, and fails with `base-changed` otherwise. An attribute it
 cannot read and the candidate does not change is listed in the pull request
 as not checked. An attribute read through `file()` with a path not built on
-`${path.module}` cannot be followed, so changing it is refused with
-`computed-attribute`. A `file()` path outside the repository is refused with
+`${path.module}` cannot be followed, so changing it fails with
+`computed-attribute`. A `file()` path outside the repository fails with
 `file-missing`. The edited
-file is read back, and refused with `edit-failed` if it does not parse or does
-not hold the candidate's values.
+file is read back, and the edit fails with `edit-failed` if it does not parse or does
+not contain the candidate's values.
 
-GitHub refusing a request with a `4xx` status, other than for a rate limit,
-refuses the pull request at once with `github-refused`. An attempt that fails
+When GitHub answers a request with a `4xx` status, other than for a rate limit,
+the pull request fails at once with `github-error`. An attempt that fails
 for another reason, such as GitHub not answering or a rate limit, is tried
-again after 30 seconds, 2 minutes, 8 minutes and 32 minutes, and then refused
-with `github-refused`.
+again after 30 seconds, 2 minutes, 8 minutes and 32 minutes, and then fails
+with `github-error`.
 
 ### Config pull request reasons
 
@@ -656,18 +656,18 @@ with `github-refused`.
 | `block-not-found` | Station's block isn't in the file |
 | `blocks-ambiguous` | Station's block appears more than once |
 | `computed-attribute` | Attribute is computed in Terraform. Please set it by hand. |
-| `drifted` | File changed since the search began |
+| `base-changed` | File changed since the search began |
 | `edit-failed` | Edited file wouldn't parse as Terraform. Please make the change by hand. |
 | `branch-taken` | Pull request branch already exists |
 | `file-unwritable` | File couldn't be written to its repository |
-| `github-refused` | GitHub refused the change |
+| `github-error` | GitHub answered with an error |
 
 Each comes with Spotlight's message, such as
 ``Terraform computes `prompt` from `local.build_prompt`. Please change it by hand.``.
 `block-not-found` also covers a station no longer on its line, and
-`file-missing` a file a `file()` reads that the repository does not hold.
+`file-missing` a file a `file()` reads that the repository does not contain.
 `file-unwritable` is a file that is a symbolic link in the repository.
-`branch-taken` means the branch holds commits Spotlight did not write.
+`branch-taken` means the branch has commits Spotlight did not write.
 
 ## Guarding a station's changes
 
@@ -675,7 +675,7 @@ A replay set's page has a "Guards config changes" switch, at the bottom left
 of its "Checks" panel. When it is on,
 [`spotlight replay check`](/docs/reference/cli/replay-command#spotlight-replay-check)
 replays a planned change of the station on this set. A station has at most one
-such set: turning it on while another set guards the station is refused. The switch cannot be changed once the set's station has left its
+such set: turning it on while another set guards the station fails. The switch cannot be changed once the set's station has left its
 line. Turning it off leaves checks already started running.
 
 The "Checks" panel's ⓘ reads `spotlight replay check replays a pull

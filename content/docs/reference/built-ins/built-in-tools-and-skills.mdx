@@ -27,7 +27,7 @@ under [spotlight &lt;tool&gt;](/docs/reference/cli/agent-commands#spotlight-tool
 Opens a pull request for the task's branch, `spotlight/<taskId>`, into the
 repository's default branch (`main` if GitHub names none). If a pull request is
 already open for the branch, that one is returned. It answers with
-`{"url": "<address>"}`. The task then holds the `git.pull-request`
+`{"url": "<address>"}`. The task then has the `git.pull-request`
 [mark](/docs/reference/events/github-events#marks).
 
 | Input | Type | Required | Piped | Description |
@@ -38,8 +38,8 @@ already open for the branch, that one is returned. It answers with
 
 ### review-comment
 
-Leaves a comment on a line of the pull request the task reviews. The comment is
-held until the review is submitted.
+Leaves a comment on a line of the pull request the task reviews. Spotlight keeps
+the comment until the review is submitted.
 
 | Input | Type | Required | Piped | Description |
 | --- | --- | --- | --- | --- |
@@ -84,7 +84,7 @@ call answers the pull request the chat already opened. See
 
 | Input | Type | Required | Piped | Description |
 | --- | --- | --- | --- | --- |
-| `branch` | string | yes | no | The branch pushed, as in `spotlight-configuration`. A branch under `spotlight/` is refused with `Branch <branch> is named like a task’s branch. Please name it outside spotlight/, as in spotlight-configuration.` |
+| `branch` | string | yes | no | The branch pushed, as in `spotlight-configuration`. A branch under `spotlight/` is rejected with `Branch <branch> is named like a task’s branch. Please name it outside spotlight/, as in spotlight-configuration.` |
 | `title` | string | yes | no | What it does. |
 | `body` | string | no | yes | The decisions and the plan, as Markdown. |
 
@@ -134,7 +134,7 @@ the ones before it. A workspace with no plan set, or whose plan has lapsed,
 is on `free`.
 
 - A line that gives a catalog item the workspace's plan does not include is
-  refused when it is written.
-- A run at such a station is refused.
+  rejected when it is written.
+- A run at such a station fails with the code `refused`.
 - A catalog skill is laid out in the folder `spotlight-catalog-<name>`, and
   brings the catalog tools it uses.

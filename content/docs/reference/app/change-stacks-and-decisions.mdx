@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Change stacks and decisions
-description: How a run's diff becomes a change stack of cohorts and layers, how its layers are checked, and the decisions Spotlight draws from a run, with their kinds, standing and disputes.
+description: How a run's diff becomes a change stack of cohorts and layers, how its layers are checked, and the decisions Spotlight draws from a run, with their kinds, status and disputes.
 ---
 
 A change stack is a run's diff arranged for review. A decision is a choice an
@@ -16,8 +16,8 @@ its [station fields](/docs/reference/terraform/line#station-fields):
 | `decisions: true` | After each completed run, decisions are drafted from it. |
 
 Both are drafted by Spotlight after the run, not by the agent. Both need the
-deployment to have [drafting](/docs/reference/self-hosted-settings#drafting) set up; where it does not, a change stack is
-refused with `Change stacks are not set up on this deployment.`, and
+deployment to have [drafting](/docs/reference/self-hosted-settings#drafting) set up; where it does not, a change stack
+fails with `Change stacks are not set up on this deployment.`, and
 no decisions are drafted.
 [Reviewing an agent's changes](/docs/runs/reviewing-an-agents-changes)
 gives the reasons.
@@ -45,12 +45,12 @@ the wait before the next starts at 30 seconds and doubles. A diff is at most
 
 A stack is an ordered list of cohorts. A cohort is an ordered list of layers.
 
-| Part | Holds |
+| Part | Contains |
 | --- | --- |
 | Cohort | A kind, a title and an intent. |
 | Layer | A title, a summary, the changes it places, a note on each file it changes, and the earlier layers it depends on with the reason for each. |
 
-| Cohort kind | Holds |
+| Cohort kind | Contains |
 | --- | --- |
 | `change` | The changes a reviewer reads, in layers that build on one another. |
 | `incidental` | Lockfiles, generated files, test snapshots, pure renames and formatting-only changes. Spotlight places these itself. |
@@ -121,14 +121,14 @@ from the line's runner image, on a runner that meets the run's placement.
   and checked again.
 - A step may take 5 minutes, and a check 60 minutes in all. The last 16,000
   characters of each step's output are kept.
-- A runner holds a check under a 10-minute lease, which it renews while the
+- A runner has a 10-minute lease on a check, which it renews while the
   check runs, with
-  `POST /api/runs/{runId}/change-stack-checks/{stackId}/lease`. A renewal is
-  refused 65 minutes after the claim. The hold ends when the lease lapses, or
+  `POST /api/runs/{runId}/change-stack-checks/{stackId}/lease`. A renewal
+  fails 65 minutes after the claim. The lease ends when it lapses, or
   65 minutes after the claim.
 - A check is claimed at most 3 times.
 - A check that has waited more than 60 minutes is skipped with
-  `nobody-checked` while no runner holds it.
+  `nobody-checked` while no runner has a lease on it.
 
 | Check state | Meaning |
 | --- | --- |
@@ -145,7 +145,7 @@ from the line's runner image, on a runner that meets the run's placement.
 | `no-room` | The runner had no room to check the layers. |
 | `out-of-time` | There was no time left to check the layers. |
 | `no-image` | The host couldn't pull the runner image that the line names. |
-| `nobody-checked` | No runner checked the layers in time. The check had waited more than 60 minutes, and no runner held it. |
+| `nobody-checked` | No runner checked the layers in time. The check had waited more than 60 minutes, and no runner had a lease on it. |
 | `unprovisioned` | Spotlight couldn't provision a runner to check the layers. |
 
 A push pool receives a check as provision work of kind `check`. See
@@ -192,15 +192,15 @@ A drafted decision that breaks these limits is dropped.
 - Drafting is attempted as for a change stack. When every attempt fails, the
   task keeps the decisions it had.
 
-### Standing
+### Status
 
-| Standing | Meaning |
+| Status | Meaning |
 | --- | --- |
 | `proposed` | Drafted, and open to disputes. Later runs may replace it. |
-| `stands` | The task's pull request merged. Nothing is drafted for the task again. |
+| `merged` | The task's pull request merged. Nothing is drafted for the task again. |
 
 When the pull request is closed without merging, the decisions are discarded.
-Decisions that stand are listed by
+Merged decisions are listed by
 `GET /api/workspaces/{slug}/decisions`, filtered by `repository`, `path`,
 `since` and `until` (merge times).
 

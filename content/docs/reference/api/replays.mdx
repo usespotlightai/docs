@@ -16,7 +16,7 @@ team's replayed candidates over a period, beside each set's baseline, are read
 through the [Replayed candidates API](/docs/reference/api/replayed-candidates).
 
 `{lineId}` is a line's id, and `{stationId}` a station's id, as a candidate's
-`stationId` holds it.
+`stationId` contains it.
 
 ## Endpoints
 
@@ -24,7 +24,7 @@ through the [Replayed candidates API](/docs/reference/api/replayed-candidates).
 | --- | --- |
 | `GET /lines/{lineId}/stations/{stationId}/replay-sets` | The station's replay sets, each with its runs, whether each can still be replayed, `guardsChanges`, whether the set [guards the station's changes](/docs/reference/api/replay-checks), its [`health` and `minGain`](#set-health), and its [`composition`](#set-composition). |
 | `GET /replay-sets` | Every replay set of the team, including those whose station has left its line. With `line` and `station`, only one station's. |
-| `GET /lines/{lineId}/stations/{stationId}/replayable-runs` | The station's latest 50 ended task runs, newest first, each with its refusal and the reason, or none. |
+| `GET /lines/{lineId}/stations/{stationId}/replayable-runs` | The station's latest 50 ended task runs, newest first, each with its `unreplayableReason` and `reason`, or none. |
 | `GET /replay-sets/{setId}/suggestions` | Up to 5 of the station's recent runs that would even out how the set's runs turned out, each as `replayable-runs` lists it, with its `outcome`. None is added. See [Suggested runs](/docs/reference/app/replays#suggested-runs). |
 | `POST /lines/{lineId}/stations/{stationId}/replay-sets` | `201` and `{ "id" }`: opens an empty set. |
 | `PATCH /replay-sets/{setId}` | `204`: renames the set, also once its station has left its line. |
@@ -67,7 +67,7 @@ ceiling of its own equal to `ceiling` and the same `repeats`. With
 `candidate` set to `live`, the replay itself becomes the baseline.
 
 That baseline, either one, also [checks the set](#checking-the-set) when the
-set holds 5 runs or more and no replay of the live config at its current
+set contains 5 runs or more and no replay of the live config at its current
 config fingerprint over the whole set has checked it while queued, running or
 finished. It then replays each run `max(repeats, 3)` times, under a ceiling
 of `ceiling` times those repeats divided by `repeats`, at most `1,000`. The answer:
@@ -87,7 +87,7 @@ fewer than 5 runs is never checked. Once the checking baseline finishes, each
 change whose check passed or failed is checked a second time, and each change
 the judge gave a verdict on is judged a second time, in order, while the
 ceiling still has room for one more at what its first judging cost. The
-second judgings count against the ceiling, but not toward the replay's
+second judgings count against the ceiling, but not in the replay's
 success or `costPerRun`. Neither changes a run's result. See
 [Checking the set](/docs/reference/app/replays#checking-the-set).
 
@@ -100,14 +100,14 @@ A replay read carries:
 | `repeats` | number | How many times it replays each run of its set. |
 | `totals.successRate` | number or null | Its [success](/docs/reference/app/replays#success), 0 to 1: per task, the share of its scored copies that succeeded, averaged over the tasks scored. |
 | `totals.interval` | object or null | `{ rate, low, high }`: the success rate and its 95% interval, bootstrapped over the tasks. Null while none was scored. |
-| `totals.tasks`, `totals.tasksScored` | number | How many tasks it replays, and how many have a scored copy. `entries`, `settled`, `scored` and `unscored` count copies. |
+| `totals.tasks`, `totals.tasksScored` | number | How many tasks it replays, and how many have a scored copy. `entries`, `ended`, `scored` and `unscored` count copies. |
 | `againstBaseline` | object or null | Its [gain](#gain) over the replay in `comparedWith`, with whether it is within noise. Null where `comparedWith` is, and while no task was scored on both sides. |
 | `comparedWith` | object or null | `{ replayId, successRate, interval }`: the replay its gain, `comparison` rows and deltas are against, with its success. Null for the baseline itself, or with none. See [Compared with](#compared-with). |
 | `entries[].repeat` | number | Which copy of its original run an entry is, from 1. |
 | `comparison` | array | On a single replay's read: one row per task against the replay in `comparedWith`, regressions first. |
 | `comparison[].candidate`, `comparison[].baseline` | array | Each copy of the task this replay, and the replay in `comparedWith`, replayed. `baseline` is empty without one. |
 | `comparison[].candidateSuccess`, `comparison[].baselineSuccess` | number or null | The share of each side's scored copies that succeeded. |
-| `comparison[].costDelta`, `msDelta`, `stepsDelta` | number or null | This replay's measure less that of the replay in `comparedWith`, each averaged over its copies, once every copy of both has settled. |
+| `comparison[].costDelta`, `msDelta`, `stepsDelta` | number or null | This replay's measure less that of the replay in `comparedWith`, each averaged over its copies, once every copy of both has ended. |
 | `comparison[].regressed` | boolean | See [Regressions](/docs/reference/app/replays#regressions). |
 | `probe` | boolean | Whether it [checks the set](#checking-the-set). |
 | `entries[].secondJudge` | object or null | A check's second judging of the entry's change, in the shape of its first. Null when it was not judged again. |
@@ -144,7 +144,7 @@ An entry's `judge`:
 | `marks` | array of booleans or null | Whether each claim was met, in order. Null unless `scale` is `claims`. |
 | `claims` | array of strings | The claims the judge marked, in order, as worded when it judged. Empty unless `scale` is `claims`. |
 | `passShare` | number or null | The share of claims the run had to meet to pass. Null unless `scale` is `claims`. |
-| `reasons` | array | The judge's reasons, each `{ text, claim, citations }`. `claim` is the place of the claim it is about, from 0, or null on a rubric's scale. Each citation is `{ kind, step, hunk }`, `kind` `step` or `hunk`; a step holds its `index` and a hunk its `id`, and their other fields are null or empty, because a replay keeps no copy of what the judge read. |
+| `reasons` | array | The judge's reasons, each `{ text, claim, citations }`. `claim` is the place of the claim it is about, from 0, or null on a rubric's scale. Each citation is `{ kind, step, hunk }`, `kind` `step` or `hunk`; a step has its `index` and a hunk its `id`, and their other fields are null or empty, because a replay keeps no copy of what the judge read. |
 
 ### Side by side
 
@@ -152,10 +152,10 @@ See [Side by side](/docs/reference/app/replays#side-by-side).
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `pairedWith` | string or null | The replay its changes are set beside, judged blind, once it finishes, chosen when it started: the baseline standing then, or its search's replay of the live config. It is then also its [counterpart](/docs/reference/app/replays#counterparts), in `comparedWith`. Null for a baseline, a check of the set, a replay with the answer, or a replay that had none. |
+| `pairedWith` | string or null | The replay its changes are set beside, judged blind, once it finishes, chosen when it started: the baseline that was current then, or its search's replay of the live config. It is then also its [counterpart](/docs/reference/app/replays#counterparts), in `comparedWith`. Null for a baseline, a check of the set, a replay with the answer, or a replay that had none. |
 | `pairsAgainstBaseline` | object or null | `{ wins, losses, ties }`, counting tasks. Null where `pairedWith` is. |
-| `entries[].pair` | object or null | `{ state, againstRunId, outcome, model, unpaired, readings }`. `state` is `asked`, `judged` or `unpaired`. `againstRunId` is the run of the same task in `pairedWith` it was set beside. `outcome` is `win`, `loss` or `tie` once judged. `unpaired` is the [reason](/docs/reference/app/replays#side-by-side) when not compared, including `other-rubric` and `budget`. `readings` holds the two readings, each `{ ownShownFirst, outcome, reasons }`, each reason `{ text, ownHunks, theirHunks }`, the hunks it cites of this change and of the other. Null until asked. |
-| `entries[].pairingSpent` | object or null | What the side-by-side judging cost. It counts against the ceiling, but not toward `totals.spent`. |
+| `entries[].pair` | object or null | `{ state, againstRunId, outcome, model, unpaired, readings }`. `state` is `asked`, `judged` or `unpaired`. `againstRunId` is the run of the same task in `pairedWith` it was set beside. `outcome` is `win`, `loss` or `tie` once judged. `unpaired` is the [reason](/docs/reference/app/replays#side-by-side) when not compared, including `other-rubric` and `budget`. `readings` contains the two readings, each `{ ownShownFirst, outcome, reasons }`, each reason `{ text, ownHunks, theirHunks }`, the hunks it cites of this change and of the other. Null until asked. |
+| `entries[].pairingSpent` | object or null | What the side-by-side judging cost. It counts against the ceiling, but does not add to `totals.spent`. |
 | `comparison[].pair` | string or null | `win`, `loss` or `tie` for the task, from most of its compared copies. Null when none was compared. |
 
 A replay set read carries `health`, as in [Set health](#set-health), and
@@ -188,7 +188,7 @@ A set's `health` is read for the station's live config at its current
 
 ## Set composition
 
-A set's `composition` reads its original runs as they stand when the set is
+A set's `composition` reads its original runs as they are when the set is
 read. See [What a set is made of](/docs/reference/app/replays#what-a-set-is-made-of).
 
 | Field | Type | Description |
@@ -198,7 +198,7 @@ read. See [What a set is made of](/docs/reference/app/replays#what-a-set-is-made
 | `oldest` | string or null | When the set's oldest run ended. Null while no run's end can be read. |
 | `median` | string or null | The median of when its runs ended. |
 | `newest` | string or null | When its newest run ended. |
-| `balanceWarning` | object or null | `{ dominant, count, entries }` when the set holds 6 runs or more and one outcome other than `other` covers more than two thirds of them. |
+| `balanceWarning` | object or null | `{ dominant, count, entries }` when the set contains 6 runs or more and one outcome other than `other` covers more than two thirds of them. |
 
 Each entry of the set also carries its run's `outcome`, one of the five above,
 and `origin`, as in `origins` but null where `origins` reads `unknown`.
@@ -213,7 +213,7 @@ team's workspace with the `read` scope, sent as `Authorization: Bearer
 
 Opening, renaming and deleting sets, adding and removing runs, starting and
 stopping replays also need `plan`: every person who may read, or a token
-with `plan` or `configure`. A token with `read` alone is refused with `403`
+with `plan` or `configure`. A token with `read` alone gets `403`
 and the title `Not allowed to plan`.
 
 A replay run's config, at `GET /runs/{runId}/config`, is answered only to those who may read the team's replays.
@@ -229,5 +229,5 @@ of the kind `replay`, keyed by the replay's id.
 | `401` | No session or token, or an unknown token. |
 | `403` | A change by a caller who may read the team but not plan. |
 | `404` | The team, line, station, set, run, candidate or replay is not one the caller may see, as in `Replay set <setId> not found.` |
-| `409` | Adding a run already in the set (`Run <runId> is already in the replay set.`), to a full set (`Replay set is full. Maximum runs: 50`), or that cannot be replayed (`Run <runId> cannot be replayed. <reason>`, with a [refusal](/docs/reference/app/replays#why-a-run-cannot-be-replayed)). Deleting a set while a replay or a search of it is under way, or adding or taking out a run while a search of it is under way (`Replay set <setId> is being replayed or searched. Please stop its replays and searches first.`). Adding a run to, or replaying, a set whose station has left its line (`The station of replay set <setId> is gone from its line. You can only rename the set, remove runs from it or delete it.`). Stopping a replay that has ended (`Replay <replayId> has already ended or been stopped.`). Starting a replay while the set's baseline changed (`The baseline of replay set <setId> changed while the replay was starting. Please start it again.`). |
+| `409` | Adding a run already in the set (`Run <runId> is already in the replay set.`), to a full set (`Replay set is full. Maximum runs: 50`), or that cannot be replayed (`Run <runId> cannot be replayed. <reason>`, with an [unreplayable reason](/docs/reference/app/replays#why-a-run-cannot-be-replayed)). Deleting a set while a replay or a search of it is under way, or adding or taking out a run while a search of it is under way (`Replay set <setId> is being replayed or searched. Please stop its replays and searches first.`). Adding a run to, or replaying, a set whose station has left its line (`The station of replay set <setId> is gone from its line. You can only rename the set, remove runs from it or delete it.`). Stopping a replay that has ended (`Replay <replayId> has already ended or been stopped.`). Starting a replay while the set's baseline changed (`The baseline of replay set <setId> changed while the replay was starting. Please start it again.`). |
 | `422` | A missing or invalid field, at its path: a name out of length (`Replay set name must be 1 to 100 characters.`), a ceiling out of range (`Spend ceiling must be above 0 and at most 1,000.`) or not in a three-letter currency, `repeats` not a number (`Repeats must be a number.`) or out of range (`Replay repeats must be from 1 to 5.`), no `candidate` (`Candidate must be a candidate ID or "live".`), or a set with no runs (`Replay must replay at least one run.`). A run of another station (`Run <runId> worked at a different station from the replay set.`). `line` without `station`, or `station` without `line`, on `GET /replay-sets` (`Line and station must be given together.`). |

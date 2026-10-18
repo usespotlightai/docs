@@ -6,7 +6,7 @@ description: The fields of a workspace, who may create, change and delete one, a
 ---
 
 The `spotlight_workspace` resource, and the workspace resource of the API: the
-top-level account, which holds teams, members and their roles, the GitHub
+top-level account, which has teams, members and their roles, the GitHub
 connection, secrets, runners and workspace tokens.
 
 | Kind | Endpoint | Terraform | Address |
@@ -35,7 +35,7 @@ resource "spotlight_workspace" "acme" {
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `name` | string | required | What the workspace is called. 1 to 100 characters. |
-| `slug` | string | required | The workspace's address in URLs, as in `/w/acme`. Lowercase letters and digits, with single dashes between them, at most 48 characters, written exactly as it is kept. Fixed: an update that changes it is refused; Terraform replaces the resource. |
+| `slug` | string | required | The workspace's address in URLs, as in `/w/acme`. Lowercase letters and digits, with single dashes between them, at most 48 characters, written exactly as it is kept. Fixed: an update that changes it is rejected; Terraform replaces the resource. |
 
 ## Rules
 
@@ -43,19 +43,19 @@ resource "spotlight_workspace" "acme" {
 | --- | --- |
 | create | Needs `open-workspaces`: any signed-in person, never a workspace token. The creator becomes the workspace's owner. |
 | update | Needs `configure`. Changes `name` only. |
-| delete | Needs `administer`. Refused with `409` `in-use` while the workspace holds any team, workspace token, workspace token trust, secret, runner pool, runner trust or workspace runners. Deleting closes the workspace. |
+| delete | Needs `administer`. Fails with `409` `in-use` while the workspace has any team, workspace token, workspace token trust, secret, runner pool, runner trust or workspace runners. Deleting closes the workspace. |
 | list | Every workspace the caller may read. A workspace token reads only its own. |
 | import | `GET /api/resources/workspaces/import?address=<slug>` |
 
-An in-use refusal names what is left, as in
-`Workspace acme is not empty. Still holds: team core`.
+An `in-use` error names what is left, as in
+`Workspace acme is not empty. It still has: team core`.
 A closed workspace grants nothing to anyone. See
-[Roles and permissions](/docs/reference/roles-and-permissions) for who holds
+[Roles and permissions](/docs/reference/roles-and-permissions) for who has
 each permission.
 
 ## In Terraform
 
-- `spotlight_workspace` cannot be created by Terraform. The create is refused
+- `spotlight_workspace` cannot be created by Terraform. The create is forbidden
   with `403`, and the provider says to import the workspace by its slug.
   Destroying it deletes the workspace, under the rules above.
 - The data source `spotlight_workspace` reads a workspace without managing it.

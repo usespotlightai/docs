@@ -28,7 +28,7 @@ and answer JSON.
 | `/people` | What the team's work asks of people, and who is active: new, weekly and monthly. |
 | `/cost` | Spend by harness, model, station and repository, from model to station to repository. |
 | `/tools` | Which skills the runs were given and read, week by week, and how each MCP server they called behaved. |
-| `/memory` | The team's standing memories, how many runs were briefed or read them, which were flagged wrong, and runs with memories against runs without. |
+| `/memory` | The team's active memories, how many runs were briefed or read them, which were flagged wrong, and runs with memories against runs without. |
 | `/runs` | Every run that ended in the period, newest first, a page at a time. |
 | `/alerts/{alertId}` | A station alert that went off: the threshold it crossed, the run that crossed it, and the measure run by run around it. |
 
@@ -117,7 +117,7 @@ how each is measured.
 | `reviewDays[]` | object | For each day of the period: `toFirstReviewDaily` and `toFirstReviewRolling` (percentiles, for pull requests first reviewed that day, or in the 7 days ending that day), `awaiting` (pull requests ready and not yet reviewed as the day ended) and `humanReviews` (reviews people submitted that day). |
 | `bots[]` | object | Each review bot, the most comments first: `login`, `comments`, `reviews` and `resolvedShare`, from 0 to 1, or `null` where it started no thread. |
 | `pipeline` | object | `merged` (Spotlight's pull requests merged in the period whose task opened in the period, the period before, or the last 30 days where that reaches further), `types[]` (`type` and `merged`) and `layouts`: `stations` (a stage for each station the tasks ran at, in order of first use, then the review stages) and `stages` (coding as one stage, then the review stages). |
-| `shippedAny` | boolean | Whether `pipeline.merged` is above 0, `types` is not empty, or any day of `reviewDays` has `awaiting` or `humanReviews` above 0. Pull requests written by `bots` or `touched` never count toward the first two, and people's count only in the repositories Spotlight merged into. |
+| `shippedAny` | boolean | Whether `pipeline.merged` is above 0, `types` is not empty, or any day of `reviewDays` has `awaiting` or `humanReviews` above 0. Pull requests written by `bots` or `touched` never count for the first two, and people's count only in the repositories Spotlight merged into. |
 
 A percentiles object has `p50Ms`, `p75Ms`, `p90Ms` and `p95Ms`, each `null`
 when nothing was measured, and `count`. A by-author object has `spotlight` and

@@ -23,7 +23,7 @@ their limit. An agent can still find a way around its own harness's rules,
 since a rule about one kind of action need not cover another that reaches the
 same place. A repository can loosen whatever is not enforced, because a harness
 reads the repository's own settings files on top of the ones Spotlight writes.
-Spotlight puts the rules that must hold where a repository cannot reach them,
+Spotlight puts the rules that must apply where a repository cannot reach them,
 where the harness allows that, but the harnesses differ in what they allow.
 
 So Spotlight treats harness permissions as guardrails. They keep a well-meaning
@@ -41,13 +41,13 @@ starts beside the sandbox for that run alone. Every client in the sandbox is
 pointed at it, and a client that ignores the proxy has no route out at all.
 
 With one exit, there is one place for the host's rules to apply, and nothing in
-the sandbox can route around them. Some addresses are refused whatever the
+the sandbox can route around them. Some addresses are blocked whatever the
 host's list says: loopback and link-local, so that a sandbox never reaches the
 cloud's instance metadata or the host's own identity. A machine's identity lets
 it claim work and read secrets, and an agent that could borrow it would no
 longer be contained by anything on this page. [Limit where sandboxes can connect](/docs/security/limit-where-sandboxes-connect) covers the allow-list, and
 the [Egress](/docs/reference/hosts/egress) reference lists what egress admits and
-refuses.
+blocks.
 
 ## Keeping secrets out of the sandbox
 
@@ -58,9 +58,9 @@ be read by the agent, and so by anything that talks the agent into reading it.
 
 Instead the sandbox gets a stand-in. An MCP server whose environment names the
 workspace secret `LINEAR_API_KEY` sees `spotlight-egress:LINEAR_API_KEY` where
-the value would be. Egress, which is outside the sandbox, holds the real value
+the value would be. Egress, which is outside the sandbox, keeps the real value
 for the length of the run. When a request leaves for a host the secret is bound
-to, and its header or query parameter holds the stand-in, egress puts the
+to, and its header or query parameter contains the stand-in, egress injects the
 value in its place. Where the host's answer repeats the value, egress swaps
 the stand-in back before the sandbox sees it. The server's request works, and
 the agent never had the value to leak.
@@ -68,14 +68,14 @@ the agent never had the value to leak.
 Without the binding to a host, this would be unsafe. A proxy that swapped in
 a secret on any request would turn into a credential oracle: the agent could
 send the stand-in to a server it controls and receive the real value there.
-Egress adds a secret only to requests to the hosts it is bound to, only for the run
+Egress injects a secret only into requests to the hosts it is bound to, only for the run
 that was granted it, and only in place of its stand-in. A request to anywhere
-else carries nothing egress added, and so does a request to the bound host
+else contains nothing egress injected, and so does a request to the bound host
 that doesn't name the secret, such as a script the agent runs.
 
 The stand-in only names a secret; it isn't a password. Everything in the
 sandbox can read the MCP server's environment, so anything there can still
-write the stand-in and have the secret used toward its host. What the binding
+write the stand-in and have the secret used for its host. What the binding
 and the stand-in together prevent is the value leaving the sandbox's reach and
 being sent anywhere else.
 
@@ -96,13 +96,13 @@ there is no host to build a private network and an egress around it. Instead
 the pool can name a shared egress: one long-lived process that serves the
 runs of many runners. The runner sends all its traffic there. Inside the
 sandbox, a local proxy ends the TLS of requests to the hosts the run's secrets
-are bound to, and passes those requests to egress, which adds the secrets.
+are bound to, and passes those requests to egress, which injects the secrets.
 Everything else goes to egress in tunnels it does not decrypt, and egress
 records each connection.
 
 Two credentials keep the secrets on the egress side. The egress token, which
-the egress holds, is the only way to redeem a run's secrets, and it never
-enters a sandbox. The run proxy credential, which the runner holds, lets the
+the egress keeps, is the only way to fetch a run's secrets, and it never
+enters a sandbox. The run proxy credential, which the runner keeps, lets the
 run send traffic through that one egress and nothing more. A sandbox that
 leaks its credential leaks nothing that opens a secret.
 
@@ -112,10 +112,10 @@ can. So before the harness starts, the runner tries to connect to Spotlight
 directly, and the run's trace says what it reported. The report comes from
 inside the sandbox, so it is evidence, not proof: an agent that took over the
 sandbox could report Enforced. Enforced means the sandbox
-could not connect around egress: the allow-list holds for every client, and
+could not connect around egress: the allow-list applies to every client, and
 every connection is on record. Not enforced means it could: a tool that
 ignores the proxy goes out directly, past both. The secrets are safe in both
-cases, since the sandbox only ever holds stand-ins. Enforcement is about the
+cases, since the sandbox only ever has stand-ins. Enforcement is about the
 allow-list and the record, and it comes from a firewall that lets the
 container connect only to egress.
 
@@ -124,7 +124,7 @@ container connect only to egress.
 A tool an integration offers, whether written out, generated from an API
 description or listed by a remote MCP server, is called by Spotlight, not by
 the agent. The credential stays with Spotlight, the call can wait for a
-person's approval, a hook can refuse it, and the run's journal records it.
+person's approval, a hook can deny it, and the run's journal records it.
 An MCP server the harness starts in the sandbox, from a harness profile's
 `mcpServers`, gets none of that: its calls never reach Spotlight. That is why
 a remote server belongs on an integration, and a profile's `mcpServers` is for
@@ -136,7 +136,7 @@ as they came. Text in either can carry instructions aimed at the agent, which
 is prompt injection, and Spotlight does not filter it. In the docs' view, a
 server's descriptions deserve the same trust as its code. Offering a station
 only the tools it needs, with `tools.include`, and keeping approval on for any
-tool that changes data, limits what injected text can make an agent do. A tool the server marks as only reading runs without
+tool that changes data, limits what text from the server can make an agent do. A tool the server marks as only reading runs without
 asking, so a server that marks a writing tool as reading is trusted to that
 degree. See [MCP servers](/docs/reference/terraform/integration#mcp-servers).
 
@@ -144,7 +144,7 @@ degree. See [MCP servers](/docs/reference/terraform/integration#mcp-servers).
 
 Harness keys, such as an Anthropic or OpenAI key, belong to whoever runs the
 host. The host keeps them out of the sandbox the same way, as stand-ins, and
-egress adds each one to requests to its model provider's API.
+egress injects each one into requests to its model provider's API.
 
 Which key may go to which host is the host's own table, and the control plane
 has no say in it. An earlier design let the control plane declare it. An audit
@@ -155,7 +155,7 @@ stand-in. [Give hosts your harness keys](/docs/hosts/give-sandboxes-your-harness
 
 ## Two users inside the sandbox
 
-Inside the sandbox there are two parties. The runner, which runs as root, holds
+Inside the sandbox there are two parties. The runner, which runs as root, keeps
 the run's credential, fetches the work, prepares the checkout and talks to the
 control plane. The agent runs as a separate user, and its environment carries
 none of the runner's credentials. ([Ways in: pools, trusts and
@@ -163,7 +163,7 @@ tokens](/docs/administration/ways-in-pools-trusts-and-tokens) follows the run's
 credential from the host to the runner.)
 
 The separate user is the part that counts. With both in one account, the agent
-could read whatever the runner held, and the division between them would be
+could read whatever the runner kept, and the division between them would be
 cosmetic.
 
 ## Known gaps
@@ -174,14 +174,14 @@ leaves a credential or a route outside what egress controls.
 Cursor's API key still enters the sandbox. The host has no destination for it in
 its table, so it passes into the sandbox as it is. Logins that refresh their own
 tokens, such as Codex signed in with ChatGPT or Claude signed in through a
-browser, are not added by egress; an API key, or a token from `claude
+browser, are not injected by egress; an API key, or a token from `claude
 setup-token`, is. Egress cannot itself sit behind a corporate proxy.
 
 A push pool's sandbox is enforced only if the team's platform makes it so. The
 runner checks and the trace reports it, but a run that reads Not enforced
-still runs. A shared egress holds no harness keys, so on a push pool they
+still runs. A shared egress has no harness keys, so on a push pool they
 enter the sandbox as they are. A push pool that names no egress has nothing
-to add a secret to requests, so a run that uses secrets is never offered to
+to inject a secret into requests, so a run that uses secrets is never offered to
 it, and waits for a host or for a pool that names an egress.
 
 ## What enters a sandbox can be read
@@ -190,5 +190,5 @@ Whatever enters a sandbox can be read by the agent in it, which rules out
 [skills](/docs/reference/terraform/skill), prompts, attachments and files baked into an
 image as places for anything secret. A skill, for instance, is text laid into
 the sandbox for the agent to read. If a station needs something the agent
-must not see, it belongs in a secret that egress adds to requests, or in a tool that
+must not see, it belongs in a secret that egress injects into requests, or in a tool that
 Spotlight calls.

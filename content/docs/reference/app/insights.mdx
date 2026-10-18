@@ -186,7 +186,7 @@ lists each worse signal:
 
 A station whose spend came in more than one currency adds
 `Cost isn't compared. Prices are in more than one currency.` With none listed, the
-card reads `No station stands out this period.`
+card reads `No station needs attention this period.`
 
 ## Cost
 
@@ -639,11 +639,11 @@ started, or ended where it never started:
 | Cost per run | The cost of the priced runs, per priced run. |
 | Judge score | Only while the station's judge is trusted: the mean judge score on each side, or `–`. Hovering shows `Over <n> judged runs before and <m> after. Opens how often the judge agrees with people.`, and the label opens [the station's judge](#one-station). |
 
-Each row but "Runs" counts, on each side, the runs settled for it, as for
+Each row but "Runs" counts, on each side, the runs measured for it, as for
 [station alerts](/docs/reference/app/tasks-runs-and-the-inbox#station-alerts).
 "Change" is green when the row got better and red when it got worse. A rate's
 change is in points and cost per run's a whole percent; with none, it reads
-`No change`. It reads `Too few runs` when either side has fewer than 5 settled
+`No change`. It reads `Too few runs` when either side has fewer than 5 measured
 runs, and for cost per run when the two sides are priced in different
 currencies. The judge score's change is in points, green when it rose.
 
@@ -754,7 +754,7 @@ against the station's live config, replayed on the same tasks, before any of
 them is applied. It counts [replays](/docs/reference/app/replays), and it has
 no filters but the period.
 
-A replay set holds runs, and a task may have more than one run in it. Success
+A replay set contains runs, and a task may have more than one run in it. Success
 rates average over the set's runs, and comparisons count them. Scored counts
 count replay runs, so a replay that replays each run 3 times scores up to three
 times the set's runs.
@@ -771,7 +771,7 @@ candidates of
 [replay checks](/docs/reference/app/searches#guarding-a-stations-changes) do
 not show: a check's verdict is on its pull request and on its
 [replay set page](/docs/reference/app/replays#replay-set-page). A set's health
-and baseline are as they stand now, whatever the period.
+and baseline are current, whatever the period.
 
 The section reads the newest 500 replays started in the period. When there
 were more, it shows `Only the latest replays in this period are counted.`
@@ -789,7 +789,7 @@ were replayed over, the newest replayed first:
 | Part | Shows |
 | --- | --- |
 | Name | The set's name, linked to its [page](/docs/reference/app/replays#replay-set-page). |
-| Size | `<n> tasks`, the different tasks its runs worked, with `(<m> runs)` when it holds more runs than tasks, or "No tasks yet". |
+| Size | `<n> tasks`, the different tasks its runs worked, with `(<m> runs)` when it contains more runs than tasks, or "No tasks yet". |
 | Warning icon | When a [health](/docs/reference/app/replays#health) reading is a warning, or a trust check was not run. Hovering lists each warning as `<reading>: <what it says>.`, then `<n> of <m> trust checks not run: <readings>.` |
 | Shield icon | When the set [checks the station's pull requests](/docs/reference/app/searches#guarding-a-stations-changes). Hovering explains it, starting `Checks pull requests.` |
 | Station gone | When its station has left the line. |
@@ -941,7 +941,7 @@ server reads `–` under "Server".
 
 | Tile | Counts |
 | --- | --- |
-| Standing memories | The [memories](/docs/reference/glossary#memory) the team keeps now, whatever the period. |
+| Active memories | The [memories](/docs/reference/glossary#memory) the team keeps now, whatever the period. |
 | Briefed | Memories briefed to the runs that ended in the period, withdrawn runs included, each counted once, with `to <n> runs`, the runs that ran they were briefed to. |
 | Read | Memories the runs that ended in the period read with [`spotlight recall`](/docs/reference/cli/agent-commands#spotlight-recall), withdrawn runs included, each counted once, with `by <n> runs`, the runs that ran that read them. |
 | Flagged wrong | Memories a person retired in the period. A memory replaced by a correction is not counted. |
@@ -958,7 +958,7 @@ its handle, linked to the memory, and its text; "Reason", or `–`; "Flagged
 by", or "A former member"; and "Date". With none, it reads
 `No memory flagged wrong in this period.`
 
-With no standing memories, and none briefed, read or flagged wrong in the
+With no active memories, and none briefed, read or flagged wrong in the
 period, the section reads "No memories yet", with "Open the team's memory".
 
 ## Runs

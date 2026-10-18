@@ -18,7 +18,7 @@ It answers the station configs the team replayed on past tasks in the period,
 by station and by replay set, each set with its
 [baseline](/docs/reference/glossary#baseline): the live config replayed. A
 success rate here is a replay's, scored by the candidate's own checks and judge
-on past tasks, and says nothing of how live runs went. A replay set holds runs,
+on past tasks, and says nothing of how live runs went. A replay set contains runs,
 and a task may have more than one run in it. Success rates, their intervals
 and gains are worked out over the set's runs, each run counted once however
 many copies of it were replayed (see [Success](/docs/reference/app/replays#success)).
@@ -45,7 +45,7 @@ A candidate is answered when it was replayed in the period:
 Candidates of [replay checks](/docs/reference/api/replay-checks) and of
 [replays with the answer](/docs/reference/app/replays#replay-with-the-answer)
 are left out, and the live config is answered only as each set's `baseline`. A set's
-`health` and `baseline` are as they stand now, whatever the period.
+`health` and `baseline` are current, whatever the period.
 
 The endpoint reads the team's newest 500 replays started in the period. When
 there were more, it answers `truncated: true` and leaves out the oldest.
@@ -68,7 +68,7 @@ Each item of a station's `sets`, the newest replayed first:
 | `name` | string | |
 | `stationGone` | boolean | Whether its station has left its line. |
 | `guardsChanges` | boolean | Whether it [guards its station's changes](/docs/reference/app/searches#guarding-a-stations-changes). |
-| `health` | object | `{ tasks, runs, oldestRunEndedAt, newestRunEndedAt, lastAddedAt, noise, saturation, judge, checks, oracle, minGain }`. `runs` counts the runs the set holds now, and `tasks` the different tasks they worked. The three times are when the oldest and the newest of its runs ended, and when a run was last added to it; each is null while there is none. `noise`, `saturation`, `judge`, `checks` and `oracle` are the set's health, as in the [Replays API](/docs/reference/api/replays#set-health); `minGain` the smallest gain its line counts as real. |
+| `health` | object | `{ tasks, runs, oldestRunEndedAt, newestRunEndedAt, lastAddedAt, noise, saturation, judge, checks, oracle, minGain }`. `runs` counts the runs the set contains now, and `tasks` the different tasks they worked. The three times are when the oldest and the newest of its runs ended, and when a run was last added to it; each is null while there is none. `noise`, `saturation`, `judge`, `checks` and `oracle` are the set's health, as in the [Replays API](/docs/reference/api/replays#set-health); `minGain` the smallest gain its line counts as real. |
 | `baseline` | object or null | Its newest baseline that is queued, running or finished, whatever the period. Null while it has none. See [Baseline](#baseline). |
 | `chartCurrency` | string or null | The currency its cost and success chart is drawn in: the baseline's, or else that of its newest replayed candidate. Null with neither. |
 | `candidates` | array | The candidates replayed over it in the period, the greatest `againstLive.gain` first and those without one last, the newest replayed first among equals. See [Candidate](#candidate). |
@@ -135,7 +135,7 @@ on its set's chart, in the set's `chartCurrency`:
 | `other-currency` | Its cost per run is in another currency than `chartCurrency`. |
 | `priced` | Otherwise: it is drawn. |
 
-The first that holds is answered.
+The first that applies is answered.
 
 ### Shown
 

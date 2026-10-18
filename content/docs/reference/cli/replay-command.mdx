@@ -68,7 +68,7 @@ The token must see exactly one workspace; otherwise the command fails with
 | --- | --- |
 | Request timeout | 2 minutes |
 | Client header | `Spotlight-Client: cli/<release>` |
-| An error | `spotlight replay: <error>` on standard error. A refusal from Spotlight is printed as its `detail`, or its `title`, followed by each field error as `<path>: <message>` on a line of its own. |
+| An error | `spotlight replay: <error>` on standard error. An error from Spotlight is printed as its `detail`, or its `title`, followed by each field error as `<path>: <message>` on a line of its own. |
 | `--json` | Prints Spotlight's answer as indented JSON in place of the text output. |
 
 `--station` names a station as `<team key>/<line key>/<station key>`, as in
@@ -87,7 +87,7 @@ has with `<station> has <n> of <kind> named "<name>"; name one by its id: <ids>`
 | Code | Meaning |
 | --- | --- |
 | `0` | Done. For `status` and `watch`, the candidate regressed on no task. |
-| `1` | A usage error, a refusal, or Spotlight could not be reached. |
+| `1` | A usage error, an error from Spotlight, or Spotlight could not be reached. |
 | `2` | `status` or `watch` only: the candidate regressed against its [counterpart](/docs/reference/glossary#counterpart) on at least one task. The message reads `the candidate regressed against its counterpart on <n> of <m> tasks`. |
 
 `check` has exit codes of its own; see
@@ -99,7 +99,7 @@ has with `<station> has <n> of <kind> named "<name>"; name one by its id: <ids>`
 spotlight replay propose --station <team/line/station> --name <name> <station.json>
 ```
 
-Proposes a candidate for the station from a file holding its station block as
+Proposes a candidate for the station from a file that contains its station block as
 JSON, in the shape of one entry of a line's `stations`. Give `-` to read the
 block from standard input. Nothing is applied.
 
@@ -124,10 +124,10 @@ prints `It changes nothing from the live config <fingerprint>.`
 | Message | Cause |
 | --- | --- |
 | `--name tells the candidate from the station's others` | No `--name`, or a blank one. |
-| `name one file holding the station block, as the line resource holds a station, or - to read it from stdin` | No file, or more than one. |
-| `<path> is HCL; Spotlight writes HCL but never reads it, so give the station block as JSON, as the line resource holds it` | The file ends in `.tf` or `.hcl`. |
-| `<path> holds no JSON object; it holds the station block, as the line resource holds a station` | The file is not a JSON object. |
-| `propose <name>: <refusal>` | Spotlight refused the candidate. See [Checks](/docs/reference/api/replay-candidate#checks). |
+| `name one file that contains the station block, as the line resource contains a station, or - to read it from stdin` | No file, or more than one. |
+| `<path> is HCL; Spotlight writes HCL but never reads it, so give the station block as JSON, as the line resource contains it` | The file ends in `.tf` or `.hcl`. |
+| `<path> contains no JSON object; it must contain the station block, as the line resource contains a station` | The file is not a JSON object. |
+| `propose <name>: <error>` | Spotlight rejected the candidate. See [Checks](/docs/reference/api/replay-candidate#checks). |
 
 ## spotlight replay candidates
 
@@ -191,7 +191,7 @@ a baseline starts beside the replay.
 | `--set and --candidate name what to replay, and under what` | `--set` or `--candidate` is missing. |
 | `--ceiling is the most the replay may spend, as a number above 0, not "<value>"` | `--ceiling` is missing, not a number, or 0 or less. |
 | `--repeats is how many times to replay each run, from 1 to 5, not <n>` | `--repeats` is below 1 or above 5. |
-| `start a replay of <set>: <refusal>` | Spotlight refused to start it. See [Errors](/docs/reference/api/replays#errors). |
+| `start a replay of <set>: <error>` | Spotlight did not start it. See [Errors](/docs/reference/api/replays#errors). |
 
 ## spotlight replay status
 
@@ -199,7 +199,7 @@ a baseline starts beside the replay.
 spotlight replay status --team <key> <replay id>
 ```
 
-Prints the replay as it stands, and the replay it is compared with, its
+Prints the current state of the replay, and the replay it is compared with, its
 [counterpart](/docs/reference/app/replays#counterparts), and exits `2` if it
 regressed on any task.
 
@@ -284,7 +284,7 @@ then prints what `status` prints and exits as `status` does. A replay compared
 with nothing is waited for alone. Until then it prints one line each time:
 
 ```text
-<state>: <n> of <m> settled, <spent> spent
+<state>: <n> of <m> ended, <spent> spent
 ```
 
 With `--json`, it prints only the final answer.
@@ -299,7 +299,7 @@ A read that fails because Spotlight could not be reached, or answered with a
 `could not ask (<error>); asking again`, unless `--json` is given, and waits
 twice `--every` after the first failure in a row, doubling after each, at most
 2 minutes. After 5 failures in a row it ends with
-`gave up after 5 failed tries in a row: <error>`. Any other refusal ends the
+`gave up after 5 failed tries in a row: <error>`. Any other error ends the
 command at once. An `--every` under `1s` fails with
 `--every is at least 1s, not <value>`.
 
@@ -314,7 +314,7 @@ stopped. It then reads the replay and prints
 `Stopped replay <id>, now <state>: nothing more of it starts, and its running runs stop.`
 With `--json`, it prints the replay as read after stopping, as the
 [Replays API](/docs/reference/api/replays) reads one. A replay that has already
-ended is refused with `409`.
+ended fails with `409`.
 
 ## spotlight replay check
 
@@ -401,7 +401,7 @@ Each station ends with one status:
 | `UNDECIDED` | The check could not decide, or the station was not checked. |
 | `RUNNING` | The check was still running at `--timeout`: `still running after <timeout>; it keeps running, so follow it at its link`. |
 | `UNCHANGED` | The plan changes nothing that changes how the station's runs go, so there is nothing to replay. |
-| `REFUSED` | Spotlight refused the check, or reading it failed. The message says why. See [Errors](/docs/reference/api/replay-checks#errors). |
+| `ERRORED` | The check could not start, or reading it failed. The message says why. See [Errors](/docs/reference/api/replay-checks#errors). |
 
 An undecided check prints why:
 
@@ -453,20 +453,20 @@ as in `-17 points (-50 to +0), within noise`, or `-` without one.
 | Code | Meaning |
 | --- | --- |
 | `0` | Every station `PASSED` or `UNCHANGED`, or there was nothing to check. |
-| `1` | A usage error, a plan it cannot read, missing credentials, or any station `REFUSED`. |
-| `2` | No station `REFUSED`, and at least one `FAILED`. |
-| `3` | No station `REFUSED` or `FAILED`, and at least one `UNDECIDED` or `RUNNING`. |
+| `1` | A usage error, a plan it cannot read, missing credentials, or any station `ERRORED`. |
+| `2` | No station `ERRORED`, and at least one `FAILED`. |
+| `3` | No station `ERRORED` or `FAILED`, and at least one `UNDECIDED` or `RUNNING`. |
 
 | Message | Cause |
 | --- | --- |
 | ``name the plan, the output of `terraform show -json <planfile>`, or - to read it from stdin`` | No plan, or more than one. The usage follows. |
-| ``this is the log `terraform plan -json` streams, which holds no station blocks; save the plan with `terraform plan -out=<planfile>`, then give this the output of `terraform show -json <planfile>` `` | The file is the streamed log of `terraform plan -json`. |
+| ``this is the log `terraform plan -json` streams, which contains no station blocks; save the plan with `terraform plan -out=<planfile>`, then give this the output of `terraform show -json <planfile>` `` | The file is the streamed log of `terraform plan -json`. |
 | ``the plan is not JSON; give this the output of `terraform show -json <planfile>` `` | The file is not JSON. |
 | ``this is not a saved plan shown as JSON; give this the output of `terraform show -json <planfile>` `` | The JSON has no `format_version`. |
 | `set SPOTLIGHT_URL, and SPOTLIGHT_API_TOKEN or SPOTLIGHT_OIDC_TRUST, to check a plan` | No `SPOTLIGHT_URL`. The usage follows. |
 | `set SPOTLIGHT_API_TOKEN, a workspace token that may plan, or SPOTLIGHT_OIDC_TRUST, a workspace token trust to exchange the job's OIDC token through` | Neither credential. The usage follows. |
 | `SPOTLIGHT_OIDC_TRUST needs an OIDC token: set SPOTLIGHT_OIDC_TOKEN, or run in GitHub Actions with permissions: id-token: write` | A trust, but no OIDC token to exchange. |
-| `the workspace token trust <trust> did not admit the OIDC token: <refusal>` | The trust refused the exchange. |
+| `the workspace token trust <trust> did not admit the OIDC token: <problem>` | The trust did not accept the exchange. |
 | `--timeout is how long to wait, above 0, not <value>` | `--timeout` is 0 or less. |
 | `--every is at least 1s, not <value>` | `--every` is under `1s`. |
 | `--repeats is how many times to replay each run, from 1 to 5, not <n>` | `--repeats` is below 1 or above 5. |

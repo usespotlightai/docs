@@ -2,7 +2,7 @@
 type: concept
 icon: Lightbulb
 title: Why changes are replayed on past tasks
-description: Why Spotlight tests a station change by running past tasks again, what a replay starts from and what it may not touch, how it is scored against a baseline, why its changes are also compared side by side, why its results come with a range, how a replay set is checked before it is trusted and what it should hold, and what it costs.
+description: Why Spotlight tests a station change by running past tasks again, what a replay starts from and what it may not touch, how it is scored against a baseline, why its changes are also compared side by side, why its results come with a range, how a replay set is checked before it is trusted and what it should contain, and what it costs.
 ---
 
 A team changes a work station to make its runs better, with a sharper prompt
@@ -30,9 +30,9 @@ the original run started, as closely as Spotlight can rebuild it:
 - the task as it was briefed to the original: its title, description, notes,
   attachments and decisions then, not as they read now;
 - the team memories the original was briefed with, and only memories that
-  stood when it started;
+  were active when it started;
 - the station's history and outcomes, as `spotlight history` reads them, as
-  they stood when the original started.
+  they were when the original started.
 
 What changes is the station block: the candidate's prompt, harness, model,
 effort, harness profile, skills, check and judge, compiled into the line as it
@@ -44,10 +44,10 @@ A replay works a real task in a real repository, and its agent believes it is
 doing the work. Anything it did outside the sandbox would act on the task a
 second time: a push to the task's branch, a comment on its pull request, a
 question in someone's inbox, a memory proposed to the team. So a replay is a run of its own kind. It never
-holds the task, and it leaves nothing behind but its own result:
+works on the task, and it leaves nothing behind but its own result:
 
-- Its git access is fetch-only. A push is refused.
-- It is given no tools and no MCP servers, and so wears no secrets.
+- Its git access is fetch-only. A push fails.
+- It is given no tools and no MCP servers, and so egress injects no secrets for it.
 - No hook runs for it.
 - It cannot answer a pull request's remarks, propose a memory or read a
   task's trace.
@@ -73,8 +73,8 @@ change and scores the replay against it. A run passes the judge on a yes, on 4 o
 rubric, or, for a judge with claims, on meeting at least its pass share of
 them. With both a check and a judge, a run must pass both.
 
-A replay's judge scores never count toward the judge's agreement with people,
-its standing, alerts or the Insights figures of the team's runs. They are only
+A replay's judge scores never count in the judge's agreement with people,
+its calibration, alerts or the Insights figures of the team's runs. They are only
 compared between replays.
 
 Some runs cannot be scored. A run that changed nothing gives the check nothing
@@ -122,7 +122,7 @@ the judge is shown the two changes together, labelled A and B, beside the
 accepted one, and asked which is better. It is not told which change is the
 candidate's, so it cannot favour it. It reads the pair twice, once each way
 round, and when the two readings disagree, the task counts as a tie. In the
-docs' view, a model can lean towards whichever change it saw first, and a
+docs' view, a model can lean to whichever change it saw first, and a
 preference that flips with the order was never a preference.
 
 The wins, losses and ties sit beside the success rate and never change it. The
@@ -132,7 +132,7 @@ covers too few tasks to replace the rate, but where the rate reads Within
 noise, it can say which way the candidate leans.
 
 A replay other than a baseline keeps one counterpart, chosen when it
-starts: a proposed candidate the baseline standing then, a search's candidates
+starts: a proposed candidate the baseline that was current then, a search's candidates
 the live config the search replayed when it started, and a replay with the
 answer the live replay whose finishing started it. Its task-by-task rows and
 its gain use that one replay, and so do its wins and losses, where it has
@@ -144,7 +144,7 @@ questions.
 
 The comparisons cost model calls. They count against the replay's ceiling,
 with room for two tries set aside before each is asked, and a pair that would
-pass the ceiling is not asked. They do not count toward the replay's spend or
+pass the ceiling is not asked. They do not add to the replay's spend or
 its cost per run, since they measure the change, not what running the
 candidate costs; that reason is the docs' own.
 
@@ -163,7 +163,7 @@ by task, as the candidate's success on each task less the baseline's on the
 same task, and its range is resampled the same way. In the docs' view,
 pairing the tasks this way keeps how hard each task is out of the gain, since
 the candidate and the baseline faced the same tasks. Here, and wherever
-results count tasks, a task is one run of the set: a set that holds two runs
+results count tasks, a task is one run of the set: a set that contains two runs
 of the same task counts them as two.
 
 A gain then reads one of three ways. It is better when its whole range lies
@@ -187,7 +187,7 @@ more often does not weigh more, and the range is drawn over tasks. More copies
 make each task's score steadier, which narrows the range. They add no tasks: a
 set that is too small, or whose tasks are too alike, stays so.
 
-With copies, a task regresses only once every copy on both sides has settled.
+With copies, a task regresses only once every copy on both sides has ended.
 Counted by success, it regresses when the share of the baseline's copies that
 succeeded is higher than the candidate's share by more than 50 points. One copy
 failing where the baseline succeeded every time is not enough. With one copy each, this is the rule above: the
@@ -239,14 +239,14 @@ now, as its health, and a search warns about each before it starts.
   same change, can flip a candidate's result by chance. Running the check a
   second time on the same change shows which tasks do it.
 
-What the set holds matters as well. A set whose original runs were nearly all
+What the set contains matters as well. A set whose original runs were nearly all
 accepted, or nearly all sent back, says little about how runs that turned out
 other ways would go. In the docs' view, a candidate that wins on such a set
 may lose on the runs it lacks. So a set's page counts how its original runs
 turned out, where their tasks came from and when they ended, and warns when
 one outcome covers more than two thirds of a set of 6 runs or more. While you
 add runs, it suggests recent ones of the outcomes the set is short of, but
-never adds them itself. In the docs' view, which tasks a set should stand for
+never adds them itself. In the docs' view, which tasks a set should represent
 is the team's choice.
 
 Nobody has to ask for these readings. The first baseline of the live config
@@ -262,7 +262,7 @@ the check's ceiling and stop once it would be spent; the rest are not judged
 again. A
 second judging or check never changes a run's result. In the docs' view, it
 measures the judge and the check, not the run. The second judgings also do not
-count toward what the check's runs cost.
+add to what the check's runs cost.
 
 ## Why a set is replayed with the answer
 
@@ -312,13 +312,13 @@ When that baseline also checks the set, its ceiling can be larger, so at 1 or
 [Checking the set](/docs/reference/app/replays#checking-the-set). A
 replay of the live config becomes the baseline itself when the set has none,
 or when the set's runs changed since the last one. Costs in another currency
-than the ceiling's, and costs never reported, do not count toward it. The
+than the ceiling's, and costs never reported, do not count against it. The
 replay page shows them apart from the spend the ceiling counts.
 
 Replays take runners the team's real work needs. At most 2 of a team's replay
 runs run at once, apart from a search's, which keep to a limit the search
 sets, and replay runs wait behind every waiting task run and chat run. In the docs' view, a replay answers a question about the future, and
-should never hold up work that people are waiting on now.
+should never delay work that people are waiting on now.
 
 ## What a replay can start from
 
@@ -329,7 +329,7 @@ replayed.
 
 Spotlight keeps that archive for 30 days after the run started, and for as long
 as the run is in a replay set. After that the archive goes, and the run can
-no longer be replayed. A run is also refused if its task was deleted, if a file
+no longer be replayed. A run also cannot be replayed if its task was deleted, if a file
 its task was briefed with is gone, or if a repository it worked in has left the
 line. [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed)
 lists each reason.
@@ -356,7 +356,7 @@ against the live runs, because only that replay worked the same tasks at about
 the same time. A search's candidates are set beside the live config on that
 search's own runs, and a proposed candidate beside the set's baseline.
 A search's held-out score is never drawn as a point. In the docs' view, it
-comes from other tasks than the search score, so one point cannot stand for
+comes from other tasks than the search score, so one point cannot show
 both, and it is the score to trust, so it is given as a figure of its own.
 The candidates of a pull request's replay check are left out: their verdict is
 on the pull request and on the replay set's page.
@@ -365,19 +365,19 @@ on the pull request and on the replay set's page.
 
 A replay never changes the station, however well its candidate does. A person
 reads the result and makes the change in Terraform, the same way as any other
-change to a line. A [search](/docs/improvement/why-a-search-holds-tasks-back),
+change to a line. A [search](/docs/improvement/why-a-search-holds-tasks-out),
 which replays many candidates an agent proposes, goes no further: picking one
 of its candidates opens a pull request, which the team reviews and applies. A
 line can also have its CI [replay each pull request's station changes](/docs/configuration/check-terraform-pull-requests-for-station-regressions)
 before they merge. [Why configuration lives in Terraform](/docs/configuration/why-configuration-lives-in-terraform)
 gives the reasons. Once applied, the change's own runs are recorded under its
 new config, and [the record of each run's config](/docs/improvement/why-each-run-records-its-stations-config)
-shows whether it held up on the team's real work.
+shows whether it still did well on the team's real work.
 
 ## Related
 
 - [Replay past tasks against a change to a station](/docs/improvement/replay-past-tasks-against-a-station-change)
 - [Replays](/docs/reference/app/replays)
 - [Why a judge must agree with people before its scores show](/docs/improvement/why-a-judge-must-agree-with-people)
-- [Why a search holds tasks back](/docs/improvement/why-a-search-holds-tasks-back)
+- [Why a search holds tasks out](/docs/improvement/why-a-search-holds-tasks-out)
 - [Insights: Candidates](/docs/reference/app/insights#candidates)

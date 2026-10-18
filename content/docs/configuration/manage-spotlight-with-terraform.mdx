@@ -9,12 +9,12 @@ Once a workspace is under Terraform, its teams, lines, skills, integrations,
 hooks, harness profiles, secrets, token trusts and runner configuration change
 through `terraform apply`. You need:
 
-- Terraform 1.11 or later. The module holds write-only values, such as secret
+- Terraform 1.11 or later. The module contains write-only values, such as secret
   values, which older versions cannot send.
 - A workspace token for the workspace. If you don't have one,
   [issue a workspace token](/docs/administration/issue-a-workspace-token) with the scopes
-  for what the module manages: `configure`, plus `secrets` if it holds secrets,
-  `runners` if it holds runner pools or runner trusts, and `trusts` if it holds
+  for what the module manages: `configure`, plus `secrets` if it manages secrets,
+  `runners` if it manages runner pools or runner trusts, and `trusts` if it manages
   workspace token trusts.
 
 ## Export the workspace
@@ -42,7 +42,7 @@ curl -fsS -H "Authorization: Bearer $SPOTLIGHT_API_TOKEN" "$api/$id/export" \
 
 It writes:
 
-| File | Holds |
+| File | Contains |
 | --- | --- |
 | `main.tf` | A resource for everything in the workspace, each with an `import` block beside it |
 | `variables.tf` | A sensitive variable for each value Spotlight never answers, such as a secret's value; left out when there are none |
@@ -80,7 +80,7 @@ Keep the token out of version control.
 ## Give the variables their values
 
 Give each variable in `variables.tf` that has no default the value Spotlight
-holds for it, for example in a `terraform.tfvars` file you keep out of version
+has for it, for example in a `terraform.tfvars` file you keep out of version
 control:
 
 ```hcl
@@ -108,7 +108,7 @@ ignores an `import` block for a resource already in its state.
 
 Edit the configuration and run `terraform apply`. The plan checks every
 expression in an integration or a hook against Spotlight before anything is
-written, so a misspelt field fails the plan at the attribute that holds it.
+written, so a misspelt field fails the plan at the attribute that contains it.
 
 If a plan fails with `403`, the diagnostic names the scope the token lacks.
 Issue a new token that also has that scope.

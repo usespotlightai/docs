@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Harnesses
-description: The agent CLIs Spotlight runs, how each is started and given a model and effort, and how a host finds which ones an image holds.
+description: The agent CLIs Spotlight runs, how each is started and given a model and effort, and how a host finds which ones an image contains.
 ---
 
 A harness is the agent CLI a station runs. A station names one by its id in
@@ -73,8 +73,8 @@ prints, kept when it matches:
 ```
 
 A discovery command that fails, or does not finish within 15 seconds, lists no
-models. Model discovery runs behind an egress, which adds the host's harness
-keys to requests to the model endpoints.
+models. Model discovery runs behind an egress, which injects the host's harness
+keys into requests to the model endpoints.
 
 ## Installed harnesses
 
@@ -84,9 +84,9 @@ runs `spotlight runner harnesses '<json>'` in each image it serves, within 2
 minutes, and reports each installed harness with its models and version. The
 [Runners page](/docs/reference/app/web-app#workspace-pages) shows them.
 
-A run goes only to an image that holds its station's harness. If an image
-changes and no longer holds it, the run fails with
-`Runner image <digest> no longer holds the <harness> harness.`
+A run goes only to an image that contains its station's harness. If an image
+changes and no longer contains it, the run fails with
+`Runner image <digest> no longer has the <harness> harness.`
 
 ## Versions
 

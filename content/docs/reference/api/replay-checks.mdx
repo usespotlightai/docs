@@ -21,7 +21,7 @@ JSON, and answer errors as `application/problem+json`, as on the
 | `DELETE /replay-sets/{setId}/guards-changes` | `204`: the set no longer guards them. Checks already started keep running. |
 | `POST /replay-checks` | `201` and a [check](#check), or `200` and the check this change already has. See [Start a check](#start-a-check). Requires `Idempotency-Key`. |
 | `GET /replay-checks/{checkId}` | A [check](#check) and its verdict. |
-| `GET /replay-sets/{setId}/replay-checks` | The checks replayed over a set, newest first, a page at a time: each check's `id`, `stationId`, `stationKey`, `verdict`, `undecidedBecause`, `regressions` (how many tasks it regressed on), `attempt`, `reference`, `createdAt` and `replayUrl`. Takes `limit` (default 50, at most 200) and `before`, a check's id; a check the set does not hold answers an empty page. |
+| `GET /replay-sets/{setId}/replay-checks` | The checks replayed over a set, newest first, a page at a time: each check's `id`, `stationId`, `stationKey`, `verdict`, `undecidedBecause`, `regressions` (how many tasks it regressed on), `attempt`, `reference`, `createdAt` and `replayUrl`. Takes `limit` (default 50, at most 200) and `before`, a check's id; a check that the set does not contain answers an empty page. |
 
 A replay set's reads in the [Replays API](/docs/reference/api/replays) carry
 `guardsChanges`, `true` for the set that guards its station's changes. A
@@ -72,7 +72,7 @@ The check:
    copies, it also starts a baseline replay of the live config with the same
    `repeats`. See [Ceiling](#ceiling).
 
-A change that changes nothing about how the station's runs go is refused with
+A change that changes nothing about how the station's runs go fails with
 `409` and the type `urn:spotlight:problem:nothing-to-replay`.
 
 A change already checked is answered with that check, `200` and `reused:
@@ -135,7 +135,7 @@ replay candidate may not be named starting `Planned change`.
 
 | Verdict | Shown in the web app | When |
 | --- | --- | --- |
-| `failed` | Too many regressions | More tasks regressed than `maxRegressions` allows. Decided as soon as it happens, while replays still run. A task counts only once each of its copies, on both sides, has settled. |
+| `failed` | Too many regressions | More tasks regressed than `maxRegressions` allows. Decided as soon as it happens, while replays still run. A task counts only once each of its copies, on both sides, has ended. |
 | `running` | Checking | The change's replay or its baseline is queued or running, or the baseline is still being started. |
 | `undecided` | Undecided: `<reason>` | See below. |
 | `passed` | Passed | None of the above. |

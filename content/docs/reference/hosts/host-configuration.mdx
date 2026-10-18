@@ -41,7 +41,7 @@ Exactly one of `SPOTLIGHT_TOKEN`, or `SPOTLIGHT_TRUST` with
 | Variable | Default | Description |
 | --- | --- | --- |
 | `SPOTLIGHT_CAPACITY` | `1` | Sandboxes the host runs at once. At least `1`. |
-| `SPOTLIGHT_ANSWER_WAIT` | `5m` | A Go duration. How long a sandbox whose run asked a person stays up for the answer, still using its place in `SPOTLIGHT_CAPACITY`, before the run is parked. `0` parks at once. Counts toward `SPOTLIGHT_RUN_TIMEOUT`. |
+| `SPOTLIGHT_ANSWER_WAIT` | `5m` | A Go duration. How long a sandbox whose run asked a person stays up for the answer, still using its place in `SPOTLIGHT_CAPACITY`, before the run is parked. `0` parks at once. Counts as part of `SPOTLIGHT_RUN_TIMEOUT`. |
 | `SPOTLIGHT_RUNNER_IMAGE` | `ghcr.io/usespotlightai/spotlight-runner:<release>`, or `:latest` for a binary built without a release | Comma-separated images the host serves. Each entry is an exact image reference, or a prefix ending in `*` such as `ghcr.io/acme/*`. The first exact entry is the default image, used by every line that names none. If no entry is exact, the built-in default is added. |
 | `SPOTLIGHT_REGISTRY_CONFIG` | `$DOCKER_CONFIG/config.json`, else `~/.docker/config.json` | A Docker config file whose `auths` the host pulls with. Read on every pull. See [registry credentials](#registry-credentials). |
 | `SPOTLIGHT_RUN_TIMEOUT` | `6h` | A Go duration. A sandbox running longer is stopped and destroyed, and its run reported `timed-out`. |
@@ -62,7 +62,7 @@ The sandbox environment, from `SPOTLIGHT_SANDBOX_ENV` and
 `SPOTLIGHT_SANDBOX_PASS`, may not set `SPOTLIGHT_URL`, `SPOTLIGHT_TOKEN`,
 `SPOTLIGHT_TRUST`, `SPOTLIGHT_OIDC_TOKEN_FILE`, `SPOTLIGHT_HANDED` or
 `SPOTLIGHT_ANSWER_WAIT`, and may
-not carry the pool token in any variable. The same holds for the egress
+not carry the pool token in any variable. The same applies to the egress
 environment.
 
 ### Registry credentials
@@ -79,7 +79,7 @@ The file named by `SPOTLIGHT_REGISTRY_CONFIG` is JSON. The host reads only its
 ```
 
 Each key of `auths` names a registry. The registry of an image is the first
-part of its name when that part holds a `.` or a `:`, or is `localhost`; any
+part of its name when that part contains a `.` or a `:`, or is `localhost`; any
 other image is on Docker Hub.
 
 | Registry | Keys looked up, in order |
@@ -96,7 +96,7 @@ other image is on Docker Hub.
 
 A missing file, or no entry for the registry, pulls anonymously. A file that
 cannot be read or parsed, or an `auth` that is not base64, fails the pull. The
-image is then refused with
+image is then unavailable with
 `Image can't be pulled. Error: read registry credentials <path>: <error>` or
 `Image can't be pulled. Error: registry credentials for <registry>: auth is not base64`,
 also when the host has a copy of it, unless the image is named by digest or
@@ -105,7 +105,7 @@ the copy has no registry digest.
 ### Harness keys
 
 These variables, when `SPOTLIGHT_SANDBOX_ENV` or `SPOTLIGHT_SANDBOX_PASS`
-gives them a value, are held by egress. The sandbox gets the stand-in
+gives them a value, are kept by egress. The sandbox gets the stand-in
 `spotlight-egress:<NAME>`.
 
 | Variable | Sent to | Header |
@@ -121,14 +121,14 @@ Any other variable, including `CURSOR_API_KEY`, enters the sandbox as it is.
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `SPOTLIGHT_EGRESS_ALLOW` | none | Comma-separated hosts sandboxes may reach. An entry is an exact host, or `*.example.com` for its subdomains. `*` alone is refused. Without it, any host is admitted; see [Admitted hosts](/docs/reference/hosts/egress#admitted-hosts). |
-| `SPOTLIGHT_EGRESS_READS` | none | Comma-separated AWS Secrets Manager secret names or ARNs egress may read, or prefixes ending in `*`. |
+| `SPOTLIGHT_EGRESS_ALLOW` | none | Comma-separated hosts sandboxes may reach. An entry is an exact host, or `*.example.com` for its subdomains. `*` alone is rejected. Without it, any host is admitted; see [Admitted hosts](/docs/reference/hosts/egress#admitted-hosts). |
+| `SPOTLIGHT_EGRESS_SECRET_ALLOW` | none | Comma-separated AWS Secrets Manager secret names or ARNs egress may read, or prefixes ending in `*`. |
 | `SPOTLIGHT_EGRESS_IMAGE` | `ghcr.io/usespotlightai/spotlight-runner:<release>`, or `:latest` for a binary built without a release | The image egress runs from. Entries in `SPOTLIGHT_RUNNER_IMAGE` do not change it. |
 | `SPOTLIGHT_EGRESS_ENV` | `egress.env` beside the config file | A file of variables only egress gets. |
 | `SPOTLIGHT_EGRESS_PASS` | none | Comma-separated names of the host's own variables to pass to egress only. |
-| `SPOTLIGHT_EGRESS_TRUST` | none | A PEM file of certificate authorities egress trusts upstream. Sandboxes do not trust them. |
+| `SPOTLIGHT_EGRESS_CA_BUNDLE` | none | A PEM file of certificate authorities egress trusts upstream. Sandboxes do not trust them. |
 
-See [Egress](/docs/reference/hosts/egress) for what egress admits and refuses.
+See [Egress](/docs/reference/hosts/egress) for what egress admits and blocks.
 
 ## Error reporting
 
@@ -137,7 +137,7 @@ See [Egress](/docs/reference/hosts/egress) for what egress admits and refuses.
 | `SENTRY_DSN` | none | Where the host reports its errors. When it is set, the host gives it to each sandbox and egress it starts as `SPOTLIGHT_SENTRY_DSN`, and egress admits the server's host. |
 | `SENTRY_ENVIRONMENT` | the Sentry SDK's default | The environment on each report. The host gives it to each sandbox and egress as `SPOTLIGHT_SENTRY_ENVIRONMENT`. |
 
-See [Error reporting](/docs/reference/error-reporting) for what a report holds.
+See [Error reporting](/docs/reference/error-reporting) for what a report contains.
 
 ## State
 
@@ -145,15 +145,15 @@ See [Error reporting](/docs/reference/error-reporting) for what a report holds.
 | --- | --- | --- |
 | `SPOTLIGHT_STATE` | `/var/lib/spotlight-host` as root on Linux, else `~/.spotlight/host` | The host's state directory, created with mode `0700`. |
 
-The state directory holds:
+The state directory contains:
 
 | Path | Contents |
 | --- | --- |
 | `<state>/host-id` | The host's id, made on first start. |
-| `<state>/host.lock` | A lock held while the host runs. A second host on the same directory refuses to start. |
+| `<state>/host.lock` | A lock the host keeps while it runs. A second host on the same directory does not start. |
 | `<state>/mirrors/<workspace>/<repo>.git` | Bare mirrors of the repositories the host has checked out. Mounted read-only into sandboxes. Needs `git` on the host. |
 
-A host id serves one pool or trust at a time. Spotlight refuses a host id that
+A host id serves one pool or trust at a time. Spotlight rejects a host id that
 is already serving another pool or trust.
 
 ## Validation
@@ -172,11 +172,11 @@ together. Messages include:
 | `SPOTLIGHT_ANSWER_WAIT: "<x>" is not a duration such as 5m, or 0 to park at once` | Bad answer wait. |
 | `SPOTLIGHT_RUNNER_IMAGE: "<x>" is not an image reference such as ghcr.io/acme/runner:main` | Bad image entry. |
 | `SPOTLIGHT_EGRESS_ALLOW: "*" allows everything; leave the list empty for that` | `SPOTLIGHT_EGRESS_ALLOW=*`. |
-| `the sandbox environment sets <NAME>, which only the host holds` | A sandbox variable names a variable only the host sets. |
-| `the sandbox environment carries the pool token in <NAME>` | A sandbox variable holds the pool token. |
+| `the sandbox environment sets <NAME>, which only the host has` | A sandbox variable names a variable only the host sets. |
+| `the sandbox environment carries the pool token in <NAME>` | A sandbox variable contains the pool token. |
 
 The same two problems in the egress environment are prefixed `egress: `.
-A host that finds another host already holding its state directory stops with
+A host that finds another host already using its state directory stops with
 `another spotlight host already serves from <state>: <error>`.
 
 ## Exit codes

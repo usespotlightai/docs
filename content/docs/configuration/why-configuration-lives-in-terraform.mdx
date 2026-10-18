@@ -22,7 +22,7 @@ creating a workspace, inviting people, changing their roles.
 The main reason is that configuration should live in one place. If both a
 Terraform file and a settings form can change a station's prompt, then one of
 them is wrong as soon as someone uses the other. Either Terraform overwrites a
-change someone made in the app, or the app holds a change the repository does
+change someone made in the app, or the app has a change the repository does
 not know about, and the next person to read the repository is misled.
 
 With the app read-only for configuration, there is nothing to reconcile. What
@@ -38,7 +38,7 @@ change.
 The same choice removes a second layer of validation. A form that edits a
 line has to know every rule a line must follow, and so does the API behind it.
 With one way in, the rules live once, in the resource API, and Terraform
-reports whatever the API refuses. It also means far less of the app to build
+reports whatever the API rejects. It also means far less of the app to build
 and keep working.
 
 ## The alternative that was turned down
@@ -84,7 +84,7 @@ repository. It starts with two [built-in lines](/docs/reference/built-ins/built-
 that work before anyone has written any configuration, and a team usually
 wants to change them once it has seen them run.
 
-Writing that configuration by hand, to match what Spotlight already holds,
+Writing that configuration by hand, to match what Spotlight already has,
 would be the tedious part. The setup chat does it instead: the agent starts from
 the workspace's export, which writes the whole configuration as a Terraform
 module with each station's prompt as a file of its own and import blocks that
@@ -106,7 +106,7 @@ Because a change made through Terraform goes through a plan, Spotlight can check
 expressions there. During `terraform plan`, the provider sends each expression
 to the control plane, which checks it against what will be in scope where it is
 used. A name or field that is not in scope there fails the plan, at the
-attribute that holds it, before anything is applied. The [Expressions](/docs/reference/api/expressions)
+attribute that contains it, before anything is applied. The [Expressions](/docs/reference/api/expressions)
 reference describes the scopes.
 
 ## What teams give up

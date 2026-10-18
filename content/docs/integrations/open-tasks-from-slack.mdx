@@ -73,7 +73,7 @@ resource "spotlight_secret" "slack_bot_token" {
   workspace_id = data.spotlight_workspace.acme.id
   name         = "SLACK_BOT_TOKEN"
   bindings = [
-    { host = "slack.com", carrier = "header", name = "authorization", prefix = "Bearer " },
+    { host = "slack.com", location = "header", name = "authorization", prefix = "Bearer " },
   ]
   value_wo         = var.slack_bot_token
   value_wo_version = 1
@@ -203,7 +203,7 @@ https://app.usespotlight.ai/api/webhooks/w/<workspace slug>/t/<team key>/slack
 
 On a [self-hosted Spotlight](/docs/reference/glossary#spotlight-address), the address starts with your deployment's address instead.
 `<workspace slug>` is the part after `/w/` in the workspace's address, and
-`<team key>` is the key of the team that holds the integration (`core` in the
+`<team key>` is the key of the team that owns the integration (`core` in the
 example above).
 
 In the Slack app's event subscription settings:

@@ -25,7 +25,7 @@ spotlight <tool> [--<input> <value>...] [--json <object> | --json -]
 ```
 
 In a [search's](/docs/reference/app/searches#the-searchs-agent-run) agent run,
-`reply`, `recall` and `remember` are refused with
+`reply`, `recall` and `remember` are rejected with
 `a search may not <answer a remark, recall what the team remembers or propose a memory>: it studies the station's history and proposes station configs, nothing more`.
 
 The tools Spotlight itself gives are listed in
@@ -67,7 +67,7 @@ fails:
 | Exit code on success | `0` |
 | Exit code on any error | `1`, with the message on standard error |
 | Request timeout | 2 minutes |
-| A refusal from the server | Printed as the server wrote it. |
+| An error from the server | Printed as the server wrote it. |
 | A token that does not match | `not this run's token` |
 | Spotlight unreachable | `reach Spotlight: <error>` |
 
@@ -98,7 +98,7 @@ counts.
 | --- | --- |
 | `Handed over to <next>.` | A station was named. |
 | `Put to a person. The task waits here until someone answers.` | `--next review` |
-| `Closed where it stands.` | `--next done` |
+| `Closed at its current station.` | `--next done` |
 
 | Message | Cause |
 | --- | --- |
@@ -198,7 +198,7 @@ run's own team are read. Runs are the station's ended task runs, newest first.
 | `--station` | yes | The station's key, matched exactly. |
 | `--line` | no | The line's key. Needed when more than one of the team's lines has a station with that key. |
 | `--fingerprint` | no | Only runs of this config: its full [config fingerprint](/docs/reference/glossary#config-fingerprint). |
-| `--outcome` | no | Only runs whose outcome holds this word. See [Outcome words](#outcome-words). |
+| `--outcome` | no | Only runs whose outcome contains this word. See [Outcome words](#outcome-words). |
 | `--since` | no | Only runs queued at or after this date or time, such as `2026-09-01`. A value that is not a date is ignored. |
 | `--last` | no | How many runs. Default: 30. At most 50; a larger number counts as 50, and `0` as the default. |
 | `--out` | no | The folder to write into. Default: `.spotlight/history` in the current directory. |
@@ -206,10 +206,10 @@ run's own team are read. Runs are the station's ended task runs, newest first.
 The runs are written to `<out>/<station>/`. Anything already in that folder is
 removed first.
 
-| File | Holds |
+| File | Contains |
 | --- | --- |
 | `index.md` | A table of the runs: each run, linked to its journal, then its task's title, config, ending, checks, the next person act, delivery, round, cost, steps, duration and start. A run with no recorded outcome shows its state as its ending. Then each config, oldest first: its fingerprint, its file, how many of the runs used it, what changed since the config before it, and the prompt's change as a diff. |
-| `configs/<fingerprint>.yml` | One config, as YAML: `fingerprint`, `harness`, `model`, `effort`, `image`, `profile`, `repositories`, `skills`, `tools`, `decisions`, `memories`, `judge` and `prompt`. `judge` holds `rubricDigest`, `sample` and `trust`, or is `null`. |
+| `configs/<fingerprint>.yml` | One config, as YAML: `fingerprint`, `harness`, `model`, `effort`, `image`, `profile`, `repositories`, `skills`, `tools`, `decisions`, `memories`, `judge` and `prompt`. `judge` contains `rubricDigest`, `sample` and `trust`, or is `null`. |
 | `runs/<run>/journal.md` | The run's steps and spans: each step's text, what a tool was given and returned, and each file change as a diff. |
 | `runs/<run>/outcome.json` | `runId`, `taskId`, `fingerprint` and `outcome`, which is `null` for a run with no recorded outcome. |
 | `runs/<run>/diff.patch` | The run's file changes as a unified diff. Written only for a run that changed files. Files are taken in the order they were first changed. A file whose text before and after is over 256,000 characters together, or does not fit in what is left of the run's 1,000,000 characters of changed-file text, is listed as `Omitted <path>: too large to send whole`. |
@@ -227,9 +227,9 @@ search's run, a line before the last reads
 In a [search's](/docs/reference/app/searches) agent run, only the searched
 station is read; any other is answered as a station no line has. The runs of
 the search's held-out tasks are left out, and every run of the searched tasks
-is written, beyond `--last` if need be. The folder also holds:
+is written, beyond `--last` if need be. The folder also contains:
 
-| File | Holds |
+| File | Contains |
 | --- | --- |
 | `current.json` | The station block the search started from, the live config when it began. |
 | `index.md` | After the runs and configs, a "Candidates" table: each candidate, linked to its `score.json`, its config, how many of its replay runs succeeded and were scored, its repeats, its rate, and its hypothesis. When a candidate replayed each run more than once, a line under the table says where its copies are and how its rate is worked out. |
@@ -265,7 +265,7 @@ says what each part means.
 | Message | Cause |
 | --- | --- |
 | `--station is required` | No `--station`. The usage follows. |
-| `"<key>" is not a station key` | `--station` holds `/` or `\`, or is `.` or `..`. |
+| `"<key>" is not a station key` | `--station` contains `/` or `\`, or is `.` or `..`. |
 | `--last counts runs, so it cannot be <n>` | `--last` is negative. |
 | `no line in this team has a station "<key>"` | No line of the run's team has the station. |
 | `line "<line>" has no station "<key>" in this team` | The named line has no such station, or is not the team's. |
@@ -287,11 +287,11 @@ spotlight recall <handle>
 ```
 
 Reads what the run's team remembers, beyond the memories its briefing lists.
-Only [memories](/docs/reference/glossary#memory) that stand in the run's own
+Only [memories](/docs/reference/glossary#memory) that are active in the run's own
 team are read, never proposed, rejected or retired ones, and never another
 team's.
 
-Given words, it searches the bodies of the team's standing memories and prints
+Given words, it searches the bodies of the team's active memories and prints
 at most ten, the best match first. Words are matched by their English stem, so
 `retry` finds `retries`. Each is printed as:
 
@@ -318,7 +318,7 @@ Every memory a recall returns is recorded against the run, and shows under
 `spotlight.recall` span in the task's trace.
 
 Given a handle, such as `M-12` or `m-12`, it prints that one memory in full: its
-kind, whether it stands or was retired, its body, where it applies, the steps
+kind, its status (`active` or `retired`), its body, where it applies, the steps
 and notes it rests on, the `spotlight trace` command for its task, the memory
 it replaced, and, once retired, why and what replaced it.
 
@@ -326,7 +326,7 @@ it replaced, and, once retired, why and what replaced it.
 | --- | --- |
 | `say what to look for` | No words. The usage follows. |
 | `Memory <handle> not found.` | No memory has that handle in the run's team. |
-| `A memory is recalled by at most 500 characters of words it holds, or by its handle, like M-12.` | The words are more than 500 characters. |
+| `A memory is recalled by at most 500 characters of words it contains, or by its handle, like M-12.` | The words are more than 500 characters. |
 
 ```bash
 spotlight recall upload retries
@@ -351,7 +351,7 @@ memory from a task that came from outside the team cannot be approved together w
 | `--body` | yes | What to remember, at most 1,000 characters. Omitted, `-` or `/dev/stdin`: read from standard input. |
 | `--path` | no | A file or folder the memory bears on, relative to the current directory or absolute. It must be inside one of the run's checkouts, and every `--path` in one repository. Within its repository, at most 500 characters. Repeat for more, up to 20 different paths. |
 | `--reach` | no | Where it applies: `team`, `line` or `station`. Default: `line`. |
-| `--supersedes` | no | The handle of a standing memory of the team that this one corrects. Approving it retires that one. |
+| `--supersedes` | no | The handle of an active memory of the team that this one corrects. Approving it retires that one. |
 
 On success it prints `Proposed <kind> for the <reach>: <body>`, and that the
 memory waits for a person's approval.
@@ -368,7 +368,7 @@ memory waits for a person's approval.
 | `A memory must be at most 1000 characters.` | The body is more than 1,000 characters. |
 | `A memory path must be at most 500 characters.` | A `--path` is more than 500 characters within its repository. |
 | `A memory can cover at most 20 paths.` | More than 20 different paths. |
-| `A memory supersedes only a memory standing in the run's team, and <handle> is not one.` | `--supersedes` names a retired memory of the team. |
+| `A memory supersedes only an active memory in the run's team, and <handle> is not one.` | `--supersedes` names a retired memory of the team. |
 | `Memory <handle> not found.` | `--supersedes` names no memory of the run's team. |
 | `A memory is remembered only from a task's run; in a chat, ask the person to write it on the team's Memory page.` | The run is a chat's. |
 
@@ -384,7 +384,7 @@ spotlight candidate --name <name> --hypothesis <text | @file> <station.json | ->
 ```
 
 Proposes a station config from a [search's](/docs/reference/app/searches)
-agent run. The file holds the station block as JSON, in the shape of one entry
+agent run. The file contains the station block as JSON, in the shape of one entry
 of a line's `stations`; `-` reads it from standard input. Spotlight checks it,
 then replays it on the search's searched tasks. Only a search's runs may
 propose a candidate.
@@ -406,10 +406,10 @@ Proposed <name> as candidate <id>.
 Spotlight replays it as <replay id>; its results show in spotlight history once the replay ends.
 ```
 
-A refused block prints `Spotlight refused the candidate:`, one line per
+A rejected block prints `Spotlight rejected the candidate:`, one line per
 problem as `<path>: <message>`, a warning marked `(<severity>, not why it was
-refused)`, and `Fix the station block and propose it again.` A refused
-proposal does not count toward the iteration's candidates, but an iteration may
+rejected)`, and `Fix the station block and propose it again.` A rejected
+proposal does not count as one of the iteration's candidates, but an iteration may
 try at most three times as many as it may propose.
 
 | Message | Cause |
@@ -417,17 +417,17 @@ try at most three times as many as it may propose.
 | `--name is required` | No `--name`. The usage follows. |
 | `"<name>" cannot name a candidate: a name is a slug of lowercase letters, digits and hyphens, starting with a letter or digit, at most 63 characters` | `--name` is no slug. |
 | `--hypothesis is required` | No `--hypothesis`. |
-| `name one file holding the station block, or - to read it from stdin` | No file, or more than one. |
-| `<path> is HCL; give the station block as JSON, as the line resource holds a station` | The file ends in `.tf` or `.hcl`. |
-| `<path> holds no JSON object; it holds the station block, as the line resource holds a station` | The file is not a JSON object. |
-| `<file> holds no hypothesis; say what you expect the change to do` | `@<file>` is empty. |
+| `name one file that contains the station block, or - to read it from stdin` | No file, or more than one. |
+| `<path> is HCL; give the station block as JSON, as the line resource contains a station` | The file ends in `.tf` or `.hcl`. |
+| `<path> contains no JSON object; it must contain the station block, as the line resource contains a station` | The file is not a JSON object. |
+| `<file> contains no hypothesis; say what you expect the change to do` | `@<file>` is empty. |
 | `this run cannot propose a candidate: only a search's runs do` | The run is not a search's. |
 | `A search may change only the station's prompt, harness, model, effort, profile, skills, tools, decisions, memories, description; keep <field> as the search's starting config has it` | At `station.<field>`: the block changes another field. |
 | `name cannot be reserved name seed` | At `name`: the name is `seed`, which names the live config the search started from. |
 | `This search has a candidate named <name> already; name it otherwise` | Another iteration took the name. |
 | `This search iteration has proposed its <n> candidates, or tried to too often; end the run` | The iteration may propose no more. |
 | `This search iteration looks into why the search stalled, so it proposes no candidates; record a cause for each failing task with spotlight cause` | The run is a [reflection's](/docs/reference/app/searches#reflections). |
-| `The search no longer holds this run` | The search stopped, or moved on from this iteration. |
+| `This run is no longer the active run of the search` | The search stopped, or moved on from this iteration. |
 
 Other problems with the block are those of a
 [replay candidate](/docs/reference/api/replay-candidate#checks), at their path
@@ -468,13 +468,13 @@ Recording another cause for the task replaces this one.
 | `--cause is one of config, task, judge, check, infra` | `--cause` is missing or names no cause. The usage follows. |
 | `--evidence is required` | No `--evidence`. The usage follows. |
 | `read the evidence: <error>` | `@<file>` for `--evidence` could not be read; `read the suggestion` for `--suggestion`. |
-| `<file> holds no evidence` | `@<file>` is empty; `holds no suggestion` for `--suggestion`. |
+| `<file> contains no evidence` | `@<file>` is empty; `contains no suggestion` for `--suggestion`. |
 | `this run cannot record a cause: only a search's runs do` | The run is not a search's. |
 | `This search iteration proposes candidates; only an iteration that looks into why the search stalled records causes` | The run's iteration is not a reflection. |
 | `No failing task <task> among the tasks this reflection looks into; record causes only for the tasks its briefing lists` | `--task` names a task the briefing does not list. |
 | `A cause's evidence says what in the runs shows the cause, in 1 to 4,000 characters` | The evidence is over 4,000 characters. |
 | `A cause's suggestion says what to fix in at most 4,000 characters` | The suggestion is over 4,000 characters. |
-| `The search no longer holds this run`, or `The search no longer holds the run <run>, so it takes no more candidates from it` | The search stopped, or moved on from this iteration. |
+| `This run is no longer the active run of the search`, or `The run <run> is no longer the active run of the search, so the search takes no more candidates from it` | The search stopped, or moved on from this iteration. |
 
 ```bash
 spotlight cause --task a17c4e02-9b3d-4f61-8e5a-0c2d7b9f4a13 --cause judge --evidence @evidence.md --suggestion "Drop the rubric line that asks for tests."
@@ -624,7 +624,7 @@ The example call gives every required input without a default, and
 `--intent` for a tool that requires approval. Each value is the schema's
 first `examples` entry, else its `default`, `const` or first `enum` value,
 else `"…"` for text, `0` for a number and `true` for a boolean. An object
-gives its required properties the same way, and a list holds one item. Where
+gives its required properties the same way, and a list has one item. Where
 every input given is text, a number or a boolean, the call uses flags.
 Otherwise it gives every input as one object with `--json`.
 
@@ -668,7 +668,7 @@ merged into it. Every shape `spotlight tools describe` prints is learned.
 | Depth | 5 levels. Deeper values are `unknown`. |
 | Items of a list | The first 20. |
 | Parts | 400 per answer. Past that, `unknown`. |
-| Keyed by data | An object with more than 40 keys, or with a key that is not a plain name (a letter, `_` or `$`, then up to 63 letters, digits, `_`, `$` or `-`) or that holds 3 digits or 8 hexadecimal characters in a row, is kept as `[key: string]: T`. Its keys are not stored. |
+| Keyed by data | An object with more than 40 keys, or with a key that is not a plain name (a letter, `_` or `$`, then up to 63 letters, digits, `_`, `$` or `-`) or that contains 3 digits or 8 hexadecimal characters in a row, is kept as `[key: string]: T`. Its keys are not stored. |
 | Changing keys | When a later answer brings an object whose keys are mostly new (more than half of them not seen before), the object is kept as `[key: string]: T` too, so keys that vary between calls, such as user names or labels, are not stored. |
 | A field one answer leaves out | Optional, marked `?`. |
 | Different kinds for one field | A union, as in `string \| null`. More than 4 kinds become `unknown`. |
@@ -702,7 +702,7 @@ for how an integration defines tools and their inputs.
 
 | Input | How it is given |
 | --- | --- |
-| Text or a number | `--<input> <value>`. A number is written in decimal, so `0x10` is refused. |
+| Text or a number | `--<input> <value>`. A number is written in decimal, so `0x10` is rejected. |
 | `boolean` | `--<input>`, present or absent, or `--<input>=false` |
 | A list, an object or anything else | `--<input> '<JSON>'`, as in `--filter '{"team": "ENG"}'` |
 | Piped | `--<input> <value>`, or `--<input> -`, or `--<input> /dev/stdin`, or omitted with standard input not a terminal. Empty piped input counts as not given. |
@@ -712,10 +712,10 @@ name, with each value in its JSON type. `--json -` or `--json /dev/stdin` reads
 the object from standard input. A flag given beside `--json` replaces that
 field of the object. When `--json` reads standard input, no piped input does:
 an input left out stays out, and naming one with `-` or `/dev/stdin` is
-refused.
+rejected.
 
 Spotlight checks the inputs against the tool's schemas before it calls the
-host, and refuses a call that does not fit, saying where, as in
+host, and rejects a call that does not fit, saying where, as in
 `linear.issue-create takes input, and input.teamId is not text`. See
 [Input schemas](/docs/reference/terraform/integration#input-schemas).
 

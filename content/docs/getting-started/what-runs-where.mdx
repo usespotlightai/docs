@@ -2,7 +2,7 @@
 type: concept
 icon: Lightbulb
 title: What runs where
-description: What Spotlight does and what runs on a team's own computers, why those computers only ever connect out to Spotlight, and which side holds which credentials.
+description: What Spotlight does and what runs on a team's own computers, why those computers only ever connect out to Spotlight, and which side keeps which credentials.
 ---
 
 The work is split between two sides. The hosted service at
@@ -15,7 +15,7 @@ Spotlight is split the same way, at its own
 A run is one agent's session on one task. For each run, the host starts a
 fresh, isolated container called a sandbox, and deletes it afterwards.
 
-What goes on which side comes down to one question: which side needs to hold
+What goes on which side comes down to one question: which side needs to keep
 what, and which side can do without it.
 
 ## Spotlight's side
@@ -34,7 +34,7 @@ Spotlight decides which run goes to which host, receives events from GitHub and
 other services, and makes the calls behind the tools a team defines. It also
 keeps the secrets a team stores with it, encrypted.
 
-It holds the workspace's connection to GitHub, too. The GitHub App that can
+It keeps the workspace's connection to GitHub, too. The GitHub App that can
 clone and push to the team's repositories is installed for Spotlight, and its
 access is never handed to a host ([Where each credential
 stays](#where-each-credential-stays) explains how runs reach GitHub without it).
@@ -63,7 +63,7 @@ answer arrives.
 The host is also where the team's decisions about its own machines live. It
 decides which container images it will run, which servers sandboxes may reach,
 which secrets in the team's AWS account egress may read, and which of the
-team's model API keys it holds. None of these is Spotlight's to set. They are
+team's model API keys it keeps. None of these is Spotlight's to set. They are
 settings on the host ([Host settings](/docs/reference/hosts/host-configuration)).
 
 ## The host only connects out
@@ -107,18 +107,18 @@ of access and what it costs if it leaks.
 
 Git goes through Spotlight. Every clone, fetch and push from a sandbox goes to
 Spotlight with the run's credential, and Spotlight carries it to GitHub with
-the workspace's own GitHub App. Spotlight answers only while the run still
-holds its task or chat, and only for the repositories the run's line names. So
+the workspace's own GitHub App. Spotlight answers only while the run is still
+the current run of its task or chat, and only for the repositories the run's line names. So
 the credential that can push to the team's repositories never leaves
 Spotlight, and a run's access to GitHub ends when the run does.
 
 Model API keys, such as an Anthropic key, go the other way. Spotlight calls
 them [harness keys](/docs/reference/glossary#harness-key). They stay on the
 host and never reach Spotlight. The sandbox never sees the Anthropic or OpenAI
-keys the host holds: it holds a placeholder, and the run's egress swaps in the
+keys the host keeps: it has a placeholder, and the run's egress swaps in the
 real key on requests to the model provider. The `spotlight` program fixes which
 provider each of those keys may go to, and the host's list of servers
-sandboxes may reach can still refuse it. The reasons, and the harness keys that
+sandboxes may reach can still block it. The reasons, and the harness keys that
 still enter the sandbox, are in [The sandbox is the security
 boundary](/docs/security/the-sandbox-is-the-security-boundary).
 
@@ -130,7 +130,7 @@ Spotlight never sees it.
 
 ## What still passes through Spotlight
 
-The split is about where agents run and who holds which credentials. It
+The split is about where agents run and who keeps which credentials. It
 doesn't keep a team's code away from Spotlight:
 
 - The code passes through Spotlight on its way to and from GitHub, as above. A

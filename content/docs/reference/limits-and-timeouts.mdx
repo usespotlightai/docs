@@ -71,7 +71,7 @@ See [Egress](/docs/reference/hosts/egress).
 | Item | Value |
 | --- | --- |
 | Wait for egress to be ready | 90 seconds |
-| Redeeming the run's secrets | 1 minute |
+| Fetching the run's secrets | 1 minute |
 | Certificate authority lifetime | 48 hours |
 | Upstream connection | 30 seconds |
 | Upstream TLS handshake | 15 seconds |
@@ -84,9 +84,9 @@ runner's way out:
 | --- | --- |
 | Requests each second, for each workspace and egress process | `SPOTLIGHT_EGRESS_RATE`, default 50; `0` is no limit |
 | Open connections, for each workspace and egress process | `SPOTLIGHT_EGRESS_CONNECTIONS`, default 200; `0` is no limit |
-| Asking which runs are still held | Every 30 seconds, at most 500 run proxy credentials in one call |
+| Asking which runs are still active | Every 30 seconds, at most 500 run proxy credentials in one request |
 | A run with no request | Forgotten after 2 minutes |
-| Redeeming again while the runner holds no run | At most every 5 seconds |
+| Fetching again while the runner has no lease on a run | At most every 5 seconds |
 | Sending connection records | Every 5 seconds, at most 2,000 in one call and 10,000 waiting |
 | Time a connection record keeps from egress | At most 1 hour before and 1 minute after Spotlight gets it |
 | Connection records kept | 30 days |
@@ -148,7 +148,7 @@ See [Searches](/docs/reference/app/searches).
 | Share of tasks held out | 30%, rounded up |
 | Iterations | 1 to 10 |
 | Candidates per iteration | 1 to 5 |
-| Proposals an iteration may try, refused ones included | 3 times its candidates |
+| Proposals an iteration may try, rejected ones included | 3 times its candidates |
 | Replay runs of a search queued or running at once | 1 to 10, default 4, apart from the team's 2 |
 | Copies of each run in its replays (repeats) | 1 to 5, default 1 |
 | Searches of a station under way at once | 1 |
@@ -161,7 +161,7 @@ See [Searches](/docs/reference/app/searches).
 | A cause's evidence | 1 to 4,000 characters |
 | A cause's suggestion | at most 4,000 characters |
 | Points in a search's notice | at most 20, of at most 1,000 characters each |
-| A settled notice shown in the inbox | 30 days after it was settled |
+| A resolved notice shown in the inbox | 30 days after it was resolved |
 | Candidate name | a slug of lowercase letters, digits and hyphens, at most 63 characters |
 | An agent run no runner takes | withdrawn after 60 minutes |
 | An agent run's spend not known | counted as unpriced 15 minutes after it ended |

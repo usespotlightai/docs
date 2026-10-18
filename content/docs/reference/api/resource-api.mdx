@@ -21,7 +21,7 @@ Request and response bodies are JSON with camelCase field names. Errors are
 | A person's session | the session cookie the web app sets at sign-in | as that person, within their role in each workspace |
 | A [workspace token](/docs/reference/api/workspace-token) | `Authorization: Bearer <token>` | only within its own workspace, and only as its scopes allow |
 
-A request with neither is refused with `401`. See
+A request with neither gets `401`. See
 [Roles and permissions](/docs/reference/roles-and-permissions) for what each
 role and scope allows.
 
@@ -29,7 +29,7 @@ role and scope allows.
 
 Every resource kind has these six operations, except where a rule below says otherwise. `<plural>` is the kind's collection
 path, from the [endpoint catalogue](#endpoint-catalogue). `<holder>` is
-`workspaces/{workspaceId}` or `teams/{teamId}`, depending on what holds the kind.
+`workspaces/{workspaceId}` or `teams/{teamId}`, depending on the kind's scope.
 
 | Operation | Method and path | Success | Required header |
 | --- | --- | --- | --- |
@@ -44,7 +44,7 @@ path, from the [endpoint catalogue](#endpoint-catalogue). `<holder>` is
   return exactly what a read would.
 - An update replaces the whole resource. There is no partial update.
 - A list returns `{ "items": [...] }`, each item as a read would return it, in
-  address order. A list of a team-held kind covers every team in the workspace.
+  address order. A list of a team-scoped kind covers every team in the workspace.
 - An import returns the resource at an address, as a read would.
 
 ## Headers
@@ -122,7 +122,7 @@ An error body has these fields.
 | `422` | `invalid` | One or more fields are wrong. |
 | `422` | `idempotency-key-reused` | The `Idempotency-Key` was used for a different request body. |
 | `428` | `precondition-required` | An update or delete has no `If-Match`. |
-| `502` | `refused-upstream` | An upstream service refused. |
+| `502` | `upstream-error` | An upstream service failed. |
 
 `permission` is one of `configure`, `manage-secrets`, `manage-runners`,
 `manage-token-trusts`, `administer`, `open-workspaces` or `plan`.
@@ -150,7 +150,7 @@ only added, never removed, renamed or given a new meaning.
 
 All paths are under `/api/resources`.
 
-| Kind | Held by | Create | Read, update, delete | Import and list |
+| Kind | Scope | Create | Read, update, delete | Import and list |
 | --- | --- | --- | --- | --- |
 | `workspace` | none | `POST /workspaces` | `/workspaces/{id}` | `/workspaces/import`, `/workspaces` |
 | `team` | workspace | `POST /workspaces/{workspaceId}/teams` | `/teams/{id}` | `/workspaces/{workspaceId}/teams` |
@@ -224,8 +224,8 @@ The export's files are ordered by path and are the same on every export:
 
 Workspace tokens are not exported.
 
-The `hcl` string holds, in order, any variable the resource reads, an `import`
-block that adopts it, and the resource. `files` holds the prompt, rubric and skill
+The `hcl` string contains, in order, any variable the resource reads, an `import`
+block that adopts it, and the resource. `files` contains the prompt, rubric and skill
 files it reads. `collection` is one of `workspaces`, `teams`, `lines`, `skills`,
 `harness-profiles`, `integrations`, `hooks`, `secrets`, `token-trusts`,
 `runner-trusts`, `runner-pools`, `egresses` or `workspace-runners`.
