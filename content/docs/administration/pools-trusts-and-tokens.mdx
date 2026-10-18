@@ -11,12 +11,13 @@ credential of its own. Spotlight has eight kinds, and they differ in who stores
 them, how long they last, and what can be done with one that is stolen.
 
 The eight split into two families. Pool tokens, runner trusts, one-run
-credentials, egress tokens and run proxy credentials let machines do work:
-claim runs, carry them out, and add their secrets on the way out. Workspace
+credentials, egress tokens and run proxy credentials let machines do work: claim
+runs, carry them out, and add their secrets to outgoing requests. Workspace
 tokens, workspace token trusts and the token a setup chat's run gets let tools
 read or change configuration through the
-[resource API](/docs/reference/api/resource-api). The two families never overlap.
-A pool token cannot create or change a line, and a workspace token cannot claim a run.
+[resource API](/docs/reference/api/resource-api). The two families never
+overlap. A pool token cannot create or change a line, and a workspace token
+cannot claim a run.
 
 ## Machines that do work
 
@@ -32,10 +33,11 @@ to a new pool later. Rotating is a matter of giving the pool a new token: the
 old one stops being accepted at once, and runs already claimed with it carry on
 with their own credentials.
 
-The pool token is the simplest way in. It works on any machine that can make an
-outbound HTTPS connection, including a laptop behind a home router. Like any
-stored secret, it sits in a file on the host until someone rotates it, and
-anyone who copies it can claim the pool's runs from anywhere. [Create a pull pool and get its token](/docs/hosts/create-a-pull-pool) sets one up.
+The pool token is the simplest credential source. It works on any machine that
+can make an outbound HTTPS connection, including a laptop behind a home router.
+Like any stored secret, it sits in a file on the host until someone rotates it,
+and anyone who copies it can claim the pool's runs from anywhere. [Create a pull
+pool and get its token](/docs/hosts/create-a-pull-pool) sets one up.
 
 A push pool turns this around. Spotlight has no token for it; it calls the
 pool's provisioning endpoint for each run, signs every call with a secret the
@@ -81,7 +83,7 @@ which stores the GitHub App's credential and adds it on the way to GitHub. The
 app's credential is never sent to a runner. A run can reach only the
 repositories its own work names, and only while its runner still has the lease on that work.
 
-### Egress tokens and run proxy credentials: a push pool's way out
+### Egress tokens and run proxy credentials: a push pool's shared egress
 
 A push pool can name a shared egress, which injects the secrets of many runs into
 their requests. Two credentials split that job so that neither is worth much

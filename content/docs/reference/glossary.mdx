@@ -61,7 +61,7 @@ A host that a secret of the run is bound to. Egress injects a secret only into
 requests to its bound hosts. For a run that uses Spotlight's API, the
 Spotlight address's host is bound to the run's Spotlight token. See
 [Run secrets](/docs/reference/hosts/egress#run-secrets) and
-[The runner's way out](/docs/reference/hosts/egress#the-runners-way-out).
+[The runner's local proxy](/docs/reference/hosts/egress#the-runners-local-proxy).
 
 ## Briefing
 
@@ -168,7 +168,7 @@ dispute in their briefing. See
 ## Egress
 
 The proxy between a sandbox and the network. A host starts one egress
-container beside each sandbox, and the sandbox reaches the network only
+sidecar next to each sandbox, and the sandbox reaches the network only
 through it. A push pool can name a shared egress, one process that serves many
 runs, in `provision.egress`. Egress allows or blocks each connection and
 injects secrets into requests to the hosts they are bound to. See
@@ -257,6 +257,12 @@ each hunk of a run's diff to exactly one [layer](#layer). See
 
 A person's list of conversations on the tasks assigned to them, across every
 team in a workspace. See
+[The inbox](/docs/reference/app/tasks-runs-and-the-inbox#the-inbox).
+
+## Inbox request
+
+An inbox item on a task that is not the task's conversation: a grade, a
+memory review or a station alert. Nothing waits on it. See
 [The inbox](/docs/reference/app/tasks-runs-and-the-inbox#the-inbox).
 
 ## Incidental
@@ -501,10 +507,11 @@ out. It may name a runner `image` and a `setup` command. See
 
 ## Requester
 
-The person who started a task, its Raised by. An integration whose
-`connection.actsAs` is `requester` has its tools act with that person's own
-connection to the service, which each person makes on the team's Integrations
-settings page. See [Acts as](/docs/reference/terraform/integration#acts-as).
+The person who started a task, named in its Created by field. An integration
+whose `connection.actsAs` is `requester` has its tools act with that person's
+own connection to the service, which each person makes on the team's
+Integrations settings page. See
+[Acts as](/docs/reference/terraform/integration#acts-as).
 
 ## Reservation
 
@@ -547,7 +554,7 @@ Spotlight. Every run gets a new runner. See
 
 ## Runner image
 
-The container image a sandbox runs from. A host serves the images its
+The container image a sandbox runs from. A host supports the images its
 `SPOTLIGHT_RUNNER_IMAGE` allows. A line names one through its repositories'
 `image`; otherwise the host's default image is used. See
 [Host settings](/docs/reference/hosts/host-configuration#sandboxes).
@@ -648,7 +655,7 @@ enables for its runs. See
 
 ## Trace
 
-The record of a task's runs and their steps, with their timings and faults.
+The record of a task's runs and their steps, with their timings and errors.
 The web app lists a team's traces on the Traces tab of Insights and shows one
 on its task's Trace page. `spotlight trace` writes it to a file, and a chat
 message can share up to 20. See

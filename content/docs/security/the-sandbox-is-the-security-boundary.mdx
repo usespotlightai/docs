@@ -27,18 +27,19 @@ Spotlight puts the rules that must apply where a repository cannot reach them,
 where the harness allows that, but the harnesses differ in what they allow.
 
 So Spotlight treats harness permissions as guardrails. They keep a well-meaning
-agent on the path and give people a say at the points that matter to them.
-They do not contain an agent that has gone off the path. What contains an
-agent is the sandbox it runs in and egress, the only way out of it. [Limit what agents
-may do](/docs/agents/limit-what-agents-may-do) covers the
+agent on the path and give people a say at the points that matter to them. They
+do not contain an agent that has gone off the path. What contains an agent is
+the sandbox it runs in and egress, the only route out of it.
+[Limit what agents may do](/docs/agents/limit-what-agents-may-do) covers the
 guardrails.
 
-## One way out
+## One route out
 
 Each run's sandbox sits on a network of its own that leads nowhere. The only
 other thing on that network is the run's egress, a proxy container the host
-starts beside the sandbox for that run alone. Every client in the sandbox is
-pointed at it, and a client that ignores the proxy has no route out at all.
+starts next to the sandbox for that run alone: the egress sidecar. Every client
+in the sandbox is pointed at it, and a client that ignores the proxy has no
+route out at all.
 
 With one exit, there is one place for the host's rules to apply, and nothing in
 the sandbox can route around them. Some addresses are blocked whatever the
@@ -79,7 +80,7 @@ write the stand-in and have the secret used for its host. What the binding
 and the stand-in together prevent is the value leaving the sandbox's reach and
 being sent anywhere else.
 
-The values themselves stay out of reach on the way in too. Values Spotlight
+The values also stay out of reach while they travel to egress. Values Spotlight
 stores are sealed to a key egress made, for that run or, on a shared egress,
 when the egress process started, so only that egress can open them. Values stored in AWS Secrets Manager are read by egress itself with
 the host's own identity, so the control plane never sees them. The
@@ -106,7 +107,7 @@ enters a sandbox. The run proxy credential, which the runner keeps, lets the
 run send traffic through that one egress and nothing more. A sandbox that
 leaks its credential leaks nothing that opens a secret.
 
-What the platform decides is whether egress is the only way out. A shared
+What the platform decides is whether egress is the only route out. A shared
 egress cannot close the sandbox's other routes; only the platform's firewall
 can. So before the harness starts, the runner tries to connect to Spotlight
 directly, and the run's trace says what it reported. The report comes from

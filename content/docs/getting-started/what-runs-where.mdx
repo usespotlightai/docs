@@ -50,8 +50,8 @@ work from Spotlight, and for each run it takes, it starts two containers on a
 private network of their own:
 
 - The sandbox, where the code is checked out and the agent does its work.
-- The run's egress, a gatekeeper container that is the sandbox's only way out
-  to the network.
+- The run's egress sidecar, a gatekeeper container that is the sandbox's only
+  route to the network.
 
 When the run ends, both are deleted. [Why every run gets a fresh
 sandbox](/docs/hosts/why-every-run-gets-a-fresh-sandbox) explains that choice.
@@ -81,7 +81,7 @@ opened up, so a laptop can take work as well as a cloud server can.
 The one exception is a push pool, where Spotlight calls one of the team's
 endpoints to start a machine for each run. [Pools, trusts and
 tokens](/docs/administration/pools-trusts-and-tokens) compares push
-pools with hosts. A machine a push pool starts has no egress beside it. The
+pools with hosts. A machine a push pool starts has no egress sidecar. The
 pool can name a shared egress instead, one gatekeeper that many runs go out
 through ([Send push pool runs through an
 egress](/docs/security/send-push-pool-runs-through-an-egress)).

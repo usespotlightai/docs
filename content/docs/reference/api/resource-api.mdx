@@ -124,8 +124,8 @@ An error body has these fields.
 | `428` | `precondition-required` | An update or delete has no `If-Match`. |
 | `502` | `upstream-error` | An upstream service failed. |
 
-`permission` is one of `configure`, `manage-secrets`, `manage-runners`,
-`manage-token-trusts`, `administer`, `create-workspaces` or `plan`.
+`permission` is one of `configure`, `secrets`, `runners`,
+`trusts`, `administer`, `create-workspaces` or `plan`.
 
 ### Error paths
 
@@ -257,7 +257,7 @@ anyone else the workspace is `404`.
 | `by.tokenId` | string or null | The workspace token. |
 | `by.trust` | string or null | The workspace token trust that issued the token. |
 | `client` | string or null | The client, from `Spotlight-Client`. |
-| `details` | object | What the kind records beyond the action. A secret records its value version and bound hosts, never its value. An egress update records `rekeyed: true` when its token changed, never the token. |
+| `details` | object | What the kind records beyond the action. A secret records its value version and bound hosts, never its value. An egress update records `tokenRotated: true` when its token changed, never the token. |
 | `at` | string | When, as an ISO 8601 time. |
 
 ## Expression checks

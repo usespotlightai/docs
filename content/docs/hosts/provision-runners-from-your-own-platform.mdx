@@ -115,7 +115,7 @@ The body is JSON of type `work.provision`. Read these fields from `data`:
 | Field | Use |
 | --- | --- |
 | `runner.id` | Name the container or job after it. |
-| `runner.token` | Pass it as `SPOTLIGHT_TOKEN`. It is good for this one piece of work. |
+| `runner.token` | Pass it as `SPOTLIGHT_RUN_TOKEN`. It is good for this one piece of work. |
 | `spotlightUrl` | Pass it as `SPOTLIGHT_URL`. |
 | `image` | The image to start. When it is `null`, start the image hosts use by default, `ghcr.io/usespotlightai/spotlight-runner:<release>`, where `<release>` is a Spotlight release tag. |
 | `claimBy` | The container must have claimed the work by this time. |
@@ -133,7 +133,7 @@ With Docker, the equivalent is:
 ```bash
 docker run --rm --name "spotlight-<runner id>" \
   -e SPOTLIGHT_URL="<spotlightUrl>" \
-  -e SPOTLIGHT_TOKEN="<runner token>" \
+  -e SPOTLIGHT_RUN_TOKEN="<runner token>" \
   -e ANTHROPIC_API_KEY="<your key>" \
   <image>
 ```
@@ -143,7 +143,7 @@ When the call carries `runner.egress`, pass its two values as well:
 ```bash
 docker run --rm --name "spotlight-<runner id>" \
   -e SPOTLIGHT_URL="<spotlightUrl>" \
-  -e SPOTLIGHT_TOKEN="<runner token>" \
+  -e SPOTLIGHT_RUN_TOKEN="<runner token>" \
   -e SPOTLIGHT_EGRESS_URL="<runner.egress.url>" \
   -e SPOTLIGHT_EGRESS_PROXY_CREDENTIAL="<runner.egress.credential>" \
   -e SPOTLIGHT_EGRESS_TRAFFIC="<runner.egress.traffic>" \

@@ -14,8 +14,8 @@ team's work turned out is narrower; see [Team outcomes](#team-outcomes).
 
 | Role | Rank | Permissions |
 | --- | --- | --- |
-| `owner` | 2 | `read`, `plan`, `configure`, `manage-secrets`, `manage-runners`, `manage-token-trusts`, `administer` |
-| `admin` | 1 | `read`, `plan`, `configure`, `manage-secrets`, `manage-runners`, `manage-token-trusts`, `administer` |
+| `owner` | 2 | `read`, `plan`, `configure`, `secrets`, `runners`, `trusts`, `administer` |
+| `admin` | 1 | `read`, `plan`, `configure`, `secrets`, `runners`, `trusts`, `administer` |
 | `member` | 0 | `read`, `plan` |
 
 The web app shows the roles as Owner, Admin and Member. The person who creates
@@ -32,9 +32,9 @@ A deleted workspace grants nothing to anyone.
 | `read` | See a workspace and its resources, and export it as Terraform. | Every role. Every token. |
 | `plan` | Check expressions, at `POST /api/expressions/check`. Create, change and delete replay sets, mark the set that gates a station's changes, start and stop replays, propose and delete replay candidates, start and stop searches, pick a search's candidate, and start replay checks, on a team whose outcomes the caller may read. | Every person. Tokens with `plan` or `configure`. |
 | `configure` | Create, change and delete teams, lines, integrations, hooks, skills and harness profiles; change the workspace. | Owners, admins. Tokens with `configure`. |
-| `manage-secrets` | Create, change and delete secrets. | Owners, admins. Tokens with `secrets`. |
-| `manage-runners` | Create, change and delete runner pools, egresses, runner trusts and workspace runners. | Owners, admins. Tokens with `runners`. |
-| `manage-token-trusts` | Create, change and delete workspace token trusts. | Owners, admins. Tokens with `trusts`. |
+| `secrets` | Create, change and delete secrets. | Owners, admins. Tokens with `secrets`. |
+| `runners` | Create, change and delete runner pools, egresses, runner trusts and workspace runners. | Owners, admins. Tokens with `runners`. |
+| `trusts` | Create, change and delete workspace token trusts. | Owners, admins. Tokens with `trusts`. |
 | `administer` | Issue, change and revoke workspace tokens; read [configuration changes](/docs/reference/api/resource-api#configuration-changes); delete the workspace; invite people, list, resend and revoke invites, and add members to teams; connect GitHub; connect the team to an integration over OAuth. | Owners, admins. Never a token. |
 | `create-workspaces` | Create a workspace. | Every signed-in person. Never a token. |
 
@@ -43,7 +43,7 @@ change something the caller can see but may not change returns `403`:
 
 | Permission missing | Title |
 | --- | --- |
-| `configure`, `manage-secrets`, `manage-runners`, `manage-token-trusts` | `Not allowed to change the <kind>` |
+| `configure`, `secrets`, `runners`, `trusts` | `Not allowed to change the <kind>` |
 | `administer` | `Not allowed to administer the <kind>` |
 | `create-workspaces` | `Not allowed to create a workspace` |
 | `plan` | `Not allowed to plan` |
@@ -60,9 +60,9 @@ scopes listed beside it.
 | `read` | | `read` |
 | `plan` | `read` | `read`, `plan` |
 | `configure` | `plan`, `read` | `read`, `plan`, `configure` |
-| `secrets` | `read` | `read`, `manage-secrets` |
-| `runners` | `read` | `read`, `manage-runners` |
-| `trusts` | `read` | `read`, `manage-token-trusts` |
+| `secrets` | `read` | `read`, `secrets` |
+| `runners` | `read` | `read`, `runners` |
+| `trusts` | `read` | `read`, `trusts` |
 
 A token's scopes must include `read`, `plan` or `configure`, and name each
 scope once; see [Scopes](/docs/reference/api/workspace-token#scopes) for the

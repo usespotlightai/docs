@@ -74,7 +74,7 @@ docker run -d --restart unless-stopped --name spotlight-egress \
   ghcr.io/usespotlightai/spotlight-runner:<release> egress serve
 ```
 
-The egress logs `egress is the shared way out for sandboxes` when it listens.
+The egress logs `egress is the shared egress for sandboxes` when it listens.
 If it logs `egress stopped`, the message before it names the setting to fix;
 see [Settings](/docs/reference/hosts/egress#settings).
 
@@ -113,7 +113,7 @@ For the platform egress, set `egress = "spotlight"` instead. Run
 Each provision call now carries `data.runner.egress`. Start the container
 with its `url` as `SPOTLIGHT_EGRESS_URL`, its `credential` as
 `SPOTLIGHT_EGRESS_PROXY_CREDENTIAL` and its `traffic` as `SPOTLIGHT_EGRESS_TRAFFIC`,
-beside `SPOTLIGHT_URL` and `SPOTLIGHT_TOKEN`, as
+beside `SPOTLIGHT_URL` and `SPOTLIGHT_RUN_TOKEN`, as
 in [Start the runner](/docs/hosts/provision-runners-from-your-own-platform#start-the-runner).
 The credential is good for that one runner, and only through the egress.
 

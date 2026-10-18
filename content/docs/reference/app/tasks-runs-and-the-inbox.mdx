@@ -18,7 +18,7 @@ inbox. The terms are defined in the [glossary](/docs/reference/glossary).
 | Description | Markdown, up to 20,000 characters. Optional. Fixed once the task is created. |
 | Station | The task's current station. |
 | Assignee | The person whose inbox the task's conversations reach. A task created by a person is assigned to them. |
-| Raised by | The person who created the task, if a person did. |
+| Created by | The person who created the task, if a person did. |
 | Attachments | Files given with the task. See [Attachments](#attachments). |
 | Pull request | The pull request the task opened, or the one it reviews. |
 | Marks | The handles the task is known by outside Spotlight. See [GitHub events](/docs/reference/events/github-events#marks). |
@@ -269,7 +269,7 @@ for more than one reason, the reasons are joined with `; `.
 | Message | Cause |
 | --- | --- |
 | `Runner image <image> can't be pulled. Error: <error>` | The host could not pull the line's image and has no copy of it. Unreadable registry credentials fail the pull even when the host has a copy, unless the image is named by digest or the copy has no registry digest. Code `unprepared`. |
-| `Runner image <image> is unavailable. <reason>` | The host does not serve the image. The reasons are those the Runners page shows for the image. Code `unprepared`. |
+| `Runner image <image> is unavailable. <reason>` | The host does not support the image. The reasons are those the Runners page shows for the image. Code `unprepared`. |
 | `Runner image <digest> no longer has the <harness> harness.` | The image changed and lost the station's harness. Code `unprepared`. |
 | `The sandbox's egress didn't start. Error: <error>` | See [Egress start failures](/docs/reference/hosts/egress#egress-start-failures). Code `unprepared`. |
 | `The runner couldn't prepare the run. Error: prepare: git clone <path>: <error>: <output>` | A repository could not be cloned. Code `unprepared`. |
@@ -356,7 +356,7 @@ The archive is kept for 30 days after the run started; see
 ### Spend
 
 Once a run has ended and Spotlight has recorded the usage of its journal, it records
-what the run spent. `GET /api/teams/{teamId}/runs/{runId}/conversation` returns it
+what the run spent. `GET /api/teams/{teamId}/runs/{runId}/notes` returns it
 under `spend`:
 
 | Field | Contains |
@@ -663,7 +663,7 @@ Selecting the row shows:
 When the runner reported that egress was not enforced, the run's row shows a warning mark after its name. Hovering over the mark
 shows `Egress not enforced` and explains it.
 
-Connection rows do not count as "Faults". The trace reads at most 500 such
+Connection rows do not count as "Errors". The trace reads at most 500 such
 connections for each run. The run's details still list all its connections,
 and show an auth failure or a server error in red, as `Auth failed` or
 `Server error`.
@@ -777,6 +777,10 @@ taking up the harness session where the last run left it.
 A resolved item shows no answer box. In its place it reads
 `The conversation is closed here. Nothing is left to answer.` while the task is at
 the item's station, or `The task moved on to <Station>. Nothing is left to answer.`
+
+[Grades](#grades), [memory reviews](#memory-reviews) and
+[station alerts](#station-alerts) are inbox requests: items on a task that are
+not its conversation. Nothing waits on an inbox request.
 
 ### Notices
 

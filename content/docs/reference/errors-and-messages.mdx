@@ -65,7 +65,7 @@ reason, the reasons are joined with `; `.
 | Message | Cause | See |
 | --- | --- | --- |
 | `Runner image <image> can't be pulled. Error: <error>` | The host could not pull the line's image and has no copy of it. Unreadable registry credentials fail the pull even when the host has a copy, unless the image is named by digest or the copy has no registry digest. Code `unprepared`. | [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages), [Pull runner images from a private registry](/docs/hosts/pull-images-from-a-private-registry) |
-| `Runner image <image> is unavailable. <reason>` | The host does not serve the image. The reasons are those the [Runners page](#runners-page) shows. Code `unprepared`. | [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-task-shows-in-progress-but-nothing-happens) |
+| `Runner image <image> is unavailable. <reason>` | The host does not support the image. The reasons are those the [Runners page](#runners-page) shows. Code `unprepared`. | [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-task-shows-in-progress-but-nothing-happens) |
 | `Runner image <digest> no longer has the <harness> harness.` | The image changed and lost the station's harness. Code `unprepared`. | [Harnesses](/docs/reference/hosts/harnesses), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-failed-with-a-message) |
 | `The sandbox's egress didn't start. Error: <error>` | Egress did not start. The error is one of the [egress start failures](#egress-start-failures). Code `unprepared`. | [Egress start failures](/docs/reference/hosts/egress#egress-start-failures) |
 | `The runner couldn't prepare the run. Error: prepare: git clone <path>: <error>: <output>` | A repository could not be cloned. Code `unprepared`. | [Run phases](/docs/reference/hosts/sandbox#run-phases), [Point a line at your repositories](/docs/lines/point-a-line-at-your-repositories) |
@@ -113,7 +113,7 @@ Each follows `The sandbox's egress didn't start. Error: `.
 | `destroyed a sandbox left behind` | A sandbox from an earlier host process was removed at start. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host) |
 | `the sandbox ran past its time` | `SPOTLIGHT_RUN_TIMEOUT` passed. The sandbox is stopped with a 30-second grace, and the run is reported `timed-out`. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-used-all-its-attempts) |
 | `could not start a sandbox; claiming from this image pauses` | A sandbox did not start. Claims for that image pause, longer after each failure in a row. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host) |
-| `failed the work: its way out did not start` | Egress did not start. The run fails, or the check is skipped. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host) |
+| `failed the work: its egress sidecar did not start` | Egress did not start. The run fails, or the check is skipped. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host) |
 | `the host is stopping, so the work is left to be claimed again` | The host stopped before the sandbox started. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host) |
 | `the control plane will not have this host; it stops claiming and lets its sandboxes finish` | Spotlight did not accept the host. It exits `3`. | [Exit codes](/docs/reference/cli/spotlight-command#exit-codes) |
 | `Missing, rotated or unknown pool token, or a workload the trust does not match` | Spotlight did not accept the host's credential, with `401`. | [Authentication](/docs/reference/terraform/runner-trust#authentication), [Run hosts without a stored token](/docs/hosts/run-hosts-without-a-stored-token) |
@@ -132,12 +132,12 @@ environment, are prefixed `egress: `.
 | Message | Cause | See |
 | --- | --- | --- |
 | `SPOTLIGHT_URL is required` | No address. The runner gives the same message. | [Validation](/docs/reference/hosts/host-configuration#validation) |
-| `SPOTLIGHT_TOKEN and SPOTLIGHT_TRUST are different ways in; set one` | A token together with a trust or a token file. | [Validation](/docs/reference/hosts/host-configuration#validation) |
-| `SPOTLIGHT_TOKEN (a pull pool's token) is required, or SPOTLIGHT_TRUST and SPOTLIGHT_OIDC_TOKEN_FILE to claim through a runner trust` | Neither a token nor a trust. | [Validation](/docs/reference/hosts/host-configuration#validation), [Install a host](/docs/hosts/run-a-host) |
+| `SPOTLIGHT_POOL_TOKEN and SPOTLIGHT_TRUST are two different authentication methods; set one` | A token together with a trust or a token file. | [Validation](/docs/reference/hosts/host-configuration#validation) |
+| `SPOTLIGHT_POOL_TOKEN (a pull pool's token) is required, or SPOTLIGHT_TRUST and SPOTLIGHT_OIDC_TOKEN_FILE to claim through a runner trust` | Neither a token nor a trust. | [Validation](/docs/reference/hosts/host-configuration#validation), [Install a host](/docs/hosts/run-a-host) |
 | `SPOTLIGHT_OIDC_TOKEN_FILE names the workload token file, and is required with SPOTLIGHT_TRUST` | A trust without a token file. | [Validation](/docs/reference/hosts/host-configuration#validation), [Run hosts without a stored token](/docs/hosts/run-hosts-without-a-stored-token) |
 | `SPOTLIGHT_CAPACITY: "<x>" is not a count of at least 1` | A capacity that is not a count of at least 1. | [Validation](/docs/reference/hosts/host-configuration#validation) |
 | `SPOTLIGHT_RUN_TIMEOUT: "<x>" is not a duration such as 6h` | A timeout that is not a duration. | [Validation](/docs/reference/hosts/host-configuration#validation) |
-| `SPOTLIGHT_RUNNER_IMAGE: "<x>" is not an image reference such as ghcr.io/acme/runner:main` | An image entry that is not an image reference. | [Validation](/docs/reference/hosts/host-configuration#validation), [Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image#let-the-hosts-serve-it) |
+| `SPOTLIGHT_RUNNER_IMAGE: "<x>" is not an image reference such as ghcr.io/acme/runner:main` | An image entry that is not an image reference. | [Validation](/docs/reference/hosts/host-configuration#validation), [Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image#let-the-hosts-support-it) |
 | `SPOTLIGHT_EGRESS_ALLOW: "*" allows everything; leave the list empty for that` | `SPOTLIGHT_EGRESS_ALLOW=*`. | [Validation](/docs/reference/hosts/host-configuration#validation), [Limit where sandboxes can connect](/docs/security/limit-where-sandboxes-connect#set-the-allow-list) |
 | `the sandbox environment sets <NAME>, which only the host has` | A sandbox variable names a host credential. | [Validation](/docs/reference/hosts/host-configuration#validation) |
 | `the sandbox environment carries the pool token in <NAME>` | A sandbox variable contains the pool token. | [Validation](/docs/reference/hosts/host-configuration#validation) |
@@ -146,17 +146,17 @@ environment, are prefixed `egress: `.
 
 | Message | Cause | See |
 | --- | --- | --- |
-| `SPOTLIGHT_TOKEN and SPOTLIGHT_ASSIGNMENT_FILE are different ways to get work; set one` | Both are set. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
-| `SPOTLIGHT_ASSIGNMENT_FILE names the file with the work a host assigned to this runner, or SPOTLIGHT_TOKEN is the one-run credential a push pool provisioned it with` | Neither is set. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
+| `SPOTLIGHT_RUN_TOKEN and SPOTLIGHT_ASSIGNMENT_FILE are different ways to get work; set one` | Both are set. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
+| `SPOTLIGHT_ASSIGNMENT_FILE names the file with the work a host assigned to this runner, or SPOTLIGHT_RUN_TOKEN is the one-run credential a push pool provisioned it with` | Neither is set. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
 | `its assignment has no one-run credential` | The assignment file contains no credential. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
 | `could not trust the egress authority, so TLS through egress may fail` | A warning. The egress authority could not be added to the image's bundles. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
-| `nothing was reserved for it in time` | With `SPOTLIGHT_TOKEN`, no work arrived within 5 minutes. The runner exits `0`. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
+| `nothing was reserved for it in time` | With `SPOTLIGHT_RUN_TOKEN`, no work arrived within 5 minutes. The runner exits `0`. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
 | `usage: spotlight runner [harnesses <json>]` | An argument other than `harnesses`. | [spotlight runner](/docs/reference/cli/spotlight-command#spotlight-runner) |
 | `SPOTLIGHT_EGRESS_URL and SPOTLIGHT_EGRESS_PROXY_CREDENTIAL go together; set both or neither` | Only one of the two is set. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
 | `SPOTLIGHT_EGRESS_TRAFFIC: "<value>" is not all or bound` | A value that is not `all` or `bound`. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
 | `SPOTLIGHT_EGRESS_URL "<value>" is not an address such as https://egress.example.com` | Not an `http` or `https` URL with a host. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
-| `could not open the way out, so the agent goes out without its run's secrets` | A warning. The runner's way out did not open, and the agent gets no proxy. | [The runner's way out](/docs/reference/hosts/egress#the-runners-way-out) |
-| `could not trust the way out's authority, so TLS through it may fail` | A warning. The way out's authority could not be added to the image's bundles. | [The runner's way out](/docs/reference/hosts/egress#the-runners-way-out) |
+| `could not open the local proxy, so the work fails` | The runner's local proxy did not open. The run fails before the agent starts. | [The runner's local proxy](/docs/reference/hosts/egress#the-runners-local-proxy) |
+| `could not trust the authority of the local proxy, so TLS through it can fail` | A warning. The authority of the local proxy could not be added to the image's bundles. | [The runner's local proxy](/docs/reference/hosts/egress#the-runners-local-proxy) |
 | `Change stacks are not set up on this deployment.` | A station with `diffs: true` on a deployment without models set up. The runner logs the error, and the checkout gets no change stack. | [Change stacks and decisions](/docs/reference/app/change-stacks-and-decisions) |
 
 ### Egress log
@@ -196,8 +196,8 @@ injected, and requests go without it.
 | `SPOTLIGHT_EGRESS_ALLOW: <problem>` | An allow-list entry that cannot be read. | [Settings](/docs/reference/hosts/egress#settings) |
 | `SPOTLIGHT_EGRESS_TLS_CERT and SPOTLIGHT_EGRESS_TLS_KEY go together; set both or neither` | Only one of the two is set. | [Settings](/docs/reference/hosts/egress#settings) |
 | `SPOTLIGHT_EGRESS_TLS_CERT and SPOTLIGHT_EGRESS_TLS_KEY: <error>` | The certificate or the key cannot be read. | [Settings](/docs/reference/hosts/egress#settings) |
-| `SPOTLIGHT_EGRESS_RATE: "<value>" is not a number of requests each second, or 0 for no limit` | A rate that is not a number, or is below `0`. | [Settings](/docs/reference/hosts/egress#settings) |
-| `SPOTLIGHT_EGRESS_CONNECTIONS: "<value>" is not a number of open connections, or 0 for no limit` | A count that is not a whole number, or is below `0`. | [Settings](/docs/reference/hosts/egress#settings) |
+| `SPOTLIGHT_EGRESS_RATE_LIMIT: "<value>" is not a number of requests each second, or 0 for no limit` | A rate that is not a number, or is below `0`. | [Settings](/docs/reference/hosts/egress#settings) |
+| `SPOTLIGHT_EGRESS_MAX_CONNECTIONS: "<value>" is not a number of open connections, or 0 for no limit` | A count that is not a whole number, or is below `0`. | [Settings](/docs/reference/hosts/egress#settings) |
 | `SPOTLIGHT_EGRESS_CA_BUNDLE: <error>` | The file cannot be read. | [Settings](/docs/reference/hosts/egress#settings) |
 | `SPOTLIGHT_EGRESS_CA_BUNDLE: <path> has no PEM certificate` | The file contains no PEM certificate. | [Settings](/docs/reference/hosts/egress#settings) |
 | `listen for sandboxes: <error>` | Egress cannot listen on `SPOTLIGHT_EGRESS_LISTEN`. | [Settings](/docs/reference/hosts/egress#settings) |
@@ -212,7 +212,7 @@ Every message goes to standard error, prefixed `spotlight host: `.
 | `need sha256sum or shasum to check what it downloads` | Neither is on `PATH`. | [Install script](/docs/reference/cli/install-script#messages) |
 | `unsupported operating system: <os>` | Not Linux or macOS. | [Install script](/docs/reference/cli/install-script#messages) |
 | `unsupported architecture: <arch>` | Not x86-64 or ARM64. | [Install script](/docs/reference/cli/install-script#messages) |
-| `set SPOTLIGHT_TOKEN to a pull pool's token, or SPOTLIGHT_TRUST and SPOTLIGHT_OIDC_TOKEN_FILE to claim through a runner trust` | No token and no trust. | [Install script](/docs/reference/cli/install-script#messages), [Install a host](/docs/hosts/run-a-host#install-the-host) |
+| `set SPOTLIGHT_POOL_TOKEN to a pull pool's token, or SPOTLIGHT_TRUST and SPOTLIGHT_OIDC_TOKEN_FILE to claim through a runner trust` | No token and no trust. | [Install script](/docs/reference/cli/install-script#messages), [Install a host](/docs/hosts/run-a-host#install-the-host) |
 | `no container runtime answered: install and start Docker or Podman (on macOS, Docker Desktop, OrbStack or Colima), then run this again` | No container runtime answered `info`. | [Install script](/docs/reference/cli/install-script#messages), [Install a host](/docs/hosts/run-a-host#install-the-host) |
 | `could not download spotlight from <url>` | The binary download failed. | [Install script](/docs/reference/cli/install-script#messages) |
 | `could not download the checksum from <url>.sha256` | The checksum download failed. | [Install script](/docs/reference/cli/install-script#messages) |
@@ -332,7 +332,7 @@ Each command exits `1` and prints its message on standard error.
 ### Shared egress responses
 
 A push pool's runner gets these from its shared egress, through the runner's
-way out.
+local proxy.
 
 | Message | Cause | See |
 | --- | --- | --- |
@@ -347,12 +347,12 @@ way out.
 | `Spotlight-Egress-Target must be a host and port 443, such as api.example.com:443.` | `400`. A forwarded request to another port. | [Shared egress responses](/docs/reference/hosts/egress#shared-egress-responses) |
 | `Egress forwards a request only to a host that a secret of this run is bound to, and <host> is not one. Please CONNECT to other hosts.` | `403`. A forwarded request to a host that is not bound. | [Shared egress responses](/docs/reference/hosts/egress#shared-egress-responses) |
 | `Egress could not reach <host>.` | `502`. A forwarded request that could not be sent on. | [Shared egress responses](/docs/reference/hosts/egress#shared-egress-responses) |
-| `Sorry, this workspace sends more than <rate> requests each second through egress. Please send fewer requests.` | `429`. Over `SPOTLIGHT_EGRESS_RATE`. | [Limits](/docs/reference/hosts/egress#limits) |
-| `Sorry, this workspace has more than <n> connections open through egress. Please close some connections.` | `429`. Over `SPOTLIGHT_EGRESS_CONNECTIONS`. | [Limits](/docs/reference/hosts/egress#limits) |
-| `The way out is a proxy. Please send it an absolute URL, or CONNECT to a host.` | `400`. From the runner's way out: a request that is neither `CONNECT` nor an absolute URL. | [The runner's way out](/docs/reference/hosts/egress#the-runners-way-out) |
-| `The way out could not reach <host:port>. Error: <reason>` | `502`. From the way out: egress could not be reached, or a direct connection failed. | [Shared egress responses](/docs/reference/hosts/egress#shared-egress-responses) |
-| `The way out could not intercept TLS for <host>. Error: <reason>` | `502`. From the way out: no certificate could be made for a bound host. | [Shared egress responses](/docs/reference/hosts/egress#shared-egress-responses) |
-| `The way out could not reach <host>.` | `502`. From the way out: a request could not be sent on. | [Shared egress responses](/docs/reference/hosts/egress#shared-egress-responses) |
+| `Sorry, this workspace sends more than <rate> requests each second through egress. Please send fewer requests.` | `429`. Over `SPOTLIGHT_EGRESS_RATE_LIMIT`. | [Limits](/docs/reference/hosts/egress#limits) |
+| `Sorry, this workspace has more than <n> connections open through egress. Please close some connections.` | `429`. Over `SPOTLIGHT_EGRESS_MAX_CONNECTIONS`. | [Limits](/docs/reference/hosts/egress#limits) |
+| `The local proxy accepts only an absolute URL or CONNECT. Send an absolute URL, or CONNECT to a host.` | `400`. From the runner's local proxy: a request that is neither `CONNECT` nor an absolute URL. | [The runner's local proxy](/docs/reference/hosts/egress#the-runners-local-proxy) |
+| `The local proxy could not reach <host:port>. Error: <reason>` | `502`. From the runner's local proxy: egress could not be reached, or a direct connection failed. | [Shared egress responses](/docs/reference/hosts/egress#shared-egress-responses) |
+| `The local proxy could not intercept TLS for <host>. Error: <reason>` | `502`. From the runner's local proxy: no certificate could be made for a bound host. | [Shared egress responses](/docs/reference/hosts/egress#shared-egress-responses) |
+| `The local proxy could not reach <host>.` | `502`. From the runner's local proxy: a request could not be sent on. | [Shared egress responses](/docs/reference/hosts/egress#shared-egress-responses) |
 
 ## Resource API and Terraform
 
@@ -384,7 +384,7 @@ slugs.
 
 | Message | Cause | See |
 | --- | --- | --- |
-| `Not allowed to change the <kind>` | `403`. The caller lacks `configure`, `manage-secrets`, `manage-runners` or `manage-token-trusts`. | [Permissions](/docs/reference/roles-and-permissions#permissions) |
+| `Not allowed to change the <kind>` | `403`. The caller lacks `configure`, `secrets`, `runners` or `trusts`. | [Permissions](/docs/reference/roles-and-permissions#permissions) |
 | `Not allowed to administer the <kind>` | `403`. The caller lacks `administer`. | [Permissions](/docs/reference/roles-and-permissions#permissions) |
 | `Not allowed to create a workspace` | `403`. The caller lacks `create-workspaces`. | [Permissions](/docs/reference/roles-and-permissions#permissions) |
 | `Not allowed to plan` | `403`. The caller lacks `plan`. | [Permissions](/docs/reference/roles-and-permissions#permissions) |
@@ -463,7 +463,7 @@ these reasons.
 
 | Message | Cause | See |
 | --- | --- | --- |
-| `The host's SPOTLIGHT_RUNNER_IMAGE doesn't allow this image.` | The image is not in the host's `SPOTLIGHT_RUNNER_IMAGE`. | [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-task-shows-in-progress-but-nothing-happens), [Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image#let-the-hosts-serve-it) |
+| `The host's SPOTLIGHT_RUNNER_IMAGE doesn't allow this image.` | The image is not in the host's `SPOTLIGHT_RUNNER_IMAGE`. | [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-task-shows-in-progress-but-nothing-happens), [Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image#let-the-hosts-support-it) |
 | `Image can't be pulled. Error: <error>` | The image could not be pulled. | [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-task-shows-in-progress-but-nothing-happens), [Pull runner images from a private registry](/docs/hosts/pull-images-from-a-private-registry) |
 | `Image can't be inspected. Error: <error>` | The image could not be inspected. | [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-task-shows-in-progress-but-nothing-happens), [Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image) |
 | `Runner is on release <release>. Minimum version required: <release>` | The image's runner release is too old. | [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-task-shows-in-progress-but-nothing-happens) |

@@ -2,19 +2,19 @@
 type: reference
 icon: BookText
 title: Egress
-description: The proxy beside each sandbox and the shared egress of push pools, what each allows and blocks, which secrets it injects into requests to which hosts, what it records, and the responses it returns.
+description: The egress sidecar of each sandbox and the shared egress of push pools, what each allows and blocks, which secrets it injects into requests to which hosts, what it records, and the responses it returns.
 ---
 
 Egress is the proxy between a sandbox and the network. It has two forms:
 
 | Form | Command | Serves |
 | --- | --- | --- |
-| Egress beside a sandbox | `spotlight egress` | One run on a host. The host starts it beside the sandbox and destroys it with the sandbox. It is the sandbox's only way out. |
+| Egress sidecar | `spotlight egress` | One run on a host. The host starts it next to the sandbox and destroys it with the sandbox. The sandbox can send traffic only through it. |
 | Shared egress | `spotlight egress serve` | The runs of the push pools that name it in `provision.egress`. One long-lived process serves many runs. See [Shared egress](#shared-egress). |
 
 [The sandbox is the security boundary](/docs/security/the-sandbox-is-the-security-boundary)
 gives the reasons. The sections before [Shared egress](#shared-egress) describe
-the egress beside a sandbox. The shared egress follows the same rules, except
+the egress sidecar. The shared egress follows the same rules, except
 where its section says otherwise.
 
 ## Topology
@@ -255,8 +255,8 @@ Spotlight's API, is never reserved for its runners.
 | `SPOTLIGHT_EGRESS_ALLOW` | none | The allow-list for every run egress serves, as a host's. See [Allowed hosts](#allowed-hosts). |
 | `SPOTLIGHT_EGRESS_SECRET_ALLOW` | none | Comma-separated AWS Secrets Manager secret names or ARNs egress may read, or prefixes ending in `*`. |
 | `SPOTLIGHT_EGRESS_CA_BUNDLE` | none | A PEM file of certificate authorities egress trusts upstream, in addition to its image's system certificates. |
-| `SPOTLIGHT_EGRESS_RATE` | `50` | Requests each second for each workspace. `0` is no limit. See [Limits](#limits). |
-| `SPOTLIGHT_EGRESS_CONNECTIONS` | `200` | Open connections for each workspace. `0` is no limit. See [Limits](#limits). |
+| `SPOTLIGHT_EGRESS_RATE_LIMIT` | `50` | Requests each second for each workspace. `0` is no limit. See [Limits](#limits). |
+| `SPOTLIGHT_EGRESS_MAX_CONNECTIONS` | `200` | Open connections for each workspace. `0` is no limit. See [Limits](#limits). |
 
 Egress reads AWS Secrets Manager with its own AWS identity, from the default
 credential chain. [Allowed hosts](#allowed-hosts) and
@@ -273,8 +273,8 @@ and exits `1`:
 | `SPOTLIGHT_EGRESS_ALLOW: <problem>` | An allow-list entry that cannot be read, as for a host. |
 | `SPOTLIGHT_EGRESS_TLS_CERT and SPOTLIGHT_EGRESS_TLS_KEY go together; set both or neither` | Only one of the two is set. |
 | `SPOTLIGHT_EGRESS_TLS_CERT and SPOTLIGHT_EGRESS_TLS_KEY: <error>` | The certificate or the key cannot be read. |
-| `SPOTLIGHT_EGRESS_RATE: "<value>" is not a number of requests each second, or 0 for no limit` | A rate that is not a number, or is below `0`. |
-| `SPOTLIGHT_EGRESS_CONNECTIONS: "<value>" is not a number of open connections, or 0 for no limit` | A count that is not a whole number, or is below `0`. |
+| `SPOTLIGHT_EGRESS_RATE_LIMIT: "<value>" is not a number of requests each second, or 0 for no limit` | A rate that is not a number, or is below `0`. |
+| `SPOTLIGHT_EGRESS_MAX_CONNECTIONS: "<value>" is not a number of open connections, or 0 for no limit` | A count that is not a whole number, or is below `0`. |
 | `SPOTLIGHT_EGRESS_CA_BUNDLE: <error>` | The file cannot be read. |
 | `SPOTLIGHT_EGRESS_CA_BUNDLE: <path> has no PEM certificate` | The file contains no PEM certificate. |
 | `listen for sandboxes: <error>` | Egress cannot listen on `SPOTLIGHT_EGRESS_LISTEN`. |
@@ -313,16 +313,16 @@ Egress calls Spotlight with its egress token as a bearer token:
 | `POST /api/egress/active-runs` | `active`: the run proxy credentials whose runner still leases its run. At most 500 credentials in one request; more is answered `422`. Egress sends them in batches. |
 | `POST /api/egress/connections` | `204`. At most 2,000 records in one call; more is answered `422`. Egress sends them in batches. |
 
-### The runner's way out
+### The runner's local proxy
 
-A runner given `SPOTLIGHT_EGRESS_URL` sends its own calls to Spotlight, its
-git traffic and the workspace archives through egress, in `CONNECT` tunnels.
-After it claims its work, it gets the list of bound hosts from egress, and opens a
-local proxy, the way out, at `127.0.0.1:3128`. A bound host is a host that a
-secret of the run is bound to, or the Spotlight address's host for a run that
-uses Spotlight's API, if the allow-list allows it.
+A runner given `SPOTLIGHT_EGRESS_URL` sends its own calls to Spotlight, its git
+traffic and the workspace archives through egress, in `CONNECT` tunnels. After
+it claims its work, it gets the list of bound hosts from egress, and opens the
+runner's local proxy at `127.0.0.1:3128`. A bound host is a host that a secret
+of the run is bound to, or the Spotlight address's host for a run that uses
+Spotlight's API, if the allow-list allows it.
 
-The harness, the setup commands and the change stack checks get the way out
+The harness, the setup commands and the change stack checks get the local proxy
 in their environment:
 
 | Variable | Value |
@@ -333,20 +333,20 @@ in their environment:
 | `NODE_EXTRA_CA_CERTS` | `/etc/spotlight/egress/authority.pem` |
 | `NODE_USE_ENV_PROXY` | `1` |
 
-| Request to the way out | What the way out does |
+| Request to the local proxy | What the local proxy does |
 | --- | --- |
 | `CONNECT` to port `443` of a bound host | Ends the TLS with its own certificate authority, and sends each request to egress with `Spotlight-Egress-Target: <host>:443`. Egress injects the secrets, sends the request on over HTTPS, and takes the secrets out of the answer. |
 | Any other `CONNECT` | Requests a `CONNECT` tunnel from egress to the same host and port. Egress does not decrypt it. |
 | A plain-HTTP request | Sends it through a `CONNECT` tunnel to the host's port. Egress injects nothing into it. |
-| Anything else | `400` `The way out is a proxy. Please send it an absolute URL, or CONNECT to a host.` |
+| Anything else | `400` `The local proxy accepts only an absolute URL or CONNECT. Send an absolute URL, or CONNECT to a host.` |
 
-With `SPOTLIGHT_EGRESS_TRAFFIC=bound`, the way out connects to other hosts
+With `SPOTLIGHT_EGRESS_TRAFFIC=bound`, the local proxy connects to other hosts
 directly, not through egress: only requests to bound hosts go to egress. The
 runner's own traffic still goes through egress. The default is `all`. The
 value comes from the pool's `provision.egressTraffic`, through
 `runner.egress.traffic` in the provision call.
 
-| Way out authority | Value |
+| Local proxy authority | Value |
 | --- | --- |
 | Certificate authority | One per runner, ECDSA P-256, made by the runner. The key stays in the runner's memory. |
 | Lifetime | 48 hours |
@@ -354,17 +354,18 @@ value comes from the pool's `provision.egressTraffic`, through
 | Files | `/etc/spotlight/egress/authority.pem`, and `/etc/spotlight/egress/bundle.pem` with the image's system certificates. It is also appended to each system bundle that exists in the image. |
 | Certificates trusted for the egress connection | The image's system certificates. |
 
-If the way out cannot open, the runner logs
-`could not open the way out, so the agent goes out without its run's secrets`,
-and the agent's environment gets no proxy variables. If its authority cannot be
-added to the bundles, the runner logs
-`could not trust the way out's authority, so TLS through it may fail`.
+If the local proxy cannot open, the runner logs
+`could not open the local proxy, so the work fails`, and the run fails before
+the agent starts. A change stack check fails too, and the runner logs
+`could not check, because the local proxy did not open`. If the authority of the
+local proxy cannot be added to the bundles, the runner logs
+`could not trust the authority of the local proxy, so TLS through it can fail`.
 
 ### What a shared egress injects into requests
 
 - Run secrets and [the run's Spotlight token](#the-runs-spotlight-token), as
-  above, on the requests the way out sends to egress. Those are HTTPS requests
-  to port `443` of a bound host only.
+  above, on the requests the local proxy sends to egress. Those are HTTPS
+  requests to port `443` of a bound host only.
 - No harness keys. They enter the sandbox as the push pool's provisioner gives
   them.
 - Values Spotlight keeps are sealed to a key the egress process makes when it
@@ -440,8 +441,8 @@ to egress counts, a `CONNECT` included.
 
 | Limit | Setting | Default | Over the limit |
 | --- | --- | --- | --- |
-| Requests each second | `SPOTLIGHT_EGRESS_RATE` | `50` | `429` `Sorry, this workspace sends more than <rate> requests each second through egress. Please send fewer requests.` |
-| Open connections | `SPOTLIGHT_EGRESS_CONNECTIONS` | `200` | `429` `Sorry, this workspace has more than <n> connections open through egress. Please close some connections.` |
+| Requests each second | `SPOTLIGHT_EGRESS_RATE_LIMIT` | `50` | `429` `Sorry, this workspace sends more than <rate> requests each second through egress. Please send fewer requests.` |
+| Open connections | `SPOTLIGHT_EGRESS_MAX_CONNECTIONS` | `200` | `429` `Sorry, this workspace has more than <n> connections open through egress. Please close some connections.` |
 
 A workspace can send up to the rate's number of requests at once.
 
@@ -462,14 +463,14 @@ A workspace can send up to the rate's number of requests at once.
 | `502` | `Egress could not reach <host>.` | A forwarded request that could not be sent on. The reason is left out. |
 | `429` | See [Limits](#limits). | |
 
-The way out passes each error response of egress on with its status and message. Its
-own failures are:
+The local proxy passes each error response of egress on with its status and
+message. Its own failures are:
 
 | Status | Message | Cause |
 | --- | --- | --- |
-| `502` | `The way out could not reach <host:port>. Error: <reason>` | Egress could not be reached for a tunnel, or a direct connection failed. |
-| `502` | `The way out could not intercept TLS for <host>. Error: <reason>` | No certificate could be made for a bound host. |
-| `502` | `The way out could not reach <host>.` | A request to a bound host, or a plain-HTTP request, could not be sent on. |
+| `502` | `The local proxy could not reach <host:port>. Error: <reason>` | Egress could not be reached for a tunnel, or a direct connection failed. |
+| `502` | `The local proxy could not intercept TLS for <host>. Error: <reason>` | No certificate could be made for a bound host. |
+| `502` | `The local proxy could not reach <host>.` | A request to a bound host, or a plain-HTTP request, could not be sent on. |
 
 ## Limitations
 

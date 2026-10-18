@@ -46,7 +46,7 @@ each harness package provides.
 | `/workspace/.spotlight/skills` | Skills, for Cursor and Codex. |
 | `/workspace/.spotlight/outcome.json` | Read if the agent never runs `spotlight handover`. Removed at the start of each run. See [Agent commands](/docs/reference/cli/agent-commands#without-a-handover). |
 | `/run/spotlight/assignment.json` | The work the host assigned to the sandbox, mode `0400`. The runner deletes it after reading it. |
-| `/etc/spotlight/egress/authority.pem` | The run's egress certificate authority. On a runner of a push pool that names an egress, the authority of the runner's way out. |
+| `/etc/spotlight/egress/authority.pem` | The run's egress certificate authority. On a runner of a push pool that names an egress, the authority of the runner's local proxy. |
 | `/etc/spotlight/egress/bundle.pem` | The image's system certificates with that authority added. |
 | `/spotlight/mirrors/<repository>.git` | The host's mirror of each repository, mounted read-only when the host has one. |
 
@@ -72,13 +72,13 @@ A host sets these on the sandbox:
 | Variables from `SPOTLIGHT_SANDBOX_ENV` and `SPOTLIGHT_SANDBOX_PASS` | As given, except harness keys, which become `spotlight-egress:<NAME>`. See [Host settings](/docs/reference/hosts/host-configuration#harness-keys). |
 
 A runner a push pool provisions gets `SPOTLIGHT_URL` and a one-run
-`SPOTLIGHT_TOKEN` from its provider instead. When the pool names an egress, it
-also gets `SPOTLIGHT_EGRESS_URL` and `SPOTLIGHT_EGRESS_PROXY_CREDENTIAL`, and the
-agent gets the proxy and certificate variables of
-[the runner's way out](/docs/reference/hosts/egress#the-runners-way-out). When
-the pool names none, the runner has no egress. See
-[The spotlight command](/docs/reference/cli/spotlight-command#spotlight-runner) for
-the variables the runner reads.
+`SPOTLIGHT_RUN_TOKEN` from its provider instead. When the pool names an egress,
+it also gets `SPOTLIGHT_EGRESS_URL` and `SPOTLIGHT_EGRESS_PROXY_CREDENTIAL`, and
+the agent gets the proxy and certificate variables of
+[the runner's local proxy](/docs/reference/hosts/egress#the-runners-local-proxy).
+When the pool names none, the runner has no egress. See
+[The spotlight command](/docs/reference/cli/spotlight-command#spotlight-runner)
+for the variables the runner reads.
 
 ### The agent's environment
 
@@ -193,6 +193,6 @@ failure message. See
 | Message | Cause |
 | --- | --- |
 | `Runner image <image> can't be pulled. Error: <error>` | No pull and no local copy. |
-| `Runner image <image> is unavailable. <reason>` | The host does not serve the image. |
+| `Runner image <image> is unavailable. <reason>` | The host does not support the image. |
 | `Runner image <digest> no longer has the <harness> harness.` | The image changed and lost the station's harness. |
 | `The sandbox's egress didn't start. Error: <error>` | See [Egress](/docs/reference/hosts/egress). |

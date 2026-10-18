@@ -19,8 +19,8 @@ Invalid environment variables:
   <variable>: <problem>
 ```
 
-Neither `SPOTLIGHT_SECRETS_KEY` nor `SECRETS_KMS_KEY_ID` set gives
-`SPOTLIGHT_SECRETS_KEY: wraps each workspace data key when SECRETS_KMS_KEY_ID names no AWS KMS key; generate one with: openssl rand -base64 32`.
+Neither `SPOTLIGHT_SECRETS_KEY` nor `SPOTLIGHT_SECRETS_KMS_KEY_ID` set gives
+`SPOTLIGHT_SECRETS_KEY: wraps each workspace data key when SPOTLIGHT_SECRETS_KMS_KEY_ID names no AWS KMS key; generate one with: openssl rand -base64 32`.
 
 ## Service
 
@@ -49,8 +49,8 @@ Neither `SPOTLIGHT_SECRETS_KEY` nor `SECRETS_KMS_KEY_ID` set gives
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `SPOTLIGHT_SECRETS_KEY` | none | 32 bytes, base64 encoded, as made by `openssl rand -base64 32`. Wraps each workspace's data key, which seals [secrets](/docs/reference/terraform/secret) and the other credentials Spotlight keeps, such as integration connection tokens. Required unless `SECRETS_KMS_KEY_ID` is set. |
-| `SECRETS_KMS_KEY_ID` | none | An AWS KMS key that wraps workspace data keys. When set, used in place of `SPOTLIGHT_SECRETS_KEY`. |
+| `SPOTLIGHT_SECRETS_KEY` | none | 32 bytes, base64 encoded, as made by `openssl rand -base64 32`. Wraps each workspace's data key, which seals [secrets](/docs/reference/terraform/secret) and the other credentials Spotlight keeps, such as integration connection tokens. Required unless `SPOTLIGHT_SECRETS_KMS_KEY_ID` is set. |
+| `SPOTLIGHT_SECRETS_KMS_KEY_ID` | none | An AWS KMS key that wraps workspace data keys. When set, used in place of `SPOTLIGHT_SECRETS_KEY`. |
 | `SECRETS_AWS_SECRETS_MANAGER` | `false` | `true` lets Spotlight read a secret whose source is AWS Secrets Manager when it is used. |
 
 AWS KMS and AWS Secrets Manager are reached with the default AWS credential
@@ -65,11 +65,11 @@ every secret has to be set again and every integration connected again.
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `OUTBOUND_ALLOWED_HOSTS` | empty | Comma-separated hosts Spotlight may call for integrations and their tools, OAuth token exchanges, hooks it sends itself, and push pools' provision calls. An entry allows the host and its subdomains, compared without regard to case. Empty allows none. |
+| `SPOTLIGHT_OUTBOUND_ALLOWED_HOSTS` | empty | Comma-separated hosts Spotlight may call for integrations and their tools, OAuth token exchanges, hooks it sends itself, and push pools' provision calls. An entry allows the host and its subdomains, compared without regard to case. Empty allows none. |
 | `OAUTH_CLIENTS` | `{}` | The deployment's OAuth clients, as JSON mapping an integration's name to `{ "id", "secret" }`, with `issuer`, the authorization server, for an MCP server it discovers. Example: `{"slack":{"id":"...","secret":"..."}}`. |
 | `HOOK_SIGNING_KEY` | none | A P-256 private key, in PEM, that signs [hook OIDC tokens](/docs/reference/terraform/hook#oidc) with ES256. `\n` in the value is read as a line break. Without it, a hook with `oidc` is rejected. |
-| `MCP_RELIST_SECONDS` | `600` | How often the tools of an integration's MCP server are listed again. |
-| `SPOTLIGHT_CATALOG_URL` | `https://catalog.usespotlight.ai` | Where [catalog](/docs/reference/glossary#catalog) tools are called. Always reached, whatever `OUTBOUND_ALLOWED_HOSTS` says. |
+| `SPOTLIGHT_MCP_RELIST_SECONDS` | `600` | How often the tools of an integration's MCP server are listed again. |
+| `SPOTLIGHT_CATALOG_URL` | `https://catalog.usespotlight.ai` | Where [catalog](/docs/reference/glossary#catalog) tools are called. Always reached, whatever `SPOTLIGHT_OUTBOUND_ALLOWED_HOSTS` says. |
 | `SPOTLIGHT_CATALOG_TOKEN` | none | The token sent with each catalog call. |
 
 Register each OAuth client with the callback
@@ -190,4 +190,4 @@ email.
 | `MAIL_FROM` | `Spotlight <noreply@usespotlight.ai>` | The sender. Must be one the mail server permits. |
 
 With `SMTP_URL` unset, Spotlight sends nothing. It logs each message at `warn`
-with `No mail server configured, so this message was only written down`.
+with `No mail server is configured, so Spotlight only logged this message`.

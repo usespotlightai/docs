@@ -172,7 +172,7 @@ connection = {
 | Acts as | A tool acts with | Polls, schedules and `on` bindings act with |
 | --- | --- | --- |
 | `team` | The team's connection. | The team's connection. |
-| `requester` | The connection of the person who started the task: the task's Raised by. | The team's connection. |
+| `requester` | The connection of the person who started the task: the task's Created by field. | The team's connection. |
 
 A team connection is made by an owner or admin of the workspace. A person's
 connection is made by that person, who must be on the team, and only for an
@@ -485,7 +485,7 @@ before it is sent.
 `auth` accepts no other way, and is rejected with `authenticates a request by its oauth2 connection, or by the secrets that Spotlight injects for the hosts they are bound to`. See [Bindings](/docs/reference/terraform/secret#bindings).
 
 Every request goes only to hosts on the deployment's outbound allow-list,
-[`OUTBOUND_ALLOWED_HOSTS`](/docs/reference/self-hosted-settings#calls-out-of-spotlight). A
+[`SPOTLIGHT_OUTBOUND_ALLOWED_HOSTS`](/docs/reference/self-hosted-settings#calls-out-of-spotlight). A
 request to another host is blocked with `Outbound call to <host> blocked. Host is not on the allowed list.`
 A request is also blocked with `Outbound call to <url> blocked. URL is not valid.`,
 `Outbound call to <host> blocked. redirected more than 5 times`, or
@@ -789,10 +789,10 @@ Spotlight lists the tools when the integration is created, and again:
 - when an update changes `url`, or whether `auth` is `oauth2`;
 - on any update after a listing that failed;
 - when the team's connection to the integration is made over OAuth;
-- when the last listing is older than the deployment's `MCP_RELIST_SECONDS`,
-  600 by default, checked every minute. One control plane server claims each
-  such listing, moving `spec.readAt` on as it does, and the integration's
-  `version` does not change.
+- when the last listing is older than the deployment's
+  `SPOTLIGHT_MCP_RELIST_SECONDS`, 600 by default, checked every minute. One
+  control plane server claims each such listing, moving `spec.readAt` on as it
+  does, and the integration's `version` does not change.
 
 The listing carries the team's connection when `auth` is `oauth2`, even for a
 `requester` integration. A listing answered `401` refreshes the connection once

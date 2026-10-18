@@ -77,13 +77,13 @@ See [Egress](/docs/reference/hosts/egress).
 | Upstream TLS handshake | 15 seconds |
 | Shutdown grace | 5 seconds |
 
-A [shared egress](/docs/reference/hosts/egress#shared-egress) and a push pool
-runner's way out:
+A [shared egress](/docs/reference/hosts/egress#shared-egress) and the local
+proxy of a push pool runner:
 
 | Item | Value |
 | --- | --- |
-| Requests each second, for each workspace and egress process | `SPOTLIGHT_EGRESS_RATE`, default 50; `0` is no limit |
-| Open connections, for each workspace and egress process | `SPOTLIGHT_EGRESS_CONNECTIONS`, default 200; `0` is no limit |
+| Requests each second, for each workspace and egress process | `SPOTLIGHT_EGRESS_RATE_LIMIT`, default 50; `0` is no limit |
+| Open connections, for each workspace and egress process | `SPOTLIGHT_EGRESS_MAX_CONNECTIONS`, default 200; `0` is no limit |
 | Checking which runs are still active | Every 30 seconds, at most 500 run proxy credentials in one request |
 | A run with no request | Removed from egress memory after 2 minutes |
 | Fetching again while the runner has no lease on a run | At most every 5 seconds |
@@ -91,7 +91,7 @@ runner's way out:
 | Time a connection record keeps from egress | At most 1 hour before and 1 minute after Spotlight gets it |
 | Connection records retained | 30 days |
 | Enforcement check | 3 seconds |
-| Way out authority lifetime | 48 hours |
+| Local proxy authority lifetime | 48 hours |
 | Upstream connection | 30 seconds |
 | Upstream TLS handshake | 15 seconds |
 
@@ -109,7 +109,7 @@ See [Inside a sandbox](/docs/reference/hosts/sandbox#run-phases).
 | Retained after its task or chat is deleted | none; removed within a minute, even when a run started from it or a replay set pins it |
 | Retained after a run that started from it started | 30 days |
 | Retained while a run that started from it is in a replay set | until the run leaves the set, the set is deleted, or its station leaves the line |
-| An archive never sealed, retained | 24 hours |
+| An archive never completed, retained | 24 hours |
 
 An archive a run started from, or one pinned by a replay set, is retained for that
 time even when its task has finished or a newer archive has replaced it.
@@ -251,7 +251,7 @@ See [MCP servers](/docs/reference/terraform/integration#mcp-servers).
 
 | Item | Value |
 | --- | --- |
-| Listing the tools again | every 600 seconds, set by [`MCP_RELIST_SECONDS`](/docs/reference/self-hosted-settings#calls-out-of-spotlight), checked every minute |
+| Listing the tools again | every 600 seconds, set by [`SPOTLIGHT_MCP_RELIST_SECONDS`](/docs/reference/self-hosted-settings#calls-out-of-spotlight), checked every minute |
 | Pages of tools read in one listing | 50 |
 | Each MCP request, listing or call | 60 seconds |
 | Tool answer | 4 MB |

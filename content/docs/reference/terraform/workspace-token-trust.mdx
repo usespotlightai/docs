@@ -81,14 +81,14 @@ be named. Only claims whose value is a string can match.
 
 ## Who may create a trust
 
-Writing a trust needs the `manage-token-trusts` permission. See
+Writing a trust needs the `trusts` permission. See
 [Roles and permissions](/docs/reference/roles-and-permissions).
 
 A token may create a trust only with scopes it has itself, may change a
 trust only when it has both the trust's current scopes and the new ones, and
 may delete a trust only when it has the trust's current scopes. Otherwise the
 write or delete is forbidden with `403`, as for a caller without
-`manage-token-trusts`. See [Permission titles](/docs/reference/errors-and-messages#permission-titles).
+`trusts`. See [Permission titles](/docs/reference/errors-and-messages#permission-titles).
 A person who is an owner or admin is not limited this way.
 
 ## Exchange
@@ -133,5 +133,5 @@ expiry.
 
 - An issued token acts for the trust's `createdBy`, within the trust's scopes.
 - It is not listed among the workspace's tokens.
-- Any change to the trust's terms stops every token issued before the change.
+- Any change to the trust's settings stops every token issued before the change.
 - Deleting the trust stops every token it issued, from that moment.
