@@ -89,7 +89,8 @@ Glob syntax in `match.paths`:
 A before event waits while its hooks run, and a hook can stop it. An after
 event has already happened; its hooks are queued and run afterwards.
 
-`changed` is a list of paths. Expressions on an event in a run also see
+`changed` is a list of paths. `outcome` is `completed`, `failed`, `exhausted`
+or `cancelled`. A stopped run reads `completed`. Expressions on an event in a run also see
 `run.id`. See [Hook values](/docs/reference/api/expressions#hook-values) for every
 value an expression sees.
 
@@ -211,10 +212,10 @@ The token in `spotlight-callback-token` lives 15 minutes and is sent as
 | Endpoint | Body | Returns |
 | --- | --- | --- |
 | `GET /api/hook-callbacks/task` | | `200` with the task: `id`, `title`, `url`, `line`, `station`, `stationKey`, `marks`, `repositories`, `pullRequest`, `hook`. |
-| `POST /api/hook-callbacks/notes` | `{ "body": "<text>" }`, 1 to 20,000 characters | `204`. The note appears on the task as said by the hook. |
+| `POST /api/hook-callbacks/notes` | `{ "body": "<text>" }`, 1 to 20,000 characters | `204`. The note appears on the task as written by the hook. |
 
 `POST /api/hook-callbacks/notes` takes an optional `Idempotency-Key`; a retry
-with the same key is said once. A missing, expired or unknown token gets
+with the same key adds the note once. A missing, expired or unknown token gets
 `401`. An empty or too long note gets `400`.
 
 ## Failures

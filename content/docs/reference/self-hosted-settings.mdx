@@ -49,7 +49,7 @@ Neither `SPOTLIGHT_SECRETS_KEY` nor `SPOTLIGHT_SECRETS_KMS_KEY_ID` set gives
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `SPOTLIGHT_SECRETS_KEY` | none | 32 bytes, base64 encoded, as made by `openssl rand -base64 32`. Wraps each workspace's data key, which seals [secrets](/docs/reference/terraform/secret) and the other credentials Spotlight keeps, such as integration connection tokens. Required unless `SPOTLIGHT_SECRETS_KMS_KEY_ID` is set. |
+| `SPOTLIGHT_SECRETS_KEY` | none | 32 bytes, base64 encoded, as made by `openssl rand -base64 32`. Wraps each workspace's data key, which encrypts [secrets](/docs/reference/terraform/secret) and the other credentials Spotlight keeps, such as integration connection tokens. Required unless `SPOTLIGHT_SECRETS_KMS_KEY_ID` is set. |
 | `SPOTLIGHT_SECRETS_KMS_KEY_ID` | none | An AWS KMS key that wraps workspace data keys. When set, used in place of `SPOTLIGHT_SECRETS_KEY`. |
 | `SECRETS_AWS_SECRETS_MANAGER` | `false` | `true` lets Spotlight read a secret whose source is AWS Secrets Manager when it is used. |
 
@@ -57,7 +57,7 @@ AWS KMS and AWS Secrets Manager are reached with the default AWS credential
 chain and region.
 
 <Callout type="warn">
-Never lose `SPOTLIGHT_SECRETS_KEY`. Without it, no sealed value can be opened:
+Never lose `SPOTLIGHT_SECRETS_KEY`. Without it, no encrypted value can be decrypted:
 every secret has to be set again and every integration connected again.
 </Callout>
 

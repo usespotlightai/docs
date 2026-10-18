@@ -59,7 +59,7 @@ be read by the agent, and so by anything that talks the agent into reading it.
 
 Instead the sandbox gets a stand-in. An MCP server whose environment names the
 workspace secret `LINEAR_API_KEY` sees `spotlight-egress:LINEAR_API_KEY` where
-the value would be. Egress, which is outside the sandbox, holds the real value
+the value would be. Egress, which is outside the sandbox, keeps the real value
 for the length of the run. When a request leaves for a host the secret is bound
 to, and its header or query parameter contains the stand-in, egress injects the
 value in its place. Where the host's answer repeats the value, egress swaps

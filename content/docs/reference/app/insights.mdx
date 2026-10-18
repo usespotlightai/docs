@@ -708,9 +708,9 @@ The table groups the agent configs by harness, each as model, `<effort> effort` 
 each outcome; a trophy, "Best value", marks an agent config on the frontier of the
 charted outcome.
 
-A run's size is told by the lines it changed: the lines removed and added
+A run's size is measured by the lines it changed: the lines removed and added
 across its file changes, each file compared from before its first change to
-after its last. A run that changed no lines is told by its steps, over the
+after its last. A run that changed no lines is measured by its steps, over the
 attempts it kept.
 
 | Size | Lines changed | Steps, for a run that changed none |
@@ -791,7 +791,7 @@ were replayed over, the newest replayed first:
 | --- | --- |
 | Name | The set's name, linked to its [page](/docs/reference/app/replays#replay-set-page). |
 | Size | `<n> tasks`, the different tasks its runs worked, with `(<m> runs)` when it contains more runs than tasks, or "No tasks yet". |
-| Warning icon | When a [health](/docs/reference/app/replays#health) reading is a warning, or a health check was not run. Hovering lists each warning as `<check>: <what it says>.`, then `<n> of <m> health checks not run: <checks>.` |
+| Warning icon | When a [health](/docs/reference/app/replays#health) check found a problem, or a health check was not run. Hovering lists each warning as `<check>: <what it says>.`, then `<n> of <m> health checks not run: <checks>.` |
 | Shield icon | When the set [checks the station's pull requests](/docs/reference/app/searches#gating-a-stations-changes). Hovering explains it, starting `Checks pull requests.` |
 | Station gone | When its station has left the line. |
 | No baseline | `The live config hasn't been replayed on this set. Nothing is compared with live.` when the set has no [baseline](/docs/reference/glossary#baseline). |
@@ -925,7 +925,7 @@ Claude Code names `mcp__acp__Read`, `mcp__acp__Write`, `mcp__acp__Edit`,
 Refused calls are left out of every column. With no server called, the card reads `No run called an MCP server in this period.`
 
 A call is refused when the harness asked permission for it and Spotlight's
-answer was anything but allow: a refusal, the call being put to a person, or
+answer was anything but allow: a rejection, the call being put to a person, or
 no answer because the control plane could not be reached. What the tool's
 output says does not make a call refused.
 

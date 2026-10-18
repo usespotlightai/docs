@@ -28,8 +28,8 @@ pages for each command.
 | `The run did not finish after <n> attempts. Spotlight does not try it again.` | The runner was lost, or the host stopped the sandbox at its run timeout, on the last attempt. Failure `runner-lost` or `timed-out`, as the last attempt ended. | [Failure codes](/docs/reference/app/tasks-runs-and-the-inbox#failure-codes), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-used-all-its-attempts) |
 | `A person stopped the run. The task is back with you.` | A person stopped the run. | [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover), [Steer or stop a run](/docs/runs/steer-or-stop-a-run#stop-the-run) |
 | `A person stopped the run.` | A person stopped a run whose task then made its deferred move. | [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves) |
-| `This arrived while a run worked on the task. If the run does not pass the task on, the task moves to <Station> when the run ends.` | A reaction's happening arrived while a run worked on the task. | [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves) |
-| `Moved to <Station> when the run ended. An event arrived while the run worked.` | A deferred move applied when the run ended without passing the task on, or when a hook was stopped for looping. | [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves) |
+| `This arrived while a run was in progress on the task. If the run does not pass the task on, the task moves to <Station> when the run ends.` | A reaction's happening arrived while a run was in progress on the task. | [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves) |
+| `Moved to <Station> when the run ended. An event arrived while the run was in progress.` | A deferred move applied when the run ended without passing the task on, or when a hook was stopped for looping. | [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves) |
 | `<What happened> while <Station> was waiting for an answer. Close the task, or reply to carry on.` | A happening that moves the task to the completed station arrived while the task's run waited on a person's answer to its question (not an approval); earlier deferred moves were cancelled. | [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves) |
 | `<What happened> while <Station> was working. Close the task, or reply to carry on.` | A happening that moves the task to the completed station arrived while the task had a current run and awaited no answer to the run's own question; the run was stopped and the task put to a person. | [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves) |
 | `Task cannot move from <from> to <to>. <reason>` | `422`. A person's move other than starting, parking or closing a task. | [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves), [Add a task and move it along a line](/docs/tasks/add-and-move-tasks#move-the-task) |
@@ -48,7 +48,7 @@ Each is a `409` from answering an approval item, shown in the card.
 | Message | Cause | See |
 | --- | --- | --- |
 | `Approval request was already approved.` | The approval was decided before. With `dismissed` where it was dismissed. | [Approvals](/docs/reference/app/tasks-runs-and-the-inbox#approvals) |
-| `Edits must fill every asked input with a value of its kind. Inputs asked: <inputs>` | Changed inputs that add or leave out an input, give a value of another type, or leave a value blank. | [Changed inputs](/docs/reference/app/tasks-runs-and-the-inbox#changed-inputs) |
+| `Edits must fill every input of the call with a value of its kind. Inputs of the call: <inputs>` | Changed inputs that add or leave out an input, give a value of another type, or leave a value blank. | [Changed inputs](/docs/reference/app/tasks-runs-and-the-inbox#changed-inputs) |
 | `The edited request cannot run. Problem: <where> <why>` | A changed input does not fit the tool's input schema, as in `input.labelIds[0] is not text`. | [Changed inputs](/docs/reference/app/tasks-runs-and-the-inbox#changed-inputs) |
 | `A harness permission takes only yes or no. Its request cannot be edited.` | Changed inputs on a harness permission. | [Changed inputs](/docs/reference/app/tasks-runs-and-the-inbox#changed-inputs) |
 | `A dismissed request cannot run with changes.` | Changed inputs with a dismissal. | [Changed inputs](/docs/reference/app/tasks-runs-and-the-inbox#changed-inputs) |
@@ -198,8 +198,8 @@ injected, and requests go without it.
 | `SPOTLIGHT_EGRESS_TLS_CERT and SPOTLIGHT_EGRESS_TLS_KEY: <error>` | The certificate or the key cannot be read. | [Settings](/docs/reference/hosts/egress#settings) |
 | `SPOTLIGHT_EGRESS_RATE_LIMIT: "<value>" is not a number of requests each second, or 0 for no limit` | A rate that is not a number, or is below `0`. | [Settings](/docs/reference/hosts/egress#settings) |
 | `SPOTLIGHT_EGRESS_MAX_CONNECTIONS: "<value>" is not a number of open connections, or 0 for no limit` | A count that is not a whole number, or is below `0`. | [Settings](/docs/reference/hosts/egress#settings) |
-| `SPOTLIGHT_EGRESS_CA_BUNDLE: <error>` | The file cannot be read. | [Settings](/docs/reference/hosts/egress#settings) |
-| `SPOTLIGHT_EGRESS_CA_BUNDLE: <path> has no PEM certificate` | The file contains no PEM certificate. | [Settings](/docs/reference/hosts/egress#settings) |
+| `SPOTLIGHT_EGRESS_CA_BUNDLE: <error>` | The file cannot be read. | [Settings](/docs/reference/hosts/egress#settings), [Validation](/docs/reference/hosts/host-configuration#validation) |
+| `SPOTLIGHT_EGRESS_CA_BUNDLE: <path> has no PEM certificate` | The file contains no PEM certificate. | [Settings](/docs/reference/hosts/egress#settings), [Validation](/docs/reference/hosts/host-configuration#validation) |
 | `listen for sandboxes: <error>` | Egress cannot listen on `SPOTLIGHT_EGRESS_LISTEN`. | [Settings](/docs/reference/hosts/egress#settings) |
 
 ### Install script

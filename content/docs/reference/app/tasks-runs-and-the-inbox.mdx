@@ -104,7 +104,7 @@ while the task has a current run: the run ends as for a person's move, and the `
 | --- | --- | --- | --- |
 | Person | Dragging on the board, the selection bar's "Move to", or the task's "Station" property. Only from the backlog to a work station, from a work station to the backlog, from anywhere to the completed station, or within one station. Any other move is denied with `422` and `Task cannot move from <from> to <to>. <reason>`, where `<reason>` is `A completed task stays completed.` or `Only runs move a task between work stations.` | Below the task it is dropped under (`afterTaskId`), or at the top. | A `passed` note `Moved to <Station>.` is written. |
 | Reaction | A happening that a line's reaction names, when the task has no current run. See [`spotlight_line`](/docs/reference/terraform/line). | At the top of the station. | A `passed` note in the world voice, carrying the happening's message, or else its summary. |
-| Deferred move | The run that worked on the task when a reaction became a deferred move ends other than by passing the task on. | At the top of the station. | A `passed` note in the station voice, `Moved to <Station> when the run ended. An event arrived while the run worked.`, followed by the run's note if it gave one; for a failure or a lost runner, that ending's note with its failure; for a missing outcome, that ending's note; for a console stop, `A person stopped the run.` |
+| Deferred move | The run that worked on the task when a reaction became a deferred move ends other than by passing the task on. | At the top of the station. | A `passed` note in the station voice, `Moved to <Station> when the run ended. An event arrived while the run was in progress.`, followed by the run's note if it gave one; for a failure or a lost runner, that ending's note with its failure; for a missing outcome, that ending's note; for a console stop, `A person stopped the run.` |
 
 A move to another station:
 
@@ -125,7 +125,7 @@ When a happening finds a task, the line decides one of these outcomes:
 | --- | --- | --- |
 | nothing | The task is at the completed station, or none of the other outcomes applies. | None. |
 | moves | A reaction for the happening, from this station or from any, leads to another station, and the task has no current run. | The task moves there. |
-| deferred move | As for moves, but the task has a current run, queued, claimed, waiting or suspended, and the station is not the completed station. | A `message` note `This arrived while a run worked on the task. If the run does not pass the task on, the task moves to <Station> when the run ends.`, followed by the happening's message, or else its summary. The run gets the note, and keeps the task. A later `passed` note, or a later `asked` note other than an approval, drops deferred moves; a later `stays` outcome does not. |
+| deferred move | As for moves, but the task has a current run, queued, claimed, waiting or suspended, and the station is not the completed station. | A `message` note `This arrived while a run was in progress on the task. If the run does not pass the task on, the task moves to <Station> when the run ends.`, followed by the happening's message, or else its summary. The run gets the note, and keeps the task. A later `passed` note, or a later `asked` note other than an approval, drops deferred moves; a later `stays` outcome does not. |
 | interrupts | As for moves, but the task has a current run and the station is the completed station, and the task does not await a person's answer to a question (a pending approval does not count). | The run ends as for a person's move, and its later handover is ignored. The task is put to its assignee, or else the person who raised it, with an `asked` note in the world voice: `<What happened> while <Station> was working. Close the task, or reply to carry on.`, where `<What happened>` is the happening's text without its final full stop, and `its station` takes the place of `<Station>` when the station is not known. |
 | notes while waiting | As for interrupts, but the task already awaits a person's answer to a question. | A `message` note in the world voice, `<What happened> while <Station> was waiting for an answer. Close the task, or reply to carry on.`, added to the open conversation, with `its station` when the station is not known. The run keeps the task, and earlier deferred moves are cancelled. |
 | answers | No reaction leads to another station, the task awaits review, and the happening carries a message (`answers: true`). | An `answered` note; the run that asked carries on, or else a run starts at the same station. |
@@ -178,21 +178,21 @@ why (optional)`. See [Approvals](#approvals).
 | `queued` | `claimed` | A runner that meets the run's placement claims it, and no other run for the same task is claimed or waiting. |
 | `queued` | `failed` | The station enables what cannot be enabled: a catalog item that does not exist or that the plan does not include, or a harness profile the team does not have (`refused`). A push pool could not provision a runner (`unprovisioned`). |
 | `queued` | `cancelled` | The task moved to another station or was deleted. Or the run's replay or search stopped it, its replay reached its ceiling, or no runner claimed a search's run in time. |
-| `claimed` | `queued` | The lease expired, or the host stopped the sandbox at its run timeout (`timed-out`), no stop was requested, and the run has had fewer than 3 attempts. Or its `run.starting` hooks could not be asked, and the run is requeued to wait. |
+| `claimed` | `queued` | The lease expired, or the host stopped the sandbox at its run timeout (`timed-out`), no stop was requested, and the run has had fewer than 3 attempts. Or its `run.starting` hooks could not be called, and the run is requeued to wait. |
 | `claimed` | `waiting` | The turn ended cleanly with the task put to a person, and the runner reports the workspace stored for the turn. Only a task's run waits; a chat run never does. |
 | `waiting` | `claimed` | The person answers while the sandbox is kept, in the inbox, in the task's Slack thread or on the run's page. The answer goes to the same session, in the same attempt. A run asked to stop is not resumed. |
 | `waiting` | `suspended` | `SPOTLIGHT_ANSWER_WAIT` passes without an answer, at once when no host started the runner, or the lease expires. |
-| `claimed` | `queued` | An answer arrives while the runner is setting the run aside after its harness has closed. The run is queued as its next attempt. |
+| `claimed` | `queued` | An answer arrives while the runner suspends the run after its harness has closed. The run is queued as its next attempt. |
 | `suspended` | `queued` | The person answers. The run is queued as its next attempt, and restores the stored workspace wherever it is claimed. |
 | `waiting`, `suspended` | `completed` | The task is moved or deleted, or the run is stopped. |
 | `claimed` | `completed` | The runner reports an outcome without a failure, or the run is stopped, or its lease expires after it was asked to stop. |
-| `claimed` | `failed` | The harness failed (`exited`), or the run failed before its harness started (`unprepared`). A hook on `run.starting` denied it (`refused`). Its hooks could not be asked after the last requeue (`hooks-unanswered`). Its lease expired on the last attempt, and no stop was asked for (`runner-lost`). Its host stopped it at its run timeout on the last attempt, and no stop was asked for (`timed-out`). |
+| `claimed` | `failed` | The harness failed (`exited`), or the run failed before its harness started (`unprepared`). A hook on `run.starting` denied it (`refused`). Its hooks could not be called after the last requeue (`hooks-unanswered`). Its lease expired on the last attempt, and no stop was requested (`runner-lost`). Its host stopped it at its run timeout on the last attempt, and no stop was requested (`timed-out`). |
 | `failed` | `superseded` | The run's task has moved on. |
 
-Words said to a run at the station where its task is idle, when that
+Messages sent to a run at the station where its task is idle, when that
 station has a harness, start a new run there that resumes the station's
-session. Words said to a run whose task has left its station fail with
-`409`, and words from anyone but the task's assignee with `404`.
+session. Messages sent to a run whose task has left its station fail with
+`409`, and messages from anyone but the task's assignee with `404`.
 Only a claimed, waiting or suspended run can be stopped. The web app offers Stop
 only while a run is claimed. Attempts a run spent suspended do not count in
 the 3. Only the task's assignee may stop a run or say
@@ -206,7 +206,7 @@ and the API use this list.
 
 | Ending | Label | Meaning |
 | --- | --- | --- |
-| `completed` | Completed | Ended without a failure, and no stop was asked for. |
+| `completed` | Completed | Ended without a failure, and no stop was requested. |
 | `failed` | Failed | Ended with a [failure code](#failure-codes), and no other ending applies. |
 | `stopped` | Stopped | Ended without a failure after it was asked to stop. |
 | `exhausted` | Exhausted | Its runner was lost, or its host stopped it at its run timeout, on its last attempt. Or its runner was lost after the run asked a person. Spotlight does not try it again. |
@@ -636,7 +636,7 @@ GET /api/teams/{teamId}/runs/{runId}/network
 | --- | --- |
 | `runId`, `attempt` | The run, and its current attempt, which the answer is for. |
 | `egressEnforcement` | `enforced`, `not-enforced`, or `null` when the runner did not check. |
-| `connections` | The connections the shared egress recorded for the attempt, each with `host`, `port`, `bytesOut`, `bytesIn`, `ms`, `outcome`, `status`, `reason` and `at`. See [Connection records](/docs/reference/hosts/egress#connection-records). |
+| `connections` | The connections the shared egress recorded for the attempt, each with `host`, `port`, `bytesOut`, `bytesIn`, `ms`, `outcome`, `status`, `reason`, `error` and `at`. See [Connection records](/docs/reference/hosts/egress#connection-records). `error` is `blocked`, `failed`, `auth-failed` (the host answered an injected request with `401` or `403`), `server-error` (it answered with `500` or more) or `null`. |
 
 #### Connections in the trace
 
@@ -718,7 +718,7 @@ A run's outcome:
 | Parked | Moved the task to the backlog. |
 | Accepted | Moved the task to the completed station. |
 | Answered | Answered the conversation without a decision. |
-| Sent back | Said something to a run of the task while it had no current run, other than an answer to an open question that asks for no approval. |
+| Sent back | Sent a message to a run of the task while it had no current run, other than an answer to an open question that asks for no approval. |
 
 Only the Accepted action accepts a run, and only the Sent back action sends it back. Approving or
 dismissing an approval is never a human action: it does not decide whether a run was
@@ -737,7 +737,7 @@ A tally counts:
 | Sent back | Runs whose first human action was Sent back. |
 | Passed on | Runs that passed their task to another station. |
 | Merged | Tasks the group's runs worked whose pull request merged. |
-| Cancelled | Runs that ended Cancelled. |
+| Cancelled | Runs that ended without running. |
 | Cost | The runs' cost together, when all are in one currency. |
 | Median, p90 | The time the runs took. |
 
@@ -1025,7 +1025,7 @@ matches a call with the changed inputs.
 | none, or spent | The task is put to a person with an approval. A tool call fails with `<tool> needs a person's approval before it runs, and they have been asked in their inbox. Nothing was sent. Stop here and end your turn: their answer comes back to you in this conversation.` A harness permission request cancels the turn, and the run waits for the decision. |
 
 - A grant is spent by one call. The next call asks again.
-- An approval asked at one station does not count at another.
+- An approval requested at one station does not count at another.
 - Only a person can approve or dismiss. A workspace token cannot.
 - A call that asks because of a person's own tool rule can be approved only
   by that person. See [Person rules](#person-rules).
