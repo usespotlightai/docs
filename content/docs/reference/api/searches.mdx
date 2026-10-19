@@ -133,7 +133,8 @@ Each item of a list, and the first fields of a search's detail:
 | `spent` | object | `{ amount, currency }`: its replays and its agent's runs so far, in the ceiling's currency. |
 | `iterationsRun` | number | How many times its agent ran, or is running. |
 | `proposed` | number | How many candidates its agent proposed. |
-| `best` | object or null | `{ candidateId, name, seed, searchScore, searchInterval, heldOutScore, heldOutInterval, costPerRun, onlyOnSeenTasks }`: the [best candidate](/docs/reference/app/searches#best-candidate), with fields as on a [candidate](#candidate). `seed` is `true` when it is the live config. |
+| `best` | object or null | `{ candidateId, name, seed, searchScore, searchInterval, heldOutScore, heldOutInterval, costPerRun, overfit, regressions, exceedsRegressionLimit }`: the [best candidate](/docs/reference/app/searches#best-candidate), with fields as on a [candidate](#candidate). `seed` is `true` when it is the live config. |
+| `maxRegressions` | number or null | The line's regression limit, `replay_check.max_regressions`, as the line is now. Null when the line has no `replay_check` block. See [Regressions against the live config](/docs/reference/app/searches#regressions-against-the-live-config). |
 | `startedAt`, `endedAt` | string, string or null | RFC 3339 times. |
 
 ## Search detail
@@ -144,8 +145,8 @@ Each item of a list, and the first fields of a search's detail:
 | `iterations` | array | Each `{ number, kind, runId, state, attempts, proposed, agentSpent, reflection }`. `kind` is `propose` or `reflect`. `state` is `wanted`, `running`, `ended` or `failed`. `attempts` counts its proposals, rejected ones included; `proposed` lists the candidates it admitted, by id. `agentSpent` is what its agent run spent, once known. `reflection` is a [reflection](#reflection) for a `reflect` iteration, else null. |
 | `seed` | object | The live config the search started from, as a [candidate](#candidate). Its search score counts the searched runs only, its held-out score the held-out runs. |
 | `candidates` | array | Every candidate its agent proposed. |
-| `frontier` | array of strings | The candidates on the [frontier](/docs/reference/app/searches#frontier), by id, cheapest first, the seed always among them. With `objective` set to `cost`, only candidates whose `searchedGain.verdict` is `better` or `within-noise`. |
-| `onlyOnSeenTasks` | number | How many frontier candidates' `onlyOnSeenTasks` is `marked`. See [Only on seen tasks](/docs/reference/app/searches#only-on-seen-tasks). |
+| `frontier` | array of strings | The candidates on the [frontier](/docs/reference/app/searches#frontier), by id, cheapest first, the seed always among them. With `objective` set to `cost`, only candidates whose `searchedGain.significance` is `better` or `within-noise`. |
+| `overfitCount` | number | How many frontier candidates have `overfit` set to `likely`. See [Only on seen tasks](/docs/reference/app/searches#only-on-seen-tasks). |
 | `minGain` | number | The smallest gain over the seed the line counts as real: `replay_check.min_gain`, or `0.05` when the line has none. |
 
 ### Reflection
@@ -186,7 +187,9 @@ What an iteration that looked into why the search
 | `costPerRun` | number or null | What it spent per scored searched run. Null while any of it went unpriced or was in another currency. |
 | `spent` | object | `{ amount, currency }`. |
 | `onFrontier` | boolean | Whether it is on the frontier. |
-| `onlyOnSeenTasks` | string or null | When `searchedGain.verdict` is `better`: `marked` when `heldOutGain.verdict` is not, over at least 5 tasks scored on both sides, so its gain showed only on the tasks the search could see; `too-few-held-out` when `heldOutGain.tasks` is under 5. Null otherwise, until `heldOutGain` is known, and for the seed. See [Only on seen tasks](/docs/reference/app/searches#only-on-seen-tasks). |
+| `overfit` | string or null | When `searchedGain.significance` is `better`: `likely` when `heldOutGain.significance` is not, over at least 5 tasks scored on both sides, so its gain showed only on the tasks the search could see; `too-few-held-out` when `heldOutGain.tasks` is under 5. Null otherwise, until `heldOutGain` is known, and for the seed. See [Only on seen tasks](/docs/reference/app/searches#only-on-seen-tasks). |
+| `regressions` | object | `{ searched, heldOut, total }`: how many tasks it [regressed](/docs/reference/app/replays#regressions) on against the seed. `searched` is null until its searched replay finished. `heldOut` is null until both its held-out replay and the seed's replay finished. `total` is the sum of the two, with a null counted as 0, and is null while both are null. All three are null for the seed. See [Regressions against the live config](/docs/reference/app/searches#regressions-against-the-live-config). |
+| `exceedsRegressionLimit` | boolean | Whether `regressions.total` is more than the search's `maxRegressions`. `false` when `maxRegressions` is null, and while `total` is null. A candidate over the limit stays on the frontier and can still be picked. |
 | `pullRequest` | object or null | `{ id, state, url, reason }` of the [config pull request](#config-pull-request) picking it opened. Null until a person picks it, and always for the seed. |
 
 A searched candidate is not a [replay candidate](/docs/reference/api/replay-candidate)
