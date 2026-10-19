@@ -49,7 +49,6 @@ Set these on the host, with the other [host settings](/docs/reference/hosts/host
 | `LOG_LEVEL` | `info` | `error`, `warn`, `info` or `debug`. `fatal` reads as `error`, `trace` as `debug`, and `silent` writes nothing. The host gives it to each sandbox and egress as `SPOTLIGHT_LOG_LEVEL`. |
 | `OTEL_TRACES_SAMPLER` | `parentbased_always_on` | Whether the host samples the trace of a claim: `always_off`, `traceidratio` and their `parentbased_` forms. Set the same sampler as on Spotlight, because Spotlight follows the host's decision. |
 | `OTEL_TRACES_SAMPLER_ARG` | `1` | The ratio for `traceidratio`. |
-
 | `SPOTLIGHT_HEALTH_ADDR` | none | Where the host answers `GET /healthz` and `GET /readyz`, such as `127.0.0.1:9100`. See [Health checks](#health-checks). Without it, the host listens on nothing. |
 
 The host, the runner and egress write JSON lines to stdout. To collect them, see
@@ -193,7 +192,7 @@ Spotlight's own metrics:
 | `spotlight.jobs` | counter | `spotlight.job.source`, `spotlight.job.outcome` | Pending jobs worked: `processed`, `stale`, `retried` or `dead_lettered`. |
 | `spotlight.hook_firings` | counter | `spotlight.hook_firing.outcome` | `fired` when Spotlight queues a firing. `skipped` or `loop_stopped` when it works one, so a firing can count twice. |
 | `spotlight.journal.unread` | counter | `spotlight.journal.type` | Journal entries from runners that do not read as JSON. |
-| `spotlight.runs.claim_wait_seconds` | histogram | `spotlight.run.kind` | How long a run waited between queued and claimed. `task`, `chat`, `replay`, `search` or `other`. |
+| `spotlight.runs.claim_wait_seconds` | histogram | `spotlight.run.kind` | How long a run waited between queued and claimed, once for each claim. A requeued run counts from its requeue. `task`, `chat`, `replay`, `search` or `other`. |
 | `spotlight.runs` | gauge | `spotlight.run.state` | Runs that are `queued`, `claimed`, `waiting` or `suspended`. |
 | `spotlight.runs.oldest_queued_age_seconds` | gauge | | Age of the oldest run that a runner can claim now. |
 | `spotlight.runner_hosts.online` | gauge | | Hosts with a heartbeat in the last 90 seconds. |

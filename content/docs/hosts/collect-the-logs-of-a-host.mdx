@@ -18,13 +18,14 @@ logs. Any agent that reads both works. The example uses
 | The host on macOS | `~/Library/Logs/spotlight-host.log`. |
 | A sandbox | The Docker container `spotlight-<runner id>`. |
 | Its egress | The Docker container `spotlight-egress-<runner id>`. |
+| A probe of an image | The Docker container `spotlight-egress-probe-<id>`, with the host label only. |
 
 Each line is one JSON object. The containers carry the labels
 `ai.usespotlight.host` and `ai.usespotlight.runner`.
 
 ## Send them to Loki
 
-1. Read the journal of the host's service:
+1. On Linux, read the journal of the host's service:
 
    ```hcl
    loki.relabel "spotlight_host" {
@@ -44,11 +45,25 @@ Each line is one JSON object. The containers carry the labels
    }
    ```
 
-2. Read the sandbox and egress containers, with the host and runner as labels:
+2. On macOS, read the host's log file instead:
+
+   ```hcl
+   local.file_match "spotlight_host" {
+     path_targets = [{ __path__ = "/Users/*/Library/Logs/spotlight-host.log", service = "spotlight-host" }]
+   }
+
+   loki.source.file "spotlight_host" {
+     targets    = local.file_match.spotlight_host.targets
+     forward_to = [loki.write.default.receiver]
+   }
+   ```
+
+3. Read the sandbox and egress containers, with the host and runner as labels:
 
    ```hcl
    discovery.docker "spotlight" {
-     host = "unix:///var/run/docker.sock"
+     host             = "unix:///var/run/docker.sock"
+     refresh_interval = "5s"
 
      filter {
        name   = "label"
@@ -77,7 +92,11 @@ Each line is one JSON object. The containers carry the labels
    }
    ```
 
-3. Point `loki.write "default"` at your Loki.
+4. Point `loki.write "default"` at your Loki.
+
+The host removes a sandbox and its egress when the run ends, and Docker removes
+their logs with them. A short `refresh_interval` finds a container before that
+happens. Lines that a container writes after the agent last read it are lost.
 
 If the host runs with `DOCKER_HOST` or Podman, use that socket in place of
 `/var/run/docker.sock`.
@@ -88,7 +107,7 @@ Search by the fields of the lines, not by labels:
 
 | Field | Holds |
 | --- | --- |
-| `trace_id` | The trace of the claim. The host, the runner and Spotlight write the same id for every call of the run. |
+| `trace_id` | The trace of the claim. The host and the runner write it on every line of the run. Spotlight writes the same id as `reqId`. |
 | `run` | The run id, on the host's lines. |
 | `runner` | The runner id, on the host's lines. |
 
