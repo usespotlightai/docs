@@ -257,6 +257,8 @@ Spotlight's API, is never reserved for its runners.
 | `SPOTLIGHT_EGRESS_CA_BUNDLE` | none | A PEM file of certificate authorities egress trusts upstream, in addition to its image's system certificates. |
 | `SPOTLIGHT_EGRESS_RATE` | `50` | Requests each second for each workspace. `0` is no limit. See [Limits](#limits). |
 | `SPOTLIGHT_EGRESS_CONNECTIONS` | `200` | Open connections for each workspace. `0` is no limit. See [Limits](#limits). |
+| `SPOTLIGHT_HEALTH_ADDR` | none | Where egress answers `GET /healthz` and `GET /readyz`, apart from the proxy. See [Health checks](/docs/reference/observability#health-checks). |
+| `SPOTLIGHT_LOG_LEVEL` | `info` | `error`, `warn`, `info` or `debug`. |
 
 Egress reads AWS Secrets Manager with its own AWS identity, from the default
 credential chain. [Admitted hosts](#admitted-hosts) and
@@ -278,6 +280,7 @@ and exits `1`:
 | `SPOTLIGHT_EGRESS_CA_BUNDLE: <error>` | The file cannot be read. |
 | `SPOTLIGHT_EGRESS_CA_BUNDLE: <path> has no PEM certificate` | The file contains no PEM certificate. |
 | `listen for sandboxes: <error>` | Egress cannot listen on `SPOTLIGHT_EGRESS_LISTEN`. |
+| `listen for health checks: <error>` | Egress cannot listen on `SPOTLIGHT_HEALTH_ADDR`. |
 
 On `SIGINT` or `SIGTERM`, egress stops within 5 seconds, sends the connection
 records it still has, forgets every run, and exits `0`.

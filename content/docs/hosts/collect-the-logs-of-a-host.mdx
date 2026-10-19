@@ -1,0 +1,97 @@
+---
+type: how-to
+icon: SquarePen
+title: Collect the logs of a host
+description: Send the JSON logs of a host, its sandboxes and their egress to your log store, labelled by host and runner.
+---
+
+You need a host installed as a service (see [Install a host](/docs/hosts/run-a-host))
+and a log agent on the same machine that reads the systemd journal and Docker
+logs. Any agent that reads both works. The example uses
+[Grafana Alloy](https://grafana.com/docs/alloy/latest/) and Loki.
+
+## Find the logs
+
+| Source | Where |
+| --- | --- |
+| The host on Linux | The systemd service `spotlight-host`, a user unit when the host runs as a user. |
+| The host on macOS | `~/Library/Logs/spotlight-host.log`. |
+| A sandbox | The Docker container `spotlight-<runner id>`. |
+| Its egress | The Docker container `spotlight-egress-<runner id>`. |
+
+Each line is one JSON object. The containers carry the labels
+`ai.usespotlight.host` and `ai.usespotlight.runner`.
+
+## Send them to Loki
+
+1. Read the journal of the host's service:
+
+   ```hcl
+   loki.relabel "spotlight_host" {
+     forward_to = []
+
+     rule {
+       source_labels = ["__journal__systemd_unit", "__journal__systemd_user_unit"]
+       regex         = ".*spotlight-host\\.service.*"
+       action        = "keep"
+     }
+   }
+
+   loki.source.journal "spotlight_host" {
+     forward_to    = [loki.write.default.receiver]
+     relabel_rules = loki.relabel.spotlight_host.rules
+     labels        = { service = "spotlight-host" }
+   }
+   ```
+
+2. Read the sandbox and egress containers, with the host and runner as labels:
+
+   ```hcl
+   discovery.docker "spotlight" {
+     host = "unix:///var/run/docker.sock"
+
+     filter {
+       name   = "label"
+       values = ["ai.usespotlight.host"]
+     }
+   }
+
+   discovery.relabel "spotlight" {
+     targets = discovery.docker.spotlight.targets
+
+     rule {
+       source_labels = ["__meta_docker_container_label_ai_usespotlight_host"]
+       target_label  = "host"
+     }
+
+     rule {
+       source_labels = ["__meta_docker_container_label_ai_usespotlight_runner"]
+       target_label  = "runner"
+     }
+   }
+
+   loki.source.docker "spotlight" {
+     host       = "unix:///var/run/docker.sock"
+     targets    = discovery.relabel.spotlight.output
+     forward_to = [loki.write.default.receiver]
+   }
+   ```
+
+3. Point `loki.write "default"` at your Loki.
+
+If the host runs with `DOCKER_HOST` or Podman, use that socket in place of
+`/var/run/docker.sock`.
+
+## Find a run
+
+Search by the fields of the lines, not by labels:
+
+| Field | Holds |
+| --- | --- |
+| `trace_id` | The trace of the claim. The host, the runner and Spotlight write the same id for every call of the run. |
+| `run` | The run id, on the host's lines. |
+| `runner` | The runner id, on the host's lines. |
+
+For example, in Loki: `{service="spotlight-host"} | json | run="<run id>"`.
+
+What each process writes is in [Observability](/docs/reference/observability#logs).

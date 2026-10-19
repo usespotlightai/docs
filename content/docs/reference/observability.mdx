@@ -50,7 +50,10 @@ Set these on the host, with the other [host settings](/docs/reference/hosts/host
 | `OTEL_TRACES_SAMPLER` | `parentbased_always_on` | Whether the host samples the trace of a claim: `always_off`, `traceidratio` and their `parentbased_` forms. Set the same sampler as on Spotlight, because Spotlight follows the host's decision. |
 | `OTEL_TRACES_SAMPLER_ARG` | `1` | The ratio for `traceidratio`. |
 
-The host, the runner and egress write JSON lines to stdout. They export no
+| `SPOTLIGHT_HEALTH_ADDR` | none | Where the host answers `GET /healthz` and `GET /readyz`, such as `127.0.0.1:9100`. See [Health checks](#health-checks). Without it, the host listens on nothing. |
+
+The host, the runner and egress write JSON lines to stdout. To collect them, see
+[Collect the logs of a host](/docs/hosts/collect-the-logs-of-a-host). They export no
 traces or metrics.
 
 Each claim of the host starts a W3C trace, sampled as the variables above say. The host sends the trace on the
@@ -76,10 +79,17 @@ The readiness checks:
 | `s3` | Spotlight can write an empty object `pending/readiness` to `S3_BUCKET`. |
 
 Each check fails when it takes longer than 1.5 seconds. Spotlight reuses an
-answer for 5 seconds. The answer names each
-check with `ok` or `failed`. The reason for a failure is in the log line
-`Readiness check failed`, not in the answer. Neither endpoint needs a session,
-and neither writes an access log line.
+answer for 5 seconds. The answer names each check with `ok` or `failed`. The
+reason for a failure is in the log line `Readiness check failed`, not in the
+answer. Neither endpoint needs a session, and neither writes an access log line.
+
+A host and a shared egress answer health checks on `SPOTLIGHT_HEALTH_ADDR`
+when it is set:
+
+| Endpoint | Answers |
+| --- | --- |
+| `GET /healthz` | `200` while the process runs. |
+| `GET /readyz` | `200` when ready, else `503` with the reason. A host is ready when a heartbeat reached Spotlight in the last 90 seconds and the container runtime answers. A shared egress is ready when it reaches Spotlight's `/api/health` within 2 seconds. |
 
 ## Logs
 
@@ -129,6 +139,7 @@ delivery has the ids of that work, when known: `workspaceId`, `teamId`,
 | `Gave up reading a delivery` | `error` | Reading a webhook delivery fails for the last time. |
 | `Delivering a domain event` | `error` | A subscriber fails on an event and Spotlight tries again. |
 | `Dead-lettering a domain event delivery` | `error` | A subscriber fails on an event for the 8th time. |
+| `A journal entry from a runner does not read as JSON` | `warn` | A runner sends a journal entry whose data Spotlight cannot read. Has `runId`, `attempt`, `seq` and `type`, never the data. At most once in 10 minutes for each run and type. |
 | `Readiness check failed` | `warn` | A readiness check fails. Has `check` and `err`. |
 
 The database keeps every recorded event with its causal chain in
@@ -162,8 +173,9 @@ chat. Ids are in logs and spans only.
 | An event delivery | The subscriber | `spotlight.event_id`, `spotlight.event_kind` and the ids of the event. A link to the span that recorded the event. |
 | A webhook delivery | `Reading a delivery` | `spotlight.delivery_id`, `spotlight.integration` and the ids of the delivery. |
 
-With traces on, each event records the `traceparent` of the request or work
-that raised it. The delivery of the event starts its own trace and links to
+With traces on, each run records the `traceparent` of the request or work that
+queued it, and the span of its claim links to that trace. Each event records the
+`traceparent` of the request or work that raised it. The delivery of the event starts its own trace and links to
 that one.
 
 ## Metrics
@@ -180,6 +192,8 @@ Spotlight's own metrics:
 | `spotlight.outbox.deliveries` | counter | `spotlight.subscriber`, `spotlight.delivery.outcome` | Attempts to deliver an event: `delivered`, `retried` or `dead_lettered`. |
 | `spotlight.jobs` | counter | `spotlight.job.source`, `spotlight.job.outcome` | Pending jobs worked: `processed`, `stale`, `retried` or `dead_lettered`. |
 | `spotlight.hook_firings` | counter | `spotlight.hook_firing.outcome` | `fired` when Spotlight queues a firing. `skipped` or `loop_stopped` when it works one, so a firing can count twice. |
+| `spotlight.journal.unread` | counter | `spotlight.journal.type` | Journal entries from runners that do not read as JSON. |
+| `spotlight.runs.claim_wait_seconds` | histogram | `spotlight.run.kind` | How long a run waited between queued and claimed. `task`, `chat`, `replay`, `search` or `other`. |
 | `spotlight.runs` | gauge | `spotlight.run.state` | Runs that are `queued`, `claimed`, `waiting` or `suspended`. |
 | `spotlight.runs.oldest_queued_age_seconds` | gauge | | Age of the oldest run that a runner can claim now. |
 | `spotlight.runner_hosts.online` | gauge | | Hosts with a heartbeat in the last 90 seconds. |
