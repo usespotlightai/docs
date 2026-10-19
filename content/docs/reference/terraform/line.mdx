@@ -397,7 +397,7 @@ See [Replay checks API](/docs/reference/api/replay-checks).
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `maxRegressions` | number | `0` | How many tasks a planned change may regress on and still pass. A whole number, 0 or more. In Terraform, `max_regressions`. |
+| `maxRegressions` | number | `0` | How many tasks a planned change may regress on and still pass. A whole number, 0 or more. A [search](/docs/reference/app/searches#regressions-against-the-live-config) of one of the line's work stations also marks a candidate whose regressions on its searched and held-out tasks together are more than this. The candidate can still be picked. In Terraform, `max_regressions`. |
 | `ceiling` | number | `10` | The most each replay a check starts may spend, above 0 and at most 1,000: the planned change's replay, and the baseline replay when the guarding set has none for the live config. See [Ceiling](/docs/reference/api/replay-checks#ceiling). |
 | `currency` | string | `USD` | The three-letter currency `ceiling` is counted in. Stored in upper case. |
 | `minGain` | number | `0.05` | The smallest gain in success rate that counts as more than noise, as a share above 0 and at most 1. A gain over the baseline or the live config reads better only when its whole 95% interval is above 0 and it is at least this, and worse in the same way for a loss. It is read by the replays, searches and checks of the line's work stations; a line without `replay_check` reads them against `0.05`. It does not decide whether a check passes. See [Gains](/docs/reference/app/replays#gains). In Terraform, `min_gain`. |

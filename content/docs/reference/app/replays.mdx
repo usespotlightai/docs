@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Replays
-description: The Replay sets card on a Station page, the replay set and replay pages, what a set is made of and the runs suggested to even it, replay states, results and their reasons, success with its range, gains, side-by-side wins, losses and ties, a set's health, the replays that check it and the replay with the answer, why a run cannot be replayed, spend and ceilings, and how a replay run differs from a task run.
+description: The Replay sets card on a Station page, the replay set and replay pages, what a set is made of and the runs suggested to even it, replay states, results and their reasons, the judge's `guidance` field, success with its range, gains, side-by-side wins, losses and ties, a set's health, the replays that check it and the replay with the answer, why a run cannot be replayed, spend and ceilings, and how a replay run differs from a task run.
 ---
 
 A [replay](/docs/reference/glossary#replay) runs some of a work station's past
@@ -470,6 +470,34 @@ A replay's checks run as a station's checks do. See
 | `errored` | `judging failed` |
 | `interrupted` | `judging was interrupted` |
 | `stopped-before-judging` | `replay stopped before judging` |
+
+### Guidance
+
+The first time the judge judges a replay run, it also gives the `guidance`
+field: one sentence of at most 280 characters that says what the run should do
+differently to do the task well, in terms of the task. Spotlight keeps the
+`guidance` field only when the judge failed the run. Only a [search's](/docs/reference/app/searches#the-searchs-agent-run)
+agent reads it, in the replay run's `result.json` from
+[`spotlight history`](/docs/reference/cli/agent-commands#in-a-searchs-run).
+That file never includes the judge's reasons. The replay page, the Run page
+and the [Replays API](/docs/reference/api/replays#judge-verdicts) show the
+judge's reasons and claims, and do not show the `guidance` field.
+
+Spotlight drops the `guidance` field when it:
+
+- is more than 280 characters, or contains a line break;
+- names a claim by its number or place, as in `claim 2`, `#3` or `the first
+  claim`;
+- repeats 5 or more words in a row from the rubric or from a claim, ignoring
+  case and punctuation;
+- contains a whole sentence of 3 or more words from the rubric or from a
+  claim, ignoring case and punctuation. The text between two line breaks
+  counts as a sentence too.
+
+These judgings give no `guidance` field: the second judging of a change when a
+baseline [checks the set](#checking-the-set), a run's own
+[judging](/docs/reference/app/tasks-runs-and-the-inbox#judge-score), and
+[side-by-side](#side-by-side) judging.
 
 ### Success
 

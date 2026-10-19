@@ -2,7 +2,7 @@
 type: concept
 icon: Lightbulb
 title: Why a search holds tasks out
-description: Why a search for a better station config keeps some of its tasks from its agent, why it ends with a frontier and not one winner, why it stops to look into a stall, what it may change, and how its budget is spent.
+description: Why a search for a better station config keeps some of its tasks from its agent, what its agent learns from a failed run, why it ends with a frontier and not one winner, why it stops to look into a stall, what it may change, and how its budget is spent.
 ---
 
 A [replay](/docs/improvement/why-changes-are-replayed-on-past-tasks) answers
@@ -65,7 +65,7 @@ A few choices follow from this.
   becomes the set's baseline.
 
 When a candidate's gain over the live config reads Better on the searched
-tasks but not on the held-out ones, the search marks it "Only on seen tasks".
+tasks but not on the held-out ones, the search marks it "Likely overfit".
 That is the pattern overfitting leaves: the gain showed on the tasks the agent
 tuned against and did not reach the tasks it never saw. A marked candidate can
 still be picked. A held-out gain rests on few tasks and can read Within
@@ -74,6 +74,24 @@ picks should weigh it, with the mark in front of them on the search page and
 in the pull request. With fewer than 5 held-out tasks scored on both sides,
 the held-out gain cannot tell either way, so the search says that instead of
 marking the candidate.
+
+## What the agent learns from a failed run
+
+The judge's reasons say which part of the rubric, or which claim, a run did
+not meet. An agent that reads them can propose a config that answers those
+words. Its candidates then learn to pass the rubric, and do the work no
+better. This is the same fitting as above, aimed at the judge and not at the
+tasks.
+
+So the search's agent never reads the judge's reasons, the claims or which
+check failed. For each replay run it gets the verdict and a code for each
+reason the run failed. When the judge failed the run, it also gets the
+judge's `guidance` field: one sentence that says what the run should do
+differently, in terms of the task. Spotlight drops guidance that repeats
+the rubric or a claim, or that names a claim by its number or place, and gives a fixed
+sentence in its place. People still see the judge's full reasons and claims on
+the replay and run pages. See
+[Guidance](/docs/reference/app/replays#guidance).
 
 ## A frontier of candidates
 

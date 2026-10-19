@@ -250,8 +250,8 @@ a new search with more iterations or a higher ceiling.
 
 ## Read the results
 
-To read a score's range, hover over the score in the **Candidates** table,
-or read it in brackets in a candidate's details or in the **Success against
+To read a score's range, hover over the score in the **Candidates** table or
+in a candidate's details, or read it in brackets in the **Success against
 cost** card's **Table**, as in `72% (50–89%)`. Act on a gain that reads
 **Better** or **Worse**, not **within noise**. See
 [Gains](/docs/reference/app/replays#gains) for when each verdict shows. The
@@ -273,14 +273,26 @@ losses and ties against the live config, once its replay has finished, as in
 See [Side by side](/docs/reference/app/replays#side-by-side) for how the judge
 compares the changes.
 
-Give the held-out score the most weight. Before you pick a candidate marked
-**Only on seen tasks**, or one that reads **Too few held-out tasks to tell**,
-hover over the reading for its note. See
+Give the held-out score the most weight. If a candidate has a warning icon
+for **Likely overfit** or **Overfit unknown**, hover over the
+icon for its note before you pick it. See
 [Only on seen tasks](/docs/reference/app/searches#only-on-seen-tasks), and
 [Frontier](/docs/reference/app/searches#frontier) for which candidates are
 held out. To see a candidate's result task by task, select **Replay** or
-**Held-out replay** in its details. See
+**Held-out replay** beside **Results** in its details. See
 [Replays](/docs/reference/app/replays#replay-page).
+
+In the **Success against cost** card's **Table**, **Regressions** counts the
+tasks each candidate [regressed](/docs/reference/app/replays#regressions) on
+against the live config, on the searched and held-out tasks together. Hover
+over the count to see each part. If the line has a
+[`replay_check`](/docs/reference/terraform/line#replay-check-fields) block, a
+candidate that regressed on more tasks than its `max_regressions` is over the
+regression limit, and a warning icon shows beside its name. Hover over the
+icon for the counts. See
+[Regressions against the live config](/docs/reference/app/searches#regressions-against-the-live-config).
+Before you pick such a candidate, select **Replay** in its details, and
+**Held-out replay** when it has one, to see which tasks regressed.
 
 To set the search's candidates beside the station's other replayed candidates
 and the live config, open the team's **Insights** page at **Stations**, under
@@ -294,19 +306,19 @@ pull request once picking it opened one.
 <Steps>
 <Step>
 
-Select the candidate's name. In its details, select **Pick**. You can pick
-any candidate whose replay on the searched tasks has finished, while the
-search runs or after, and more than one. If **Pick** is greyed out, the text
-beside it says why.
+Select the candidate's name. In its details, under **Results**, select
+**Open pull request**. You can pick any candidate whose replay on the searched
+tasks has finished, while the search runs or after, and more than one. If
+**Open pull request** is greyed out, the text above it says why.
 
-If the candidate is marked **Only on seen tasks**, a warning above **Pick**
-says its gain may not carry over to new work. You can still pick it.
+You can also pick a candidate marked **Likely overfit**, or one over the
+regression limit. Before you do, see [Read the results](#read-the-results).
 
 </Step>
 <Step>
 
-The candidate's details read **Opening a pull request…**, then **Pull
-request opened**. Select it to open the pull request on GitHub. Its row under
+The button reads **Opening…**, then **View pull request**. Select it to open
+the pull request on GitHub. Its row under
 **Pull request** reads **Opened**, linked to it too.
 
 </Step>
@@ -315,11 +327,13 @@ request opened**. Select it to open the pull request on GitHub. Its row under
 Review the pull request. Its description has the agent's hypothesis, the
 candidate's scores beside the live config's with their ranges, whether each
 gain is more than noise, and its side-by-side wins, losses and ties when it
-has any. For a candidate marked **Only on seen tasks**,
+has any. For a candidate marked **Likely overfit**,
 a paragraph under the opening one warns that its gain showed only on the
 searched tasks and gives both gains. It says instead when too few held-out
 tasks were scored to tell, or when the held-out replays had not finished as
-the pull request opened. The plan of the change runs in
+the pull request opened. For a candidate over the regression limit, a
+paragraph gives how many tasks it regressed on and the line's
+`max_regressions`. The plan of the change runs in
 your Terraform workflow as for any other pull request; if the line
 [checks pull requests](/docs/configuration/check-terraform-pull-requests-for-station-regressions),
 that check runs too.
@@ -332,8 +346,8 @@ Merge it and apply it as you would any change to the line.
 </Step>
 </Steps>
 
-Once a candidate has a pull request, its details show it in place of
-**Pick**, so it opens no second one.
+Once a candidate has a pull request, its details show **View pull request**
+in place of **Open pull request**, so it opens no second one.
 
 ## If no pull request opens
 
