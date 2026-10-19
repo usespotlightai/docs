@@ -1,0 +1,252 @@
+---
+type: reference
+icon: BookText
+title: Observability
+description: The variables that turn on Spotlight's traces and metrics, its health checks, what it logs, and the dashboard and alert rules that come with it.
+---
+
+Spotlight exports no trace and no metric by default, and it opens no
+telemetry connection. It writes its logs as JSON lines to stdout. Nothing
+leaves the install unless the operator sets an exporter. Spotlight never
+sends telemetry to usespotlight.ai.
+
+Traces and metrics use OpenTelemetry and its standard `OTEL_*` variables, so
+any OTLP backend can receive them: Grafana, SigNoz, Jaeger, Honeycomb, Datadog
+and others. Errors go to Sentry; see [Error reporting](/docs/reference/error-reporting).
+
+## Spotlight
+
+Set these on Spotlight, with the other [self-hosted settings](/docs/reference/self-hosted-settings).
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | none | The OTLP endpoint for traces and metrics. Setting it turns on both. |
+| `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` | none | The OTLP endpoint for traces only. Setting it turns on traces. |
+| `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT` | none | The OTLP endpoint for metrics only. Setting it turns on metrics. |
+| `OTEL_EXPORTER_OTLP_PROTOCOL` | `http/protobuf` | `http/protobuf`, `http/json` or `grpc`. |
+| `OTEL_EXPORTER_OTLP_HEADERS` | none | Headers on each export, such as an API key: `key1=value1,key2=value2`. |
+| `OTEL_TRACES_EXPORTER` | `otlp` with a traces endpoint, else `none` | `otlp`, `console`, `zipkin` or `none`. |
+| `OTEL_METRICS_EXPORTER` | `otlp` with a metrics endpoint, else `none` | `otlp`, `prometheus`, `console` or `none`. |
+| `OTEL_EXPORTER_PROMETHEUS_PORT` | `9464` | The port of the scrape endpoint `GET /metrics`, with `OTEL_METRICS_EXPORTER=prometheus`. |
+| `OTEL_EXPORTER_PROMETHEUS_HOST` | all interfaces | The address the scrape endpoint listens on. |
+| `OTEL_SERVICE_NAME` | `spotlight-control-plane` | The service name on each trace and metric. |
+| `OTEL_TRACES_SAMPLER` | `parentbased_always_on` | A standard sampler name, such as `parentbased_traceidratio`. |
+| `OTEL_TRACES_SAMPLER_ARG` | none | The argument of the sampler, such as `0.1`. |
+| `OTEL_SDK_DISABLED` | `false` | `true` exports nothing, whatever else is set. |
+| `LOG_LEVEL` | `debug` in `development`, else `info` | `fatal`, `error`, `warn`, `info`, `debug`, `trace` or `silent`. |
+
+`OTEL_LOGS_EXPORTER` has no effect. Spotlight never sends its logs over OTLP.
+
+The scrape endpoint has no authentication. Do not expose port `9464` outside
+the network that scrapes it.
+
+## Hosts
+
+Set these on the host, with the other [host settings](/docs/reference/hosts/host-configuration).
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `LOG_LEVEL` | `info` | `error`, `warn`, `info` or `debug`. `fatal` reads as `error`, `trace` as `debug`, and `silent` writes nothing. The host gives it to each sandbox and egress as `SPOTLIGHT_LOG_LEVEL`. |
+| `OTEL_TRACES_SAMPLER` | `parentbased_always_on` | Whether the host samples the trace of a claim: `always_off`, `traceidratio` and their `parentbased_` forms. Set the same sampler as on Spotlight, because Spotlight follows the host's decision. |
+| `OTEL_TRACES_SAMPLER_ARG` | `1` | The ratio for `traceidratio`. |
+
+The host, the runner and egress write JSON lines to stdout. They export no
+traces or metrics.
+
+Each claim of the host starts a W3C trace, sampled as the variables above say. The host sends the trace on the
+claim as `traceparent` and gives it to the sandbox as `SPOTLIGHT_TRACEPARENT`.
+The runner sends it on each of its calls to Spotlight. So the claim and every
+call of the run have one trace id, in the logs of the host, the runner and
+Spotlight. The data plane exports no span of its own, so a backend shows each
+call's parent span as missing. The agent and the code it runs do not get
+`SPOTLIGHT_TRACEPARENT`.
+
+## Health checks
+
+| Endpoint | Answers |
+| --- | --- |
+| `GET /api/health` | `200` with `{"status":"ok"}` while the process serves requests. |
+| `GET /api/health/ready` | `200` with `{"status":"ready","checks":[…]}` when every check passes. `503` with `{"status":"not_ready","checks":[…]}` when one fails. |
+
+The readiness checks:
+
+| Check | Passes when |
+| --- | --- |
+| `postgres` | `SELECT 1` answers, on a connection of its own. |
+| `s3` | Spotlight can write an empty object `pending/readiness` to `S3_BUCKET`. |
+
+Each check fails when it takes longer than 1.5 seconds. Spotlight reuses an
+answer for 5 seconds. The answer names each
+check with `ok` or `failed`. The reason for a failure is in the log line
+`Readiness check failed`, not in the answer. Neither endpoint needs a session,
+and neither writes an access log line.
+
+## Logs
+
+Each request writes one `request completed` line with `req.method`, `route`,
+`path`, `res.statusCode` and `responseTime`. `route` is the matched route, such
+as `/api/teams/:teamId/replay-checks/:checkId`. `path` is the path without its query. The line keeps only these headers: `accept`,
+`content-length`, `content-type`, `traceparent` and `user-agent` of the
+request, and `content-length`, `content-type`, `etag` and `x-request-id` of the
+response. Its level is `error` for a status of 500
+or more, `warn` for 400 or more, else `info`. A refused request has a
+`refusal` field: the problem `type` when there is one, and the `error` that
+refused it. For a refusal by an application rule, `kind` replaces `type`, such
+as `not-found` or `conflict`.
+
+Every line of a request has `reqId`, which is also the `x-request-id` response
+header. It is the trace id of the request: from the span Spotlight starts for
+it, else from its `traceparent` header, else a new UUID. The calls of one run
+share a trace, so they share a `reqId`. With traces on, every
+line written inside a span also has `trace_id` and `span_id`.
+
+Every line written during a pending job, an event delivery or a webhook
+delivery has the ids of that work, when known: `workspaceId`, `teamId`,
+`taskId`, `runId`, `eventId` and `deliveryId`.
+
+| Message | Level | Written when |
+| --- | --- | --- |
+| `Recorded event` | `info` | Spotlight records a domain or integration event, after the transaction commits. Has `kind`, `eventId`, the ids of the event and `causedBy` for an event a hook or delivery caused. |
+| `Ignored a delivery` | `info` | A webhook delivery leads to nothing. `reason` is `no-provider`, `nothing-new` or `no-workspace`. |
+| `Did not act on a happening` | `info` | A happening changes no task. `reason` is `station-has-no-line`, `no-rule-matched`, `opens-nothing`, `no-review-policy-takes-it`, `no-task-matched` or `no-line-opens-it`. |
+| `Did not dispatch a run` | `info` | A task needs a run that Spotlight cannot start. `reason` is `station-has-no-harness`, `harness-not-prepared` or `station-has-no-order`. |
+| `Did not dispatch a chat run` | `info` | A chat needs a run that Spotlight cannot start. `reason` is `harness-has-no-command` or `no-placement`. |
+| `Did not provision a runner` | `info` | No push pool of the workspace can take a run or a check now. `reason` is `no-pool-matches` or `no-pool-has-room`. At most once in 10 minutes for each run or check, on each control plane. Not written for a workspace without a push pool, or for a run that needs secrets when no pool has egress. |
+| `Claimed a run`, `Claimed a check` | `info` | A runner takes a run or a check. |
+| `A hook did not match` | `debug` | A hook listens to a happening but its condition is false. |
+| `Skipped a hook firing` | `info` | A firing ends without a step. `reason` is `hook-deleted` or `no-longer-matches`. |
+| `Skipped a poll` | `warn` | The team of a poll no longer exists. `reason` is `team-not-found`. At most once in 10 minutes for each team and integration. |
+| `An expression failed, so it read as false or empty` | `warn` | An expression in a configuration fails when it is read. Has `location` and `error`, the code of the error, such as `no_such_key`. At most once in 10 minutes for each expression and code. |
+| `Could not discover the OAuth server of an integration` | `warn` | Discovery fails. Has the server's host and the name of the error. At most once in 10 minutes for each host. |
+| `Could not read the access token of a linked account` | `warn` | The token of a person's linked account cannot be read. Has the name of the error. At most once in 10 minutes for each person and provider. |
+| `Ignored a GitHub event` | `info` | The GitHub App installation of the event belongs to no workspace. |
+| `Refused a webhook delivery` | `warn` | A webhook is refused with 401. `reason` is `unknown-team`, `unknown-integration` or `bad-signature`. |
+| `Refused to start a runner` | `warn` | A host asks to start a runner and Spotlight refuses. `reason` is `host-unreported`, `host-outdated` or `image-unreported`. |
+| `Outbound call` | `debug` | Spotlight gets an answer from a call it makes with `fetch`. `outbound` has `host`, `method`, `status` and `durationMs`. |
+| `Outbound call refused` | `warn` | Such a call gets a 429 or a status of 500 or more. |
+| `Outbound call failed` | `warn` | Such a call gets no answer. |
+| `Reading a delivery` | `warn` | Reading a webhook delivery fails and Spotlight tries again. |
+| `Gave up reading a delivery` | `error` | Reading a webhook delivery fails for the last time. |
+| `Delivering a domain event` | `error` | A subscriber fails on an event and Spotlight tries again. |
+| `Dead-lettering a domain event delivery` | `error` | A subscriber fails on an event for the 8th time. |
+| `Readiness check failed` | `warn` | A readiness check fails. Has `check` and `err`. |
+
+The database keeps every recorded event with its causal chain in
+`event_outbox`. The logs do not copy that history.
+
+## What telemetry never contains
+
+No log line, span or metric contains:
+
+- An event payload, a prompt, a tool input or a secret value.
+- A header other than those listed in [Logs](#logs), such as `Cookie`,
+  `Authorization`, `Set-Cookie`, `Referer`, `Location` or a webhook's token
+  header.
+- A request body or a response body.
+- A query string.
+- A token in the path of a request. `path` names it by its parameter, such as
+  `/api/invites/:token`, and spans have the route in place of the path.
+- The path or query of a call that Spotlight makes. Logs and spans name the host only.
+
+Metric attributes never contain the id of a workspace, team, task, run or
+chat. Ids are in logs and spans only.
+
+## Traces
+
+| Span | Name | Has |
+| --- | --- | --- |
+| A request to Spotlight | The method and the route, such as `GET /api/teams/:teamId/replay-checks/:checkId` | The standard HTTP attributes, with the route as `url.path`, and the client's address. |
+| A Postgres query | `pg.query:`, the SQL command and the database name | The statement with its placeholders, never the values. Only inside another span. |
+| A call that Spotlight makes | The method | The host, and the origin as `url.full`. |
+| A pending job | The source, such as `Judging runs` | `spotlight.workspace_id`, `spotlight.run_id` and the other ids of the job. |
+| An event delivery | The subscriber | `spotlight.event_id`, `spotlight.event_kind` and the ids of the event. A link to the span that recorded the event. |
+| A webhook delivery | `Reading a delivery` | `spotlight.delivery_id`, `spotlight.integration` and the ids of the delivery. |
+
+With traces on, each event records the `traceparent` of the request or work
+that raised it. The delivery of the event starts its own trace and links to
+that one.
+
+## Metrics
+
+Spotlight's own metrics:
+
+| Metric | Type | Attributes | Description |
+| --- | --- | --- | --- |
+| `spotlight.readiness` | gauge | `spotlight.check` | `1` when the check passes, `0` when it fails. |
+| `spotlight.events` | counter | `spotlight.event.kind` | Events recorded. |
+| `spotlight.outbox.due` | gauge | | Event deliveries that are due. |
+| `spotlight.outbox.oldest_due_age_seconds` | gauge | | Age of the oldest event delivery that is due. |
+| `spotlight.outbox.dead_lettered` | gauge | | Event deliveries that Spotlight stopped trying. |
+| `spotlight.outbox.deliveries` | counter | `spotlight.subscriber`, `spotlight.delivery.outcome` | Attempts to deliver an event: `delivered`, `retried` or `dead_lettered`. |
+| `spotlight.jobs` | counter | `spotlight.job.source`, `spotlight.job.outcome` | Pending jobs worked: `processed`, `stale`, `retried` or `dead_lettered`. |
+| `spotlight.hook_firings` | counter | `spotlight.hook_firing.outcome` | `fired` when Spotlight queues a firing. `skipped` or `loop_stopped` when it works one, so a firing can count twice. |
+| `spotlight.runs` | gauge | `spotlight.run.state` | Runs that are `queued`, `claimed`, `waiting` or `suspended`. |
+| `spotlight.runs.oldest_queued_age_seconds` | gauge | | Age of the oldest run that a runner can claim now. |
+| `spotlight.runner_hosts.online` | gauge | | Hosts with a heartbeat in the last 90 seconds. |
+
+Spotlight reads the gauges from the database each time it exports metrics.
+
+The standard metrics: `http.server.request.duration` with `http.route`,
+`http.client.request.duration`, `db.client.connection.count`,
+`db.client.connection.pending_requests` and `db.client.connection.max`, and
+the Node.js runtime metrics `nodejs.eventloop.*`, `v8js.memory.*` and
+`v8js.gc.duration`.
+
+In Prometheus, each `.` becomes `_` and counters end in `_total`, such as
+`spotlight_jobs_total`. A backend that adds unit suffixes names the standard
+HTTP metric `http_server_request_duration_seconds`.
+
+## Dashboard and alert rules
+
+The Spotlight repository has both, in `observability/`:
+
+| File | Contains |
+| --- | --- |
+| `observability/grafana/spotlight-control-plane.json` | A Grafana dashboard. Import it and pick a Prometheus data source. |
+| `observability/prometheus/spotlight-alerts.yml` | Prometheus alert rules, for Prometheus, Mimir or Grafana alerting. |
+
+The rules select series whose `job` ends in `spotlight-control-plane`. Over
+OTLP the job is the service name. When Prometheus scrapes, name the scrape job
+`spotlight-control-plane`. Each alert keeps the `environment` label of its
+series, when they have one.
+
+| Alert | Fires when |
+| --- | --- |
+| `SpotlightNotReady` | A readiness check fails for 2 minutes. |
+| `SpotlightGone` | No control plane reports its readiness for 5 minutes. |
+| `SpotlightServerErrorsHigh` | More than 5% of requests answer with a status of 500 or more for 10 minutes. |
+| `SpotlightLatencyHigh` | The 95th percentile of request time is more than 2 seconds for 15 minutes. The claim routes, which wait for work, and the run stream and git routes, which stay open, are left out. |
+| `SpotlightOutboxBehind` | An event delivery is due for more than 10 minutes. |
+| `SpotlightWorkDeadLettered` | Spotlight stops trying an event delivery or a pending job. |
+| `SpotlightDatabasePoolSaturated` | Requests wait for a database connection for 5 minutes. |
+| `SpotlightEventLoopLagHigh` | The 99th percentile of event-loop delay is more than 500 ms for 10 minutes. |
+| `SpotlightRunsNotClaimed` | A run waits more than 15 minutes for a runner. |
+
+## Examples
+
+To an OpenTelemetry Collector or Grafana Alloy in the same network:
+
+```bash
+OTEL_EXPORTER_OTLP_ENDPOINT=http://alloy:4318
+```
+
+To a hosted OTLP backend, with its API key as a header:
+
+```bash
+OTEL_EXPORTER_OTLP_ENDPOINT=https://api.honeycomb.io
+OTEL_EXPORTER_OTLP_HEADERS=x-honeycomb-team=<api key>
+OTEL_TRACES_SAMPLER=parentbased_traceidratio
+OTEL_TRACES_SAMPLER_ARG=0.1
+```
+
+Metrics for Prometheus to scrape, and no traces:
+
+```bash
+OTEL_METRICS_EXPORTER=prometheus
+```
+
+## Agent traces
+
+The traces of agents in runs are product data. Spotlight collects them itself
+and shows them on the run. The `OTEL_*` variables above do not change that
+collection, and Spotlight does not give them to sandboxes.
