@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Observability
-description: The variables that turn on Spotlight's traces and metrics, its health checks, what it logs, and the dashboard and alert rules that come with it.
+description: The variables that turn on Spotlight's traces and metrics, its health checks and what it logs.
 ---
 
 Spotlight exports no trace and no metric by default, and it opens no
@@ -208,32 +208,6 @@ the Node.js runtime metrics `nodejs.eventloop.*`, `v8js.memory.*` and
 In Prometheus, each `.` becomes `_` and counters end in `_total`, such as
 `spotlight_jobs_total`. A backend that adds unit suffixes names the standard
 HTTP metric `http_server_request_duration_seconds`.
-
-## Dashboard and alert rules
-
-The Spotlight repository has both, in `observability/`:
-
-| File | Contains |
-| --- | --- |
-| `observability/grafana/spotlight-control-plane.json` | A Grafana dashboard. Import it and pick a Prometheus data source. |
-| `observability/prometheus/spotlight-alerts.yml` | Prometheus alert rules, for Prometheus, Mimir or Grafana alerting. |
-
-The rules select series whose `job` ends in `spotlight-control-plane`. Over
-OTLP the job is the service name. When Prometheus scrapes, name the scrape job
-`spotlight-control-plane`. Each alert keeps the `environment` label of its
-series, when they have one.
-
-| Alert | Fires when |
-| --- | --- |
-| `SpotlightNotReady` | A readiness check fails for 2 minutes. |
-| `SpotlightGone` | No control plane reports its readiness for 5 minutes. |
-| `SpotlightServerErrorsHigh` | More than 5% of requests answer with a status of 500 or more for 10 minutes. |
-| `SpotlightLatencyHigh` | The 95th percentile of request time is more than 2 seconds for 15 minutes. The claim routes, which wait for work, and the run stream and git routes, which stay open, are left out. |
-| `SpotlightOutboxBehind` | An event delivery is due for more than 10 minutes. |
-| `SpotlightWorkDeadLettered` | Spotlight stops trying an event delivery or a pending job. |
-| `SpotlightDatabasePoolSaturated` | Requests wait for a database connection for 5 minutes. |
-| `SpotlightEventLoopLagHigh` | The 99th percentile of event-loop delay is more than 500 ms for 10 minutes. |
-| `SpotlightRunsNotClaimed` | A run waits more than 15 minutes for a runner. |
 
 ## Examples
 
