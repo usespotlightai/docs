@@ -37,8 +37,9 @@ You need:
 - A Mac or Linux computer with Docker Desktop, OrbStack, Colima or Podman
   installed and running. Spotlight runs each agent inside a container, so the
   agent can't reach the rest of the computer.
-- An Anthropic API key. The agents in this tutorial are Claude Code, and they
-  need the key to use Claude.
+- An Anthropic API key or a Claude subscription, such as Pro or Max. The
+  agents in this tutorial are Claude Code, and they sign in to Claude with one
+  of them.
 
 ## Create a workspace
 
@@ -111,8 +112,12 @@ in it. Spotlight shows the token only this once, so keep the page open.
 <Steps>
 <Step>
 
-Open a terminal. The agents use Claude, so they need your Anthropic key. Save
-it in the file Spotlight reads on your computer when it starts:
+Open a terminal. Each agent runs in a fresh container, a sandbox, where it is
+not signed in to Claude. Give it a key in the file Spotlight reads on your
+computer when it starts. Use the tab for what you pay Anthropic with:
+
+<Tabs items={['Anthropic API key', 'Claude subscription']}>
+<Tab value="Anthropic API key">
 
 ```bash
 mkdir -p ~/.spotlight
@@ -121,6 +126,33 @@ chmod 600 ~/.spotlight/sandbox.env
 ```
 
 The commands print nothing.
+
+</Tab>
+<Tab value="Claude subscription">
+
+Make a token for your subscription. Claude Code must be installed on your
+computer:
+
+```bash
+claude setup-token
+```
+
+It opens your browser to sign in to Claude, then prints a token that starts
+with `sk-ant-oat`. Save the token:
+
+```bash
+mkdir -p ~/.spotlight
+echo 'CLAUDE_CODE_OAUTH_TOKEN=<the token>' >> ~/.spotlight/sandbox.env
+chmod 600 ~/.spotlight/sandbox.env
+```
+
+The commands print nothing.
+
+If Claude Code on your computer is already signed in, you still need the
+token. The sandbox can't use that sign-in.
+
+</Tab>
+</Tabs>
 
 </Step>
 <Step>
@@ -293,6 +325,15 @@ computer starts a fresh container for the agent.
 </Step>
 <Step>
 
+If the run stops with a message that starts `start agent:` or
+`open a session:` and names authentication, the sandbox could not sign in to
+Claude. Check the line in `~/.spotlight/sandbox.env`, then
+[restart the host](/docs/hosts/run-a-host#restart-the-host) and move the task
+to Backlog and back to Triage.
+
+</Step>
+<Step>
+
 When the agent finishes, its note appears under what it was told. The note
 ends with a question for you, such as who the new teammates are and what they
 will work on, and the run now reads **Waiting for you**.
@@ -362,8 +403,8 @@ Spotlight stops it. The task moves to Completed, the end of the line, and the
 
 You created a workspace and set up your own computer to run its agents, in an
 image that you built with Claude Code in it. You gave a task to Triage. Spotlight sent the work to your computer, which started
-a fresh container, and Claude Code worked on the task inside it using your
-Anthropic key. The agent asked you a question through the inbox, took your
+a fresh container, and Claude Code worked on the task inside it signed in with your
+key. The agent asked you a question through the inbox, took your
 answer, and you closed the task by moving it to Completed.
 
 From here:
