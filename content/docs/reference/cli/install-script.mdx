@@ -27,7 +27,7 @@ curl -fsSL https://app.usespotlight.ai/api/install.sh \
 | `SPOTLIGHT_OIDC_TOKEN_FILE` | none | The path to the workload's OIDC token. Without it, the value in the existing configuration file. |
 | `SPOTLIGHT_CAPACITY` | none | Written to the configuration when set. Without it, the value in the existing configuration file. |
 | `SPOTLIGHT_URL` | none | Written to the configuration. Without it, the public address of the Spotlight that served the script, its [`SPOTLIGHT_PUBLIC_URL`](/docs/reference/self-hosted-settings#addresses-and-sign-in). |
-| `SPOTLIGHT_VERSION` | none | The `spotlight` release to install. Without it, the release of the Spotlight that served the script, its [`SPOTLIGHT_RELEASE`](/docs/reference/self-hosted-settings#service), else `latest`. |
+| `SPOTLIGHT_VERSION` | none | What to install: `latest`, `canary` or a release, as in `v0.1.0`. The script stops on any other value. Without it, the release of the Spotlight that served the script, its [`SPOTLIGHT_RELEASE`](/docs/reference/self-hosted-settings#service), when that is a release, else `latest`. |
 | `SPOTLIGHT_RUNNER_IMAGE` | `ghcr.io/usespotlightai/spotlight-runner:<version>` | The image list written to the configuration. Without it, the value in the existing configuration file. A saved value that starts with `ghcr.io/usespotlightai/spotlight-runner:` is replaced by `ghcr.io/usespotlightai/spotlight-runner:<version>`. The default image holds no harness. |
 | `SPOTLIGHT_REPO` | `usespotlightai/spotlight` | The GitHub repository releases are downloaded from. |
 | `SPOTLIGHT_DOWNLOAD_URL` | none | A base URL to download the binary and checksum from, in place of GitHub releases. |
@@ -40,8 +40,8 @@ The binary is downloaded from:
 | `SPOTLIGHT_VERSION` | URL |
 | --- | --- |
 | `latest` | `https://github.com/<repo>/releases/latest/download/spotlight-<os>-<arch>` |
-| a staging build: 12 hexadecimal characters, the first of its commit | `https://github.com/<repo>/releases/download/canary/spotlight-<os>-<arch>`, the newest staging build |
-| any other | `https://github.com/<repo>/releases/download/<version>/spotlight-<os>-<arch>` |
+| `canary` | `https://github.com/<repo>/releases/download/canary/spotlight-<os>-<arch>`, the newest staging build. It is not a release. |
+| a release, as in `v0.1.0` | `https://github.com/<repo>/releases/download/<version>/spotlight-<os>-<arch>` |
 
 `<os>` is `linux` or `darwin`. `<arch>` is `amd64` or `arm64`. The checksum is
 the same URL with `.sha256` appended.
