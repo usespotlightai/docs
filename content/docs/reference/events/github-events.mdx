@@ -12,7 +12,7 @@ read into happenings. Lines react to happenings with their reactions; see
 
 ## Happenings
 
-| GitHub event | Condition | Happening | Spoken |
+| GitHub event | Condition | Happening | Answers |
 | --- | --- | --- | --- |
 | `pull_request` | action `opened`, `reopened` or `ready_for_review` | `github.pull_request.opened` | no |
 | `pull_request` | action `labeled`, with a label name | `github.pull_request.labelled` | no |
@@ -25,9 +25,9 @@ read into happenings. Lines react to happenings with their reactions; see
 | any of the four rows above | the comment or review contains `@` | also `github.pull_request.mentioned` | yes |
 | `check_suite` | action `completed`, conclusion `failure` | `github.checks.failed` | no |
 
-A spoken happening carries the words of the comment or review, with the file
-and lines it is about where there are any. Those words can answer a task that
-awaits review; see [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves).
+A happening that answers carries the words of the comment or review as a
+message, with the file and lines it is about where there are any. Those words
+can answer a task that awaits review; see [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves).
 
 Each happening also has a label and a line of text written to the task's
 notes when the delivery carries no words:
@@ -74,7 +74,7 @@ A happening names what it concerns: a branch, marks, or both.
 Every happening except `opened`, `mentioned` and `labelled` that names a pull
 request is
 also sent a second time, concerning the `github.review` mark of that pull
-request. The task that has that mark hears it.
+request. The task that has that mark receives it.
 
 A branch outside `spotlight/` finds no task by its name. A delivery that names
 neither a branch nor a pull request is rejected.
@@ -82,7 +82,7 @@ neither a branch nor a pull request is rejected.
 ## Review tasks
 
 `github.pull_request.opened`, `github.pull_request.mentioned` and
-`github.pull_request.labelled` ask for a review. A `labelled` happening carries
+`github.pull_request.labelled` request a review. A `labelled` happening carries
 the label's name, and a line takes it only if that name, without regard to case, is its
 review policy's `label`. Spotlight chooses a line that:
 
@@ -93,7 +93,7 @@ review policy's `label`. Spotlight chooses a line that:
 Lines that name the repository come first, then lines in order of key.
 
 If an unfinished task already has the pull request's `github.review` mark,
-that task hears the happening. Otherwise a new task opens on the chosen line:
+that task receives the happening. Otherwise a new task opens on the chosen line:
 
 | Property | Value |
 | --- | --- |
@@ -127,7 +127,7 @@ The page connects the installation with
 | Status | When |
 | --- | --- |
 | `204` | Connected. |
-| `403` | Not an owner or admin, or not an installation the person administers. |
+| `403` | Not an owner or admin, or not an admin of the installation. |
 | `409` | The installation is already connected to another workspace. |
 
 One installation connects one workspace. The connection covers every team in

@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: spotlight_integration
-description: Every key of an integration definition, the API descriptions and MCP servers it can generate tools from, the rules Spotlight checks when it is written, and the endpoints a definition gives a team.
+description: Every key of an integration definition, the API specs and MCP servers it can generate tools from, the rules Spotlight checks when it is written, and the endpoints a definition gives a team.
 ---
 
 The `spotlight_integration` resource, and the integration resource of the
@@ -18,7 +18,7 @@ resource API.
 
 See [Resource API](/docs/reference/api/resource-api) for the operations, headers
 and errors every kind shares, and [Expressions](/docs/reference/api/expressions)
-for how the expressions inside a definition are written and what each sees.
+for how the expressions inside a definition are written and the variables each can read.
 
 ## Example
 
@@ -52,7 +52,7 @@ resource "spotlight_integration" "core_acme" {
     }
     tools = {
       comment = {
-        does        = "comment"
+        action      = "comment"
         description = "Comment on an Acme issue."
         inputs = {
           issue = { type = "string", required = true }
@@ -64,39 +64,40 @@ resource "spotlight_integration" "core_acme" {
 }
 ```
 
-Acme is an example name for any HTTP service. A station gives this tool as `acme.comment`.
+Acme is an example name for any HTTP service. A station enables this tool as `acme.comment`.
 
 ## Top level
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `integration` | string | required | The name the host is addressed by. Prefixes its tools, happenings and webhook address. Fixed: an update that changes it is rejected; Terraform replaces the resource. |
+| `integration` | string | required | The name of the integration, as in `slack`. Prefixes its tools, happenings and webhook address. Immutable: an update that changes it is rejected; Terraform replaces the resource. |
 | `name` | string | none | The name shown in the web app. Without it, the `integration` value. |
 | `types` | map of name to object | `{}` | Named shapes that expressions are type-checked against. |
-| `connection` | object | none | How the team links to the host. See [connection](#connection). |
-| `webhook` | object | none | Deliveries the host sends. See [webhook](#webhook). |
+| `connection` | object | none | How the team connects to the service. See [connection](#connection). |
+| `webhook` | object | none | Deliveries the service sends. See [webhook](#webhook). |
 | `poll` | object | none | A request Spotlight repeats. See [poll](#poll). |
 | `schedule` | object | none | An action Spotlight runs on a cron schedule. See [schedule](#schedule). |
-| `actions` | map of name to object | `{}` | Requests to the host. See [actions](#actions). |
+| `actions` | map of name to object | `{}` | Requests to the service. See [actions](#actions). |
 | `tools` | map of name to object | `{}` | Actions offered to agents and hooks. See [tools](#tools). |
-| `openapi` | object | none | An OpenAPI description to generate tools from. See [API descriptions](#api-descriptions). |
-| `graphql` | object | none | A GraphQL API to generate tools from. See [API descriptions](#api-descriptions). |
+| `openapi` | object | none | An OpenAPI spec to generate tools from. See [API specs](#api-specs). |
+| `graphql` | object | none | A GraphQL API to generate tools from. See [API specs](#api-specs). |
 | `mcp` | object | none | A remote MCP server whose tools Spotlight lists and calls. See [MCP servers](#mcp-servers). |
 | `on` | map of name to object | `{}` | Actions run when a task event happens. See [on](#on). |
 
 A definition must do something: it has a `webhook`, a `poll`, a `schedule`, at
 least one action, at least one `on` binding, an `openapi`, a `graphql` or an
 `mcp`. Otherwise it is rejected with
-`must do something: a webhook, a poll, a schedule, an action to run, or an API description or MCP server to offer tools from`.
+`must do something: a webhook, a poll, a schedule, an action to run, or an API spec or MCP server to provide tools from`.
 A definition with two of `openapi`, `graphql` and `mcp` is rejected with
-`offers tools from one source: an openapi, a graphql or an mcp, not two`.
+`offers tools from one API spec: an openapi, a graphql or an mcp, not two`.
 
 A read adds three fields that cannot be set:
 
 | Field | Type | Description |
 | --- | --- | --- |
+| `integration` | string | Equal to the definition's `integration`. |
 | `tools` | map of name to string | Each tool the integration offers, written or generated, by its name in the integration, to the name stations and hooks use, as in `{ "comment": "acme.comment" }`. |
-| `spec` | object or null | The API description or MCP server as Spotlight last read it. `null` when the definition names none. See [Spec](#spec). |
+| `spec` | object or null | The API spec or MCP server as Spotlight last read it. `null` when the definition names none. See [Spec](#spec). |
 
 In Terraform, `tools` is known only after apply when the definition has an
 `openapi`, a `graphql` or an `mcp`. A station that names a generated tool through it that
@@ -110,7 +111,7 @@ is not there fails the apply, not the plan.
 | action, tool | lowercase words joined by dashes | `post-message` |
 | tool input | a letter or `_`, then letters, digits, `_` and `-`, at most 64 characters; not `json` | `issue`, `team_id` |
 | happening | the integration's own name, a dot, then dotted words of lowercase letters, digits, `_` and `-` | `acme.issue.updated` |
-| mark kind | a source name, a dot, then dotted words as for a happening | `acme.issue` |
+| mark kind | an integration name, a dot, then dotted words as for a happening | `acme.issue` |
 | secret reference | `secret.` and a secret name of capitals, digits and `_`, starting with a capital, at most 64 characters | `secret.ACME_API_KEY` |
 | type name | starts with a capital, then letters and digits | `Issue` |
 
@@ -120,7 +121,7 @@ or bind the same task event twice.
 
 An integration named `github` receives no webhook deliveries at its team
 address: every delivery there returns `401`. The name `github` belongs to
-the built-in GitHub source.
+the built-in GitHub integration.
 
 ## Shapes
 
@@ -134,13 +135,13 @@ that name themselves in a cycle, produce a warning and are then ignored.
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `holder` | string | `team` | `team` or `requester`. Whose connection the integration's tools act with. See [Holder](#holder). |
+| `actsAs` | string | `team` | `team` or `requester`. Whose connection the integration's tools act with. See [Acts as](#acts-as). |
 | `oauth2.discover` | boolean | `false` | Find the endpoints, the registration endpoint and the scopes from what the MCP server named in `mcp.url` publishes. See [Discovery](#discovery). |
-| `oauth2.authorize` | string | required unless `discover` | The host's authorization endpoint. |
-| `oauth2.token` | string | required unless `discover` | The host's token endpoint. |
-| `oauth2.scopes` | array of strings | `[]` | Scopes asked for, joined by spaces. |
-| `oauth2.identity` | string | none | An expression. Names the linked account, shown as "Connected as" in the web app. Sees `response`, the token endpoint's response. |
-| `oauth2.registration` | string | none | A URL. The host's dynamic client registration endpoint (RFC 7591). Used only when the deployment has no OAuth client for the integration. See [Client registration](#client-registration). |
+| `oauth2.authorize` | string | required unless `discover` | The service's authorization endpoint. |
+| `oauth2.token` | string | required unless `discover` | The service's token endpoint. |
+| `oauth2.scopes` | array of strings | `[]` | Scopes requested, joined by spaces. |
+| `oauth2.identity` | string | none | An expression. Names the linked account, shown under "Team account" or "Your account" in the web app. Can read `response`, the token endpoint's response. |
+| `oauth2.registration` | string | none | A URL. The service's dynamic client registration endpoint (RFC 7591). Used only when the deployment has no OAuth client for the integration. See [Client registration](#client-registration). |
 | `oauth2.resource` | string | none | A URL. Sent as the `resource` parameter (RFC 8707) on the authorization URL and on every token request. |
 | `manual.secrets` | array of strings | `[]` | Secrets the connection uses, each a secret reference, `secret.<NAME>`. |
 
@@ -150,12 +151,12 @@ Without `discover`, `oauth2` must name both `authorize` and `token`. With
 key. `discover` without an `mcp` block is rejected at `connection.oauth2` with
 `discovers how to connect from its MCP server, but mcp.url names no MCP server`.
 
-`holder = "requester"` without `oauth2` is rejected with
+`actsAs = "requester"` without `oauth2` is rejected with
 `Integration <integration> takes each person's connection. A person can connect only over oauth2.`
 
 ```hcl
 connection = {
-  holder = "requester"
+  actsAs = "requester"
   oauth2 = {
     authorize    = "https://acme.example/oauth/authorize"
     token        = "https://acme.example/oauth/token"
@@ -166,16 +167,16 @@ connection = {
 }
 ```
 
-### Holder
+### Acts as
 
-| Holder | A tool acts with | Polls, schedules and `on` bindings act with |
+| Acts as | A tool acts with | Polls, schedules and `on` bindings act with |
 | --- | --- | --- |
 | `team` | The team's connection. | The team's connection. |
-| `requester` | The connection of the person who started the task: the task's Raised by. | The team's connection. |
+| `requester` | The connection of the person who started the task: the task's Created by field. | The team's connection. |
 
 A team connection is made by an owner or admin of the workspace. A person's
 connection is made by that person, who must be on the team, and only for an
-integration whose `holder` is `requester`. See
+integration whose `actsAs` is `requester`. See
 [Integration connections](/docs/reference/roles-and-permissions#integration-connections).
 
 When a tool of a `requester` integration is called, nothing is sent until
@@ -185,7 +186,7 @@ its place.
 | Situation | Result |
 | --- | --- |
 | The person has connected. | The call is made with their access token. |
-| The person has not connected, or the host could not renew their connection. | The task is assigned to them and put to them with a request to connect. The call fails with `<tool> acts as the person who started this task, and they haven't connected <integration>. They've been asked in their inbox. Nothing was sent. Stop here and end your turn: you're resumed once they connect.` When they connect, the request is answered with `Connected <integration>.` |
+| The person has not connected, or the service could not refresh their connection. | The task is assigned to them and put to them with a request to connect. The call fails with `<tool> acts as the person who started this task, and they haven't connected <integration>. They've been asked in their inbox. Nothing was sent. Stop here and end your turn: you're resumed once they connect.` When they connect, the request is answered with `Connected <integration>.` |
 | No person started the task. | The call fails with `<tool> was not used, so nothing was sent: nobody started this task, so there is nobody whose <integration> connection it could act with`. |
 | The person who started the task is no longer on the team. | The call fails with `<tool> was not used, so nothing was sent: the person who started this task is no longer on the team, so it cannot act with their <integration> connection`. |
 | The task already waits on a person for something else. | Nobody is asked. The call fails with `<tool> was not used, so nothing was sent: this task is already waiting on someone, so nobody can be asked to connect <integration> until they answer`. |
@@ -196,36 +197,36 @@ step that calls a tool of a `requester` integration fails with `not-allowed`.
 ### OAuth connect and callback
 
 An integration with `connection.oauth2` shows a `Connect team account`
-button, and `Change account` once linked, on the team's Integrations settings
-page. An integration whose `holder` is `requester` also shows
+button, and `Change account` once connected, on the team's Integrations settings
+page. An integration whose `actsAs` is `requester` also shows
 `Connect your account` there, where each person connects their own account. It
-links only when Spotlight has an OAuth client for it: one the deployment has
+connects only when Spotlight has an OAuth client for it: one the deployment has
 for the integration's name in [`OAUTH_CLIENTS`](/docs/reference/self-hosted-settings#calls-out-of-spotlight), or one registered at `oauth2.registration`.
 
 | Step | Endpoint | Behaviour |
 | --- | --- | --- |
-| Begin | `POST /api/teams/{teamId}/integrations/{integration}/connect` | An optional body with `for` and `back`. `for` is `team`, the default, which needs a signed-in owner or admin of the workspace (the `administer` permission); `me`, the caller's own connection, needs a signed-in person on the team, and an integration whose `holder` is `requester`. `back` is where to land afterwards, a path under `/w/<slug>/inbox` or `/w/<slug>/settings`. Returns `{ "url": ... }`, the authorization URL with `client_id`, `redirect_uri`, `response_type=code`, `scope`, a signed `state`, `code_challenge` with `code_challenge_method=S256`, and `resource` when set, and sets a one-time cookie. `400` when `for` is neither. `404` when there is no such team, the person may not make that connection, the host does not link over OAuth, or there is no client. |
-| Callback | `GET /api/integrations/oauth/callback` | Needs the same signed-in person, still allowed to make the connection, and the cookie. Exchanges the code with its PKCE verifier and keeps the grant sealed. Redirects to `back` with `?connected=<integration>`, or else to `/w/<slug>/settings/team/<teamId>/integrations?connected=<integration>`, or to `/?integration=failed`. |
-| List | `GET /api/teams/{teamId}/connections` | Needs a signed-in person on the team. Returns `mine`, the caller's own connections, each with `integration`, `handle`, `connectedAt` and `tools`, the caller's rule for each tool as `{ tool, rule }`, and `people`, every person's connection in the team with `personId` and `name` as well, for an owner or admin, or `null` for anyone else. Never a token. |
+| Begin | `POST /api/teams/{teamId}/integrations/{integration}/connect` | An optional body with `actsAs` and `returnTo`. `actsAs` is `team`, the default, which needs a signed-in owner or admin of the workspace (the `administer` permission); `requester`, the caller's own connection, needs a signed-in person on the team, and an integration whose `actsAs` is `requester`. `returnTo` is where to return to afterwards, a path under `/w/<slug>/inbox` or `/w/<slug>/settings`. Returns `{ "url": ... }`, the authorization URL with `client_id`, `redirect_uri`, `response_type=code`, `scope`, a signed `state`, `code_challenge` with `code_challenge_method=S256`, and `resource` when set, and sets a one-time cookie. `400` when `actsAs` is neither. `404` when there is no such team, the person may not make that connection, the integration does not connect over OAuth, or there is no client. |
+| Callback | `GET /api/integrations/oauth/callback` | Needs the same signed-in person, still allowed to make the connection, and the cookie. Exchanges the code with its PKCE verifier and keeps the tokens encrypted. Redirects to `returnTo` with `?connected=<integration>`, or else to `/w/<slug>/settings/team/<teamId>/integrations?connected=<integration>`, or to `/?integration=failed`. |
+| List | `GET /api/teams/{teamId}/connections` | Needs a signed-in person on the team. Returns `mine`, the caller's own connections, each with `integration`, `linkedAccount`, `connectedAt` and `tools`, the caller's rule for each tool as `{ tool, rule }`, and `people`, every person's connection in the team with `personId` and `name` as well, for an owner or admin, or `null` for anyone else. Never a token. |
 | Disconnect | `DELETE /api/teams/{teamId}/integrations/{integration}/connections/mine` | Needs a signed-in person on the team. Removes the caller's own connection. Returns `204`. There is no endpoint to remove another person's connection. |
-| Set a tool rule | `PUT /api/teams/{teamId}/integrations/{integration}/connections/mine/tools/{tool}` | Needs a signed-in person on the team. A body `{ "rule": ... }`: `allowed`, the default, follows the team's rule; `needs-approval` asks the caller first; `blocked` never runs the tool. `{tool}` is the tool's full name, as in `linear.comment`. Applies only to calls made with the caller's own connection, and the stricter of the team's rule and the caller's wins. See [Person rules](/docs/reference/app/tasks-runs-and-the-inbox#person-rules). Returns `204`. `404` when the caller is not on the team, the integration does not offer the tool, or its `connection.holder` is not `requester`. `422` validation error for a malformed tool name or any other rule. |
+| Set a tool rule | `PUT /api/teams/{teamId}/integrations/{integration}/connections/mine/tools/{tool}` | Needs a signed-in person on the team. A body `{ "rule": ... }`: `allowed`, the default, follows the team's rule; `needs-approval` asks the caller first; `blocked` never runs the tool. `{tool}` is the tool's full name, as in `linear.comment`. Applies only to calls made with the caller's own connection, and the stricter of the team's rule and the caller's wins. See [Person rules](/docs/reference/app/tasks-runs-and-the-inbox#person-rules). Returns `204`. `404` when the caller is not on the team, the integration does not offer the tool, or its `connection.actsAs` is not `requester`. `422` validation error for a malformed tool name or any other rule. |
 
 The `state` expires after 10 minutes. A request with `auth.oauth2` sends the
 access token as `Authorization: Bearer`.
 
-### Renewal
+### Refresh
 
 | When | What Spotlight does |
 | --- | --- |
-| An access token has less than 5 minutes left. | Renews it with the refresh token. |
-| A request with `auth.oauth2` is answered `401`. | Renews the token once and sends the request once more with the new one. Any other status, or a request authenticated by `secrets`, is not retried. |
-| A description fetch with `auth.oauth2` is answered `401`. | Renews the team's token once and fetches the description once more with the new one. |
+| An access token has less than 5 minutes left. | Refreshes it with the refresh token. |
+| A request with `auth.oauth2` is answered `401`. | Refreshes the token once and sends the request once more with the new one. Any other status, or a request authenticated by `secrets`, is not retried. |
+| A spec fetch with `auth.oauth2` is answered `401`. | Refreshes the team's token once and fetches the spec once more with the new one. |
 
-One renewal of a connection runs at a time, across every control-plane
+One refresh of a connection runs at a time, across every control-plane
 instance, under a claim that lasts 30 seconds. A request answered `401` while
-another renewal has the claim waits for it, for up to 30 seconds, and is sent
-again with the new token. A refresh token the host rotates is kept. When the
-host does not renew it, the connection is marked failed until it is made again.
+another refresh has the claim waits for it, for up to 30 seconds, and is sent
+again with the new token. A refresh token the service rotates is stored. When the
+service does not refresh it, the connection is marked failed until it is made again.
 A person whose connection failed is asked to connect again the next time a
 tool needs it.
 
@@ -238,7 +239,7 @@ The registration is a `POST` of JSON with `client_name` `Spotlight`, the
 callback URL as the one `redirect_uris` entry, `grant_types`
 `authorization_code` and `refresh_token`, `response_types` `code` and
 `token_endpoint_auth_method` `client_secret_post`. The answer must contain a
-`client_id`; a `client_secret` is kept sealed, with its
+`client_id`; a `client_secret` is stored encrypted, with its
 `client_secret_expires_at`. The client is reused until the registration
 endpoint or the callback URL changes or the client secret expires, and is then
 registered again. A client without a secret sends no `client_secret` on token
@@ -251,7 +252,7 @@ the token endpoint must.
 
 With `oauth2.discover`, Spotlight finds where to connect from the MCP server
 named in `mcp.url`, following the MCP authorization specification, when a
-connection begins, when its code is exchanged and when it is renewed:
+connection begins, when its code is exchanged and when it is refreshed:
 
 1. It sends the server an `initialize` request without credentials. A `401`
    whose `WWW-Authenticate` names `resource_metadata` points at the server's
@@ -274,9 +275,9 @@ Discovery fails when the authorization server metadata's `issuer` is not the
 URL it was read for (RFC 8414), when its `code_challenge_methods_supported`
 does not list `S256`, or when the protected resource metadata names a
 `resource` that is neither `mcp.url` nor on its origin above its path. Then the
-integration does not link, and beginning a connection answers `404`. Every
+integration does not connect, and beginning a connection answers `404`. Every
 request goes only to hosts on the deployment's outbound allow-list, and each
-waits at most 15 seconds. What was found is kept for 10 minutes on each control
+waits at most 15 seconds. What was found is cached for 10 minutes on each control
 plane server.
 
 The client a connection uses is bound to the authorization server it was made
@@ -284,8 +285,8 @@ with: its issuer, authorization endpoint and token endpoint.
 
 | Client | Bound by |
 | --- | --- |
-| Registered at `registration_endpoint` | Spotlight keeps the three with the registration. When a later discovery finds others, the next connection registers again, and exchanging a code or renewing a token with the old client fails. |
-| Configured in the deployment for the integration | Its configured `issuer`. A deployment client without an `issuer`, or with another one, is not used for a discovered server, and the integration does not link. |
+| Registered at `registration_endpoint` | Spotlight stores the three with the registration. When a later discovery finds others, the next connection registers again, and exchanging a code or refreshing a token with the old client fails. |
+| Configured in the deployment for the integration | Its configured `issuer`. A deployment client without an `issuer`, or with another one, is not used for a discovered server, and the integration does not connect. |
 
 ## Webhook
 
@@ -294,9 +295,9 @@ with: its issuer, authorization endpoint and token endpoint.
 | `shape` | object | none | The shape of `body`, for type-checking. |
 | `verify` | object | required | How a delivery is verified. Exactly one of `hmac`, `token`, `asymmetric` or `jwt`. See [verify](#verify). |
 | `respond` | object | none | A handshake response. `when` (an expression that returns bool) and `body` (an expression). When `when` is true, Spotlight returns `200` with `body` and does not read the delivery further. |
-| `mine` | string | none | An expression that returns bool. When it is true, the delivery is the host echoing Spotlight's own post, and its happenings are dropped. |
+| `ignoreWhen` | string | none | An expression that returns bool. When it is true, the delivery is the service echoing Spotlight's own post, and its happenings are dropped. |
 | `route` | object | none | `by` (expression). Type-checked. Deliveries go to the integration's team whatever it returns. |
-| `parse` | string | `json` | `json` or `form`. Kept in the definition. Not used when a delivery is read. |
+| `parse` | string | `json` | `json` or `form`. Stored in the definition. Not used when a delivery is read. |
 | `delivery` | string | none | An expression. The delivery's id. A delivery with an id already taken is not processed again. Without it, the SHA-256 of the raw body. |
 | `events` | array of objects | required | At least one. See [events](#events). |
 
@@ -325,7 +326,7 @@ all, from 2 seconds apart doubling to 1 hour.
 | --- | --- | --- | --- |
 | `algorithm` | string | `sha256` | `sha256`, `sha1` or `sha512`. The HMAC digest. |
 | `secret` | string | required | The signing secret. A secret reference, `secret.<NAME>`. |
-| `signed` | string | none | An expression. The text that was signed. Sees `body`, `headers` and `raw`. Without it, the raw body. |
+| `signed` | string | none | An expression. The text that was signed. Can read `body`, `headers` and `raw`. Without it, the raw body. |
 | `encoding` | string | `hex` | `hex` or `base64`. How the signature is written. |
 | `prefix` | string | `""` | Text written before the signature, as in `v0=`. |
 | `header` | string | none | The header that carries the signature. A delivery without it is rejected, and without `header` no delivery verifies. |
@@ -384,13 +385,13 @@ its `when` is true.
 | --- | --- | --- | --- |
 | `happening` | string | required | The happening's name. Begins with the integration's name. |
 | `label` | string | none | What a person picking a happening reads. Without it, the happening's name. |
-| `told` | string | none | How the happening reads in a note on the task. Without it, the happening's name. |
-| `spoken` | boolean | `false` | Whether the happening carries words to the task. |
-| `say` | string | none | An expression. The words carried. |
+| `summary` | string | none | How the happening reads in a note on the task. Without it, the happening's name. |
+| `answers` | boolean | `false` | Whether the happening carries a message to the task. |
+| `message` | string | none | An expression. The message carried. |
 | `opens` | object | none | Opens a task when no task is found. See below. |
 | `branch` | string | none | An expression. A branch name that finds a task. |
 | `marks` | array of objects | `[]` | Marks that find a task, or are kept on the task this opens. |
-| `attaches` | object | none | Files attached to the task. See below. |
+| `attachments` | object | none | Files attached to the task. See below. |
 
 A raise must name a `branch` or at least one mark with `find: true`; otherwise
 it is rejected with `needs a branch or a mark. Without one, no task can be found from it`.
@@ -400,7 +401,7 @@ Mark:
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `kind` | string | required | The mark kind, source first. |
+| `kind` | string | required | The mark kind, integration name first. |
 | `value` | string | required | An expression. The mark's value. A mark whose value is empty is not kept. |
 | `find` | boolean | `true` | `true`: the mark finds the task the happening is about. `false`: the task this opens keeps it, and it never finds a task. |
 
@@ -408,16 +409,16 @@ Mark:
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `onto` | string | required | The role of the line to open on, in lowercase words joined by dashes. |
-| `at` | string | none | The key of the station to open at. Without it, or with a key the line does not have, the line's first `work` station. |
+| `lineRole` | string | required | The role of the line to open on, in lowercase words joined by dashes. |
+| `station` | string | none | The key of the station to open at. Without it, or with a key the line does not have, the line's first `work` station. |
 | `title` | string | required | An expression. The task's title. No task opens when it is empty. |
 | `description` | string | none | An expression. The task's description. |
 | `assignBy.email` | string | none | An expression. The email of the person to assign. |
 
-A task opens only on a line of the team whose role is `onto`, and only when
+A task opens only on a line of the team whose role is `lineRole`, and only when
 the raise carries at least one mark.
 
-`attaches`:
+`attachments`:
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -433,8 +434,8 @@ the raise carries at least one mark.
 | --- | --- | --- | --- |
 | `shape` | object | none | The shape of `body`, for type-checking. |
 | `every` | string | required | Whole seconds between polls, written as `60s`. |
-| `request` | object | required | The request made each time. Sees `cursor` and `connection`. |
-| `cursor` | string | none | An expression. The next cursor, read from the response. Sees `body` and `cursor`. |
+| `request` | object | required | The request made each time. Can read `cursor` and `connection`. |
+| `cursor` | string | none | An expression. The next cursor, read from the response. Can read `body` and `cursor`. |
 | `events` | array of objects | required | At least one. Read against the response, which expressions see as `body`. |
 
 A poll whose request fails raises nothing.
@@ -444,7 +445,7 @@ A poll whose request fails raises nothing.
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `cron` | string | required | A cron expression: five fields, or six with seconds first. |
-| `do` | string | required | The action to run. It must be defined in `actions`. |
+| `action` | string | required | The action to run. It must be defined in `actions`. |
 
 ## Actions
 
@@ -454,7 +455,7 @@ lowercase words joined by dashes, at most 64 characters.
 ### Requests
 
 A request appears in `actions`, `poll.request`, `lookup.request` and
-`attaches.fetch`.
+`attachments.fetch`.
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -468,7 +469,7 @@ A request appears in `actions`, `poll.request`, `lookup.request` and
 | `expect.success` | string | none | An expression that returns bool. When set, decides whether the request succeeded. |
 | `expect.status` | array of integers | none | Statuses that count as success, when `expect.success` is not set. |
 | `capture` | map of name to string | none | Values read from the response. Each value is an expression. |
-| `retry` | object | none | `times` (integer, default `0`) and `backoff` (string). Kept in the definition; a request is sent once. |
+| `retry` | object | none | `times` (integer, default `0`) and `backoff` (string). Stored in the definition; a request is sent once. |
 
 Without `expect`, a request succeeds on any `2xx` status. An expression in
 `url`, `query`, `headers` or `body` that fails to evaluate fails the request
@@ -478,13 +479,13 @@ before it is sent.
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `oauth2.connection` | boolean | `true` | Must be `true`. Sends the connection's OAuth access token as `Authorization: Bearer`: the team's, or for a tool of a `requester` integration, that of the person who started the task. See [Holder](#holder). |
+| `oauth2.connection` | boolean | `true` | Must be `true`. Sends the connection's OAuth access token as `Authorization: Bearer`: the team's, or for a tool of a `requester` integration, that of the person who started the task. See [Acts as](#acts-as). |
 | `secrets` | array of strings | none | Secret references, `secret.<NAME>`, at least one when set. Each secret is injected into its bound header or query parameter on requests to the hosts it is bound to. A request to any other host goes without it, and so does a redirect to another host. |
 
 `auth` accepts no other way, and is rejected with `authenticates a request by its oauth2 connection, or by the secrets that Spotlight injects for the hosts they are bound to`. See [Bindings](/docs/reference/terraform/secret#bindings).
 
 Every request goes only to hosts on the deployment's outbound allow-list,
-[`OUTBOUND_ALLOWED_HOSTS`](/docs/reference/self-hosted-settings#calls-out-of-spotlight). A
+[`SPOTLIGHT_OUTBOUND_ALLOWED_HOSTS`](/docs/reference/self-hosted-settings#calls-out-of-spotlight). A
 request to another host is blocked with `Outbound call to <host> blocked. Host is not on the allowed list.`
 A request is also blocked with `Outbound call to <url> blocked. URL is not valid.`,
 `Outbound call to <host> blocked. redirected more than 5 times`, or
@@ -494,11 +495,11 @@ A request is also blocked with `Outbound call to <url> blocked. URL is not valid
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `does` | string | required | The action the tool runs. It must be defined in `actions`. |
+| `action` | string | required | The action the tool runs. It must be defined in `actions`. |
 | `description` | string | required | When an agent should use the tool. May not be empty. |
 | `approval.because` | string | none | When set, each use first asks a person, who is shown this text. May not be empty. The tool may not then have an input named `intent`. |
 | `inputs` | map of name to object | `{}` | The tool's inputs. |
-| `output` | string | none | An expression. What the tool returns. Sees `response`, `status`, `capture` and `inputs`. Without it, the `capture` map. |
+| `output` | string | none | An expression. What the tool returns. Can read `response`, `status`, `capture` and `inputs`. Without it, the `capture` map. |
 
 Input:
 
@@ -508,10 +509,10 @@ Input:
 | `schema` | object | none | A JSON Schema for the input, in place of `type`, for a list, an object or a constrained value. An input with both `type` and `schema` is rejected with `takes a type, or a JSON Schema as its schema, but not both`. Expressions see a `string` schema as `string`, a `boolean` one as `bool`, and any other as `dyn`. See [Input schemas](#input-schemas). |
 | `description` | string | none | Shown to the agent. |
 | `required` | boolean | `false` | Whether the agent must give it. |
-| `default` | string | none | The value when none is given. Sees `task`. May contain expressions. |
-| `piped` | boolean | `false` | The input may be piped to the tool command. At most one input per tool, and it must take text. |
+| `default` | string | none | The value when none is given. Can read `task`. May contain expressions. |
+| `stdin` | boolean | `false` | The input may come from the standard input of the tool command. At most one input per tool, and it must take text. |
 
-An input may not be named `json`: Spotlight keeps that name for handing a tool
+An input may not be named `json`: Spotlight reserves that name for handing a tool
 every input at once, and rejects the tool with
 `tool <integration>.<tool> cannot take reserved input json. That input hands a tool every input at once`.
 
@@ -523,16 +524,17 @@ characters. See [Approvals](/docs/reference/app/tasks-runs-and-the-inbox#approva
 and [Require approval before a tool runs](/docs/integrations/require-approval-before-a-tool-runs).
 
 For an integration with `connection.oauth2`, the answer to a tool call carries
-`actingAs` beside `output`: whose connection the call used, as `holder`
-(`team` or `person`), `personId` (for a person) and `handle`, the account the
-host named. `spotlight <tool>` prints only the output. See [Holder](#holder).
+`actingAs` beside `output`: whose connection the call used, as `actsAs`
+(`team` or `requester`), `personId` (for a requester) and `linkedAccount`, the
+account name on the service. `spotlight <tool>` prints only the output. See
+[Acts as](#acts-as).
 
-A tool that a station gives or a hook matches or calls cannot be withdrawn
+A tool that a station enables or a hook matches or calls cannot be removed
 from the definition; the update fails with `409`.
 
 ### Input schemas
 
-Before a call reaches the host, Spotlight checks each input against its schema.
+Before a call reaches the service, Spotlight checks each input against its schema.
 These keywords are kept: `type` (one or a list of `string`, `number`,
 `integer`, `boolean`, `object`, `array`, `null`), `enum`, `const`,
 `properties`, `required`, `additionalProperties` (as a boolean), `items`,
@@ -561,13 +563,13 @@ A person who changes a call's inputs while approving it is checked against the
 same schemas. See
 [Changed inputs](/docs/reference/app/tasks-runs-and-the-inbox#changed-inputs).
 
-## API descriptions
+## API specs
 
-`openapi` and `graphql` name an API description: a document that lists an
+`openapi` and `graphql` name an API spec: a document that lists an
 API's operations and what each takes. Spotlight reads it and offers one tool
 for each operation, beside the tools in `tools`. A definition has at most one
 of the two. See
-[Generate tools from an API description](/docs/integrations/generate-tools-from-an-api-description).
+[Generate tools from an API spec](/docs/integrations/generate-tools-from-an-api-spec).
 
 ```hcl
 openapi = {
@@ -587,11 +589,11 @@ openapi = {
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `url` | string | none | Where the description is read from, as JSON or YAML. Exactly one of `url` or `document`. |
-| `document` | object | none | The description written out in full. |
-| `baseUrl` | string | none | Where every generated call is sent. Without it, each operation's first server, else its path's, else the description's, with variables at their defaults and read relative to `url`; with no server at all, the root of `url`. |
-| `revision` | string | none | Any text. A change makes Spotlight read the description again. |
-| `auth` | object | none | As a request's [`auth`](#requests). Sent with every generated call, and with the fetch of the description when it is on the host of `baseUrl`. |
+| `url` | string | none | Where the spec is read from, as JSON or YAML. Exactly one of `url` or `document`. |
+| `document` | object | none | The spec written out in full. |
+| `baseUrl` | string | none | Where every generated call is sent. Without it, each operation's first server, else its path's, else the spec's, with variables at their defaults and read relative to `url`; with no server at all, the root of `url`. |
+| `revision` | string | none | Any text. A change makes Spotlight read the spec again. |
+| `auth` | object | none | As a request's [`auth`](#requests). Sent with every generated call, and with the fetch of the spec when it is on the host of `baseUrl`. |
 | `tools` | object | `{}` | Which tools are generated, and which ask first. See [Choosing tools](#choosing-tools). |
 
 Spotlight reads OpenAPI 3.0 and 3.1. An `openapi` with both or neither of
@@ -602,11 +604,11 @@ Spotlight reads OpenAPI 3.0 and 3.1. An `openapi` with both or neither of
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `url` | string | required | The endpoint. Generated calls are sent to it as `POST`. Without `document`, Spotlight reads the schema by asking the endpoint for it (introspection). |
-| `document` | string | none | The schema in GraphQL's schema language, read in place of asking the endpoint. |
+| `url` | string | required | The endpoint. Generated calls are sent to it as `POST`. Without `document`, Spotlight reads the schema by requesting it from the endpoint (introspection). |
+| `document` | string | none | The schema in GraphQL's schema language, read in place of a request to the endpoint. |
 | `depth` | integer | `2` | 1 to 5. How many levels of fields a generated call selects in its answer. |
 | `revision` | string | none | Any text. A change makes Spotlight read the schema again. |
-| `auth` | object | none | As a request's [`auth`](#requests). Sent when Spotlight asks for the schema, and with every generated call. |
+| `auth` | object | none | As a request's [`auth`](#requests). Sent when Spotlight requests the schema, and with every generated call. |
 | `tools` | object | `{}` | See [Choosing tools](#choosing-tools). |
 
 A generated call selects, at each level, every field that takes no required
@@ -628,11 +630,11 @@ matches any run of characters. Anything else is rejected with
 
 A tool in `tools` with the same name as a generated one is offered in its
 place. A key of `approval` that names no generated tool gives a warning:
-`names <key>, but no operation of its <OpenAPI description, GraphQL schema or MCP server> has that name`.
+`names <key>, but no operation of its <OpenAPI spec, GraphQL schema or MCP server> has that name`.
 
 At most 1,000 tools are generated, counted after `include`, `exclude` and the
 tools in `tools`. More is rejected at `<openapi, graphql or mcp>.tools` with
-`offers <n> tools from its <OpenAPI description, GraphQL schema or MCP server>. A station can choose between at most 1000 tools. Please name the tools to offer in <openapi, graphql or mcp>.tools.include`.
+`offers <n> tools from its <OpenAPI spec, GraphQL schema or MCP server>. A station can choose between at most 1000 tools. Please name the tools to offer in <openapi, graphql or mcp>.tools.include`.
 
 ### Generated tools
 
@@ -649,7 +651,7 @@ tool:
 
 OpenAPI schemas are followed 8 levels deep, and each operation's input schemas
 are cut short after 4,000 schema nodes; deeper parts read as any value. Only
-`$ref`s inside the description are followed; any other reads as any value.
+`$ref`s inside the spec are followed; any other reads as any value.
 Spotlight sends the `accept`, `content-type` and `authorization` headers
 itself, so header parameters by those names are not inputs. An optional
 parameter or body a tool cannot send is left out.
@@ -659,7 +661,7 @@ deployment's outbound allow-list and never from `https` to `http`, and
 credentials are not sent to a host other than the request's own.
 
 An operation that gets no tool gives a warning at `openapi` or `graphql`, as
-`passes over <operation>. <reason>`:
+`skips <operation>. <reason>`:
 
 | Reason | Cause |
 | --- | --- |
@@ -672,12 +674,12 @@ An operation that gets no tool gives a warning at `openapi` or `graphql`, as
 | `It sends a body that is not JSON. A tool cannot send such a body yet` | A required request body with no JSON media type. |
 | `It takes <name>, which a tool cannot take` | A GraphQL argument whose name a tool input cannot have. |
 | `It takes "<name>", which a tool cannot take` | An input named `json`, or not letters, digits, `_` and `-`. |
-| `It calls <host>. Spotlight injects the token of the connection only for the host of the description or the host that baseUrl names` | With `auth.oauth2` and no `baseUrl`, the operation's server is on another host than the description. |
-| `It needs approval and takes intent, an input that Spotlight keeps for the agent to say what it wants to do. To offer it, switch its approval off in <openapi or graphql>.tools.approval` | The operation asks a person first and has an input named `intent`. With its `tools.approval` set to `false` it is offered. |
+| `It calls <host>. Spotlight injects the token of the connection only for the host of the spec or the host that baseUrl names` | With `auth.oauth2` and no `baseUrl`, the operation's server is on another host than the spec. |
+| `It needs approval and takes intent, an input that Spotlight reserves for the agent to say what it wants to do. To offer it, switch its approval off in <openapi or graphql>.tools.approval` | The operation asks a person first and has an input named `intent`. With its `tools.approval` set to `false` it is offered. |
 
-### Reading the description
+### Reading the spec
 
-Spotlight reads the description when the integration is created, and keeps
+Spotlight reads the spec when the integration is created, and keeps
 what it read. It reads it again only:
 
 - when an update changes `url`, `document`, `baseUrl`, `revision`, `depth`, or
@@ -687,17 +689,17 @@ what it read. It reads it again only:
 
 A tool call never reads it.
 
-The description is fetched with `GET`, and a GraphQL schema with an
+The spec is fetched with `GET`, and a GraphQL schema with an
 introspection `POST`. Spotlight sends `auth` with the fetch only to the API's
 own host: the host of `baseUrl` for `openapi`, and of `url` for `graphql`.
-Without `baseUrl`, an OpenAPI description is fetched without `auth`. With
+Without `baseUrl`, an OpenAPI spec is fetched without `auth`. With
 `auth.oauth2`, the fetch carries the team's connection, even for a `requester`
 integration. The
 fetch and every redirect go only to hosts on the deployment's outbound
-allow-list. See [Limits and timeouts](/docs/reference/limits-and-timeouts#api-descriptions)
+allow-list. See [Limits and timeouts](/docs/reference/limits-and-timeouts#api-specs)
 for the size and time Spotlight allows.
 
-A description that cannot be read does not make the definition fail.
+A spec that cannot be read does not make the definition fail.
 `spec.problem` says why, and the same reason is a warning at
 `<openapi or graphql>.url`, or at `.document` when that is given. The tools of
 the last read that succeeded stay offered; before any such read, none are.
@@ -710,16 +712,16 @@ Problems include:
 | `could not be read: Outbound call to <host> blocked. Host is not on the allowed list.` | The fetch, or a redirect, went to a host not on the allow-list. |
 | `could not be read: Outbound call to <host> blocked. redirected more than 5 times` | Too many redirects. |
 | `could not be read: Outbound call to <host> blocked. is where an https request was redirected to over plain http, which Spotlight does not follow` | A redirect from `https` to `http`. |
-| `is larger than the 64 MB Spotlight reads` | The description is too large. |
+| `is larger than the 64 MB Spotlight reads` | The spec is too large. |
 | `took longer than 30 seconds to read` | The fetch was too slow. |
-| `took longer than 30 seconds to make sense of` | Reading the operations was too slow. At most 2 descriptions are read at once on each control plane server; one that waits for its turn waits within the same 30 seconds. |
-| `is not JSON or YAML Spotlight can read: <error>` | An OpenAPI description does not parse: as JSON when it starts with `{` after any leading whitespace, else as YAML with at most 100 aliases. |
-| `is not an OpenAPI description` | An OpenAPI description parses to something other than an object. |
-| `could not be made sense of: <error>` | Reading the operations of an OpenAPI description or a GraphQL schema failed with an unexpected error, or needed more than the 1,024 MB of memory it is given. |
-| `is a Swagger 2 description. Spotlight reads only OpenAPI 3. Please convert it to OpenAPI 3` | `swagger: "2.0"`. |
-| `is not an OpenAPI 3 description. An OpenAPI 3 description says openapi: 3.0 or 3.1` | No `openapi: 3.x`. |
-| `names no server to call. Please give the openapi block a baseUrl` | No `baseUrl`, no server, and no `url`. |
-| `names the server "<server>", which is not a web address. Please give the openapi block a baseUrl` | No `baseUrl`, and the description's server cannot be made a web address. |
+| `took longer than 30 seconds to make sense of` | Reading the operations was too slow. At most 2 specs are read at once on each control plane server; one that waits for its turn waits within the same 30 seconds. |
+| `is not JSON or YAML Spotlight can read: <error>` | An OpenAPI spec does not parse: as JSON when it starts with `{` after any leading whitespace, else as YAML with at most 100 aliases. |
+| `is not an OpenAPI spec` | An OpenAPI spec parses to something other than an object. |
+| `could not be made sense of: <error>` | Reading the operations of an OpenAPI spec or a GraphQL schema failed with an unexpected error, or needed more than the 1,024 MB of memory it is given. |
+| `is a Swagger 2 spec. Spotlight reads only OpenAPI 3. Please convert it to OpenAPI 3` | `swagger: "2.0"`. |
+| `is not an OpenAPI 3 spec. An OpenAPI 3 spec says openapi: 3.0 or 3.1` | No `openapi: 3.x`. |
+| `names no server to call. Please add a baseUrl to the openapi block` | No `baseUrl`, no server, and no `url`. |
+| `names the server "<server>", which is not a web address. Please add a baseUrl to the openapi block` | No `baseUrl`, and the spec's server cannot be made a web address. |
 | `is not a GraphQL schema Spotlight can read: <error>` | The answer or `document` is not a GraphQL schema. |
 
 ### Spec
@@ -728,7 +730,7 @@ Problems include:
 | --- | --- | --- | --- |
 | `kind` | `kind` | string | `openapi`, `graphql` or `mcp`. |
 | `hash` | `hash` | string or null | The SHA-256 of the last read that succeeded. `null` when none has. |
-| `readAt` | `read_at` | string | When the description was last read, in RFC 3339. |
+| `readAt` | `read_at` | string | When the spec was last read, in RFC 3339. |
 | `problem` | `problem` | string or null | Why the latest read failed. `null` when it succeeded. |
 | `tools` | `tools` | integer | How many of the integration's tools were generated from it. |
 
@@ -775,7 +777,7 @@ mcp = {
 | Output | The result's `structuredContent`. Without it, a single text content, read as JSON when it is JSON and as text when not. Otherwise the whole `content` array. |
 
 A tool the server lists that gets no tool gives a warning at `mcp`, as for an
-API description: `passes over <tool>. <reason>`, where the reason is
+API spec: `skips <tool>. <reason>`, where the reason is
 `It has no name that a tool can take`, `It takes <name>, which a tool cannot take`,
 `Another operation is also called <name>`, or a reason its input
 schema cannot be read for. The server's resources and prompts are not offered.
@@ -787,19 +789,19 @@ Spotlight lists the tools when the integration is created, and again:
 - when an update changes `url`, or whether `auth` is `oauth2`;
 - on any update after a listing that failed;
 - when the team's connection to the integration is made over OAuth;
-- when the last listing is older than the deployment's `MCP_RELIST_SECONDS`,
-  600 by default, checked every minute. One control plane server claims each
-  such listing, moving `spec.read_at` on as it does, and the integration's
-  `version` does not change.
+- when the last listing is older than the deployment's
+  `SPOTLIGHT_MCP_RELIST_SECONDS`, 600 by default, checked every minute. One
+  control plane server claims each such listing, moving `spec.read_at` on as it
+  does, and the integration's `version` does not change.
 
 The listing carries the team's connection when `auth` is `oauth2`, even for a
-`requester` integration. A listing answered `401` renews the connection once
-and lists again with the new token, as in [Renewal](#renewal). A listing that fails keeps the tools of the last one that
-succeeded, as for a description; see [Reading the description](#reading-the-description).
+`requester` integration. A listing answered `401` refreshes the connection once
+and lists again with the new token, as in [Refresh](#refresh). A listing that fails keeps the tools of the last one that
+succeeded, as for a spec; see [Reading the spec](#reading-the-spec).
 A listing that succeeds without a tool the integration offered stops offering
 it, and the workspace's
 [configuration changes](/docs/reference/api/resource-api#configuration-changes)
-record the change, with each tool no longer offered in `details.stranded`.
+record the change, with each tool no longer offered in `details.orphanedTools`.
 
 Problems a failed listing gives in `spec.problem` include:
 
@@ -816,15 +818,15 @@ Problems a failed listing gives in `spec.problem` include:
 ### Calling a tool
 
 Spotlight keeps MCP sessions for each server, team, integration, kind of
-`auth`, connection holder and access token, and never shares one between
-holders. A session carries one call at a time; calls made at once each get a
+`auth`, connection owner and access token, and never shares one between
+owners. A session carries one call at a time; calls made at once each get a
 session of their own. A session unused for 5 minutes is ended at the server
-and closed. When the server answers `404` because it has forgotten the
+and closed. When the server answers `404` because it no longer has the
 session, Spotlight starts a new one and calls once more. Spotlight opens no
 stream for the server to send on outside a call: the `GET` stream of the
 streamable HTTP transport is not opened. A call
-answered `401` with `auth.oauth2` is renewed and retried once, as in
-[Renewal](#renewal).
+answered `401` with `auth.oauth2` is refreshed and retried once, as in
+[Refresh](#refresh).
 
 Spotlight declares no client capabilities and answers no request from the
 server other than `ping`. A server that asks a question in the middle of a
@@ -849,10 +851,10 @@ Binding:
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `do` | string | required | The action to run. It must be defined in `actions`. |
-| `to` | map of name to string | `{}` | Values the action sees in `target`. Sees `task` and `ask`. Each value is an expression. |
+| `action` | string | required | The action to run. It must be defined in `actions`. |
+| `to` | map of name to string | `{}` | Values the action reads in `target`. Can read `task` and `ask`. Each value is an expression. |
 | `routes` | map of name to string | `{}` | Keyed by line key. When `to` gives no `channel`, the value for the task's line is used as `target.channel`. |
-| `mark` | array of objects | `[]` | Marks kept on the task after the action succeeds. Sees `response` and `capture`. `find` is not read here. |
+| `mark` | array of objects | `[]` | Marks kept on the task after the action succeeds. Can read `response` and `capture`. `find` is not read here. |
 
 A binding runs only when `target` contains a `channel` or a `thread`. Otherwise
 nothing is sent.
@@ -864,7 +866,7 @@ No expression may read a secret. An expression containing `secret.` or
 
 Secret references are not checked against the workspace's secrets when the
 definition is written. A request that uses a missing secret fails with
-`Secret <NAME> not found. Please define it first.`
+`Secret <NAME> not found. Please create it first.`
 
 ## Errors and warnings
 

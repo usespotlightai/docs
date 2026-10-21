@@ -43,19 +43,19 @@ headers and errors every kind shares.
 | --- | --- | --- |
 | propose (create) | `POST /api/resources/lines/{lineId}/stations/{stationKey}/replay-candidates` | Needs `Idempotency-Key`. Returns `201`. |
 | read | `GET /api/resources/replay-candidates/{id}` | |
-| withdraw (delete) | `DELETE /api/resources/replay-candidates/{id}` | Needs `If-Match`. Replays that ran the candidate keep their results. |
+| delete | `DELETE /api/resources/replay-candidates/{id}` | Needs `If-Match`. Replays that ran the candidate keep their results. |
 | import | `GET /api/resources/workspaces/{workspaceId}/replay-candidates/import?address=<address>` | |
 | list | `GET /api/resources/workspaces/{workspaceId}/replay-candidates` | The proposed candidates of every team the caller may read. With `?station=<team key>/<line key>/<station key>`, only that station's. |
 
 There is no update. A candidate never changes; a changed config is a new
 candidate.
 
-Proposing and withdrawing need `plan`; reading, importing and listing need
+Proposing and deleting need `plan`; reading, importing and listing need
 `read`. Either way, the caller must be able to read the station's team: a
 person on the team or an owner or admin of the workspace, or a workspace token
 of the workspace. See
 [Team outcomes](/docs/reference/roles-and-permissions#team-outcomes). Each
-proposal and withdrawal is recorded as a
+proposal and each delete is recorded as a
 [configuration change](/docs/reference/api/resource-api#configuration-changes)
 of the kind `replay-candidate`.
 
@@ -68,7 +68,7 @@ of the kind `replay-candidate`.
 | `teamId` | string | read-only | The station's team. |
 | `lineId` | string | read-only | The station's line. |
 | `stationId` | string | read-only | The station, as the [Replays API](/docs/reference/api/replays) names it. |
-| `stationAddress` | string | read-only | The station as `<team key>/<line key>/<station key>`. |
+| `stationPath` | string | read-only | The station as `<team key>/<line key>/<station key>`. |
 | `kind` | string | read-only | `proposed`. `live` marks a snapshot of the station's config Spotlight takes to replay as a baseline; the list and import never return one. Candidates a [search](/docs/reference/api/searches) proposes, planned changes a [replay check](/docs/reference/api/replay-checks) replays, and the configs [replays with the answer](/docs/reference/app/replays#replay-with-the-answer) replay are not this resource: reading them is answered `404`. |
 | `fingerprint` | string | read-only | The [config fingerprint](/docs/reference/glossary#config-fingerprint) a replay under the candidate runs with. |
 | `changedFrom` | object | read-only | `fingerprint`: the station's live config fingerprint when the candidate was proposed. `changes`: what the candidate changes from it, each `{ part, name, kind, was, now }`, worded as in [Config](/docs/reference/app/tasks-runs-and-the-inbox#config). Fixed at proposal. |
@@ -104,6 +104,6 @@ path `station.<field>`, as in `station.judge.rubric`.
 | --- | --- | --- |
 | `404` | `not-found` | No such line, station or candidate the caller may see. |
 | `409` | `already-exists` | The station already has a candidate by that name. Import it instead. |
-| `409` | `in-use` | Withdrawing a candidate while a replay of it is under way: `Candidate <id> is being replayed. Please stop its replays first.` Withdrawing a live snapshot: `Candidate <id> is the baseline of the live config. Deleting its replay set removes it.` Withdrawing a candidate a search or a replay check made: `Candidate <id> belongs to a search or a check. Spotlight removes it together with that search or check.` |
+| `409` | `in-use` | Deleting a candidate while a replay of it is in progress: `Candidate <id> is being replayed. Please stop its replays first.` Deleting a live snapshot: `Candidate <id> is the baseline of the live config. Deleting its replay set removes it.` Deleting a candidate a search or a replay check made: `Candidate <id> belongs to a search or a check. Spotlight removes it together with that search or check.` |
 | `409` | `version-conflict` | `If-Match` names a version that is no longer current. |
-| `422` | `invalid` | A field is wrong. An import `address` not in its form: `Candidate address must be team, line and station keys, then name, as in core/delivery/build/Shorter prompt.` A list `station` not in its form: `Station address must be team, line and station keys, as in core/delivery/build. Received: <value>`. |
+| `422` | `invalid` | A field is wrong. An import `address` not in its form: `Candidate address must be team, line and station keys, then name, as in core/delivery/build/Shorter prompt.` A list `station` not in its form: `Station path must be team, line and station keys, as in core/delivery/build. Received: <value>`. |

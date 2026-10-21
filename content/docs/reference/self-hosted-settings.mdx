@@ -19,8 +19,8 @@ Invalid environment variables:
   <variable>: <problem>
 ```
 
-Neither `SPOTLIGHT_SECRETS_KEY` nor `SECRETS_KMS_KEY_ID` set gives
-`SPOTLIGHT_SECRETS_KEY: wraps each workspace data key when SECRETS_KMS_KEY_ID names no AWS KMS key; generate one with: openssl rand -base64 32`.
+Neither `SPOTLIGHT_SECRETS_KEY` nor `SPOTLIGHT_SECRETS_KMS_KEY_ID` set gives
+`SPOTLIGHT_SECRETS_KEY: wraps each workspace data key when SPOTLIGHT_SECRETS_KMS_KEY_ID names no AWS KMS key; generate one with: openssl rand -base64 32`.
 
 ## Service
 
@@ -49,15 +49,15 @@ Neither `SPOTLIGHT_SECRETS_KEY` nor `SECRETS_KMS_KEY_ID` set gives
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `SPOTLIGHT_SECRETS_KEY` | none | 32 bytes, base64 encoded, as made by `openssl rand -base64 32`. Wraps each workspace's data key, which seals [secrets](/docs/reference/terraform/secret) and the other credentials Spotlight keeps, such as integration connection tokens. Required unless `SECRETS_KMS_KEY_ID` is set. |
-| `SECRETS_KMS_KEY_ID` | none | An AWS KMS key that wraps workspace data keys. When set, used in place of `SPOTLIGHT_SECRETS_KEY`. |
+| `SPOTLIGHT_SECRETS_KEY` | none | 32 bytes, base64 encoded, as made by `openssl rand -base64 32`. Wraps each workspace's data key, which encrypts [secrets](/docs/reference/terraform/secret) and the other credentials Spotlight keeps, such as integration connection tokens. Required unless `SPOTLIGHT_SECRETS_KMS_KEY_ID` is set. |
+| `SPOTLIGHT_SECRETS_KMS_KEY_ID` | none | An AWS KMS key that wraps workspace data keys. When set, used in place of `SPOTLIGHT_SECRETS_KEY`. |
 | `SECRETS_AWS_SECRETS_MANAGER` | `false` | `true` lets Spotlight read a secret whose source is AWS Secrets Manager when it is used. |
 
 AWS KMS and AWS Secrets Manager are reached with the default AWS credential
 chain and region.
 
 <Callout type="warn">
-Never lose `SPOTLIGHT_SECRETS_KEY`. Without it, no sealed value can be opened:
+Never lose `SPOTLIGHT_SECRETS_KEY`. Without it, no encrypted value can be decrypted:
 every secret has to be set again and every integration connected again.
 </Callout>
 
@@ -65,11 +65,11 @@ every secret has to be set again and every integration connected again.
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `OUTBOUND_ALLOWED_HOSTS` | empty | Comma-separated hosts Spotlight may call for integrations and their tools, OAuth token exchanges, hooks it sends itself, and push pools' provision calls. An entry admits the host and its subdomains, compared without regard to case. Empty allows none. |
+| `SPOTLIGHT_OUTBOUND_ALLOWED_HOSTS` | empty | Comma-separated hosts Spotlight may call for integrations and their tools, OAuth token exchanges, hooks it sends itself, and push pools' provision calls. An entry allows the host and its subdomains, compared without regard to case. Empty allows none. |
 | `OAUTH_CLIENTS` | `{}` | The deployment's OAuth clients, as JSON mapping an integration's name to `{ "id", "secret" }`, with `issuer`, the authorization server, for an MCP server it discovers. Example: `{"slack":{"id":"...","secret":"..."}}`. |
 | `HOOK_SIGNING_KEY` | none | A P-256 private key, in PEM, that signs [hook OIDC tokens](/docs/reference/terraform/hook#oidc) with ES256. `\n` in the value is read as a line break. Without it, a hook with `oidc` is rejected. |
-| `MCP_RELIST_SECONDS` | `600` | How often the tools of an integration's MCP server are listed again. |
-| `SPOTLIGHT_CATALOG_URL` | `https://catalog.usespotlight.ai` | Where [catalog](/docs/reference/glossary#catalog) tools are called. Always reached, whatever `OUTBOUND_ALLOWED_HOSTS` says. |
+| `SPOTLIGHT_MCP_RELIST_SECONDS` | `600` | How often the tools of an integration's MCP server are listed again. |
+| `SPOTLIGHT_CATALOG_URL` | `https://catalog.usespotlight.ai` | Where [catalog](/docs/reference/glossary#catalog) tools are called. Always reached, whatever `SPOTLIGHT_OUTBOUND_ALLOWED_HOSTS` says. |
 | `SPOTLIGHT_CATALOG_TOKEN` | none | The token sent with each catalog call. |
 
 Register each OAuth client with the callback
@@ -78,7 +78,7 @@ Register each OAuth client with the callback
 
 `OAUTH_CLIENTS` that is not JSON, or not of this shape, stops Spotlight at
 start with `OAUTH_CLIENTS is not JSON: <error>` or
-`OAUTH_CLIENTS must map a source to { id, secret }, ...`.
+`OAUTH_CLIENTS must map an integration name to { id, secret }, ...`.
 
 ## Platform egress
 
@@ -88,19 +88,19 @@ start with `OAUTH_CLIENTS is not JSON: <error>` or
 | `SPOTLIGHT_PLATFORM_EGRESS_TOKEN` | none | The token that egress calls Spotlight with: 32 to 255 of `A-Z a-z 0-9 . _ ~ -`. Give the same value to the egress as `SPOTLIGHT_EGRESS_TOKEN`. |
 
 Give both or neither. One without the other gives
-`SPOTLIGHT_PLATFORM_EGRESS_TOKEN: goes with SPOTLIGHT_PLATFORM_EGRESS_URL. Give both to name the platform egress, or neither; generate a token with: openssl rand -hex 32`.
+`SPOTLIGHT_PLATFORM_EGRESS_TOKEN: goes with SPOTLIGHT_PLATFORM_EGRESS_URL. Set both to name the platform egress, or neither; generate a token with: openssl rand -hex 32`.
 With `NODE_ENV` `production`, a runner is not provisioned for an egress whose
 URL is not `https`.
 
-## Drafting
+## Models
 
 Change stacks, decisions, memories and judges use models through OpenRouter.
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `OPENROUTER_API_KEY` | none | Without it, no decision or memory is drafted, no run is judged, and a change stack fails with `Change stacks are not set up on this deployment.`. |
-| `CHANGE_STACK_MODEL` | `google/gemini-3.8-flash` | Drafts [change stacks](/docs/reference/app/change-stacks-and-decisions). |
-| `DECISIONS_MODEL` | `google/gemini-3.8-flash` | Drafts [decisions](/docs/reference/app/change-stacks-and-decisions#decisions). |
+| `OPENROUTER_API_KEY` | none | Without it, no decision is generated, no memory is drafted, no run is judged, and a change stack fails with `Change stacks are not set up on this deployment.`. |
+| `CHANGE_STACK_MODEL` | `google/gemini-3.8-flash` | Generates [change stacks](/docs/reference/app/change-stacks-and-decisions). |
+| `DECISIONS_MODEL` | `google/gemini-3.8-flash` | Generates [decisions](/docs/reference/app/change-stacks-and-decisions#decisions). |
 | `MEMORIES_MODEL` | `google/gemini-3.8-flash` | Drafts [memories](/docs/reference/glossary#memory). |
 | `JUDGE_MODEL` | `google/gemini-3.8-flash` | The [judge](/docs/improvement/set-a-stations-judge-and-alerts). |
 
@@ -136,7 +136,7 @@ upload and download through presigned URLs that last 15 minutes.
 | `S3_RUNNER_ENDPOINT` | `S3_ENDPOINT` | The endpoint in URLs presigned for runners, for when `S3_ENDPOINT` is private. |
 | `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | none | The bucket user's keys. Without both, the default AWS credential chain. |
 
-[Egress](/docs/reference/hosts/egress#admitted-hosts) always admits the
+[Egress](/docs/reference/hosts/egress#allowed-hosts) always allows the
 storage host runners reach: the host of `S3_RUNNER_ENDPOINT`, else of
 `S3_ENDPOINT`, else `<bucket>.s3.<region>.amazonaws.com`, or
 `s3.<region>.amazonaws.com` with `S3_FORCE_PATH_STYLE`.
@@ -195,4 +195,4 @@ email.
 | `MAIL_FROM` | `Spotlight <noreply@usespotlight.ai>` | The sender. Must be one the mail server permits. |
 
 With `SMTP_URL` unset, Spotlight sends nothing. It logs each message at `warn`
-with `No mail server configured, so this message was only written down`.
+with `No mail server is configured, so Spotlight only logged this message`.

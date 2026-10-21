@@ -20,7 +20,7 @@ to. Where there is more than one path, the shortest counts. On Delivery,
 triage is one step from the backlog. Triage may pass a task to spec or straight
 to implementation, so both are two steps away, and code review is three.
 
-When a host asks for work, Spotlight offers it the waiting run with the
+When a host requests work, Spotlight offers it the waiting run with the
 highest priority. Between runs of the same priority, the one that has waited
 longest goes first.
 
@@ -37,7 +37,8 @@ depth three on one line goes before a run at depth one on another.
 ## Deeper runs first
 
 The effect is that runs further along a line go before runs nearer its start.
-A task about to be reviewed is taken up before a new request is triaged.
+The run of a task about to be reviewed is claimed before the run that triages
+a new request.
 
 No reason for this order is written down, so what follows is our
 interpretation: it finishes work already in flight before starting new work. A
@@ -77,8 +78,8 @@ started it chose, and do not count in the team's 2.
 ## Station order is only for people
 
 The board shows a line's stations as sections in a fixed order, and that order
-has no effect on which run goes first. Priority is worked out from the
-hand-on graph alone, so moving a section would change nothing about the queue.
+has no effect on which run goes first. Priority is worked out only from
+which stations pass work to which, so moving a section would change nothing about the queue.
 That is why the board does not let people reorder sections: the order is part of
 the line's definition, written alongside everything else about it (see the
 [`spotlight_line`](/docs/reference/terraform/line) reference).
@@ -90,11 +91,11 @@ describes that side).
 
 ## Priority is not the only thing that decides
 
-Priority only orders the runs a particular host could take. Before it is
-compared, the waiting runs are narrowed to those the host asking can serve: its
+Priority only orders the runs a particular host could claim. Before it is
+compared, the waiting runs are narrowed to those the requesting host can serve: its
 placement must match the run's (see [Send a line's work to particular runners](/docs/hosts/place-work-on-particular-runners)), its image must
-include the run's harness, and it must have room. How a run that was handed
-back or lost returns to the queue is in [Tasks, runs and the
+include the run's harness, and it must have room. How a run that was requeued
+or lost returns to the queue is in [Tasks, runs and the
 inbox](/docs/reference/app/tasks-runs-and-the-inbox).
 
 So a lower-priority run can start first if the only host with room is one the
@@ -109,7 +110,7 @@ the runs that use secrets; [The sandbox is the security
 boundary](/docs/security/the-sandbox-is-the-security-boundary) explains why
 those wait for a host, or for a pool that names an egress.
 
-Taken together, placement and harness decide which runs a host could take,
+Taken together, placement and harness decide which runs a host could claim,
 capacity decides whether it takes one now, and depth and age decide which. The
 limits involved are listed in [Limits and
 timeouts](/docs/reference/limits-and-timeouts), and pools and hosts in

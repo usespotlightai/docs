@@ -74,7 +74,7 @@ If the station has no replay set and no searches yet, the card reads **No
 searches yet** and shows no **Start a search**: create a replay set first. If
 the button is greyed out, hover over it to see why, such as **No replay
 set covers 5 different tasks yet.** Add runs of more tasks to a set, or wait
-for the station's search under way to end.
+for the station's current search to end.
 
 </Step>
 <Step>
@@ -97,7 +97,7 @@ Set the budget:
   10. They run beside the team's other replays, below every task run.
 - **Repeats**: how many times each of its replays replays each run, from 1 to
   5. The live config's replay, every candidate's and the held-out replays all
-  take this many copies. More copies narrow the range around each score, and
+  take this many repeats. More repeats narrow the range around each score, and
   the runs and spend grow with them.
 - **Ceiling**: the most the whole search may spend, its replays and its
   agent's runs, and its currency, as in `20.00` and `USD`.
@@ -125,7 +125,7 @@ candidates, not the station's own.
 <Step>
 
 Read the estimate under the fields. It gives how many tasks are searched and
-held out, how many copies of each run, the most runs the search may start,
+held out, how many repeats of each run, the most runs the search may start,
 what each replay may spend, and roughly how long it takes, from how long the
 set's runs took. If **Ceiling** says the ceiling must allow at least 0.01
 for each replay run, raise the ceiling or lower the iterations, candidates or
@@ -138,12 +138,12 @@ Read any warning under the estimate:
 
 - If nobody has measured how much the set's success moves by chance,
   [start a replay](/docs/improvement/replay-past-tasks-against-a-station-change#start-a-replay)
-  of the set first, so its first baseline checks it, or set **Repeats**
+  of the set first, so its first baseline calibrates it, or set **Repeats**
   above 1.
 - If the set's success moves more than the line counts as real, select the
   button under the warning, as in **Replay each run 3 times**, to set
-  **Repeats** to what it suggests, and raise the ceiling if the estimate asks.
-  If the warning says even 5 copies won't bring it under, read small gains
+  **Repeats** to what it suggests, and raise the ceiling if the estimate suggests it.
+  If the warning says even 5 repeats won't bring it under, read small gains
   with care, or raise the line's
   [`min_gain`](/docs/reference/terraform/line#replay-check-fields).
 - If the live config already succeeds on almost all of the set, aim for the
@@ -223,7 +223,7 @@ to check it yourself.
 </Step>
 <Step>
 
-Fix what each group asks:
+Fix what each group names:
 
 - **The task itself**: take the task's run out of the replay set, or reword
   the task. See [Pick the tasks to replay](/docs/improvement/replay-past-tasks-against-a-station-change#pick-the-tasks-to-replay).
@@ -254,7 +254,7 @@ To read a score's range, hover over the score in the **Candidates** table or
 in a candidate's details, or read it in brackets in the **Success against
 cost** card's **Table**, as in `72% (50–89%)`. Act on a gain that reads
 **Better** or **Worse**, not **within noise**. See
-[Gains](/docs/reference/app/replays#gains) for when each verdict shows. The
+[Gains](/docs/reference/app/replays#gains) for the rule behind each significance. The
 smallest gain that counts is in the note of the **Live config** tile.
 
 **Success against cost** plots each candidate's success on the searched tasks
@@ -276,7 +276,7 @@ compares the changes.
 Give the held-out score the most weight. If a candidate has a warning icon
 for **Likely overfit** or **Overfit unknown**, hover over the
 icon for its note before you pick it. See
-[Only on seen tasks](/docs/reference/app/searches#only-on-seen-tasks), and
+[Overfit](/docs/reference/app/searches#overfit), and
 [Frontier](/docs/reference/app/searches#frontier) for which candidates are
 held out. To see a candidate's result task by task, select **Replay** or
 **Held-out replay** beside **Results** in its details. See
@@ -359,7 +359,7 @@ opened**, the reason, and what Spotlight found. Fix the cause, then select
 | Reason | What to do |
 | --- | --- |
 | Line names no repository for its Terraform | Give the line a `source` block. See [Name the file that contains the line](#name-the-file-that-contains-the-line). |
-| Spotlight's GitHub App can't reach the line's repository | Install the GitHub App on that repository, or correct `source.repository`. |
+| Spotlight's GitHub App can't access the line's repository | Install the GitHub App on that repository, or correct `source.repository`. |
 | Line's Terraform file isn't in its repository | Correct `source.path`. Spotlight reads the file on the repository's default branch. |
 | Station's block isn't in the file, or Station's block appears more than once | Spotlight looks for exactly one `spotlight_line` resource whose `key` is the line's, and in it exactly one `station` block whose `key` is the station's, both written as plain text. Write them that way, or make the change by hand. |
 | Attribute is computed in Terraform. Please set it by hand. | The attribute is built from a variable, a local or another expression. The reason names the attribute, the expression and the value to set: make the change by hand. |

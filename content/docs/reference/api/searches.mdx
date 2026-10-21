@@ -20,7 +20,7 @@ endpoints, under `/api/teams/{teamId}`. They answer JSON, and errors are
 | `POST /lines/{lineId}/stations/{stationId}/searches` | `201` and `{ "id", "seedReplayId", "objective", "warnings" }`: starts a search. See [Start a search](#start-a-search). |
 | `GET /searches` | The team's searches, newest first, a page at a time. |
 | `GET /searches/{searchId}` | One search with its split, iterations, candidates and frontier. See [Search detail](#search-detail). |
-| `POST /searches/{searchId}/stop` | `204`: stops the search. Its agent's run is withdrawn or stopped, its replays stop, and nothing more starts. |
+| `POST /searches/{searchId}/stop` | `204`: stops the search. Its agent's run is cancelled or stopped, its replays stop, and nothing more starts. |
 | `POST /searches/{searchId}/candidates/{candidateId}/pick` | `201` and a [config pull request](#config-pull-request) when picked, or picked again after a failure; `200` and the one it has when picked already. |
 | `GET /config-pull-requests/{pullRequestId}` | A [config pull request](#config-pull-request). |
 | `GET /search-runs/{runId}` | A search's agent run: its search and iteration, the agent it ran, its steps, and what it spent. |
@@ -38,7 +38,7 @@ agent reaches it through
 [`spotlight candidate`](/docs/reference/cli/agent-commands#spotlight-candidate).
 From a reflection's run it fails with `409`.
 
-A reflection's agent records a cause at `POST /api/runs/{runId}/search-causes`,
+A reflection's agent records a cause at `POST /api/runs/{runId}/failure-causes`,
 on the same terms, through
 [`spotlight cause`](/docs/reference/cli/agent-commands#spotlight-cause). The
 body is `{ "taskId", "cause", "evidence", "suggestion" }`, `suggestion`
@@ -84,7 +84,7 @@ Starting takes a snapshot of the station's live config, draws the
 [held-out split](/docs/reference/glossary#held-out-task), and starts a replay
 of the live config on every run of the set: `seedReplayId`. That replay is the
 set's new baseline, with a ceiling from the search's budget. `objective` is
-the aim it keeps, as asked or as the set's health suggests. `warnings` are as
+the aim it keeps, as requested or as the set's health suggests. `warnings` are as
 for an [estimate](#estimate-a-search); the search starts all the same.
 
 ## Estimate a search
@@ -95,12 +95,12 @@ The body is `setId`, `budget` and `objective`, as above. The answer:
 | --- | --- | --- |
 | `searchedTasks` | number | Tasks its agent sees. |
 | `heldOutTasks` | number | Tasks it holds out. |
-| `runs` | object | The most runs it may start: `seed` (the live config, one per run of the set and copy), `searchReplays` (every candidate it may propose, on the searched runs), `heldOutReplays` (the best candidates, on the held-out runs), `agent` (one per iteration) and `total`. Every replay count includes the copies `budget.repeats` asks for. |
+| `runs` | object | The most runs it may start: `seed` (the live config, one per run of the set and repeat), `searchReplays` (every candidate it may propose, on the searched runs), `heldOutReplays` (the best candidates, on the held-out runs), `agent` (one per iteration) and `total`. Every replay count includes the repeats `budget.repeats` asks for. |
 | `ceiling` | object | `{ amount, currency }`. |
-| `perReplayAllotments` | object | The ceilings each replay would get: `seed`, `searchReplay`, `heldOutReplay`, and `agentRun`, what each agent run is expected to spend. |
+| `perReplayLimits` | object | The ceilings each replay would get: `seed`, `searchReplay`, `heldOutReplay`, and `agentRun`, what each agent run is expected to spend. |
 | `estimatedDuration` | number or null | Roughly how long it takes at its concurrency, in milliseconds, from the average time of the set's runs. Null when none was timed. |
 | `minGain` | number | The smallest gain over the live config the line counts as real: `replay_check.min_gain`, or `0.05` when the line has none. |
-| `objective` | string | `success` or `cost`: what the search would aim for, as asked or as the set's health suggests. |
+| `objective` | string | `success` or `cost`: what the search would aim for, as requested or as the set's health suggests. |
 | `warnings` | array | What makes the search's results hard to trust. Empty when nothing does. See [Warnings](#warnings). |
 
 ### Warnings
@@ -110,10 +110,10 @@ Each warning is an object whose `kind` says which it is and which other fields i
 | `kind` | When | Other fields |
 | --- | --- | --- |
 | `noise-unmeasured` | No finished replay of the live config, at its current [config fingerprint](/docs/reference/glossary#config-fingerprint), replayed the set's runs more than once. See [Noise](/docs/reference/app/replays#noise). | None. |
-| `noisy` | The set's success moves between copies so much that `budget.repeats` copies cannot bring it under `minGain`. | `spread`: how far the set's success moved between copies. `minGain`: the line's, as in the estimate. `neededRepeats`: the copies it would take, the spread divided by `minGain`, squared and rounded up, however many; more than 5 means no search of the set can tell such a gain from noise. `suggestedRepeats`: `neededRepeats`, at most 5. |
+| `noisy` | The set's success moves between repeats so much that `budget.repeats` repeats of each run cannot bring it under `minGain`. | `spread`: how far the set's success moved between repeats. `minGain`: the line's, as in the estimate. `neededRepeats`: the repeats it would take, the spread divided by `minGain`, squared and rounded up, however many; more than 5 means no search of the set can tell such a gain from noise. `suggestedRepeats`: `neededRepeats`, at most 5. |
 | `saturated` | The live config succeeds on more than 95% of the set. See [Room to improve](/docs/reference/app/replays#room-to-improve). | `rate`: the live config's success on the set. |
-| `judge-unstable` | The set's newest [check](/docs/reference/api/replays#checking-the-set) found the judge passing or failing the same change alike less than 80% of the time. | `agreement`: that share. `compared`: how many changes it judged twice. |
-| `flaky-checks` | The set's newest check found the station's check passing once and failing once on some changes. | `flaky`: how many changes it flipped on. `rechecked`: how many changes it checked twice. |
+| `judge-unstable` | The set's newest [calibration](/docs/reference/api/replays#calibration) found the judge passing or failing the same change alike less than 80% of the time. | `agreement`: that share. `compared`: how many changes it judged twice. |
+| `flaky-checks` | The set's newest calibration found the station's check passing once and failing once on some changes. | `flaky`: how many changes it flipped on. `rechecked`: how many changes it checked twice. |
 | `no-headroom` | The newest [replay with the answer](/docs/reference/app/replays#replay-with-the-answer) was compared with the live config and did not do clearly better, so the set leaves little room for a better config to show. | `gain`, `low`, `high`: the gain the answer brought over the live config and its 95% interval. `answered`: how many runs were handed an answer. |
 
 The estimate assumes the choice of held-out tasks whose runs cost most.
@@ -126,14 +126,14 @@ Each item of a list, and the first fields of a search's detail:
 | --- | --- | --- |
 | `id`, `lineId`, `stationId`, `setId` | string | |
 | `state` | string | `seeding`, `searching`, `holding-out`, `finished` or `stopped`. See [Search states](/docs/reference/app/searches#search-states). |
-| `ending` | string or null | Why it stopped searching. See [Search endings](/docs/reference/app/searches#search-endings). |
+| `stopReason` | string or null | Why it stopped searching. See [Stop reasons](/docs/reference/app/searches#stop-reasons). |
 | `agent` | object | `{ harness, model, effort }`. |
 | `budget` | object | `{ iterations, perIteration, ceiling, concurrency, repeats }`. |
 | `objective` | string | `success` or `cost`: what it aims for, which orders its frontier and its best. See [Aims](/docs/reference/app/searches#aims). |
 | `spent` | object | `{ amount, currency }`: its replays and its agent's runs so far, in the ceiling's currency. |
 | `iterationsRun` | number | How many times its agent ran, or is running. |
 | `proposed` | number | How many candidates its agent proposed. |
-| `best` | object or null | `{ candidateId, name, seed, searchScore, searchInterval, heldOutScore, heldOutInterval, costPerRun, overfit, regressions, exceedsRegressionLimit }`: the [best candidate](/docs/reference/app/searches#best-candidate), with fields as on a [candidate](#candidate). `seed` is `true` when it is the live config. |
+| `best` | object or null | `{ candidateId, name, isSeed, searchScore, searchInterval, heldOutScore, heldOutInterval, costPerRun, overfit, regressions, exceedsRegressionLimit }`: the [best candidate](/docs/reference/app/searches#best-candidate), with fields as on a [candidate](#candidate). `isSeed` is `true` when it is the live config. |
 | `maxRegressions` | number or null | The line's regression limit, `replay_check.max_regressions`, as the line is now. Null when the line has no `replay_check` block. See [Regressions against the live config](/docs/reference/app/searches#regressions-against-the-live-config). |
 | `startedAt`, `endedAt` | string, string or null | RFC 3339 times. |
 
@@ -142,7 +142,7 @@ Each item of a list, and the first fields of a search's detail:
 | Field | Type | Description |
 | --- | --- | --- |
 | `split` | object | `searchedTasks`, `heldOutTasks`, and `searched` and `heldOut`, each a list of `{ runId, taskId }` from the set. |
-| `iterations` | array | Each `{ number, kind, runId, state, attempts, proposed, agentSpent, reflection }`. `kind` is `propose` or `reflect`. `state` is `wanted`, `running`, `ended` or `failed`. `attempts` counts its proposals, rejected ones included; `proposed` lists the candidates it admitted, by id. `agentSpent` is what its agent run spent, once known. `reflection` is a [reflection](#reflection) for a `reflect` iteration, else null. |
+| `iterations` | array | Each `{ number, kind, runId, state, attempts, proposed, agentSpent, reflection }`. `kind` is `propose` or `reflect`. `state` is `wanted`, `running`, `ended` or `failed`. `attempts` counts its proposals, rejected ones included; `proposed` lists the candidates it accepted, by id. `agentSpent` is what its agent run spent, once known. `reflection` is a [reflection](#reflection) for a `reflect` iteration, else null. |
 | `seed` | object | The live config the search started from, as a [candidate](#candidate). Its search score counts the searched runs only, its held-out score the held-out runs. |
 | `candidates` | array | Every candidate its agent proposed. |
 | `frontier` | array of strings | The candidates on the [frontier](/docs/reference/app/searches#frontier), by id, cheapest first, the seed always among them. With `objective` set to `cost`, only candidates whose `searchedGain.significance` is `better` or `within-noise`. |
@@ -158,8 +158,8 @@ What an iteration that looked into why the search
 | `incumbent` | string or null | The candidate whose failures it looked into, by id: the best config before it, or the seed's when nothing beat the live config. Null until it looked. |
 | `tasks` | array | The searched tasks that config still failed, each `{ taskId, originalRunId, replayRunId }`: the task, its run in the set, and the replay run that failed it. Never a held-out task. |
 | `causes` | array | One per task given a cause, each `{ taskId, originalRunId, replayRunId, cause, evidence, suggestion, recordedAt }`. `cause` is `config`, `task`, `judge`, `check` or `infra`; see [Causes](/docs/reference/app/searches#causes). `suggestion` is a string or null. |
-| `outcome` | string or null | Once it ended: `went-on`, `no-config-cause`, `no-failures`, `did-not-run` or `out-of-budget`. See [Reflection outcomes](/docs/reference/app/searches#reflection-outcomes). |
-| `endedSearch` | boolean | Whether the search stopped searching when it ended: `true` for every `outcome` but `went-on`. |
+| `result` | string or null | Once it ended: `continued`, `no-config-cause`, `no-failures`, `did-not-run` or `ceiling-reached`. See [Reflection results](/docs/reference/app/searches#reflection-results). |
+| `endedSearch` | boolean | Whether the search stopped searching when it ended: `true` for every `result` but `continued`. |
 
 ### Candidate
 
@@ -167,7 +167,7 @@ What an iteration that looked into why the search
 | --- | --- | --- |
 | `candidateId` | string | |
 | `name` | string | The slug the agent named it by, or `seed` for the live config. |
-| `seed` | boolean | Whether it is the live config. |
+| `isSeed` | boolean | Whether it is the live config. |
 | `iteration` | number or null | The iteration that proposed it. Null for the seed. |
 | `hypothesis` | string or null | What its agent expected it to improve, and why. |
 | `fingerprint` | string or null | Its [config fingerprint](/docs/reference/glossary#config-fingerprint). |
@@ -176,7 +176,7 @@ What an iteration that looked into why the search
 | `heldOutReplayId`, `heldOutReplayState` | string or null | Its replay on the held-out runs, when it had one. |
 | `searchScore` | number or null | Its [success](/docs/reference/app/replays#success) on the searched runs, 0 to 1. |
 | `searchInterval` | object or null | `{ rate, low, high }`: `searchScore` with its 95% interval. |
-| `searchScored` | number | How many searched replay runs, copies included, were scored. |
+| `searchScored` | number | How many searched replay runs, repeats included, were scored. |
 | `searchedGain` | object or null | Its gain over the seed on the searched runs, paired task by task, as a [replay's gain](/docs/reference/api/replays#gain). Null for the seed. |
 | `heldOutScore` | number or null | Its success on the held-out runs, 0 to 1, once that replay finished. |
 | `heldOutInterval` | object or null | `heldOutScore` with its 95% interval. |
@@ -186,13 +186,13 @@ What an iteration that looked into why the search
 | `costPerRun` | number or null | What it spent per scored searched run. Null while any of it went unpriced or was in another currency. |
 | `spent` | object | `{ amount, currency }`. |
 | `onFrontier` | boolean | Whether it is on the frontier. |
-| `overfit` | string or null | When `searchedGain.significance` is `better`: `likely` when `heldOutGain.significance` is not, over at least 5 tasks scored on both sides, so its gain showed only on the tasks the search could see; `too-few-held-out` when `heldOutGain.tasks` is under 5. Null otherwise, until `heldOutGain` is known, and for the seed. See [Only on seen tasks](/docs/reference/app/searches#only-on-seen-tasks). |
+| `overfit` | string or null | When `searchedGain.significance` is `better`: `likely` when `heldOutGain.significance` is not, over at least 5 tasks scored on both sides, so its gain showed only on the tasks the search could see; `too-few-held-out` when `heldOutGain.tasks` is under 5. Null otherwise, until `heldOutGain` is known, and for the seed. See [Overfit](/docs/reference/app/searches#overfit). |
 | `regressions` | object | `{ searched, heldOut, total }`: how many tasks it [regressed](/docs/reference/app/replays#regressions) on against the seed. `searched` is null until its searched replay finished. `heldOut` is null until both its held-out replay and the seed's replay finished. `total` is the sum of the two, with a null counted as 0, and is null while both are null. All three are null for the seed. See [Regressions against the live config](/docs/reference/app/searches#regressions-against-the-live-config). |
 | `exceedsRegressionLimit` | boolean | Whether `regressions.total` is more than the search's `maxRegressions`. `false` when `maxRegressions` is null, and while `total` is null. A candidate over the limit stays on the frontier and can still be picked. |
 | `pullRequest` | object or null | `{ id, state, url, reason }` of the [config pull request](#config-pull-request) picking it opened. Null until a person picks it, and always for the seed. |
 
 A searched candidate is not a [replay candidate](/docs/reference/api/replay-candidate)
-resource: it is not listed, imported, read or withdrawn there.
+resource: it is not listed, imported, read or deleted there.
 
 ## Config pull request
 
@@ -206,7 +206,7 @@ resource: it is not listed, imported, read or withdrawn there.
 | `candidateName`, `stationKey` | string | |
 | `repository`, `path` | string or null | The line's `source` when it was picked. Null when the line named none. |
 | `branch` | string | The branch Spotlight commits to. |
-| `attempts` | number | How many times a person picked it. |
+| `generation` | number | How many times a person picked it. Each pick after a failure starts a new generation. |
 | `createdAt`, `updatedAt` | string | RFC 3339 times. |
 
 Picking a candidate whose pull request is opening or opened answers that one.

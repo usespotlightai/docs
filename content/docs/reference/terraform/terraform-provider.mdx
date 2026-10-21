@@ -37,7 +37,7 @@ terraform {
 - A token and a trust are exclusive. With both, configuration fails with
   `Both a token and an OIDC trust`.
 - `url` and `token` must be known when Terraform plans.
-- A token issued through a trust is renewed one minute before it expires, and
+- A token issued by a trust is renewed one minute before it expires, and
   exchanged again when Spotlight answers it with `401`.
 - In GitHub Actions, the job needs `permissions: id-token: write`; the
   provider reads `ACTIONS_ID_TOKEN_REQUEST_URL` and
@@ -141,7 +141,7 @@ Changing any of these attributes replaces the resource.
 | `spotlight_workspace` | `slug` |
 | `spotlight_team` | `workspace_id`, `key` |
 | `spotlight_line`, `spotlight_skill`, `spotlight_harness_profile`, `spotlight_hook` | `team_id`, `key` |
-| `spotlight_integration` | `team_id`, `definition.integration` (the read-only `source`) |
+| `spotlight_integration` | `team_id`, `definition.integration` (the read-only `integration`) |
 | `spotlight_secret` | `workspace_id`, `name` |
 | `spotlight_workspace_token_trust`, `spotlight_runner_trust`, `spotlight_egress` | `workspace_id`, `key` |
 | `spotlight_runner_pool` | `workspace_id`, `key`, and adding or removing `provision` |
@@ -178,4 +178,4 @@ In HCL, an expression in an integration's `definition` or a hook's `steps` is
 written `$${{ ... }}`, Terraform's escape for a literal `${{ ... }}`. A hook's
 `when` may be written bare, without `${{ }}`.
 
-See [Expressions](/docs/reference/api/expressions) for what each position sees.
+See [Expressions](/docs/reference/api/expressions) for the variables each position can read.

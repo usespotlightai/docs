@@ -75,13 +75,13 @@ answer to the run's question, adds a note to it. See [Moves](/docs/reference/app
 Each `work` station has a Markdown prompt. Backlog and completed stations have
 none.
 
-| Line | Station | Opens with | Asks the agent to |
+| Line | Station | Opens with | Tells the agent to |
 | --- | --- | --- | --- |
-| Delivery | `triage` | "Decide what is actually being asked for, and whether it is clear and coherent enough to plan against." | Read only, state what the request comes down to, and hand on to Spec once a plan could be written against it. |
-| Delivery | `spec` | "Take the request as triage decided it and turn it into a plan someone can implement without going back to the requester." | Write a plan: the approach, the files and functions to change, how to test it, and what is out of scope. Revise the plan against the returned note when implementation or code review hands the task back. |
-| Delivery | `implementation` | "Make the change the spec describes, and no more than it." | Make the change with tests, leave tests and linter passing, and push the task's branch. Hand back to `spec` when the spec is wrong or leaves something out. |
-| Delivery | `code-review` | "Review the change against what was asked for, not against how you would have written it." | Hand the task back to implementation with findings, or to `spec` when the fault is in the plan, or open a pull request and hand on to `done`. |
-| Review | `code-review` | "Review the pull request this task names." | Leave comments with `spotlight review-comment`, submit them with `spotlight review`, make no edits, and hand on to `done`. |
+| Delivery | `triage` | "Decide what the request actually wants, and whether it is clear and coherent enough to plan against." | Read only, state what the request comes down to, and pass the task to Spec once a plan could be written against it. |
+| Delivery | `spec` | "Take the request as triage decided it and turn it into a plan someone can implement without going back to the requester." | Write a plan: the approach, the files and functions to change, how to test it, and what is out of scope. Revise the plan against the returned note when implementation or code review passes the task back. |
+| Delivery | `implementation` | "Make the change the spec describes, and no more than it." | Make the change with tests, leave tests and linter passing, and push the task's branch. Pass the task back to `spec` when the spec is wrong or leaves something out. |
+| Delivery | `code-review` | "Review the change against what the task requested, not against how you would have written it." | Pass the task back to implementation with findings, or to `spec` when the fault is in the plan, or open a pull request and pass the task to `done`. |
+| Review | `code-review` | "Review the pull request this task names." | Leave comments with `spotlight review-comment`, submit them with `spotlight review`, make no edits, and pass the task to `done`. |
 
 A built-in line is changed and deleted like any other line. See
 [Change a line's stations](/docs/lines/change-a-lines-stations).
@@ -94,7 +94,7 @@ done:
 | Step | Ticked when | Action |
 | --- | --- | --- |
 | "Install the GitHub App" | Spotlight's GitHub App is installed for the workspace. | "Install on GitHub", or "Configure on GitHub" once installed. |
-| "Connect a host" | A push pool exists, or a host seen in the last 24 hours can use an image that contains a harness. | "Go to runners", which opens `/w/<slug>/settings/runners`. |
+| "Connect a host" | A push pool exists, or a host with a heartbeat in the last 24 hours can use an image that contains a harness. | "Go to runners", which opens `/w/<slug>/settings/runners`. |
 | "Set up configuration as code" | The team's setup chat has opened its pull request. | The setup form. Once the chat started, "Open setup chat" for the person who started it. Once the pull request is open, "Open pull request" for everyone. |
 
 A ticked step hides its action until the step is selected. Once the task's
@@ -102,14 +102,14 @@ inbox item is resolved, the actions of "Install the GitHub App" and "Connect a
 host" are greyed out and cannot be used.
 
 The setup form shows once the GitHub App is installed, and a push pool names
-an egress or a host seen in the last 24 hours can use an image that
+an egress or a host with a heartbeat in the last 24 hours can use an image that
 contains a harness. Before then the step reads
 `The setup chat needs the GitHub App and egress. Connect a host, or name an egress in a push pool.`
 The form has:
 
 | Part | Contains |
 | --- | --- |
-| "Repository" | The repository the configuration goes in, from those the GitHub App reaches. |
+| "Repository" | The repository the configuration goes in, from those the GitHub App can access. |
 | Folder | The folder in it, `spotlight` at first. |
 | "Repositories" | The code repositories the chat checks out, "No repositories" at first. |
 | Agent | The harness, model and effort of the chat. The first harness at first, or the one last picked in this browser, here or in another chat. |

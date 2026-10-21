@@ -40,8 +40,8 @@ station {
 [Station fields](/docs/reference/terraform/line#station-fields) lists the rest, such as
 `ends`, `diffs`, `check`, `decisions` and `memories`. Tools, skills and profiles have
 guides of their own:
-[Give stations a tool from an HTTP API](/docs/integrations/give-stations-a-tool-from-an-http-api),
-[Give stations a skill](/docs/lines/give-stations-a-skill) and
+[Add a tool from an HTTP API](/docs/integrations/add-a-tool-from-an-http-api),
+[Enable skills at a station](/docs/lines/enable-skills-at-a-station) and
 [Limit what agents may do](/docs/agents/limit-what-agents-may-do).
 
 Run `terraform apply`, then open the station from the board to check the
@@ -96,15 +96,15 @@ another, so the same applies.
 
 ## If Terraform rejects the layout
 
-- If it reports the stations "must open with their backlog", move the station
+- If it reports the stations "must start with the backlog", move the station
   with `kind = "backlog"` to the top.
-- If it reports they "must close with completed", move the station with
-  `kind = "completed"` to the bottom.
-- If it reports they "must end where they end", remove `passes_to` from the
-  completed station.
-- If it reports a station "must hand on to a station work is done at", remove
-  the backlog or completed station from that station's `passes_to`.
-- If it reports stations "must not hand on to themselves", remove the station's
+- If it reports they "must end with the completed station", move the station
+  with `kind = "completed"` to the bottom.
+- If it reports they "cannot pass on from the completed station", remove
+  `passes_to` from the completed station.
+- If it reports stations "must pass to work stations", remove the backlog or
+  completed station from that station's `passes_to`.
+- If it reports stations "cannot pass to themselves", remove the station's
   own key from its `passes_to`.
 - If it reports that a repository "has to say how its checkout is made ready",
   a station has both `check` and `diffs = true`: give every repository of the

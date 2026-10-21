@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Built-in tools and skills
-description: The tools and skills Spotlight gives runs itself, their inputs, when each is given, and the catalog of tools and skills by plan.
+description: The tools and skills Spotlight adds to runs itself, their inputs, when each is enabled, and the catalog of tools and skills by plan.
 ---
 
 Besides the tools an [integration](/docs/reference/terraform/integration) offers,
@@ -11,15 +11,15 @@ Spotlight has tools and skills of its own. An agent calls a tool with
 
 ## Built-in tools
 
-| Tool | Given to | Also gives the skill |
+| Tool | Enabled for | Also enables the skill |
 | --- | --- | --- |
 | `pull-request` | Runs at a station that lists it in `tools`. | `spotlight-pull-request` |
 | `review-comment` | Runs at a station that lists it in `tools`. | `spotlight-review` |
 | `review` | Runs at a station that lists it in `tools`. | `spotlight-review` |
-| `propose-task` | Every chat run. A station cannot give it. | none |
-| `setup-pull-request` | Every run of a setup chat. A station cannot give it. | none |
+| `propose-task` | Every chat run. A station cannot enable it. | none |
+| `setup-pull-request` | Every run of a setup chat. A station cannot enable it. | none |
 
-In the input tables, a piped input may come from standard input, as described
+In the input tables, an input with `stdin` may come from standard input, as described
 under [spotlight &lt;tool&gt;](/docs/reference/cli/agent-commands#spotlight-tool).
 
 ### pull-request
@@ -30,7 +30,7 @@ already open for the branch, that one is returned. It answers with
 `{"url": "<address>"}`. The task then has the `git.pull-request`
 [mark](/docs/reference/events/github-events#marks).
 
-| Input | Type | Required | Piped | Description |
+| Input | Type | Required | Stdin | Description |
 | --- | --- | --- | --- | --- |
 | `title` | string | yes | no | What it does. |
 | `body` | string | no | yes | The detail, as Markdown. |
@@ -41,7 +41,7 @@ already open for the branch, that one is returned. It answers with
 Leaves a comment on a line of the pull request the task reviews. Spotlight keeps
 the comment until the review is submitted.
 
-| Input | Type | Required | Piped | Description |
+| Input | Type | Required | Stdin | Description |
 | --- | --- | --- | --- | --- |
 | `path` | string | yes | no | The file, from the root of the repository. |
 | `line` | number | yes | no | The line it is about, or the last of several. |
@@ -54,7 +54,7 @@ the comment until the review is submitted.
 Submits the comments left so far as one review of the pull request the task
 reviews.
 
-| Input | Type | Required | Piped | Description |
+| Input | Type | Required | Stdin | Description |
 | --- | --- | --- | --- | --- |
 | `verdict` | string | no | no | `comment`, `approve` or `request-changes`. |
 | `body` | string | no | yes | What the review comes down to, as Markdown. |
@@ -66,7 +66,7 @@ person accepts the proposal. It answers with the task's title as `proposed`,
 the `line` and `station` keys it was given, and what happens `next`. See
 [Proposals](/docs/reference/app/tasks-runs-and-the-inbox#proposals).
 
-| Input | Type | Required | Piped | Description |
+| Input | Type | Required | Stdin | Description |
 | --- | --- | --- | --- | --- |
 | `line` | string | yes | no | The key of the line it belongs on. |
 | `station` | string | yes | no | The key of the station on that line to start it at. |
@@ -82,7 +82,7 @@ the setup task's "Set up configuration as code" step is then done. A second
 call answers the pull request the chat already opened. See
 [Let the agent write your team's first Terraform](/docs/configuration/let-the-agent-write-your-first-terraform).
 
-| Input | Type | Required | Piped | Description |
+| Input | Type | Required | Stdin | Description |
 | --- | --- | --- | --- | --- |
 | `branch` | string | yes | no | The branch pushed, as in `spotlight-configuration`. A branch under `spotlight/` is rejected with `Branch <branch> is named like a task’s branch. Please name it outside spotlight/, as in spotlight-configuration.` |
 | `title` | string | yes | no | What it does. |
@@ -92,34 +92,34 @@ The `pull-request.opening` [hook](/docs/integrations/hooks) does not run for it.
 
 ## Built-in skills
 
-Spotlight gives its own skills wherever they apply. A station may not name a
+Spotlight adds its own skills wherever they apply. A station may not name a
 skill starting `spotlight-`.
 
-| Skill | Given to |
+| Skill | Enabled for |
 | --- | --- |
 | `spotlight-handover` | Every run at a station. |
-| `spotlight-pull-request` | Runs given the `pull-request` tool. |
-| `spotlight-review` | Runs given the `review-comment` or `review` tool. |
-| `spotlight-tools` | Runs given a tool from an integration or the catalog that Spotlight can describe. Never a replay. |
+| `spotlight-pull-request` | Runs with the `pull-request` tool enabled. |
+| `spotlight-review` | Runs with the `review-comment` or `review` tool enabled. |
+| `spotlight-tools` | Runs with a tool enabled from an integration or the catalog that Spotlight can describe. Never a replay. |
 
 `spotlight-tools` says how to find a tool with `spotlight tools search`, read
 it with `spotlight tools describe`, give inputs as flags or as one JSON object,
 pipe a tool's JSON answer into the next call, use a tool that requires
 approval, and stop when a tool waits for a person to connect. It also explains
-learned answers: `describe` prints what a tool answered before as a learned
-type. See [Learned output](/docs/reference/cli/agent-commands#learned-output).
+inferred answers: `describe` prints what a tool answered before as an inferred
+type. See [Inferred output](/docs/reference/cli/agent-commands#inferred-output).
 Such a run's briefing also has a `## Tools` section naming each
-integration it was given tools from, with how many, and the `search` and
+integration it has tools enabled from, with how many, and the `search` and
 `describe` commands. Catalog tools are named there as `the Spotlight catalog`.
-A replay is given no tools, so it gets neither the skill nor the section.
+A replay has no tools enabled, so it gets neither the skill nor the section.
 
-A run is also given the tools listed in the `tools` of each team skill its
-station gives. See [`spotlight_skill`](/docs/reference/terraform/skill).
+A run also has the tools listed in the `tools` of each team skill its
+station enables. See [`spotlight_skill`](/docs/reference/terraform/skill).
 
 ## Catalog
 
 Spotlight publishes catalog tools and skills, named
-`catalog.<name>@<version>`. A station gives one by that exact name in its
+`catalog.<name>@<version>`. A station enables one by that exact name in its
 `tools` or `skills`.
 
 | Item | Kind | Plan | Inputs or uses |
@@ -130,11 +130,13 @@ Spotlight publishes catalog tools and skills, named
 | `catalog.research@1.0.0` | skill | `team` | uses `catalog.web-search@1.1.0` and `catalog.fetch-page@1.0.0` |
 
 A workspace's plan is `free`, `team` or `enterprise`, and each plan includes
-the ones before it. A workspace with no plan set, or whose plan has lapsed,
+the ones before it. A workspace with no plan set, or whose plan has expired,
 is on `free`.
 
-- A line that gives a catalog item the workspace's plan does not include is
+- A line that enables a catalog item the workspace's plan does not include is
   rejected when it is written.
 - A run at such a station fails with the code `refused`.
-- A catalog skill is laid out in the folder `spotlight-catalog-<name>`, and
-  brings the catalog tools it uses.
+- A catalog skill is laid out in the folder `spotlight-catalog-<name>`. The
+  run also gets the catalog tools that the skill uses.
+- Spotlight records each call that a run makes to a catalog tool: when the
+  call started, how long it took and whether it succeeded.

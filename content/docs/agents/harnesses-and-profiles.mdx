@@ -23,7 +23,7 @@ Spotlight's design leans on what the harnesses bring, in several places. When a
 person answers a question and the run carries on where it stopped, it resumes
 the harness's own session ([How a conversation survives
 between runs](/docs/runs/how-a-conversation-survives-between-runs)). A
-skill given to a Claude Code station lands in the directory Claude Code reads
+skill enabled at a Claude Code station lands in the directory Claude Code reads
 skills from. When a harness asks permission for something the team's profile
 says to ask about, the request becomes an approval in Spotlight's inbox. In our view, this is the main gain from
 running harnesses: the agent a team trusts in a terminal is the agent that works
@@ -44,7 +44,7 @@ Cursor's CLI and OpenCode speak it directly, and Claude Code and Codex speak it 
 bridge programs that are installed beside them in the runner image. Over that one protocol the runner
 starts a session, sends the briefing, streams the agent's output to the run's
 journal, passes on what a person says while the agent is still working, and
-hears the harness's permission requests.
+receives the harness's permission requests.
 
 Adding a harness therefore comes down to describing how to start it. Cursor
 was added that way, started exactly as Claude Code is, with no change to how
@@ -63,7 +63,7 @@ OpenCode takes a provider and a model together, such as
 station names its harness first, and then a model within it.
 
 Spotlight keeps no list of models either. When a host looks inside a runner
-image, the runner there asks each harness it contains which models it can use,
+image, the runner there queries each harness it contains for the models it can use,
 usually by calling the provider's models endpoint with the host's key. The
 models Spotlight offers for a harness are the ones hosts reported this way, so
 the list is whatever the keys on those hosts can reach. A station that names no

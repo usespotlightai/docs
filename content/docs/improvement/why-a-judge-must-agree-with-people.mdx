@@ -15,7 +15,7 @@ than no score, because it looks like a measurement.
 
 So a judge starts out hidden. Its scores and its reasons show only once
 Spotlight has measured their agreement with people's, and the agreement
-has reached the `trust` the station sets.
+has reached the minimum agreement the station sets in `min_agreement`.
 
 ## Where people's scores come from
 
@@ -28,7 +28,7 @@ score. Anyone on the team, or an owner or admin of the workspace, can grade
 it.
 
 The second needs no extra work. On a yes-or-no rubric, what people already do
-with a run says whether it was good: closing the task after it is a yes,
+with a run says whether it was good: accepting the run, by moving the task to the completed station after it, is a yes,
 sending it back is a no, and failing those, a merged pull request is a yes and
 one closed unmerged is a no. Answering an approval counts as neither: it is
 the run asking a person, and a run that only paused for an approval would
@@ -55,11 +55,11 @@ scores every run one point lower than people do still ranks them the same way,
 and its scores still tell good runs from bad. The mean absolute error, shown
 beside it, says how far apart the two scores sit.
 
-For claims, Spotlight sets each claim's mark from the judge beside the same
-claim's mark from people, pools those pairs across every claim, and measures
+For claims, Spotlight sets each claim's result from the judge beside the same
+claim's result from people, pools those pairs across every claim, and measures
 Cohen's kappa over them. It also measures each claim on its own. A judge can
 read most claims as people do and one of them differently; the pooled figure
-says whether the judge can be trusted, and the per-claim figures say which
+says whether the judge is qualified, and the per-claim figures say which
 claim to reword.
 
 At least 10 runs need both scores before any measure counts. In the docs'
@@ -77,14 +77,14 @@ little to point at, while a person who disagrees with one claim can say which.
 
 A claims judge scores a run as the share of its claims met. Whether that share
 is enough to pass matters only when a replay decides whether a run succeeded,
-so the team sets it beside the claims as `pass_share`, every claim unless told
+so the team sets it beside the claims as `pass_threshold`, every claim unless told
 otherwise. A rubric can stay beside the claims, to tell the judge what the
 station is for.
 
 ## Each rubric starts again
 
 Agreement is kept per rubric version. A rubric version covers the rubric, the
-claims and the pass share together. Changing any of them changes what
+claims and the pass threshold together. Changing any of them changes what
 the judge is asked, so the agreement measured under the old text says nothing
 about the new one, and the judge is hidden again until it has agreed with
 people under the new text. A changed rubric is also a changed station config,
@@ -95,10 +95,10 @@ other change. See
 ## Reasons a person can check
 
 Each of the judge's reasons cites the steps of the run or the hunks of its
-changes it rests on, and a reason that cites something the judge did not read
+changes, and a reason that cites something the judge did not read
 is dropped. A person looking at a score can follow each reason to what the
 judge saw, and judge it for themselves. While the judge is hidden, its reasons
-are hidden with its score. In the docs' view, a reason from an untrusted judge
+are hidden with its score. In the docs' view, a reason from a judge that is not qualified
 would carry the same weight to a reader as the score it explains.
 
 ## A judge never decides

@@ -2,7 +2,7 @@
 type: how-to
 icon: SquarePen
 title: Check a station's judge against people
-description: Grade judged runs from the inbox, read the judge's agreement with people on the station's Insights view, overall and claim by claim, and change the rubric, claims or trust when its scores stay hidden.
+description: Grade judged runs from the inbox, read the judge's agreement with people on the station's Insights view, overall and claim by claim, and change the rubric, claims or minimum agreement when its scores stay hidden.
 ---
 
 Use this once a work station has a judge, to get its scores shown or to find
@@ -38,7 +38,7 @@ Nothing waits on your grade.
 
 Open the line's board and select the station's name. On the **Overview** tab,
 under **Judge**, select **How it agrees with people**. The station's view on
-Insights opens at **How far to trust the judge**.
+Insights opens at **How far the judge agrees with people**.
 
 </Step>
 <Step>
@@ -49,14 +49,14 @@ to read under **Rubric**.
 </Step>
 <Step>
 
-Read the first tile, which says whether the judge is trusted:
+Read the first tile, which says whether the judge is qualified:
 
 - If it reads **Hidden until more runs have scores from both the judge and
   people**, grade more of the station's runs. At least 10 need both scores.
 - If it reads **Hidden. Agreement can't be measured while all scores are
   identical.**, grade more runs until both scores vary.
 - If it reads **Hidden.** followed by the measure and **Minimum required**,
-  follow [Change the rubric or the trust](#change-the-rubric-or-the-trust).
+  follow [Change the rubric or the minimum agreement](#change-the-rubric-or-the-minimum-agreement).
 - If it reads **Hidden. The rubric names a scale that cannot be read.**,
   correct the rubric's first line to `scores: yes-no` or `scores: 1-5`.
 
@@ -72,7 +72,7 @@ below the others, reword that claim.
 [Agreement](/docs/reference/app/tasks-runs-and-the-inbox#agreement) says what
 each tile, statistic and card shows.
 
-## Change the rubric or the trust
+## Change the rubric or the minimum agreement
 
 Under **Score comparison**, compare the judge's scores, in rows, with
 people's, in columns. If the counts off the diagonal lean one way, the judge is
@@ -83,7 +83,7 @@ stricter or looser than people:
   disagree with it on, and run `terraform apply`. The new rubric version starts
   with no runs that have both scores. Once the judge has judged runs under it,
   it is the **Current version** under **Rubric**.
-- To show the scores at a lower agreement, lower `trust` in the station's
+- To show the scores at a lower agreement, lower `min_agreement` in the station's
   `judge` block and run `terraform apply`.
 
 ## Related

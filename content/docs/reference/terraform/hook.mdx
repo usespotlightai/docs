@@ -43,7 +43,7 @@ resource "spotlight_hook" "migrations" {
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `key` | string | required | Lowercase words joined by dashes, at most 64 characters. Fixed: an update that changes it is rejected; Terraform replaces the resource. |
+| `key` | string | required | Lowercase words joined by dashes, at most 64 characters. Immutable: an update that changes it is rejected; Terraform replaces the resource. |
 | `on` | string | required | The event the hook fires on. See [events](#events). |
 | `match.tools` | array of strings | `[]` | Tools, as `<integration>.<tool>`. Only on `tool.using` and `tool.used`. Each must be offered by an integration of the team. |
 | `match.lines` | array of strings | `[]` | Line keys. |
@@ -80,7 +80,7 @@ Glob syntax in `match.paths`:
 | `tool.used` | after | yes | yes | | `at`, `tool`, `inputs`, `output`, `failed` |
 | `run.starting` | before | yes | | | `at` |
 | `run.ended` | after | yes | | | `at`, `outcome` |
-| `handover.giving` | before | yes | | | `at`, `to`, `note` |
+| `handover.submitting` | before | yes | | | `at`, `to`, `note` |
 | `pull-request.opening` | before | yes | | yes | `at`, `repository`, `branch`, `title`, `changed` |
 | `pull-request.merged` | after | no | | yes | `at`, `url`, `repository`, `mergeCommit`, `changed` |
 | `task.opened` | after | no | | | `at` |
@@ -89,7 +89,8 @@ Glob syntax in `match.paths`:
 A before event waits while its hooks run, and a hook can stop it. An after
 event has already happened; its hooks are queued and run afterwards.
 
-`changed` is a list of paths. Expressions on an event in a run also see
+`changed` is a list of paths. `outcome` is `completed`, `failed`, `exhausted`
+or `cancelled`. A stopped run reads `completed`. Expressions on an event in a run also see
 `run.id`. See [Hook values](/docs/reference/api/expressions#hook-values) for every
 value an expression sees.
 
@@ -106,7 +107,7 @@ A step names exactly one of `call` and `request`. Steps run in order. A step
 that fails stops the steps after it.
 
 A step may not call a tool with `approval`, or a tool of an integration whose
-`connection.holder` is `requester`; the step fails with `not-allowed`. For the
+`connection.actsAs` is `requester`; the step fails with `not-allowed`. For the
 second, the reason is `names <tool>, which acts as the person who started a task. A hook acts as nobody`.
 
 `request`:
@@ -211,17 +212,17 @@ The token in `spotlight-callback-token` lives 15 minutes and is sent as
 | Endpoint | Body | Returns |
 | --- | --- | --- |
 | `GET /api/hook-callbacks/task` | | `200` with the task: `id`, `title`, `url`, `line`, `station`, `stationKey`, `marks`, `repositories`, `pullRequest`, `hook`. |
-| `POST /api/hook-callbacks/notes` | `{ "body": "<text>" }`, 1 to 20,000 characters | `204`. The note appears on the task as said by the hook. |
+| `POST /api/hook-callbacks/notes` | `{ "body": "<text>" }`, 1 to 20,000 characters | `204`. The note appears on the task as written by the hook. |
 
 `POST /api/hook-callbacks/notes` takes an optional `Idempotency-Key`; a retry
-with the same key is said once. A missing, expired or unknown token gets
+with the same key adds the note once. A missing, expired or unknown token gets
 `401`. An empty or too long note gets `400`.
 
 ## Failures
 
 | Code | Cause | Retried |
 | --- | --- | --- |
-| `unreachable` | Nothing responded, the request got no response within the time left, or no host of the workspace took a `network` request in time. | yes |
+| `unreachable` | Nothing responded, the request got no response within the time left, or no host of the workspace claimed a `network` request in time. | yes |
 | `timeout` | The hook's time ran out before the step began, or a called tool did not finish within it. | yes |
 | `throttled` | Responded `408`, `425` or `429`. | yes |
 | `server-error` | Responded `5xx`. | yes |

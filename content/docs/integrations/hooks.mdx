@@ -5,7 +5,7 @@ title: Hooks and reactions
 description: Why Spotlight has hooks beside a line's reactions, why only a hook before an event can stop it, why calls into a private network go out through a host's egress, and how hooks are kept from looping.
 ---
 
-A line already has a way to hear the outside world. Its reactions are rules
+A line already has a way to receive events from the outside world. Its reactions are rules
 of the form "when this happening arrives, move the task there": a failed check
 sends a task back to implementation, a merged pull request moves it to
 completed. Reactions let events in other systems move work in Spotlight.
@@ -28,7 +28,7 @@ request that touches migrations before it opens, and decide by who is on call
 that week. A security team may want a record of every tool an agent used, kept
 in its own audit store. Neither rule can be written as a reaction, because
 Spotlight knows nothing about the rota or the store. As hooks, the rules stay
-in the systems that own them, and Spotlight asks.
+in the systems that own them, and Spotlight calls them.
 
 A hook's endpoint can also answer back. Each request carries a short-lived
 callback token, with which the endpoint can read the task it fired for or leave
@@ -45,9 +45,9 @@ ended, a pull request was merged, a task was opened or moved. The [`spotlight_ho
 reference lists them.
 
 Only a hook on a before event can stop anything, and Spotlight rejects a
-hook definition that asks to block on an after event. By the time an after
+hook definition that requests to block on an after event. By the time an after
 event fires, the pull request is merged or the tool has run; there is nothing
-left to stop, and the hook hears about it afterwards.
+left to stop, and the hook receives it afterwards.
 
 A before-hook runs while the event waits. It can deny the event by answering with a
 reason, or, when it is marked to block on failure, by failing. What a denial
@@ -77,7 +77,7 @@ inside its own network, where Spotlight cannot connect.
 A hosted Spotlight cannot reach into that network, but a host can reach out of
 it. So a request marked `from = "network"` is not sent by Spotlight. It waits
 until one of the workspace's hosts claims it, the same way hosts claim runs, by
-asking. The host sends it from a one-off egress container and returns the
+requesting it. The host sends it from a one-off egress container and returns the
 answer.
 
 Other designs were considered. One was to allow private calls only from inside
@@ -116,7 +116,7 @@ task](/docs/getting-started/how-outside-events-reach-a-task) describes.
 ## Loops
 
 Hooks and integrations together can make a cycle. A hook on `task.moved` posts
-to a Slack channel; the integration hears the post as a happening; a reaction
+to a Slack channel; the integration receives the post as a happening; a reaction
 moves the task; the hook fires again. Each step is reasonable on its own, and
 the whole runs until someone notices.
 

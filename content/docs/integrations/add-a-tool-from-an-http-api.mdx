@@ -1,8 +1,8 @@
 ---
 type: how-to
 icon: SquarePen
-title: Give stations a tool from an HTTP API
-description: Define an integration that turns a request to an HTTP API into a tool, and give that tool to a station's agents.
+title: Add a tool from an HTTP API
+description: Create an integration that turns a request to an HTTP API into a tool, and enable that tool at a station.
 ---
 
 The agent gets a command that calls the API, and Spotlight keeps the API key,
@@ -15,15 +15,15 @@ which the agent never sees. You need:
 - A Spotlight deployment that allows outbound calls to the API's host, since
   Spotlight calls the API from its own servers.
 
-If the API publishes an OpenAPI description or a GraphQL schema, see
-[Generate tools from an API description](/docs/integrations/generate-tools-from-an-api-description)
+If the API publishes an OpenAPI spec or a GraphQL schema, see
+[Generate tools from an API spec](/docs/integrations/generate-tools-from-an-api-spec)
 instead.
 
 The example uses a placeholder API at `api.acme.example` that takes a comment
 as a JSON `POST` to `/comments`. Put your own API's host, path and body in its
 place.
 
-## Keep the API key as a secret
+## Store the API key as a secret
 
 Bind the secret to the API's host, in the header and with the prefix the API
 expects. Spotlight sends it to that host only, over HTTPS.
@@ -75,7 +75,7 @@ parameter and keeps the key out of what it records, see
 
 ## Define the action and the tool
 
-Write the request as an action, and offer it to agents as a tool: `does`
+Write the request as an action, and offer it to agents as a tool: `action`
 names the action, `description` tells the agent when to use it, and each input
 becomes a flag. In the request, read the inputs as `inputs.<name>` and name the
 secret in `auth.secrets`.
@@ -105,7 +105,7 @@ resource "spotlight_integration" "acme" {
     }
     tools = {
       comment = {
-        does        = "comment"
+        action      = "comment"
         description = "Comment on the issue."
         inputs = {
           issue = { type = "string", required = true }
@@ -129,7 +129,7 @@ labels = { schema = { type = "array", items = { type = "string" } } }
 If the API names a field `team_id` or `teamId`, name the input the same way:
 an input name may contain letters, digits, `_` and `-`.
 
-## Give the tool to a station
+## Enable the tool at a station
 
 Add the tool to the station's `tools` in the line. Name it through the
 integration's `tools` map, so renaming or removing the tool fails the plan
@@ -154,20 +154,20 @@ calls it as a command:
 spotlight acme comment --issue ACME-42 --body "Fixed in the linked pull request."
 ```
 
-`spotlight tools` lists the tools a run was given, with their flags.
+`spotlight tools` lists the tools enabled for a run, with their flags.
 `spotlight tools describe acme.comment` prints one with its inputs and an
 example call.
 
 ## See what a tool answers with
 
-After a call to the tool succeeds, Spotlight learns the shape of its answer:
+After a call to the tool succeeds, Spotlight infers the shape of its answer:
 the field names and their types, never the values. In runs that start after
 that call, `spotlight tools describe` prints it under
-`Answers with (learned from earlier calls, may be incomplete):`, so the agent
-knows which fields to read. Each later successful call adds to it. Redefining
-or removing the integration, and disbanding the team, forgets what was
-learned. See
-[Learned output](/docs/reference/cli/agent-commands#learned-output).
+`Answers with (inferred from earlier calls, may be incomplete):`, so the agent
+knows which fields to read. Each later successful call adds to it. Updating
+or deleting the integration, and deleting the team, deletes what was
+inferred. See
+[Inferred output](/docs/reference/cli/agent-commands#inferred-output).
 
 If a person should agree before each call, see
 [Require approval before a tool runs](/docs/integrations/require-approval-before-a-tool-runs).

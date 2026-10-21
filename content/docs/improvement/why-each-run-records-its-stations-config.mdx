@@ -2,17 +2,17 @@
 type: concept
 icon: Lightbulb
 title: Why each run records its station's config
-description: Why every task run keeps the config its station gave it, what the config fingerprint leaves out, and why the agent proposes changes instead of making them.
+description: Why every task run stores its station's config, what the config fingerprint leaves out, and why the agent proposes changes instead of making them.
 ---
 
-A station's config is everything it gives a run: the prompt, the harness,
-model and effort, the harness profile, the line's image, repositories and setup commands,
-skills, tools, whether decisions and memories are drafted, and the judge that
-scores its runs. Changing any of
-it is how a team makes a station better. Whether a change helped only shows in
-the runs after it, and only if each run says which config it ran. So every
-task run records its station's config as it is queued, and a SHA-256 of it,
-the [config fingerprint](/docs/reference/glossary#config-fingerprint).
+A station's config is everything it supplies to a run: the prompt, the harness,
+model and effort, the harness profile, the line's image, repositories and setup
+commands, skills, tools, whether decisions are generated and memories are
+drafted, and the judge that scores its runs. Changing any of it is how a team
+makes a station better. Whether a change helped only shows in the runs after it,
+and only if each run says which config it ran. So every task run records its
+station's config as it is queued, and a SHA-256 of it, the [config
+fingerprint](/docs/reference/glossary#config-fingerprint).
 
 ## Measure before improving
 
@@ -39,9 +39,9 @@ Spotlight's built-in skills are left out too. They change with Spotlight
 releases, and counting them would start a new group with every release although
 nothing about the station changed.
 
-Values in a harness profile's MCP server environment are kept only as SHA-256
-digests. A changed value still changes the fingerprint, and the value itself is
-never kept in the recorded config.
+Values in a harness profile's MCP server environment are stored only as SHA-256
+hashes. A changed value still changes the fingerprint, and the value itself is
+never stored in the recorded config.
 
 ## Groups follow changes
 
@@ -58,8 +58,8 @@ recording began has no outcome.
 
 A task's run also records where it started: the workspace archive it restored,
 if any, and the commit each repository was checked out at. The config says
-what the station gave the run; the starting point says what the run began
-from. With both kept, a past task can be run again from the same start under
+what the station supplied to the run; the starting point says what the run began
+from. With both stored, a past task can be run again from the same start under
 another config, which is what a
 [replay](/docs/improvement/why-changes-are-replayed-on-past-tasks) does. A change can
 then be tried on tasks whose outcome is already known, before it reaches new

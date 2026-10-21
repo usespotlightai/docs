@@ -7,7 +7,7 @@ description: Make an integration's tool wait for a person to approve each call b
 
 Use this for tools whose effect is hard to undo, such as posting in public. You
 need an integration that offers the tool. If you don't have one, see
-[Give stations a tool from an HTTP API](/docs/integrations/give-stations-a-tool-from-an-http-api).
+[Add a tool from an HTTP API](/docs/integrations/add-a-tool-from-an-http-api).
 
 ## Add an approval to the tool
 
@@ -17,7 +17,7 @@ the reason a person reads before they decide.
 ```hcl
 tools = {
   comment = {
-    does        = "comment"
+    action      = "comment"
     description = "Comment on the issue."
     inputs = {
       issue = { type = "string", required = true }
@@ -40,9 +40,9 @@ agent's sentence, and rejects the integration otherwise.
 
 Run `terraform apply`.
 
-## Tools generated from an API description
+## Tools generated from an API spec
 
-Tools that an integration [generates from an API description](/docs/integrations/generate-tools-from-an-api-description)
+Tools that an integration [generates from an API spec](/docs/integrations/generate-tools-from-an-api-spec)
 already wait for approval when they change data: every OpenAPI `POST`, `PUT`,
 `PATCH` and `DELETE` operation, and every GraphQL mutation. The reason a
 person reads is `It changes data in <name>.`, with the integration's `name`.
@@ -68,7 +68,7 @@ Tools from a [remote MCP server](/docs/integrations/call-a-remote-mcp-server)
 wait for approval unless the server marks them as only reading. Change one the
 same way, under the `mcp` block's `tools.approval`.
 
-If the apply warns that it passes over an operation because it takes `intent`,
+If the apply warns that it skips an operation because it takes `intent`,
 that operation needs approval and has an input with the name Spotlight keeps
 for the agent's sentence. Set its approval to `false` to offer it, or leave it
 out.
@@ -78,10 +78,10 @@ Run `terraform apply`.
 ## Let a person ask first or block a tool
 
 Where an integration acts as the person who started the task (its
-`connection.holder` is `requester`), each person can choose what to ask of
+`connection.actsAs` is `requester`), each person can choose what to ask of
 calls made with their own connection. Open **Settings**, then **Integrations**
 under the team's name, and open an integration you have connected. Under
-**Acting as you**, pick a rule for each tool:
+**Your tool rules**, pick a rule for each tool:
 
 - **Allow**: follow the team. This is the default.
 - **Ask me first**: wait for your approval.

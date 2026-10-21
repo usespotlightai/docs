@@ -63,9 +63,9 @@ resource "spotlight_line" "core_delivery" {
     passes_to = ["code-review"]
 
     judge {
-      rubric = file("${path.module}/judges/core/delivery/implementation.md")
-      sample = 0.2
-      trust  = 0.6
+      rubric        = file("${path.module}/judges/core/delivery/implementation.md")
+      sample        = 0.2
+      min_agreement = 0.6
     }
 
     alert {
@@ -136,7 +136,7 @@ The same line as a request body:
       "skills": ["grafana"],
       "runners": ["gpu"],
       "passesTo": ["code-review"],
-      "judge": { "rubric": "Did the run meet the task?", "sample": 0.2, "trust": 0.6 },
+      "judge": { "rubric": "Did the run meet the task?", "sample": 0.2, "minAgreement": 0.6 },
       "alerts": [{ "measure": "sent_back_rate", "risesBy": 0.2, "over": 20 }]
     },
     {
@@ -176,7 +176,7 @@ reviews {
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `key` | string | required | Names the line within its team. Lowercase words joined by dashes, at most 64 characters. Fixed: an update that changes it is rejected; Terraform replaces the resource. |
+| `key` | string | required | Names the line within its team. Lowercase words joined by dashes, at most 64 characters. Immutable: an update that changes it is rejected; Terraform replaces the resource. |
 | `name` | string | required | What the line is called. At most 100 characters. |
 | `role` | string | none | The role the line plays for its team, as in `delivery` or `review`. Lowercase words joined by dashes, at most 64 characters. A role names one line per team. |
 | `repositories` | array of objects | `[]` | The repositories the line works on. See [repositories](#repository-fields). |
@@ -201,13 +201,13 @@ reviews {
 | `effort` | string | none | `low`, `medium`, `high`, `xhigh` or `max`. Without it, the harness uses its own default. |
 | `profile` | string | none | The key of a team [harness profile](/docs/reference/terraform/harness-profile). A run at a station naming a profile the team does not have fails with the code `refused`. |
 | `prompt` | string | none | Markdown handed to the agent that works the station. At most 20,000 characters. |
-| `check` | string | none | A command each layer of a change stack drafted at this station is checked with, as in `npm test`. One line of at most 500 characters. See [checks](/docs/reference/app/change-stacks-and-decisions#checks). |
+| `check` | string | none | A command each layer of a change stack generated at this station is checked with, as in `npm test`. One line of at most 500 characters. See [checks](/docs/reference/app/change-stacks-and-decisions#checks). |
 | `runners` | array of strings | none | Runner labels this station's work is placed on. Without it, the line's `runners` apply. See [placement](#placement). |
-| `diffs` | boolean | `false` | Whether a change stack is drafted from each run's diff. See [Change stacks and decisions](/docs/reference/app/change-stacks-and-decisions). |
-| `decisions` | boolean | `false` | Whether decisions are drafted from each run. See [decisions](/docs/reference/app/change-stacks-and-decisions#decisions). |
+| `diffs` | boolean | `false` | Whether a change stack is generated from each run's diff. See [Change stacks and decisions](/docs/reference/app/change-stacks-and-decisions). |
+| `decisions` | boolean | `false` | Whether decisions are generated from each run. See [decisions](/docs/reference/app/change-stacks-and-decisions#decisions). |
 | `memories` | boolean | `false` | Whether proposed team memories are drafted from each completed run, for the team to approve in the inbox. They come from what the agent said, thought and planned, never tool output, and from what people said on the task since the last draft. See [memory](/docs/reference/glossary#memory). |
-| `tools` | array of strings | `[]` | The tools given to the agent. See [tool names](#tool-names). Each tool once. |
-| `skills` | array of strings | `[]` | The skills given to the agent: a team [skill](/docs/reference/terraform/skill) key, or a catalog skill as `catalog.<name>@<x.y.z>`. Each skill once. A key starting `spotlight-` is rejected. |
+| `tools` | array of strings | `[]` | The tools the station enables for its agent. See [tool names](#tool-names). Each tool once. |
+| `skills` | array of strings | `[]` | The skills the station enables for its agent: a team [skill](/docs/reference/terraform/skill) key, or a catalog skill as `catalog.<name>@<x.y.z>`. Each skill once. A key starting `spotlight-` is rejected. |
 | `passesTo` | array of strings | `[]` | The keys of the stations a run here may hand a task on to. |
 | `ends` | boolean | `false` | Whether a run here may finish the task by handing over with `done`. From any other station, `done` goes to a person instead. |
 | `judge` | object | none | Scores the station's runs against a rubric, a list of claims, or both. Only on a `work` station. See [judge fields](#judge-fields). A read leaves it out when none is set. |
@@ -236,19 +236,19 @@ the built-in and catalog tools, and
 | --- | --- | --- | --- |
 | `rubric` | string | none | What a good run looks like, in Markdown. Not empty, at most 20,000 characters. In Terraform, usually read with `file()`. Required when `claims` is not set. |
 | `claims` | array of strings | none | Checkable claims the judge answers yes or no about each run, in order: 1 to 20, each not empty and at most 500 characters, with surrounding spaces trimmed. Required when `rubric` is not set. |
-| `passShare` | number | `1` | The share of claims a replayed run must meet to pass, from 0 to 1. `1` means every claim. Only with `claims`. Terraform: `pass_share`. |
+| `passThreshold` | number | `1` | The share of claims a replayed run must meet to pass, from 0 to 1. `1` means every claim. Only with `claims`. Terraform: `pass_threshold`. |
 | `sample` | number | required | The share of runs judged, from 0 to 1. |
-| `trust` | number | required | The agreement with people the judge needs before its scores show, from 0 to 1: Cohen's kappa on a yes-or-no rubric and on claims, Spearman's ρ on a 1 to 5 rubric. See [Agreement](/docs/reference/app/tasks-runs-and-the-inbox#agreement). |
+| `minAgreement` | number | required | The minimum agreement with people the judge needs before its scores show, from 0 to 1: Cohen's kappa on a yes-or-no rubric and on claims, Spearman's ρ on a 1 to 5 rubric. See [Agreement](/docs/reference/app/tasks-runs-and-the-inbox#agreement). |
 
-A judge has `sample`, `trust`, and `rubric`, `claims` or both. See
+A judge has `sample`, `minAgreement`, and `rubric`, `claims` or both. See
 [Judging](/docs/reference/app/tasks-runs-and-the-inbox#judging) for which runs
 are judged and when scores show.
 
 A judge with `claims` scores claim by claim: its score is the share of claims
 met. A `rubric` beside them is given to the judge with the claims, and needs no
-`scores:` line. `passShare` decides only whether a replayed run passes; see
+`scores:` line. `passThreshold` decides only whether a replayed run passes; see
 [Results](/docs/reference/app/replays#results). A read returns `claims` and
-`passShare` only when the judge has claims, and `rubric` only when it has one.
+`passThreshold` only when the judge has claims, and `rubric` only when it has one.
 
 ```hcl
 judge {
@@ -256,9 +256,9 @@ judge {
     "The change adds a test that fails without it.",
     "The change touches only what the task names.",
   ]
-  pass_share = 1
-  sample     = 0.2
-  trust      = 0.6
+  pass_threshold = 1
+  sample         = 0.2
+  min_agreement  = 0.6
 }
 ```
 
@@ -276,27 +276,27 @@ A `scores:` line further down is not read.
 
 An export writes each rubric to
 `judges/<team>/<line>/<station>.md` and reads it with `file()`. It writes
-`claims` in the block, one claim to a line, with `pass_share`.
+`claims` in the block, one claim to a line, with `pass_threshold`.
 
 The judge is part of the station's config: a run records one SHA-256 of its
-rubric, claims and pass share together, its rubric version, with `sample` and
-`trust`. A change to any of them changes the
+rubric, claims and pass threshold together, its rubric version, with `sample` and
+`minAgreement`. A change to any of them changes the
 [config fingerprint](/docs/reference/glossary#config-fingerprint), and a
-change to the rubric, a claim or the pass share starts a new rubric version.
+change to the rubric, a claim or the pass threshold starts a new rubric version.
 
 | Message | Cause |
 | --- | --- |
 | `Judge rubric must not be empty.` | `rubric` is empty or only whitespace. |
 | `Judge rubric must be at most 20000 characters.` | `rubric` is longer. |
-| `Judge sample must be a share from 0 to 1.` | `sample` is outside 0 to 1. |
-| `Judge trust must be a share from 0 to 1.` | `trust` is outside 0 to 1. |
+| `Judge sample must be from 0 to 1.` | `sample` is outside 0 to 1. |
+| `Judge minAgreement must be from 0 to 1.` | `minAgreement` is outside 0 to 1. |
 | `Judge rubric names its scale as "scores: yes-no" or "scores: 1-5" on its first line.` | The judge has no `claims`, and the `scores:` line names another scale, or the rubric opens a front matter block with `---` and never closes it. |
-| `Judge rubric or claims must be given.` | Neither `rubric` nor `claims` is set. |
+| `Judge rubric or claims must be set.` | Neither `rubric` nor `claims` is set. |
 | `Judge claims must list 1 to 20 claims.` | `claims` is empty or has more than 20. |
 | `Judge claims each must not be empty.` | A claim is empty or only whitespace. |
 | `Judge claims each must be at most 500 characters.` | A claim is longer. |
-| `Judge passShare needs claims to count.` | `passShare` is set without `claims`. |
-| `Judge passShare must be a share from 0 to 1.` | `passShare` is outside 0 to 1. |
+| `Judge passThreshold needs claims to count.` | `passThreshold` is set without `claims`. |
+| `Judge passThreshold must be from 0 to 1.` | `passThreshold` is outside 0 to 1. |
 
 Each is returned with `422` at the path `stations[<n>].judge.<field>`.
 
@@ -363,7 +363,7 @@ repositories sorted by name.
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `happening` | string | required | What happens, source first, as in `github.checks.failed`. Matches `^[a-z0-9]+(\.[a-z0-9][a-z0-9_-]*)+$`. |
+| `happening` | string | required | What happens, integration name first, as in `github.checks.failed`. Matches `^[a-z0-9]+(\.[a-z0-9][a-z0-9_-]*)+$`. |
 | `from` | string | none | The key of the station the task must be at for the reaction to apply. Without it, the reaction applies at any station. |
 | `to` | string | required | The key of the station the task moves to. While the task has a current run, the move waits until the run ends, and is dropped if the run passes the task on. A move to the completed station instead stops the run and asks a person, or, if the task awaits an answer to the run's question, adds a note to it. See [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves). |
 
@@ -379,8 +379,8 @@ is chosen and the task it opens.
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `start` | string | `mentioned` | `mentioned`: take a pull request when the `mention` handle appears in a comment or review on it. `opened`: also take every pull request as it opens. |
-| `mention` | string | `@spotlight` | The handle that asks for a review. Matches `^@[A-Za-z0-9][A-Za-z0-9_-]*(\[bot\])?$`. Matched as a whole word, without regard to case. |
-| `label` | string | `spotlight` | The pull request label that asks for a review, whatever `start` is. 1 to 50 characters. Matched without regard to case. |
+| `mention` | string | `@spotlight` | The handle that requests a review. Matches `^@[A-Za-z0-9][A-Za-z0-9_-]*(\[bot\])?$`. Matched as a whole word, without regard to case. |
+| `label` | string | `spotlight` | The pull request label that requests a review, whatever `start` is. 1 to 50 characters. Matched without regard to case. |
 | `skip.spotlight` | boolean | `true` | Skip pull requests Spotlight opened: a head branch under `spotlight/`, or a pull request a task opened. |
 | `skip.drafts` | boolean | `true` | Skip draft pull requests when they open. A mention or a label on a draft is still taken. |
 | `skip.authors` | array of strings | `[]` | GitHub logins whose pull requests are skipped, as in `dependabot[bot]`. Compared, stored and sorted in lower case, each once. |
@@ -398,7 +398,7 @@ See [Replay checks API](/docs/reference/api/replay-checks).
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `maxRegressions` | number | `0` | How many tasks a planned change may regress on and still pass. A whole number, 0 or more. A [search](/docs/reference/app/searches#regressions-against-the-live-config) of one of the line's work stations also marks a candidate whose regressions on its searched and held-out tasks together are more than this. The candidate can still be picked. In Terraform, `max_regressions`. |
-| `ceiling` | number | `10` | The most each replay a check starts may spend, above 0 and at most 1,000: the planned change's replay, and the baseline replay when the guarding set has none for the live config. See [Ceiling](/docs/reference/api/replay-checks#ceiling). |
+| `ceiling` | number | `10` | The most each replay a check starts may spend, above 0 and at most 1,000: the planned change's replay, and the baseline replay when the gating set has none for the live config. See [Ceiling](/docs/reference/api/replay-checks#ceiling). |
 | `currency` | string | `USD` | The three-letter currency `ceiling` is counted in. Stored in upper case. |
 | `minGain` | number | `0.05` | The smallest gain in success rate that counts as more than noise, as a share above 0 and at most 1. A gain over the baseline or the live config reads better only when its whole 95% interval is above 0 and it is at least this, and worse in the same way for a loss. It is read by the replays, searches and checks of the line's work stations; a line without `replay_check` reads them against `0.05`. It does not decide whether a check passes. See [Gains](/docs/reference/app/replays#gains). In Terraform, `min_gain`. |
 
@@ -444,14 +444,14 @@ apply. A station without `runners` uses the line's. With neither, any runner of
 the workspace qualifies.
 
 A label is one a [runner pool](/docs/reference/terraform/runner-pool) or [runner trust](/docs/reference/terraform/runner-trust)
-gives the runners it admits. A pool's `key` is not a label. Each entry,
+assigns to the runners it accepts. A pool's `key` is not a label. Each entry,
 trimmed of surrounding whitespace, is shaped as a label is, lowercase words joined by dashes of at most 64
 characters, and named once; any other entry is rejected.
 
 | Message | Cause |
 | --- | --- |
 | `Runners must each name a pool or trust label in lowercase words joined by dashes, at most 64 characters, such as vpc-internal.` | An entry is not shaped as a label. |
-| `Runners must name <label> only once.` | An entry is given twice. |
+| `Runners must name <label> only once.` | An entry is named twice. |
 
 Each is returned with `422` at the path `runners`, or
 `stations[<n>].runners` for a station.

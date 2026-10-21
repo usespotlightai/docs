@@ -2,12 +2,12 @@
 type: reference
 icon: BookText
 title: spotlight_skill
-description: The fields of a skill, the SKILL.md frontmatter, the limits on its files, and where a run finds the skills its station gives.
+description: The fields of a skill, the SKILL.md frontmatter, the limits on its files, and where a run finds the skills its station enables.
 ---
 
 The `spotlight_skill` resource, and the skill resource of the API: a folder of
 files, a `SKILL.md` with instructions and any files beside it, that a station
-gives its runs in `skills`.
+enables for its runs in `skills`.
 
 | Kind | Endpoint | Terraform | Address |
 | --- | --- | --- | --- |
@@ -39,14 +39,14 @@ description: Look up dashboards
 Search before you guess.
 ```
 
-A station gives it with `skills = [spotlight_skill.core_grafana.key]`, or
+A station enables it with `skills = [spotlight_skill.core_grafana.key]`, or
 `"skills": ["grafana"]` in JSON.
 
 ## Fields
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `key` | string | required | What stations give the skill by. Lowercase words joined by dashes, at most 64 characters. Must not start with `spotlight-`. Fixed: an update that changes it is rejected; Terraform replaces the resource. |
+| `key` | string | required | What stations enable the skill by. Lowercase words joined by dashes, at most 64 characters. Must not start with `spotlight-`. Immutable: an update that changes it is rejected; Terraform replaces the resource. |
 | `files` | map of name to string | required | Each file's text by its path within the skill's folder. Must contain `SKILL.md`. |
 
 A read also returns these fields, taken from the `SKILL.md` frontmatter.
@@ -78,24 +78,24 @@ The body after the frontmatter must not be empty.
 - A skill contains at most 50 files.
 - A skill's files contain at most 524,288 characters together.
 
-## What a station gives
+## What a station enables
 
 A station's `skills` names team skills by key and catalog skills as
-`catalog.<name>@<x.y.z>`. Where a station gives a skill:
+`catalog.<name>@<x.y.z>`. Where a station enables a skill:
 
 - The run also gets every tool in a team skill's `tools`.
 - A team skill whose `secrets` name any secret the workspace does not have is
-  not given.
-- A catalog skill is given only if the workspace's plan includes it, and brings
-  the catalog tools it uses.
+  not enabled.
+- A catalog skill is enabled only if the workspace's plan includes it. The run
+  also gets the catalog tools that the skill uses.
 
 A station may not name a skill starting `spotlight-`. See
 [Built-in tools and skills](/docs/reference/built-ins/built-in-tools-and-skills) for the
-skills Spotlight gives itself and the catalog skills.
+skills Spotlight adds itself and the catalog skills.
 
 ## Where a run finds its skills
 
-Each skill given to a run is laid out as a folder in the run's workspace; see
+Each skill enabled for a run is laid out as a folder in the run's workspace; see
 [Inside a sandbox](/docs/reference/hosts/sandbox#files). The folder is named for the skill's key; a
 catalog skill's folder is `spotlight-catalog-<name>`.
 
@@ -109,6 +109,6 @@ Before the run starts, anything else in that skills folder is removed.
 
 ## Delete
 
-A delete fails with `409` `in-use` while any station gives the skill.
+A delete fails with `409` `in-use` while any station enables the skill.
 
-See [Give stations a skill](/docs/lines/give-stations-a-skill).
+See [Enable skills at a station](/docs/lines/enable-skills-at-a-station).

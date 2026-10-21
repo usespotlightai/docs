@@ -22,18 +22,18 @@ through the [Replayed candidates API](/docs/reference/api/replayed-candidates).
 
 | Method and path | Returns |
 | --- | --- |
-| `GET /lines/{lineId}/stations/{stationId}/replay-sets` | The station's replay sets, each with its runs, whether each can still be replayed, `guardsChanges`, whether the set [guards the station's changes](/docs/reference/api/replay-checks), its [`health` and `minGain`](#set-health), and its [`composition`](#set-composition). |
+| `GET /lines/{lineId}/stations/{stationId}/replay-sets` | The station's replay sets, each with its runs, whether each can still be replayed, `gatesChanges`, whether the set [gates the station's changes](/docs/reference/api/replay-checks), its [`health` and `minGain`](#set-health), and its [`composition`](#set-composition). |
 | `GET /replay-sets` | Every replay set of the team, including those whose station has left its line. With `line` and `station`, only one station's. |
 | `GET /lines/{lineId}/stations/{stationId}/replayable-runs` | The station's latest 50 ended task runs, newest first, each with its `unreplayableReason` and `reason`, or none. |
 | `GET /replay-sets/{setId}/suggestions` | Up to 5 of the station's recent runs that would even out how the set's runs turned out, each as `replayable-runs` lists it, with its `outcome`. None is added. See [Suggested runs](/docs/reference/app/replays#suggested-runs). |
 | `POST /lines/{lineId}/stations/{stationId}/replay-sets` | `201` and `{ "id" }`: opens an empty set. |
 | `PATCH /replay-sets/{setId}` | `204`: renames the set, also once its station has left its line. |
-| `DELETE /replay-sets/{setId}` | `204`: deletes the set and its replays, and lets go of the archives it kept. |
+| `DELETE /replay-sets/{setId}` | `204`: deletes the set and its replays, and releases the archives it holds. |
 | `POST /replay-sets/{setId}/entries` | `204`: adds a run to the set. |
 | `DELETE /replay-sets/{setId}/entries/{runId}` | `204`: takes a run out of the set, also once its station has left its line. |
 | `GET /replay-sets/{setId}/replays` | Every replay of the set, newest first, with each run's result, the baseline marked. |
 | `POST /replay-sets/{setId}/replays` | `201`: starts a replay. See [Start a replay](#start-a-replay). |
-| `GET /replays/{replayId}` | One replay, its totals, its baseline's id, the [counterpart](/docs/reference/app/replays#counterparts) it is compared with in `comparedWith`, its gain over that replay, and each task against it, regressions first. A replay a search started carries `search`: `{ searchId, candidateName }`, with `seed` for the live config; otherwise `search` is null. |
+| `GET /replays/{replayId}` | One replay, its totals, its baseline's id, the [reference replay](/docs/reference/app/replays#reference-replays) it is compared with in `referenceReplay`, its gain over that replay, and each task against it, regressions first. A replay a search started carries `search`: `{ searchId, candidateName }`, with `seed` for the live config; otherwise `search` is null. |
 | `POST /replays/{replayId}/stop` | `204`: stops the replay. |
 | `GET /replay-runs/{runId}/replay` | The replay a replay run belongs to, its candidate and set, `search` as above, and the run's result in it. |
 | `GET /replay-runs/{runId}` | A replay run: the run it replays, its steps, and what it spent. |
@@ -59,37 +59,37 @@ through the [Replayed candidates API](/docs/reference/api/replayed-candidates).
 for the station as it is configured now. `ceiling.amount` is above 0 and at
 most 1,000, and `ceiling.currency` a three-letter code. `repeats` is how many
 times to replay each run, 1 to 5, and `1` when left out; `ceiling` covers every
-copy.
+repeat.
 
 When the set has no baseline covering all its runs with at least `repeats`
-copies of each, a baseline replay of the live config starts too, with a
+repeats of each, a baseline replay of the live config starts too, with a
 ceiling of its own equal to `ceiling` and the same `repeats`. With
 `candidate` set to `live`, the replay itself becomes the baseline.
 
-That baseline, either one, also [checks the set](#checking-the-set) when the
+That baseline, either one, is also a [calibration](#calibration) when the
 set contains 5 runs or more and no replay of the live config at its current
-config fingerprint over the whole set has checked it while queued, running or
+config fingerprint over the whole set has calibrated it while queued, running or
 finished. It then replays each run `max(repeats, 3)` times, under a ceiling
 of `ceiling` times those repeats divided by `repeats`, at most `1,000`. The answer:
 
 | Field | Type | Description |
 | --- | --- | --- |
 | `id` | string | The replay. |
-| `ceiling` | object | `{ amount, currency }`, the replay's own ceiling, raised when the replay is a baseline that checks the set. |
-| `baseline` | object or null | `{ id, ceiling, status }` when a baseline started, `ceiling` raised when it checks the set: `status` is `started` when the replay is the baseline, and `starting` when a baseline starts beside it. Null when the set's baseline already covers its runs. |
+| `ceiling` | object | `{ amount, currency }`, the replay's own ceiling, raised when the replay is a calibration. |
+| `baseline` | object or null | `{ id, ceiling, status }` when a baseline started, `ceiling` raised when it is a calibration: `status` is `started` when the replay is the baseline, and `starting` when a baseline starts beside it. Null when the set's baseline already covers its runs. |
 
-## Checking the set
+## Calibration
 
-No endpoint starts a check. A baseline checks the set as described under
+No endpoint starts a calibration. A baseline calibrates the set as described under
 [Start a replay](#start-a-replay); a search's replay of the live config and a
 [replay check](/docs/reference/api/replay-checks)'s baseline never do. A set of
-fewer than 5 runs is never checked. Once the checking baseline finishes, each
+fewer than 5 runs is never calibrated. Once the calibration finishes, each
 change whose check passed or failed is checked a second time, and each change
 the judge gave a verdict on is judged a second time, in order, while the
 ceiling still has room for one more at what its first judging cost. The
 second judgings count against the ceiling, but not in the replay's
 success or `costPerRun`. Neither changes a run's result. See
-[Checking the set](/docs/reference/app/replays#checking-the-set).
+[Calibration](/docs/reference/app/replays#calibration).
 
 ## Success, ranges and noise
 
@@ -98,40 +98,40 @@ A replay read carries:
 | Field | Type | Description |
 | --- | --- | --- |
 | `repeats` | number | How many times it replays each run of its set. |
-| `totals.successRate` | number or null | Its [success](/docs/reference/app/replays#success), 0 to 1: per task, the share of its scored copies that succeeded, averaged over the tasks scored. |
+| `totals.successRate` | number or null | Its [success](/docs/reference/app/replays#success), 0 to 1: per task, the share of its scored repeats that succeeded, averaged over the tasks scored. |
 | `totals.interval` | object or null | `{ rate, low, high }`: the success rate and its 95% interval, bootstrapped over the tasks. Null while none was scored. |
-| `totals.tasks`, `totals.tasksScored` | number | How many tasks it replays, and how many have a scored copy. `entries`, `ended`, `scored` and `unscored` count copies. |
-| `againstBaseline` | object or null | Its [gain](#gain) over the replay in `comparedWith`, with whether it is within noise. Null where `comparedWith` is, and while no task was scored on both sides. |
-| `comparedWith` | object or null | `{ replayId, successRate, interval }`: the replay its gain, `comparison` rows and deltas are against, with its success. Null for the baseline itself, or with none. See [Compared with](#compared-with). |
-| `entries[].repeat` | number | Which copy of its original run an entry is, from 1. |
-| `comparison` | array | On a single replay's read: one row per task against the replay in `comparedWith`, regressions first. |
-| `comparison[].candidate`, `comparison[].baseline` | array | Each copy of the task this replay, and the replay in `comparedWith`, replayed. `baseline` is empty without one. |
-| `comparison[].candidateSuccess`, `comparison[].baselineSuccess` | number or null | The share of each side's scored copies that succeeded. |
-| `comparison[].costDelta`, `msDelta`, `stepsDelta` | number or null | This replay's measure less that of the replay in `comparedWith`, each averaged over its copies, once every copy of both has ended. |
+| `totals.tasks`, `totals.tasksScored` | number | How many tasks it replays, and how many have a scored repeat. `entries`, `ended`, `scored` and `unscored` count repeats. |
+| `gainOverReference` | object or null | Its [gain](#gain) over the replay in `referenceReplay`, with whether it is within noise. Null where `referenceReplay` is, and while no task was scored on both sides. |
+| `referenceReplay` | object or null | `{ replayId, successRate, interval }`: the replay its gain, `comparison` rows and deltas are against, with its success. Null for the baseline itself, or with none. See [Reference](#reference). |
+| `entries[].repeat` | number | Which repeat of its original run an entry is, from 1. |
+| `comparison` | array | On a single replay's read: one row per task against the replay in `referenceReplay`, regressions first. |
+| `comparison[].candidate`, `comparison[].baseline` | array | Each repeat of the task this replay, and the replay in `referenceReplay`, replayed. `baseline` is empty without one. |
+| `comparison[].candidateSuccess`, `comparison[].baselineSuccess` | number or null | The share of each side's scored repeats that succeeded. |
+| `comparison[].costDelta`, `msDelta`, `stepsDelta` | number or null | This replay's measure less that of the replay in `referenceReplay`, each averaged over its repeats, once every repeat of both has ended. |
 | `comparison[].regressed` | boolean | See [Regressions](/docs/reference/app/replays#regressions). |
-| `probe` | boolean | Whether it [checks the set](#checking-the-set). |
-| `entries[].secondJudge` | object or null | A check's second judging of the entry's change, in the shape of its first. Null when it was not judged again. |
+| `calibration` | boolean | Whether it is a [calibration](#calibration) of the set. |
+| `entries[].secondJudge` | object or null | A calibration's second judging of the entry's change, in the shape of its first. Null when it was not judged again. |
 | `entries[].rejudgingSpent` | object or null | What the second judging cost. |
-| `entries[].recheck` | object or null | A check's second check of the entry's change, in the shape of its first. Null when it was not checked again. |
+| `entries[].recheck` | object or null | A calibration's second check of the entry's change, in the shape of its first. Null when it was not checked again. |
 
 A replay read also carries, as in [Judge verdicts](#judge-verdicts) and
 [Side by side](#side-by-side), each entry's `judge`, `pair` and
-`pairingSpent`, and the replay's `pairedWith` and `pairsAgainstBaseline`.
+`pairingSpent`, and the replay's `pairwiseReference` and `referencePairs`.
 
-### Compared with
+### Reference
 
 Each replay on the list of a set's replays, and a single replay's read, carry
-`comparedWith`.
+`referenceReplay`.
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `replayId` | string | The replay compared with: `pairedWith` where set, else for a [replay with the answer](/docs/reference/app/replays#replay-with-the-answer) the live replay whose finishing started it, else the set's baseline. |
-| `successRate` | number or null | Its success on the tasks the gain pairs, the tasks both replays scored: per task, the share of its scored copies that succeeded, averaged over those tasks. Null with no such task. |
+| `replayId` | string | The reference replay: `pairwiseReference` where set, else for a [replay with the answer](/docs/reference/app/replays#replay-with-the-answer) the live replay whose finishing started it, else the set's baseline. |
+| `successRate` | number or null | Its success on the tasks the gain pairs, the tasks both replays scored: per task, the share of its scored repeats that succeeded, averaged over those tasks. Null with no such task. |
 | `interval` | object or null | `{ rate, low, high }`: that success rate and its 95% interval over those tasks. Null with no such task. |
 
-`comparedWith` is null for the set's baseline, for a replay that keeps no
-counterpart while the set has no baseline, and for a replay whose counterpart
-is gone, such as a replay with the answer whose live replay is gone. See [Counterparts](/docs/reference/app/replays#counterparts).
+`referenceReplay` is null for the set's baseline, for a replay that keeps no
+reference replay while the set has no baseline, and for a replay whose reference replay
+is gone, such as a replay with the answer whose live replay is gone. See [Reference replays](/docs/reference/app/replays#reference-replays).
 
 ### Judge verdicts
 
@@ -141,9 +141,9 @@ An entry's `judge`:
 | --- | --- | --- |
 | `scale` | string or null | `yes-no`, `number` or `claims`. |
 | `score` | number or null | 0 or 1 on `yes-no`, 1 to 5 on `number`, or the share of claims met on `claims`. |
-| `marks` | array of booleans or null | Whether each claim was met, in order. Null unless `scale` is `claims`. |
+| `claimResults` | array of booleans or null | Whether each claim was met, in order. Null unless `scale` is `claims`. |
 | `claims` | array of strings | The claims the judge marked, in order, as worded when it judged. Empty unless `scale` is `claims`. |
-| `passShare` | number or null | The share of claims the run had to meet to pass. Null unless `scale` is `claims`. |
+| `passThreshold` | number or null | The share of claims the run had to meet to pass. Null unless `scale` is `claims`. |
 | `reasons` | array | The judge's reasons, each `{ text, claim, citations }`. `claim` is the place of the claim it is about, from 0, or null on a rubric's scale. Each citation is `{ kind, step, hunk }`, `kind` `step` or `hunk`; a step has its `index` and a hunk its `id`, and their other fields are null or empty, because a replay keeps no copy of what the judge read. |
 
 ### Side by side
@@ -152,11 +152,11 @@ See [Side by side](/docs/reference/app/replays#side-by-side).
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `pairedWith` | string or null | The replay its changes are set beside, judged blind, once it finishes, chosen when it started: the baseline that was current then, or its search's replay of the live config. It is then also its [counterpart](/docs/reference/app/replays#counterparts), in `comparedWith`. Null for a baseline, a check of the set, a replay with the answer, or a replay that had none. |
-| `pairsAgainstBaseline` | object or null | `{ wins, losses, ties }`, counting tasks. Null where `pairedWith` is. |
-| `entries[].pair` | object or null | `{ state, againstRunId, outcome, model, unpaired, readings }`. `state` is `asked`, `judged` or `unpaired`. `againstRunId` is the run of the same task in `pairedWith` it was set beside. `outcome` is `win`, `loss` or `tie` once judged. `unpaired` is the [reason](/docs/reference/app/replays#side-by-side) when not compared, including `other-rubric` and `budget`. `readings` contains the two readings, each `{ ownShownFirst, outcome, reasons }`, each reason `{ text, ownHunks, theirHunks }`, the hunks it cites of this change and of the other. Null until asked. |
+| `pairwiseReference` | string or null | The replay its changes are set beside, judged blind, once it finishes, chosen when it started: the baseline that was current then, or its search's replay of the live config. It is then also its [reference replay](/docs/reference/app/replays#reference-replays), in `referenceReplay`. Null for a baseline, a calibration, a replay with the answer, or a replay that had none. |
+| `referencePairs` | object or null | `{ wins, losses, ties }`, counting tasks. Null where `pairwiseReference` is. |
+| `entries[].pair` | object or null | `{ state, otherRunId, outcome, model, unpaired, passes }`. `state` is `requested`, `judged` or `unpaired`. `otherRunId` is the run of the same task in `pairwiseReference` it was set beside. `outcome` is `win`, `loss` or `tie` once judged. `unpaired` is the [reason](/docs/reference/app/replays#side-by-side) when not compared, including `other-rubric` and `ceiling-reached`. `passes` contains the two passes, each `{ ownShownFirst, outcome, reasons }`, each reason `{ text, ownHunks, theirHunks }`, the hunks it cites of this change and of the other. Null until requested. |
 | `entries[].pairingSpent` | object or null | What the side-by-side judging cost. It counts against the ceiling, but does not add to `totals.spent`. |
-| `comparison[].pair` | string or null | `win`, `loss` or `tie` for the task, from most of its compared copies. Null when none was compared. |
+| `comparison[].pair` | string or null | `win`, `loss` or `tie` for the task, from most of its compared repeats. Null when none was compared. |
 
 A replay set read carries `health`, as in [Set health](#set-health), and
 `minGain`, the smallest gain its line counts as real: `replay_check.min_gain`,
@@ -168,7 +168,7 @@ or `0.05` when the line has none.
 | --- | --- | --- |
 | `gain` | number | The success rate gained, on the tasks both sides scored, paired task by task. |
 | `low`, `high` | number | The 95% interval of the gain, a paired bootstrap over those tasks. |
-| `verdict` | string | `better`, `worse` or `within-noise`. See [Gains](/docs/reference/app/replays#gains). |
+| `significance` | string | `better`, `worse` or `within-noise`. See [Gains](/docs/reference/app/replays#gains). |
 | `minGain` | number | The smallest gain the line counts as real. |
 | `tasks` | number | How many tasks both sides scored. |
 
@@ -180,11 +180,11 @@ A set's `health` is read for the station's live config at its current
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `noise` | object or null | `{ replayId, fingerprint, repeats, perRepeat, spread, flippedTasks, measuredAt, noisyInOneCopy }`. `perRepeat` is each copy's success rate, in order; `spread` the highest less the lowest; `flippedTasks` the ids of tasks whose copies both succeeded and failed. `noisyInOneCopy` is true when one copy of each run cannot tell a gain of `minGain` from chance: when `spread` divided by `minGain`, squared and rounded up, is more than 1. Null until a finished replay of the live config replayed each run 2 or more times. |
+| `noise` | object or null | `{ replayId, fingerprint, repeats, perRepeat, spread, flippedTasks, measuredAt, noisyInOneRepeat }`. `perRepeat` is each repeat's success rate, in order; `spread` the highest less the lowest; `flippedTasks` the ids of tasks whose repeats both succeeded and failed. `noisyInOneRepeat` is true when one repeat of each run cannot tell a gain of `minGain` from chance: when `spread` divided by `minGain`, squared and rounded up, is more than 1. Null until a finished replay of the live config replayed each run 2 or more times. |
 | `saturation` | object or null | `{ replayId, rate, interval, saturated, measuredAt }`, from the newest finished replay of the live config over the whole set, outside a search. `saturated` is true when `rate` is above 0.95. Null until there is one. |
-| `judge` | object or null | `{ replayId, compared, agreed, pending, agreement, unstable }`, from the newest finished [check of the set](#checking-the-set). `compared` counts changes judged twice, both times with a verdict; `agreed` those passed or failed alike both times; `pending` the second judgings still to come; `agreement` is `agreed` out of `compared`, or null before any is compared. `unstable` is true when `agreement` is below 0.8. Null until a check asked for a second judging. |
-| `checks` | object or null | `{ replayId, rechecked, pending, flaky }`, from the same check. `rechecked` counts changes checked twice, both times passing or failing; `pending` the second checks still to come; `flaky` lists each change whose check passed once and failed once, as `{ taskId, originalRunId, runId, first, recheck }`, `first` and `recheck` each `passed` or `failed`. Null until a check asked for a second check. |
-| `oracle` | object or null | `{ replayId, candidateId, repeats, state, againstReplayId, againstState, answered, live, withAnswer, gain, roomToImprove }`, from the newest [replay with the answer](/docs/reference/app/replays#replay-with-the-answer) of the live config as it is now: how much better the live config does when handed each run's answer. Spotlight starts it after a replay of the live config over the whole set finishes; it cannot be started through the API. `againstReplayId` is the live replay whose finishing started it, and `againstState` that replay's state, or `gone`: `finished` once the two can be compared, while `stopped`, `over-budget` or `gone` means they never will be. `answered` counts the runs it replayed, those whose original was accepted or sent back. `live` and `withAnswer` are the success of the live replay and of this one on those runs, and `gain` this one's [gain](#gain) over the live replay on them, the most a better config could gain there; each is null until both finished. `roomToImprove` is true when `gain` reads `better`, false when it does not, and null until compared or while fewer than 5 tasks were scored on both sides. Null until one started. |
+| `judge` | object or null | `{ replayId, compared, agreed, pending, agreement, unstable }`, from the newest finished [calibration](#calibration). `compared` counts changes judged twice, both times with a verdict; `agreed` those passed or failed alike both times; `pending` the second judgings still to come; `agreement` is `agreed` out of `compared`, or null before any is compared. `unstable` is true when `agreement` is below 0.8. Null until a calibration requested a second judging. |
+| `checks` | object or null | `{ replayId, rechecked, pending, flaky }`, from the same calibration. `rechecked` counts changes checked twice, both times passing or failing; `pending` the second checks still to come; `flaky` lists each change whose check passed once and failed once, as `{ taskId, originalRunId, runId, first, recheck }`, `first` and `recheck` each `passed` or `failed`. Null until a calibration requested a second check. |
+| `oracle` | object or null | `{ replayId, candidateId, repeats, state, referenceReplayId, referenceState, answered, live, withAnswer, gain, roomToImprove }`, from the newest [replay with the answer](/docs/reference/app/replays#replay-with-the-answer) of the live config as it is now: how much better the live config does when handed each run's answer. Spotlight starts it after a replay of the live config over the whole set finishes; it cannot be started through the API. `referenceReplayId` is the live replay whose finishing started it, and `referenceState` that replay's state, or `gone`: `finished` once the two can be compared, while `stopped`, `ceiling-reached` or `gone` means they never will be. `answered` counts the runs it replayed, those whose original was accepted or sent back. `live` and `withAnswer` are the success of the live replay and of this one on those runs, and `gain` this one's [gain](#gain) over the live replay on them, the most a better config could gain there; each is null until both finished. `roomToImprove` is true when the `significance` of `gain` is `better`, false when it does not, and null until compared or while fewer than 5 tasks were scored on both sides. Null until one started. |
 
 ## Set composition
 
@@ -229,5 +229,5 @@ of the kind `replay`, keyed by the replay's id.
 | `401` | No session or token, or an unknown token. |
 | `403` | A change by a caller who may read the team but not plan. |
 | `404` | The team, line, station, set, run, candidate or replay is not one the caller may see, as in `Replay set <setId> not found.` |
-| `409` | Adding a run already in the set (`Run <runId> is already in the replay set.`), to a full set (`Replay set is full. Maximum runs: 50`), or that cannot be replayed (`Run <runId> cannot be replayed. <reason>`, with an [unreplayable reason](/docs/reference/app/replays#why-a-run-cannot-be-replayed)). Deleting a set while a replay or a search of it is under way, or adding or taking out a run while a search of it is under way (`Replay set <setId> is being replayed or searched. Please stop its replays and searches first.`). Adding a run to, or replaying, a set whose station has left its line (`The station of replay set <setId> is gone from its line. You can only rename the set, remove runs from it or delete it.`). Stopping a replay that has ended (`Replay <replayId> has already ended or been stopped.`). Starting a replay while the set's baseline changed (`The baseline of replay set <setId> changed while the replay was starting. Please start it again.`). |
-| `422` | A missing or invalid field, at its path: a name out of length (`Replay set name must be 1 to 100 characters.`), a ceiling out of range (`Spend ceiling must be above 0 and at most 1,000.`) or not in a three-letter currency, `repeats` not a number (`Repeats must be a number.`) or out of range (`Replay repeats must be from 1 to 5.`), no `candidate` (`Candidate must be a candidate ID or "live".`), or a set with no runs (`Replay must replay at least one run.`). A run of another station (`Run <runId> worked at a different station from the replay set.`). `line` without `station`, or `station` without `line`, on `GET /replay-sets` (`Line and station must be given together.`). |
+| `409` | Adding a run already in the set (`Run <runId> is already in the replay set.`), to a full set (`Replay set is full. Maximum runs: 50`), or that cannot be replayed (`Run <runId> cannot be replayed. <reason>`, with an [unreplayable reason](/docs/reference/app/replays#why-a-run-cannot-be-replayed)). Deleting a set while a replay or a search of it is in progress, or adding or taking out a run while a search of it is in progress (`Replay set <setId> is being replayed or searched. Please stop its replays and searches first.`). Adding a run to, or replaying, a set whose station has left its line (`The station of replay set <setId> is gone from its line. You can only rename the set, remove runs from it or delete it.`). Stopping a replay that has ended (`Replay <replayId> has already ended or been stopped.`). Starting a replay while the set's baseline changed (`The baseline of replay set <setId> changed while the replay was starting. Please start it again.`). |
+| `422` | A missing or invalid field, at its path: a name out of length (`Replay set name must be 1 to 100 characters.`), a ceiling out of range (`Money ceiling must be above 0 and at most 1,000.`) or not in a three-letter currency, `repeats` not a number (`Repeats must be a number.`) or out of range (`Replay repeats must be from 1 to 5.`), no `candidate` (`Candidate must be a candidate ID or "live".`), or a set with no runs (`Replay must replay at least one run.`). A run of another station (`Run <runId> worked at a different station from the replay set.`). `line` without `station`, or `station` without `line`, on `GET /replay-sets` (`Line and station must be sent together.`). |
