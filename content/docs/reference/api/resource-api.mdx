@@ -216,11 +216,16 @@ The export's files are ordered by path and are the same on every export:
 
 | File | Contents |
 | --- | --- |
-| `main.tf` | Every resource, each with an `import` block beside it, referring to one another. |
+| `terraform.tf` | The `required_providers` block. |
+| `imports.tf` | An `import` block for every resource, in the order the resources depend on one another. |
+| `workspace.tf`, `secrets.tf`, `runners.tf` | The workspace and its token trusts; the secrets; runner trusts, egresses, runner pools and the workspace's runners. |
+| `team-<team>.tf`, `line-<team>-<line>.tf`, `integration-<team>-<integration>.tf` | One file for each team, line and integration. |
+| `skills-<team>.tf`, `hooks-<team>.tf`, `profiles-<team>.tf` | A team's skills, hooks and harness profiles. |
 | `variables.tf` | A sensitive variable for each value Spotlight never returns, such as secret values, runner pool tokens and egress tokens. |
-| `prompts/<team>/<line>/<station>.md` | Each station prompt, read by `main.tf` with `file()`. |
-| `judges/<team>/<line>/<station>.md` | Each station judge's rubric, read by `main.tf` with `file()`. A judge with claims alone has none. |
-| `skills/<team>/<key>/<path>` | Each skill file, read by `main.tf` with `file()`. |
+| `prompts/<team>/<line>/<station>.md` | Each station prompt, read with `file()`. |
+| `judges/<team>/<line>/<station>.md` | Each station judge's rubric, read with `file()`. A judge with claims alone has none. |
+| `skills/<team>/<key>/<path>` | Each skill file, read with `file()`. |
+| `.gitignore` | `.terraform/`, state files and `*.tfvars`. |
 
 Workspace tokens are not exported.
 

@@ -51,8 +51,8 @@ The agent writes the team's Terraform into the `spotlight/` folder of your
 repository and opens a pull request. Its note ends with a link to it.
 
 Go back to **Set up your team**. **Set up configuration as code** now has a
-check mark. Expand it and click **Open pull request**. Notice `main.tf`, with a
-`spotlight_line` resource for each line, and the `prompts/` folder, with one
+check mark. Expand it and click **Open pull request**. Notice a
+`line-<team>-<line>.tf` file for each line, and the `prompts/` folder, with one
 file for each station's prompt. Merge the pull request on GitHub.
 
 </Step>
@@ -114,13 +114,13 @@ Apply complete! Resources: <n> imported, 0 added, <n> changed, 0 destroyed.
 
 ## Give Delivery your code
 
-If the agent already gave Delivery your repository, `main.tf` names it in
-Delivery's `repository` block, and the apply below changes nothing.
+If the agent already gave Delivery your repository, `line-<team>-delivery.tf`
+names it in Delivery's `repository` block, and the apply below changes nothing.
 
 <Steps>
 <Step>
 
-In `main.tf`, find the `spotlight_line` resource with `key = "delivery"`, and
+In `line-<team>-delivery.tf`, find the `spotlight_line` resource, and
 add a `repository` block to it with your repository's owner and name:
 
 ```hcl
