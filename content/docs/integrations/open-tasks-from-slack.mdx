@@ -2,7 +2,7 @@
 type: how-to
 icon: SquarePen
 title: Open tasks from Slack and post questions back
-description: Define a Slack integration so a mention of your Slack app opens a task, and the task's questions are posted back to Slack.
+description: Create a Slack integration so a mention of your Slack app opens a task, and the task's questions are posted back to Slack.
 ---
 
 The tasks open on the team's delivery line, and a reply in a question's Slack
@@ -80,7 +80,7 @@ resource "spotlight_secret" "slack_bot_token" {
 }
 ```
 
-## Define the integration
+## Create the integration
 
 A task opened from Slack posts its questions to the channel it was opened
 from. `routes` names the channel for questions from a line's other tasks, by
@@ -117,18 +117,18 @@ resource "spotlight_integration" "slack" {
         when = "$${{ body.type == \"url_verification\" }}"
         body = "$${{ body.challenge }}"
       }
-      mine = "$${{ body.event.bot_id != \"\" }}"
+      ignoreWhen = "$${{ body.event.bot_id != \"\" }}"
       events = [
         {
           when = "$${{ body.event.type == \"app_mention\" }}"
           raise = {
             happening = "slack.app_mention"
             label     = "Mentioned"
-            told      = "Mentioned Spotlight in Slack."
+            summary   = "Mentioned Spotlight in Slack."
             opens = {
-              onto  = "delivery"
-              at    = "triage"
-              title = "$${{ body.event.text }}"
+              lineRole = "delivery"
+              station  = "triage"
+              title    = "$${{ body.event.text }}"
             }
             marks = [
               { kind = "slack.thread", value = "$${{ body.event.channel + \":\" + (has(body.event.thread_ts) ? body.event.thread_ts : body.event.ts) }}" },
@@ -141,9 +141,9 @@ resource "spotlight_integration" "slack" {
           raise = {
             happening = "slack.message.replied"
             label     = "Replied"
-            told      = "Replied in a Slack thread."
-            spoken    = true
-            say       = "$${{ body.event.text }}"
+            summary   = "Replied in a Slack thread."
+            answers   = true
+            message   = "$${{ body.event.text }}"
             marks = [
               { kind = "slack.thread", value = "$${{ body.event.channel + \":\" + body.event.thread_ts }}" },
             ]
@@ -169,7 +169,7 @@ resource "spotlight_integration" "slack" {
 
     on = {
       "task.asked" = {
-        do = "post-message"
+        action = "post-message"
         to = {
           channel = "$${{ task.marks[\"slack.channel\"] }}"
           thread  = "$${{ task.marks[\"slack.thread\"] }}"
@@ -186,8 +186,8 @@ resource "spotlight_integration" "slack" {
 }
 ```
 
-`onto` names the line's role, and `at` the key of the station new tasks start
-at. The keys under `routes` are line keys. Change any of them that differ on
+`lineRole` names the line's role, and `station` the key of the station new
+tasks start at. The keys under `routes` are line keys. Change any of them that differ on
 your team, and if your team's key is not `core`, change it in
 `spotlight_team`. Run
 `terraform apply`. If the plan fails at an expression,

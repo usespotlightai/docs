@@ -118,7 +118,7 @@ The body is JSON of type `work.provision`. Read these fields from `data`:
 | Field | Use |
 | --- | --- |
 | `runner.id` | Name the container or job after it. |
-| `runner.token` | Pass it as `SPOTLIGHT_TOKEN`. It is good for this one piece of work. |
+| `runner.token` | Pass it as `SPOTLIGHT_RUN_TOKEN`. It is good for this one piece of work. |
 | `spotlightUrl` | Pass it as `SPOTLIGHT_URL`. |
 | `image` | The image to start. When it is `null`, start your own default runner image: one built `FROM ghcr.io/usespotlightai/spotlight-runner:<release>` with the harnesses your stations use, where `<release>` is a Spotlight release tag. Spotlight's image holds no harness. |
 | `claimBy` | The container must have claimed the work by this time. |
@@ -136,7 +136,7 @@ With Docker, the equivalent is:
 ```bash
 docker run --rm --name "spotlight-<runner id>" \
   -e SPOTLIGHT_URL="<spotlightUrl>" \
-  -e SPOTLIGHT_TOKEN="<runner token>" \
+  -e SPOTLIGHT_RUN_TOKEN="<runner token>" \
   -e ANTHROPIC_API_KEY="<your key>" \
   <image>
 ```
@@ -146,7 +146,7 @@ When the call carries `runner.egress`, pass its two values as well:
 ```bash
 docker run --rm --name "spotlight-<runner id>" \
   -e SPOTLIGHT_URL="<spotlightUrl>" \
-  -e SPOTLIGHT_TOKEN="<runner token>" \
+  -e SPOTLIGHT_RUN_TOKEN="<runner token>" \
   -e SPOTLIGHT_EGRESS_URL="<runner.egress.url>" \
   -e SPOTLIGHT_EGRESS_PROXY_CREDENTIAL="<runner.egress.credential>" \
   -e SPOTLIGHT_EGRESS_TRAFFIC="<runner.egress.traffic>" \
@@ -172,7 +172,7 @@ stops.
 Answer any `2xx` within 10 seconds, and start the container after answering or
 in the background. Spotlight treats a later answer, a redirect or any other
 status as a failure. It then offers the work to the next push pool that fits,
-or, after `http-error`, `unreachable` or `lapsed`, tries again later, up to 5
+or, after `http-error`, `unreachable` or `expired`, tries again later, up to 5
 attempts in all. The other causes below fail the run at once.
 
 Every call names a new runner, and its id is also the `webhook-id` header. If
@@ -196,7 +196,7 @@ the cause:
 | `http-error: Provision URL answered <status>. Response: <body>` | Your endpoint answered with that status. Check its signature verification and its logs. |
 | `unreachable` | Spotlight could not call the endpoint. Check the URL and that it answers within 10 seconds. |
 | `not-allowed` | Spotlight's deployment does not allow outbound calls to the endpoint's host, or the URL is not `https`. With `Egress URL must be https.`, give the egress an `https` URL. |
-| `lapsed` | The endpoint accepted, but no runner claimed the work in time. Check that the container started and can reach `spotlightUrl`, or the egress when the call names one. |
+| `expired` | The endpoint accepted, but no runner claimed the work in time. Check that the container started and can reach `spotlightUrl`, or the egress when the call names one. |
 | `unusable` | Spotlight cannot open the pool's provision secret: set the secret again with a new `secret_version`. Or the pool's `provision.egress` names an egress that does not exist: correct it. |
 | `harness-missing` | The image does not have the station's harness installed. Install it as in [Install a harness in your runner image](/docs/hosts/install-a-harness-in-your-runner-image). |
 
@@ -209,8 +209,8 @@ the cause:
 - [Give hosts your harness keys](/docs/hosts/give-sandboxes-your-harness-keys):
   which key each harness needs.
 - [Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image):
-  build the image a push pool is asked to start.
+  build the image a push pool is requested to start.
 - [Send push pool runs through an egress](/docs/security/send-push-pool-runs-through-an-egress):
   give the pool runs that use secrets.
-- [Ways in: pools, trusts and tokens](/docs/administration/ways-in-pools-trusts-and-tokens):
+- [Pools, trusts and tokens](/docs/administration/pools-trusts-and-tokens):
   when to choose a push pool over hosts.

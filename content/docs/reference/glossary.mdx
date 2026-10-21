@@ -5,20 +5,36 @@ title: Glossary
 description: The terms Spotlight uses, in alphabetical order, with a link to each term's reference page.
 ---
 
+## Acts as
+
+The rule in an integration's `connection.actsAs` that says whose connection
+the integration's tools use: `team`, the team's connection, or `requester`, the
+connection of the person who started the task. Polls, schedules and `on`
+bindings always use the team's connection. See
+[Acts as](/docs/reference/terraform/integration#acts-as).
+
+## Address
+
+The name of a resource in its workspace, such as `core/delivery` for a line or
+`ACME_API_KEY` for a secret. The import operation of the resource API takes it.
+It is not a Terraform resource address, such as `spotlight_line.core_delivery`,
+and not the [Spotlight address](#spotlight-address). See
+[Addresses](/docs/reference/api/resource-api#addresses).
+
 ## Alert
 
-A threshold on a measure of a work station's runs, such as its sent-back rate
+A rule on a measure of a work station's runs, such as its sent-back rate
 or its cost per run, set in the station's `alert` blocks. The Station page lists
-a station's alerts. When one goes off, the task of the run that crossed it gets
+a station's alerts. When one fires, the task of the run that fired it gets
 an inbox item. See [Alert fields](/docs/reference/terraform/line#alert-fields)
 and [Station alerts](/docs/reference/app/tasks-runs-and-the-inbox#station-alerts).
 
 ## Approval
 
 A person's decision on one tool call, or one harness permission, that a run
-asked to use. A person may change a tool call's inputs before approving it. A
-grant is spent by the call it allows; a dismissal stays valid at the station that
-asked. See [Approvals](/docs/reference/app/tasks-runs-and-the-inbox#approvals).
+asked to use. Its status is `pending`, `approved` or `dismissed`. A person may
+change a tool call's inputs before approving it. A grant is spent by the call it
+allows; a dismissal stays valid at the station that asked. See [Approvals](/docs/reference/app/tasks-runs-and-the-inbox#approvals).
 
 ## Attachment
 
@@ -39,8 +55,9 @@ The replay of a station's live config on a replay set's runs that the set's
 other replays are compared with, other than a
 [replay with the answer](/docs/reference/app/replays#replay-with-the-answer),
 which is compared with the live replay that started it. It starts the first time a set is
-replayed, again once runs are added after it or a replay asks for more copies
-of each run than it has, and when a [search](#search) of the set starts. See
+replayed, again once runs are added after it or a replay requests more repeats
+of each run than it has, and when a [search](#search) of the set starts, as the
+search's [seed](#seed). See
 [Regressions](/docs/reference/app/replays#regressions).
 
 ## Before event
@@ -58,17 +75,29 @@ at them, in the views Backlog, Active and Completed. See
 ## Bound host
 
 A host that a secret of the run is bound to. Egress injects a secret only into
-requests to its bound hosts. For a run that reaches Spotlight's API, the
+requests to its bound hosts. For a run that uses Spotlight's API, the
 Spotlight address's host is bound to the run's Spotlight token. See
 [Run secrets](/docs/reference/hosts/egress#run-secrets) and
-[The runner's way out](/docs/reference/hosts/egress#the-runners-way-out).
+[The runner's local proxy](/docs/reference/hosts/egress#the-runners-local-proxy).
 
 ## Briefing
 
 The first prompt a task's run gives its agent: the station's prompt, the task,
 what earlier stations noted, the task's decisions, the repositories, skills,
-open remarks on the pull request, and how to hand over. See
+open review comments on the pull request, and how to hand over. See
 [Briefing](/docs/reference/hosts/sandbox#briefing).
+
+## Calibration
+
+A [baseline](#baseline) of a station's live config over a whole replay set
+that also measures the set's [noise](#noise), flaky checks and the judge's
+agreement with itself. Spotlight makes a baseline a calibration when the set
+has 5 runs or more and has no calibration at the config's current
+[config fingerprint](#config-fingerprint). A search's baseline and a replay
+check's baseline are never a calibration. A calibration replays each run 3
+times or more. Then it checks each change again, and judges each change again
+while the cost fits under its ceiling. See
+[Calibration](/docs/reference/app/replays#calibration).
 
 ## Candidate
 
@@ -80,14 +109,34 @@ proposes one as a [replay candidate](/docs/reference/api/replay-candidate); a
 ## Catalog
 
 Tools and skills Spotlight publishes, named `catalog.<name>@<version>`, such as
-`catalog.fetch-page@1.0.0`. A station gives them as it gives its own. Each item
+`catalog.fetch-page@1.0.0`. A station enables them as it enables its own. Each item
 needs a [plan](#plan). See
 [Catalog](/docs/reference/built-ins/built-in-tools-and-skills#catalog).
+
+## Causal chain
+
+The hook [firings](#firing) and events that caused a firing of a hook on an
+after event. The firing's requests carry the firing's id in the
+`spotlight-cause` header, and Spotlight finds the chain from it. A webhook
+delivery that sends that header back, or a callback, joins the chain. The loop
+guard stops a firing that would repeat something in its chain, or that would
+make the chain more than 8 causes deep. See
+[Loop guard](/docs/reference/terraform/hook#loop-guard).
+
+## Ceiling
+
+The most that a replay, a search, or each replay of a replay check may spend,
+in one currency, such as `5.00` `USD`. When a replay's spend reaches its
+ceiling, the replay ends as `ceiling-reached`. Runs that are already running
+finish, so the spend can end above the ceiling. A search stops with the stop
+reason `ceiling-reached` when one more iteration does not fit under its
+ceiling. See [Spend and ceiling](/docs/reference/app/replays#spend-and-ceiling)
+and [Spend and ceiling for a search](/docs/reference/app/searches#spend-and-ceiling).
 
 ## Change stack
 
 A run's diff arranged for review as [cohorts](#cohort) of [layers](#layer).
-Spotlight drafts one after each run at a station with `diffs: true`. See
+Spotlight generates one after each run at a station with `diffs: true`. See
 [Change stacks and decisions](/docs/reference/app/change-stacks-and-decisions).
 
 ## Chat
@@ -99,15 +148,15 @@ it. See [Chats](/docs/reference/app/tasks-runs-and-the-inbox#chats).
 ## Check
 
 A station's one-line command, such as `npm test`, run against the whole change
-and then each layer of a change stack drafted at that station. See
+and then each layer of a change stack generated at that station. See
 [Checks](/docs/reference/app/change-stacks-and-decisions#checks).
 
 ## Claim
 
-A statement a good run makes true, such as `The change adds a test that fails
-without it.`, listed in a station's `judge` block. The [judge](#judge) marks
-each claim met or not, and scores a run as the share met. See
-[Judge fields](/docs/reference/terraform/line#judge-fields).
+To take a queued run, or a change stack's check, for one runner. The runner
+then has a [lease](#lease) on it. For a statement that the judge answers, see
+[Judge claim](#judge-claim). See
+[Run states](/docs/reference/app/tasks-runs-and-the-inbox#run-states).
 
 ## Cohort
 
@@ -135,6 +184,15 @@ A record of one create, update or delete of a workspace's configuration: who
 made it, through which client, and what changed. Owners and admins read them.
 See [Configuration changes](/docs/reference/api/resource-api#configuration-changes).
 
+## Connection record
+
+The record of one connection that a [shared egress](#shared-egress) made or
+blocked for a run: the host and port, the bytes in each direction, how long it
+was open, its outcome (`passthrough`, `injected`, `blocked` or `failed`), and a
+status or a reason for some outcomes. It contains no URL, header or body.
+Spotlight purges it after 30 days. See
+[Connection records](/docs/reference/hosts/egress#connection-records).
+
 ## Conversation
 
 The stretch of a task's notes from a station putting the task to a person
@@ -142,12 +200,12 @@ The stretch of a task's notes from a station putting the task to a person
 until then. Each conversation is one inbox item. See
 [Notes](/docs/reference/app/tasks-runs-and-the-inbox#notes).
 
-## Counterpart
+## Credential source
 
-The replay a replay is compared with: its task-by-task rows, its gain and its
-regressions are measured against it. Usually its set's [baseline](#baseline);
-for a replay with the answer, the live replay that started it. See
-[Counterparts](/docs/reference/app/replays#counterparts).
+The runner pool or runner trust that accepted a host or a runner: a pull pool
+through its token, a push pool through the credential it gave its runner, or a
+runner trust through an OIDC token. See
+[Pools, trusts and tokens](/docs/administration/pools-trusts-and-tokens).
 
 ## Decision
 
@@ -156,15 +214,69 @@ Spotlight draws from what an agent said during a run at a station with
 `decisions: true`. People can dispute a decision. See
 [Decisions](/docs/reference/app/change-stacks-and-decisions#decisions).
 
+## Delete
+
+To remove a resource, such as a team, a line or a secret, through the web app,
+the resource API or Terraform. A workspace or a team can be deleted only when
+it has no resources left. Spotlight then deletes the records that belong to it,
+such as its tasks and notices. A [memory](#memory) is retired, not deleted. See
+[Resource API](/docs/reference/api/resource-api).
+
+## Dispute
+
+A team member's objection to a [decision](#decision), given as a reply to it
+on one of its files in the change stack page. Later runs on the task get each
+dispute in their briefing. See
+[Disputes](/docs/reference/app/change-stacks-and-decisions#disputes).
+
 ## Egress
 
-The proxy between a sandbox and the network. A host starts one egress
-container beside each sandbox, and the sandbox reaches the network only
-through it. A push pool can name a shared egress, one process that serves many
-runs, in `provision.egress`. Egress admits or blocks each connection and
+The proxy between a sandbox and the network. A host starts one [egress
+sidecar](#egress-sidecar) next to each sandbox, and the sandbox reaches the network only
+through it. A push pool can name a [shared egress](#shared-egress), one process that serves many
+runs, in `provision.egress`. Egress allows or blocks each connection and
 injects secrets into requests to the hosts they are bound to. See
 [Egress](/docs/reference/hosts/egress) and
 [`spotlight_egress`](/docs/reference/terraform/egress).
+
+## Egress enforcement
+
+The check that a sandbox cannot connect directly to the network, so that all
+of its traffic goes through egress. Before the harness starts, a runner that
+uses a [shared egress](#shared-egress) tries a direct connection. It records
+the result on the run as `Enforced` or `Not enforced`. Spotlight does not check
+what the runner reports. See
+[Enforcement](/docs/reference/hosts/egress#enforcement).
+
+## Egress sidecar
+
+The egress that a host starts next to one sandbox, with `spotlight egress`, for
+one run. The sandbox can send traffic only through it, and the host removes it
+with the sandbox. See [Egress](/docs/reference/hosts/egress).
+
+## Egress token
+
+The token that a [shared egress](#shared-egress) sends with each call to
+Spotlight. With it, the egress authorizes runners, fetches the secrets of its
+runs and records their connections. Spotlight stores only its hash. A token can
+belong to only one egress. Spotlight does not accept a token that was rotated
+away, or the token of an egress that was deleted or replaced. See
+[Egress token](/docs/reference/terraform/egress#egress-token).
+
+## Egress traffic
+
+A push pool's `provision.egressTraffic`, `egress_traffic` in Terraform. It
+says which traffic of a run goes through the pool's
+[shared egress](#shared-egress): `all`, every connection, or `bound`, only the
+traffic to [bound hosts](#bound-host). Other traffic goes directly. See
+[`spotlight_runner_pool`](/docs/reference/terraform/runner-pool#egress).
+
+## Firing
+
+One execution of one hook for one event, with its state, its attempts and its
+steps. A firing of a hook on an after event has a
+[causal chain](#causal-chain). Spotlight purges a firing 30 days after it
+finishes. See [`spotlight_hook`](/docs/reference/terraform/hook).
 
 ## Frontier
 
@@ -173,10 +285,17 @@ often for less. The station's live config is always on it. In a search that
 aims for the same success for less, only candidates whose gain over the live
 config reads Better or Within noise can be on it. See [Frontier](/docs/reference/app/searches#frontier).
 
+## Gating set
+
+The one replay set of a station whose "Gates config changes" switch is on.
+`spotlight replay check` replays a planned change of the station on it. See
+[Gating a station's changes](/docs/reference/app/searches#gating-a-stations-changes).
+
 ## Grade
 
 A person's score of a judged run, on the judge's scale, given from the inbox.
-On [claims](#claim), a grade marks each claim met or not.
+On [claims](#judge-claim), a grade marks each claim met or not. The judge's
+score of a run is not a grade.
 The judge's agreement with people is measured against grades. See
 [Grades](/docs/reference/app/tasks-runs-and-the-inbox#grades).
 
@@ -190,9 +309,9 @@ to do the task well, in terms of the task. Spotlight keeps it only when the judg
 
 ## Handover
 
-What a task's run declares when it ends: pass the task to another station, put
-it to a person (`review`), or finish it (`done`). The agent declares it with
-`spotlight handover`. See [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover)
+The choice that a task's run makes when it ends: pass the task to another
+station, put it to a person (`review`), or finish it (`done`). The agent hands
+over with `spotlight handover`. See [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover)
 and [Agent commands](/docs/reference/cli/agent-commands).
 
 ## Happening
@@ -212,7 +331,7 @@ The agent command line a station runs: `claude-code` (Claude Code), `cursor`
 
 An API key or token a harness uses to reach its model provider, such as
 `ANTHROPIC_API_KEY`. A host gives them to its sandboxes from `sandbox.env`.
-Egress keeps the ones it knows, and the sandbox gets a [stand-in](#stand-in).
+Egress stores the ones it knows, and the sandbox gets a [stand-in](#stand-in).
 See [Harness keys](/docs/reference/hosts/host-configuration#harness-keys).
 
 ## Harness profile
@@ -220,6 +339,12 @@ See [Harness keys](/docs/reference/hosts/host-configuration#harness-keys).
 A team's named set of permission rules, MCP servers and native harness
 settings. A station names one in its `profile`. See
 [`spotlight_harness_profile`](/docs/reference/terraform/harness-profile).
+
+## Heartbeat
+
+A host's request to Spotlight, every 20 seconds, that says what the host has
+and what it runs. A host with a heartbeat in the last 90 seconds is online.
+See [Limits and timeouts](/docs/reference/limits-and-timeouts#hosts).
 
 ## Held-out task
 
@@ -237,14 +362,40 @@ event. See [`spotlight_hook`](/docs/reference/terraform/hook).
 ## Host
 
 A machine running `spotlight host`. It claims runs for a workspace and starts a
-fresh sandbox for each one. A host is admitted through a pull pool's token or a
+fresh sandbox for each one. A host is accepted through a pull pool's token or a
 runner trust. See [Host settings](/docs/reference/hosts/host-configuration).
+
+## Human action
+
+The first thing that a person did with a task in answer to a run, or after it:
+Started, Parked, Accepted, Answered or Sent back. Spotlight records an answer
+to an approval separately. It is never the human action of a run. See
+[Station outcomes](/docs/reference/app/tasks-runs-and-the-inbox#station-outcomes).
+
+## Hunk
+
+One block of changed lines in a diff, with its header. A change stack assigns
+each hunk of a run's diff to exactly one [layer](#layer). See
+[Structure](/docs/reference/app/change-stacks-and-decisions#structure).
 
 ## Inbox
 
 A person's list of conversations on the tasks assigned to them, across every
 team in a workspace. See
 [The inbox](/docs/reference/app/tasks-runs-and-the-inbox#the-inbox).
+
+## Inbox request
+
+An inbox item on a task that is not the task's conversation: a grade, a
+memory review or a station alert. Nothing waits on it. See
+[The inbox](/docs/reference/app/tasks-runs-and-the-inbox#the-inbox).
+
+## Incidental
+
+The kind of [cohort](#cohort) that holds lockfiles, generated files, test
+snapshots, pure renames and formatting-only changes. Spotlight assigns these
+hunks itself, and their files start collapsed on the change stack page. See
+[Structure](/docs/reference/app/change-stacks-and-decisions#structure).
 
 ## Insights
 
@@ -259,26 +410,47 @@ A team's definition of an outside service: the webhooks it sends and the
 happenings they raise, the tools agents may call on it, and how Spotlight
 connects to it. See [`spotlight_integration`](/docs/reference/terraform/integration).
 
+## Issue
+
+To create a [workspace token](#workspace-token). A workspace owner or admin
+issues one, a [workspace token trust](#workspace-token-trust) issues a
+short-lived one for each exchange, and Spotlight issues one for each run of a
+setup chat. Spotlight shows the token value only once, when it issues it.
+
 ## Judge
 
 A model that scores a share of a work station's runs against the station's
-[rubric](#rubric) or [claims](#claim), citing the steps and changes behind each reason. Its scores
+[rubric](#rubric) or [claims](#judge-claim), citing the steps and changes behind each reason. Its scores
 show only once they agree often enough with people's. A station sets one in
 its `judge` block. See [Judging](/docs/reference/app/tasks-runs-and-the-inbox#judging)
 and [Judge fields](/docs/reference/terraform/line#judge-fields).
 
+## Judge claim
+
+A statement that a good run makes true, such as `The change adds a test that
+fails without it.`, listed in the `claims` of a station's `judge` block. The
+[judge](#judge) answers each judge claim met or not, and scores a run as the
+share met. See [Judge fields](/docs/reference/terraform/line#judge-fields).
+
 ## Label
 
-A name a runner pool or runner trust gives the runners it admits. A line's or
+A name that a runner pool or runner trust assigns to the runners it accepts. A line's or
 station's `runners` place its work on runners that carry one of the labels. See
 [Placement](/docs/reference/terraform/line#placement).
 
 ## Layer
 
-A step of a change stack: a title, a summary and the changes it places, built
+A step of a change stack: a title, a summary and the [hunks](#hunk) assigned to it, built
 on the layers before it. A station's check runs on each layer of a `change` cohort
 together with the layers before it. See
 [Structure](/docs/reference/app/change-stacks-and-decisions#structure).
+
+## Lease
+
+The time limit on a runner's [claim](#claim). A runner claims a queued run and
+gets a 60-second lease on it, which it renews while it works. When the lease expires, Spotlight
+requeues the run, or ends it after its last attempt. See
+[Run states](/docs/reference/app/tasks-runs-and-the-inbox#run-states).
 
 ## Line
 
@@ -288,9 +460,31 @@ between them, the repositories its runs work in, and an optional role. See
 
 ## Line role
 
-A word on a line that integrations open tasks onto. `delivery` and `review` are
+A word on a line. An integration opens tasks on the lines whose role its
+`raise.opens.lineRole` names. `delivery` and `review` are
 built in. Only a line with role `review` may carry a review policy
 (`reviews`). See [`spotlight_line`](/docs/reference/terraform/line).
+
+## Linked account
+
+The account in an outside service that an integration's connection acts as,
+named by the integration's `oauth2.identity`. The Integrations settings page
+shows it under "Team account" or "Your account". See
+[`spotlight_integration`](/docs/reference/terraform/integration).
+
+## Live config
+
+The config that a station runs now, as its line's Terraform sets it. Replays,
+searches and replay checks compare other configs with it. The web app labels
+it "Live config". See [Replays](/docs/reference/app/replays).
+
+## Local proxy
+
+The proxy at `127.0.0.1:3128` that a runner opens in its sandbox when its push
+pool names a [shared egress](#shared-egress). The harness, the setup commands
+and the checks send their traffic to it, and it sends the traffic through the
+shared egress, as the pool's [egress traffic](#egress-traffic) says. See
+[The runner's local proxy](/docs/reference/hosts/egress#the-runners-local-proxy).
 
 ## Mark
 
@@ -307,31 +501,55 @@ Something a team knows that its repository can't tell, such as a rationale, a
 rejected approach, a failure, an environment quirk, a correction or a
 preference. A station with `memories: true` drafts proposed memories after each
 completed run, from what the agent said and from what people said on the task.
-Each is kept with the steps and notes it rests on. The run's memories arrive
+Each is stored with the steps and notes it cites. The run's memories arrive
 as one item in the inbox, where a teammate approves, edits or rejects each one.
 A memory from outside the team, such as a review of an outside author's pull
 request, cannot be approved together with other memories. Approved memories
-become active; rejected ones are kept, and the newest of them are shown to the
+become active; rejected ones are stored, and the newest of them are shown to the
 drafter. The team's Memory page
 lists the active ones, filtered by line, station, repository, path or kind. There
 you can write a memory yourself, correct one (the correction replaces it) or
 retire one with a reason; retired memories stay readable under Retired. Each
 active memory has a handle, such as `M-12`, and runs are briefed with the ones
-that bear most closely on their work, whatever harness they run. Every memory
+that are most relevant to their work, whatever harness they run. Every memory
 that applies to a run is also laid out in its workspace under
 `.spotlight/memory`, for the agent to search; it can also search with
 `spotlight recall`, and propose one itself with `spotlight remember`; that
-proposal waits in the inbox beside the run like a drafted one. "Remembered" on
-each run's page lists what it was given, briefed or recalled, and what it
+proposal waits in the inbox beside the run like a drafted one. "Memories" on
+each run's page lists the memories it was briefed with or recalled, and what it
 proposed, and the Memory page shows how many runs used each memory. See
 [Station fields](/docs/reference/terraform/line#station-fields) and
 [Agent commands](/docs/reference/cli/agent-commands#spotlight-recall).
 
+## Memory handle
+
+The short id of a [memory](#memory), such as `M-12`. A memory keeps its handle
+when it is retired. `spotlight recall <handle>` reads that memory, and
+`spotlight remember --supersedes <handle>` proposes a memory that replaces an
+active memory. A memory handle is not a [mark](#mark). See
+[spotlight recall](/docs/reference/cli/agent-commands#spotlight-recall).
+
+## Metered call
+
+The record of one call that a run made to a [catalog](#catalog) tool: the
+workspace, the run, the item, when the call started, how long it took and
+whether it succeeded. See
+[Catalog](/docs/reference/built-ins/built-in-tools-and-skills#catalog).
+
+## Native settings
+
+The harness-specific settings in a [harness profile](#harness-profile), under
+the harness's key: Claude Code settings JSON, a Codex `config.toml` string, or
+Cursor CLI config JSON. Spotlight puts them on top of the settings that it
+writes from the profile's rules. Spotlight always sets some keys itself, such
+as Codex's `approval_policy`. See
+[Native settings](/docs/reference/terraform/harness-profile#native-settings).
+
 ## Noise
 
 How far a replay set's success moves by chance: the spread between the success
-rates of copies of the same runs, replayed under the station's live config
-with each run replayed 2 or more times. It is one reading of a set's
+rates of repeats of the same runs, replayed under the station's live config
+with each run replayed 2 or more times. It is one check of a set's
 [health](#replay-set-health). Separately, a gain whose 95% interval
 reaches across no change, that is smaller than the line's `min_gain`, or that
 rests on fewer than 5 tasks scored on both sides, reads "Within noise". See
@@ -340,8 +558,8 @@ rests on fewer than 5 tasks scored on both sides, reads "Within noise". See
 
 ## Note
 
-An entry on a task's trail, of kind `asked`, `passed`, `answered` or `said`,
-with a voice (`station`, `person` or `world`) and a form. A note's words never
+An entry on a task's trail, of kind `asked`, `passed`, `answered` or `message`,
+with a [voice](#voice) and a form. A note's words never
 change. See [Notes](/docs/reference/app/tasks-runs-and-the-inbox#notes).
 
 ## Notice
@@ -355,9 +573,25 @@ it; its person resolves it. See [Notices](/docs/reference/app/tasks-runs-and-the
 One instance of an event that hooks fire for, with an id of its own. A hook's
 request carries it as `occurrence`. See [`spotlight_hook`](/docs/reference/terraform/hook).
 
+## Park
+
+To move a task back to the backlog. A run of the task that works is stopped, a
+run that waits for an answer is ended, and a queued run is cancelled. For a run
+that waits for a person without a sandbox, see [Suspend](#suspend). See
+[Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves).
+
+## Pick
+
+To select a candidate of a [search](#search), so that Spotlight opens a pull
+request that changes the station to that config. A person with the `plan`
+permission can pick a candidate when its replay on the
+[searched tasks](#searched-task) has finished. The search's [seed](#seed)
+cannot be picked. See
+[Picking a candidate](/docs/reference/app/searches#picking-a-candidate).
+
 ## Placement
 
-The terms a run's runner must meet: the station's `runners` [labels](#label),
+The requirements that a run's runner must meet: the station's `runners` [labels](#label),
 or the line's where the station names none; the runner image; and the harness.
 See [Placement](/docs/reference/terraform/line#placement).
 
@@ -365,13 +599,21 @@ See [Placement](/docs/reference/terraform/line#placement).
 
 A workspace's commercial plan: `free`, `team` or `enterprise`. Each plan
 includes the ones before it. The plan decides which catalog items a station may
-give. See [Catalog](/docs/reference/built-ins/built-in-tools-and-skills#catalog). The
+enable. See [Catalog](/docs/reference/built-ins/built-in-tools-and-skills#catalog). The
 `plan` permission is unrelated; see
 [Roles and permissions](/docs/reference/roles-and-permissions).
 
+## Platform egress
+
+The [shared egress](#shared-egress) that a Spotlight deployment runs for its
+workspaces. A push pool names it with `provision.egress` set to `spotlight`. A
+self-hosted deployment names it in `SPOTLIGHT_PLATFORM_EGRESS_URL` and
+`SPOTLIGHT_PLATFORM_EGRESS_TOKEN`. See
+[Platform egress](/docs/reference/self-hosted-settings#platform-egress).
+
 ## Pool
 
-A runner pool: a workspace resource that admits runners. Hosts serve a pull
+A runner pool: a workspace resource that accepts runners. Hosts serve a pull
 pool and claim its runs with the pool's token. For a push pool, Spotlight calls
 a provision URL to start a runner for each run. A push pool that names an
 egress also takes runs that use secrets. See
@@ -383,6 +625,14 @@ A task the agent proposes in a chat, naming a line and a station. It is open
 until the person accepts it, which creates the task, or dismisses it. See
 [Proposals](/docs/reference/app/tasks-runs-and-the-inbox#proposals).
 
+## Purge
+
+To remove records when their retention period ends. For example, Spotlight
+purges connection records after 30 days, the run grants of a run 7 days after
+the run ends, hook firings 30 days after they finish, and a pull request 180
+days after it closed or, while it is open, 180 days after it last changed. See
+[Retention](/docs/reference/app/insights#retention).
+
 ## Reaction
 
 A line's rule that moves a task to a station when a happening arrives,
@@ -390,11 +640,26 @@ optionally only while the task is at a given station. See
 [`spotlight_line`](/docs/reference/terraform/line) and
 [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves).
 
+## Recall
+
+To read what a team remembers from inside a run. `spotlight recall "<words>"`
+searches the bodies of the team's active memories, and
+`spotlight recall <handle>` reads one memory. The run's page shows the recalled
+memories with the briefed memories, under "Supplied to the agent". See
+[spotlight recall](/docs/reference/cli/agent-commands#spotlight-recall).
+
+## Reference replay
+
+The replay a replay is compared with: its task-by-task rows, its gain and its
+regressions are measured against it. Usually its set's [baseline](#baseline);
+for a replay with the answer, the live replay that started it. See
+[Reference replays](/docs/reference/app/replays#reference-replays).
+
 ## Reflection
 
 An iteration of a stalled [search](#search) that proposes nothing: its agent
 records why each searched task the best config so far still fails, as one of
-five causes. Only a cause the config can fix lets the search go on. See
+five causes. Only a cause the config can fix lets the search continue. See
 [Reflections](/docs/reference/app/searches#reflections).
 
 ## Regression
@@ -402,11 +667,27 @@ five causes. Only a cause the config can fix lets the search go on. See
 A task on which a replay did worse than the replay it is compared with,
 usually its set's [baseline](#baseline): the baseline succeeded and the replay
 did not, or the judge scored the replay's change lower. When each run is
-replayed more than once, the share of the baseline's copies that succeeded is
+replayed more than once, the share of the baseline's repeats that succeeded is
 higher than the replay's by more than 50 points. A [search](#search) counts
 the regressions of each candidate against the live config it started from. See
 [Regressions](/docs/reference/app/replays#regressions) and
 [Regressions against the live config](/docs/reference/app/searches#regressions-against-the-live-config).
+
+## Release
+
+The build number of Spotlight's runner in a runner image, such as
+`20261002-02`. A host reports the release of each image that it serves. A host
+does not claim runs for an image whose runner is older than the minimum
+release, or that reports no release. A release is not a harness version. See
+[Troubleshoot a run](/docs/runs/troubleshoot-a-run).
+
+## Remember
+
+To propose a memory from inside a run with `spotlight remember`. The proposal
+waits in the inbox beside the run until a teammate approves it, as written or
+edited, or rejects it. Only an approved memory becomes active and gets a
+[handle](#memory-handle). See
+[spotlight remember](/docs/reference/cli/agent-commands#spotlight-remember).
 
 ## Replay
 
@@ -418,14 +699,14 @@ each of its runs is scored. See [Replays](/docs/reference/app/replays).
 ## Replay check
 
 A [replay](#replay) of a work station's change as a Terraform plan would
-apply it, on the replay set that guards the station's changes, judged against
+apply it, on the replay set that gates the station's changes, judged against
 the line's `replay_check`. CI runs it with `spotlight replay check`. See
 [Replay checks API](/docs/reference/api/replay-checks).
 
 ## Replay set
 
 A named list of up to 50 of a work station's past task runs, replayed
-together. While a run is in a set, the workspace it started from is kept. See
+together. While a run is in a set, Spotlight retains the workspace it started from. See
 [Replay set page](/docs/reference/app/replays#replay-set-page).
 
 ## Replay set health
@@ -435,9 +716,20 @@ read for the station's live config as it is now: its [noise](#noise), how
 much of it the live config succeeds on already, whether the station's judge
 and check give the same answer twice, and how much better the live config
 does when handed each run's answer. The set's first baseline of the live
-config checks the set and measures the first four; the replay with the answer
+config calibrates the set and measures the first four; the replay with the answer
 that Spotlight starts after it measures the last. See
 [Health](/docs/reference/app/replays#health).
+
+## Replay with the answer
+
+A replay of a station's live config that gives each run the answer that people
+gave to the original run. For an accepted run, the answer is the change that
+people accepted. For a run that was sent back, it is what people wrote on the
+task after the run. Spotlight starts it after a replay of the live config over
+the whole set finishes, other than a search's replay, and it replays only the
+accepted and sent-back runs. It shows how much better the config does when it
+knows the answer. This is how much the station can improve. See
+[Replay with the answer](/docs/reference/app/replays#replay-with-the-answer).
 
 ## Repository
 
@@ -447,10 +739,26 @@ out. It may name a runner `image` and a `setup` command. See
 
 ## Requester
 
-The person who started a task, its Raised by. An integration whose
-`connection.holder` is `requester` has its tools act with that person's own
-connection to the host, which each person makes on the team's Integrations
-settings page. See [Holder](/docs/reference/terraform/integration#holder).
+The person who started a task, named in its Created by field. An integration
+whose `connection.actsAs` is `requester` has its tools act with that person's
+own connection to the service, which each person makes on the team's
+Integrations settings page. See
+[Acts as](/docs/reference/terraform/integration#acts-as).
+
+## Reservation
+
+A queued run kept for one runner that a push pool provisioned. Only that
+runner can claim the run, and it must claim it within 5 minutes. When the
+reservation expires, Spotlight provisions a runner again. See
+[Provision call](/docs/reference/events/provision-call#failures).
+
+## Retire
+
+To stop the use of a [memory](#memory). A person retires an active memory with
+a reason, or a newer memory that corrects it replaces it. A retired memory
+stays readable under Retired on the Memory page, and runs are not briefed with
+it. Only memories are retired; other things are deleted. See
+[Team pages](/docs/reference/app/web-app#team-pages).
 
 ## Revision
 
@@ -462,7 +770,7 @@ and when it is finished. A person's move must name the current revision. See
 
 What a good run at a station looks like, in Markdown, written by the team for
 the station's [judge](#judge). Its first line can name its scale,
-`scores: yes-no` or `scores: 1-5`. A judge can have [claims](#claim) in
+`scores: yes-no` or `scores: 1-5`. A judge can have [claims](#judge-claim) in
 place of a rubric, or beside one. See
 [Judge fields](/docs/reference/terraform/line#judge-fields).
 
@@ -470,6 +778,20 @@ place of a rubric, or beside one. See
 
 One execution of a harness in a fresh sandbox, for a task at a station, for a
 chat, or for a [replay](#replay). See [Runs](/docs/reference/app/tasks-runs-and-the-inbox#runs).
+
+## Run ending
+
+How an ended run ended: `completed`, `failed`, `stopped`, `exhausted`,
+`cancelled` or `superseded`. See
+[Run endings](/docs/reference/app/tasks-runs-and-the-inbox#run-endings).
+
+## Run proxy credential
+
+The credential that a runner gives a [shared egress](#shared-egress) with each
+request. Spotlight makes one for each runner whose push pool names a shared
+egress, puts it in the provision call, and stores only its hash. The runner
+reads it from `SPOTLIGHT_EGRESS_PROXY_CREDENTIAL`. Spotlight's API does not
+accept it. See [Credentials](/docs/reference/hosts/egress#credentials).
 
 ## Runner
 
@@ -480,7 +802,7 @@ Spotlight. Every run gets a new runner. See
 
 ## Runner image
 
-The container image a sandbox runs from. A host serves the images its
+The container image a sandbox runs from. A host supports the images its
 `SPOTLIGHT_RUNNER_IMAGE` allows. A line names one through its repositories'
 `image`; otherwise the host's default image is used. Spotlight's runner image,
 `ghcr.io/usespotlightai/spotlight-runner`, holds no harness: a team builds its
@@ -489,7 +811,7 @@ own image `FROM` it with a harness. See
 
 ## Runner trust
 
-A workspace resource that admits hosts presenting an OIDC token from a named
+A workspace resource that accepts hosts presenting an OIDC token from a named
 issuer, for a named subject, in place of a pool token. See
 [`spotlight_runner_trust`](/docs/reference/terraform/runner-trust).
 
@@ -497,6 +819,12 @@ issuer, for a named subject, in place of a pool token. See
 
 The container one run executes in. A host starts a fresh sandbox for each run.
 See [Inside a sandbox](/docs/reference/hosts/sandbox).
+
+## Seal
+
+To encrypt a run's secrets for the egress that fetches them, so that only that
+egress can decrypt them. Spotlight seals the secrets of a run before it sends
+them to egress. See [Run secrets](/docs/reference/hosts/egress#run-secrets).
 
 ## Search
 
@@ -507,26 +835,65 @@ success for less. A search that finds nothing better twice in a row stalls,
 and may run a [reflection](#reflection). A person picks a candidate, and
 Spotlight opens a pull request with it. See [Searches](/docs/reference/app/searches).
 
+## Searched task
+
+One of the tasks of a replay set that a [search's](#search) agent sees, and
+that the search replays its candidates on. About 70% of a set's tasks are
+searched tasks; the others are [held-out tasks](#held-out-task). See
+[Why a search holds tasks out](/docs/improvement/why-a-search-holds-tasks-out).
+
 ## Secret
 
-A named value a workspace keeps. Spotlight puts it in a request header or
+A named value a workspace stores. Spotlight puts it in a request header or
 query parameter on requests to the hosts it is bound to; the value never
 enters a sandbox. See
 [`spotlight_secret`](/docs/reference/terraform/secret).
+
+## Secret grant
+
+Permission for one run to use one [secret](#secret) on one host, for the
+run's current [lease](#lease). Egress gets only the secrets that the run's
+grants name. Spotlight removes the grants when the lease ends, and purges them
+7 days after the run ends. See
+[Run secrets](/docs/reference/hosts/egress#run-secrets).
+
+## Seed
+
+The first replay of a [search](#search): a replay of the station's live config
+on every run of the replay set. It becomes the set's [baseline](#baseline), and
+the search compares each candidate with it. The search is `seeding` while the
+seed runs. The search stops with `seed-failed` when the live config cannot be
+replayed. See [Search states](/docs/reference/app/searches#search-states).
+
+## Sent back
+
+The [human action](#human-action) of a person who sends a message to a run
+while the task has no current run. That run is the one that is sent back. A
+message that answers an open question is Answered, not Sent back; a message
+answers only a question that asks for no approval. See
+[Station outcomes](/docs/reference/app/tasks-runs-and-the-inbox#station-outcomes).
+
+## Shared egress
+
+One long-lived egress process, `spotlight egress serve`, that serves the runs
+of every push pool that names it in `provision.egress`. Spotlight runs the
+[platform egress](#platform-egress), and a workspace can run its own with a
+[`spotlight_egress`](/docs/reference/terraform/egress). See
+[Shared egress](/docs/reference/hosts/egress#shared-egress).
 
 ## Side by side
 
 A judging of two replays' changes to the same task together, without the
 judge being told which replay made which, against the change people accepted.
-A replay whose candidate has a judge, other than a baseline, a check of a
-set or a replay with the answer, is set side by side with the replay it is compared with once it
+A replay whose candidate has a judge, other than a baseline, a
+calibration or a replay with the answer, is set side by side with the replay it is compared with once it
 finishes, and reads its wins, losses and ties beside its success.
 It never changes a run's result. See
 [Side by side](/docs/reference/app/replays#side-by-side).
 
 ## Skill
 
-Reusable instructions, a `SKILL.md` with other files, that a station gives its
+Reusable instructions, a `SKILL.md` with other files, that a station enables for its
 runs. See [`spotlight_skill`](/docs/reference/terraform/skill).
 
 ## Spotlight address
@@ -554,11 +921,42 @@ Where a task's run started: the workspace archive it restored, if any, and the
 commit each repository was checked out at. A replay starts from it. See
 [Starting point](/docs/reference/app/tasks-runs-and-the-inbox#starting-point).
 
+## Starting point hold
+
+A replay set's hold on the workspace archives that its runs started from.
+While a run is in a set, Spotlight does not purge the archive that the run
+started from. See
+[Replay set page](/docs/reference/app/replays#replay-set-page).
+
 ## Station
 
 A step on a line, of kind `backlog`, `work` or `completed`. A work station
 may name a harness to work its tasks, and names its prompt, tools and skills,
 and the stations it passes to. See [`spotlight_line`](/docs/reference/terraform/line).
+
+## Steer
+
+To send a message to a run while it works. The agent gets it within a few
+seconds: its current turn stops, and the message is the next thing that it
+reads. Only the task's assignee can steer a run. See
+[Steer or stop a run](/docs/runs/steer-or-stop-a-run).
+
+## Suspend
+
+To remove the sandbox of a run that waits for a person. A waiting run becomes
+`suspended` when no answer comes in time, when its lease expires, or at once
+when no host started its runner. No runner has a lease on a suspended run. An
+answer puts the run back in the queue. The runner that claims the run restores
+its workspace. See
+[Run states](/docs/reference/app/tasks-runs-and-the-inbox#run-states).
+
+## Tally
+
+The counts of one group of runs, such as the runs on one config: the runs that
+ran, failed and stopped runs, checks passed and failed, accepted and sent-back
+runs, runs passed on, the tasks with a merged pull request, the runs that ended
+without running, the cost, and the median and p90 time of the runs. See
+[Station outcomes](/docs/reference/app/tasks-runs-and-the-inbox#station-outcomes).
 
 ## Task
 
@@ -576,18 +974,26 @@ integrations, hooks, skills, harness profiles and chats belong to a team. See
 
 An operation an agent calls through `spotlight` from inside a run. A tool is
 built in (such as `pull-request`), defined by an integration
-(`<integration>.<tool>`), or from the catalog. A station lists the tools its
-runs are given. See
+(`<integration>.<tool>`), or from the catalog. A station lists the tools it
+enables for its runs. See
 [Built-in tools and skills](/docs/reference/built-ins/built-in-tools-and-skills) and
 [`spotlight_integration`](/docs/reference/terraform/integration).
 
 ## Trace
 
-The record of a task's runs and their steps, with their timings and faults.
+The record of a task's runs and their steps, with their timings and errors.
 The web app lists a team's traces on the Traces tab of Insights and shows one
 on its task's Trace page. `spotlight trace` writes it to a file, and a chat
 message can share up to 20. See
 [spotlight trace](/docs/reference/cli/agent-commands#spotlight-trace).
+
+## Undecided
+
+The result of a replay check that cannot decide, for example because a replay
+reached its ceiling or under half the tasks were scored on both sides.
+`spotlight replay check` exits with code `3` when a station is undecided and no
+station failed or had an error. See
+[Results](/docs/reference/api/replay-checks#results).
 
 ## Unscored
 
@@ -597,6 +1003,18 @@ before its agent began or for another reason outside the candidate, or changed
 nothing for its checks to run on. Unscored runs are left out of a replay's
 success. One that the judge still scored can make a task regress through a
 lower judge score. See [Results](/docs/reference/app/replays#results).
+
+## Voice
+
+The author kind of a [note](#note): `station` for a station's run or for
+Spotlight itself, `person` for a person, or `world` for an outside service. See
+[Notes](/docs/reference/app/tasks-runs-and-the-inbox#notes).
+
+## Whole change
+
+The first step of a [check](#check): the run's diff applied in full and checked
+with the station's `check` command. When it fails, the layers are not checked.
+See [Checks](/docs/reference/app/change-stacks-and-decisions#checks).
 
 ## Workspace
 

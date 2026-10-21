@@ -9,7 +9,7 @@ A task assigned to you stops at its station and waits for you when the station
 asks you something, when its run fails, when a tool needs your approval, or
 when a tool needs to act as you at a service you have not connected.
 Each of these is an item in your inbox. Items that grade a run, propose
-memories or report a station alert sit beside the task and wait on nothing,
+memories or report a station alert are inbox requests. They wait on nothing,
 and so do notices about your team's work, such as a search you started that
 stalled.
 
@@ -32,7 +32,7 @@ Write your reply in the box at the bottom of the item that reads **Reply…**.
 - To give the station files, select **+**, or drop or paste them on the box.
 
 The run that asked carries on in the same conversation and reads your answer
-as the next thing said to it. If that run failed or was stopped, a new run
+as the next message to it. If that run failed or was stopped, a new run
 starts at the same station and picks up the conversation. The item stays
 under **Open** while that run works, and you can follow its steps live in the
 same pane.
@@ -54,7 +54,7 @@ to ask.
   select **Approve**. Every input that had a value needs one. Only a tool call
   can be edited; a harness permission is approved or dismissed as it is.
 - To run it yourself instead, select the copy icon.
-- To refuse it, select **Dismiss**. If the agent should know why, write it in
+- To dismiss it, select **Dismiss**. If the agent should know why, write it in
   the field that opens, then select **Dismiss** again.
 
 The card's title then reads **Request approved**, **Request approved with
@@ -65,7 +65,7 @@ the station's conversation. If you
 changed the call, the agent is told what you changed, and the tool runs with
 your values. An approval covers one call; the next call asks again. A
 dismissal stays valid: the same call with the same inputs at this station is
-refused without asking you.
+dismissed without asking you.
 
 If Spotlight cannot take your answer, the card says why. See
 [Answering an approval](/docs/reference/errors-and-messages#answering-an-approval).
@@ -94,8 +94,8 @@ the workspace, can grade it, and nothing waits on it. See
 
 ## Look into a station alert
 
-An item that reads **Station crossed an alert threshold.** names the
-alert a station's runs crossed and charts its measure run by run. Only people
+An item that reads **Station alert fired.** names the
+alert that fired and charts its measure run by run. Only people
 on the team and the workspace's owners and admins get it. Nothing waits on it.
 
 - To compare the station with the rest of the team, select **Open in
@@ -104,9 +104,8 @@ on the team and the workspace's owners and admins get it. Nothing waits on it.
   page opens a new chat with the station attached. Go on as in
   [Ask the agent for a change](/docs/improvement/improve-a-station-from-its-runs#ask-the-agent-for-a-change).
 
-The item resolves itself once the station has stayed back within the alert
-for as many runs as the alert compares, and opens again if the station crosses
-it soon after. See
+The item resolves itself once the alert resolves, which takes as many runs as
+the alert compares. It opens again if the alert fires again soon after. See
 [Station alerts](/docs/reference/app/tasks-runs-and-the-inbox#station-alerts).
 
 ## Review the memories a run proposed
@@ -115,7 +114,7 @@ When a station drafts memories from a run, or the agent proposes one with
 `spotlight remember`, the item shows the run's conversation, then a line such
 as `Claude Code proposed 2 memories · 2 to review`. Each memory has its own
 card titled `Waiting for your approval`, with the memory, its kind, where it
-applies, any repository and paths it bears on under **Files**, and, under **Source**,
+applies, any repository and paths it is about under **Files**, and, under **Source**,
 what it was drawn from. See
 [Memory reviews](/docs/reference/app/tasks-runs-and-the-inbox#memory-reviews).
 

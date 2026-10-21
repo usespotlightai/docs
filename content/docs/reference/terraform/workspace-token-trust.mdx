@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: spotlight_workspace_token_trust
-description: The fields of a workspace token trust, the workloads it admits, and the exchange that issues short-lived workspace tokens through it.
+description: The fields of a workspace token trust, the workloads it matches, and the exchange that issues short-lived workspace tokens through it.
 ---
 
 The `spotlight_workspace_token_trust` resource, and the API's
@@ -37,13 +37,13 @@ resource "spotlight_workspace_token_trust" "github_main" {
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `key` | string | required | Lowercase words joined by dashes, at most 64 characters. Fixed: an update that changes it is rejected; Terraform replaces the resource. |
+| `key` | string | required | Lowercase words joined by dashes, at most 64 characters. Immutable: an update that changes it is rejected; Terraform replaces the resource. |
 | `issuer` | string | required | The issuer the workload's token must name in `iss`. `https`, or `http` only for `localhost`, `127.0.0.1` or `[::1]`. No query, fragment or credentials. At most 255 characters. |
 | `audience` | string | `spotlight` | A value the token's `aud` must contain. One word, at most 255 characters. |
 | `subject` | string | required | A pattern the token's `sub` must match. See [patterns](#patterns). |
 | `claims` | map of name to string | `{}` | Further claims the token must carry, each matching its pattern. At most 16. See [patterns](#patterns). |
 | `scopes` | array of strings | required | The scopes of every token the trust issues, as for a [workspace token](/docs/reference/api/workspace-token#scopes). |
-| `lifetimeMinutes` | integer | `15` | 1 to 60. How long an issued token admits its bearer. |
+| `lifetimeMinutes` | integer | `15` | 1 to 60. How many minutes an issued token stays valid. |
 | `createdBy` | string | read-only | The person who created the trust, or who issued the token that created it. |
 
 ## Patterns
@@ -79,16 +79,16 @@ be named. Only claims whose value is a string can match.
 | CircleCI | `https://oidc.circleci.com/org/<organization id>` | set by the platform |
 | Buildkite | `https://agent.buildkite.com` | set by the platform |
 
-## Who may define a trust
+## Who may create a trust
 
-Writing a trust needs the `manage-token-trusts` permission. See
+Writing a trust needs the `trusts` permission. See
 [Roles and permissions](/docs/reference/roles-and-permissions).
 
-A token may define a trust only with scopes it has itself, may change a
+A token may create a trust only with scopes it has itself, may change a
 trust only when it has both the trust's current scopes and the new ones, and
 may delete a trust only when it has the trust's current scopes. Otherwise the
 write or delete is forbidden with `403`, as for a caller without
-`manage-token-trusts`. See [Permission titles](/docs/reference/errors-and-messages#permission-titles).
+`trusts`. See [Permission titles](/docs/reference/errors-and-messages#permission-titles).
 A person who is an owner or admin is not limited this way.
 
 ## Exchange
@@ -109,7 +109,7 @@ Needs no credentials. Takes an optional `Spotlight-Client` header.
 The workload's token is verified against the keys the issuer publishes at
 `<issuer>/.well-known/openid-configuration`. It must be signed with `RS256`,
 `RS384`, `RS512`, `ES256`, `ES384` or `PS256`, carry `sub` and `exp`, and be
-current within 30 seconds. A [runner trust](/docs/reference/terraform/runner-trust#admission)
+current within 30 seconds. A [runner trust](/docs/reference/terraform/runner-trust#authentication)
 verifies a host's token the same way.
 
 A `200` response:
@@ -120,9 +120,9 @@ A `200` response:
 | `tokenId` | string | Its id. |
 | `workspaceId` | string | The workspace it acts in. |
 | `scopes` | array of strings | The trust's scopes. |
-| `expiresAt` | string | After this RFC 3339 time it admits nobody. |
+| `expiresAt` | string | An RFC 3339 time. After this time, Spotlight does not accept the token. |
 
-Every failed exchange gets `401` with `Spotlight did not accept the exchange. Possible causes: an unknown trust, a token its issuer did not sign for the trust's audience, a workload the trust does not admit, or a closed workspace`.
+Every failed exchange gets `401` with `Spotlight did not accept the exchange. Possible causes: an unknown trust, a token its issuer did not sign for the trust's audience, a workload the trust does not match, or a deleted workspace`.
 
 Each exchange is recorded as a
 [configuration change](/docs/reference/api/resource-api#configuration-changes): a
@@ -133,5 +133,5 @@ expiry.
 
 - An issued token acts for the trust's `createdBy`, within the trust's scopes.
 - It is not listed among the workspace's tokens.
-- Any change to the trust's terms stops every token issued before the change.
+- Any change to the trust's settings stops every token issued before the change.
 - Deleting the trust stops every token it issued, from that moment.

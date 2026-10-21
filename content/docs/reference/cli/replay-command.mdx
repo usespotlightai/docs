@@ -88,7 +88,7 @@ has with `<station> has <n> of <kind> named "<name>"; name one by its id: <ids>`
 | --- | --- |
 | `0` | Done. For `status` and `watch`, the candidate regressed on no task. |
 | `1` | A usage error, an error from Spotlight, or Spotlight could not be reached. |
-| `2` | `status` or `watch` only: the candidate regressed against its [counterpart](/docs/reference/glossary#counterpart) on at least one task. The message reads `the candidate regressed against its counterpart on <n> of <m> tasks`. |
+| `2` | `status` or `watch` only: the candidate regressed against its [reference replay](/docs/reference/glossary#reference-replay) on at least one task. The message reads `the candidate regressed against its reference replay on <n> of <m> tasks`. |
 
 `check` has exit codes of its own; see
 [`spotlight replay check`](#spotlight-replay-check).
@@ -125,7 +125,7 @@ prints `It changes nothing from the live config <fingerprint>.`
 | --- | --- |
 | `--name tells the candidate from the station's others` | No `--name`, or a blank one. |
 | `name one file that contains the station block, as the line resource contains a station, or - to read it from stdin` | No file, or more than one. |
-| `<path> is HCL; Spotlight writes HCL but never reads it, so give the station block as JSON, as the line resource contains it` | The file ends in `.tf` or `.hcl`. |
+| `<path> is HCL; Spotlight writes HCL but never reads it, so supply the station block as JSON, as the line resource contains it` | The file ends in `.tf` or `.hcl`. |
 | `<path> contains no JSON object; it must contain the station block, as the line resource contains a station` | The file is not a JSON object. |
 | `propose <name>: <error>` | Spotlight rejected the candidate. See [Checks](/docs/reference/api/replay-candidate#checks). |
 
@@ -174,7 +174,7 @@ Starts a replay of the set under the candidate.
 | `--candidate` | yes | | A proposed candidate, or `live` for the station as it is configured now. |
 | `--ceiling` | yes | | The most the replay may spend, a number above 0. Spotlight takes at most 1,000. |
 | `--currency` | no | `USD` | The ceiling's currency, as a three-letter code. |
-| `--repeats` | no | `1` | How many times to replay each run, 1 to 5. The ceiling covers every copy. |
+| `--repeats` | no | `1` | How many times to replay each run, 1 to 5. The ceiling covers every repeat. |
 
 ```text
 Started replay <id> of <set> under <candidate>, spending at most <ceiling>.
@@ -200,7 +200,7 @@ spotlight replay status --team <key> <replay id>
 ```
 
 Prints the current state of the replay, and the replay it is compared with, its
-[counterpart](/docs/reference/app/replays#counterparts), and exits `2` if it
+[reference replay](/docs/reference/app/replays#reference-replays), and exits `2` if it
 regressed on any task.
 
 ```text
@@ -214,26 +214,26 @@ Within noise of the baseline: +4 points (-8 to +16) over 12 tasks, not clearly p
 
 When runs already running took the replay past its ceiling, the first line
 ends with `, over the ceiling by <amount>, spent by runs already running when it
-was reached`. `<kind>` is the candidate's kind: `proposed`, `live` for a replay
+was hit`. `<kind>` is the candidate's kind: `proposed`, `live` for a replay
 of the live config, `searched` for a search's candidate, `planned` for a
 [replay check](/docs/reference/api/replay-checks)'s planned change, or `oracle`
 for a [replay with the answer](/docs/reference/app/replays#replay-with-the-answer).
-A replay whose candidate is withdrawn reads `under a candidate since withdrawn`.
+A replay whose candidate is deleted reads `under a candidate since deleted`.
 The second line appears only when the replay replays each run more than once.
-On the `Succeeded` and `Compared with` lines, `<n> of <scored>` counts copies,
+On the `Succeeded` and `Compared with` lines, `<n> of <scored>` counts repeats,
 and the [success](/docs/reference/app/replays#success) with its 95% range
-follows, over the tasks with a scored copy of the tasks replayed.
+follows, over the tasks with a scored repeat of the tasks replayed.
 
-The `Compared with` line names the counterpart:
+The `Compared with` line names the reference replay:
 
-| Counterpart | Named |
+| Reference replay | Named |
 | --- | --- |
 | The set's baseline now | `the baseline` |
 | Another, for an `oracle` replay | `the live config` |
 | Another, for a `searched` replay | `the search's starting config` |
 | Another, for any other replay | `an earlier baseline` |
 
-The `On the tasks both scored` line gives the counterpart's success on the
+The `On the tasks both scored` line gives the reference replay's success on the
 tasks both replays scored, the tasks the gain pairs, with its range. It
 appears only when that success is known and differs from the one on the
 `Compared with` line.
@@ -246,31 +246,31 @@ For the set's baseline, the `Compared with` lines read
 | --- | --- |
 | `the live replay it was compared with is gone` | An `oracle` replay whose live replay is gone. |
 | `the set has no baseline` | Any other replay, while the set has no baseline. |
-| `the replay it was set beside is gone` | Any other replay, while the set has a baseline: its counterpart is gone. |
+| `the replay it was set beside is gone` | Any other replay, while the set has a baseline: its reference replay is gone. |
 
 When there is a gain, the line after the `Compared with` lines reads the
-[gain](/docs/reference/app/replays#gains) over the counterpart, in points, with
+[gain](/docs/reference/app/replays#gains) over the reference replay, in points, with
 its range and the tasks both scored:
 
-| Verdict | Line |
+| Significance | Line |
 | --- | --- |
-| `better` | `Better than <counterpart>: <gain> points (<low> to <high>) over <n> tasks, past the <min_gain>-point gain that counts as real` |
-| `worse` | `Worse than <counterpart>: <gain> points (<low> to <high>) over <n> tasks` |
-| `within-noise` | `Within noise of <counterpart>: <gain> points (<low> to <high>) over <n> tasks, not clearly past the <min_gain>-point gain that counts as real` |
+| `better` | `Better than <reference>: <gain> points (<low> to <high>) over <n> tasks, past the <min_gain>-point gain that counts as real` |
+| `worse` | `Worse than <reference>: <gain> points (<low> to <high>) over <n> tasks` |
+| `within-noise` | `Within noise of <reference>: <gain> points (<low> to <high>) over <n> tasks, not clearly past the <min_gain>-point gain that counts as real` |
 
-`<counterpart>` is named as on the `Compared with` line.
+`<reference>` is the reference replay as the `Compared with` line names it.
 
 A table follows with one row per task, regressions first: a `REGRESSED` mark,
 `TASK`, `CANDIDATE` and `COMPARED WITH` (each a result: `pending`, `succeeded`,
-`failed` or `unscored`, or `none`; with copies, each copy's result joined by
+`failed` or `unscored`, or `none`; with repeats, each repeat's result joined by
 `/`, as in `succeeded/failed/succeeded`), `COST Δ`, `STEPS Δ` and `SCORE Δ`,
-each averaged over the copies. A difference not known reads `-`.
+each averaged over the repeats. A difference not known reads `-`.
 
-With `--json`, it prints `{ "replay", "comparedWith" }`, each as the
-[Replays API](/docs/reference/api/replays) reads a replay. `comparedWith` is
-the counterpart, or null without one.
+With `--json`, it prints `{ "replay", "referenceReplay" }`, each as the
+[Replays API](/docs/reference/api/replays) reads a replay. `referenceReplay` is
+the reference replay, or null without one.
 
-If the counterpart cannot be read, the command fails with
+If the reference replay cannot be read, the command fails with
 `read the replay it is compared with, <id>: <error>`.
 
 ## spotlight replay watch
@@ -279,7 +279,7 @@ If the counterpart cannot be read, the command fails with
 spotlight replay watch --team <key> <replay id> [--every 15s]
 ```
 
-Reads the replay every `--every` until both it and its counterpart have ended,
+Reads the replay every `--every` until both it and its reference replay have ended,
 then prints what `status` prints and exits as `status` does. A replay compared
 with nothing is waited for alone. Until then it prints one line each time:
 
@@ -296,7 +296,7 @@ With `--json`, it prints only the final answer.
 
 A read that fails because Spotlight could not be reached, or answered with a
 `5xx` status, is tried again. The command prints
-`could not ask (<error>); asking again`, unless `--json` is given, and waits
+`could not read the status (<error>); trying again`, unless `--json` is given, and waits
 twice `--every` after the first failure in a row, doubling after each, at most
 2 minutes. After 5 failures in a row it ends with
 `gave up after 5 failed tries in a row: <error>`. Any other error ends the
@@ -323,9 +323,9 @@ spotlight replay check [--json] [--timeout 60m] [--every 15s] [--commit <sha>] [
 ```
 
 Checks each work station a saved Terraform plan changes against the replay set
-that guards the station's changes, under the live line's
+that gates the station's changes, under the live line's
 [`replay_check`](/docs/reference/terraform/line#replay-check-fields), and waits
-for the verdicts. Give it the output of `terraform show -json <planfile>`, or
+for the results. Give it the output of `terraform show -json <planfile>`, or
 `-` to read it from standard input. Spotlight never runs Terraform. See
 [Check Terraform pull requests for station regressions](/docs/configuration/check-terraform-pull-requests-for-station-regressions).
 
@@ -336,7 +336,7 @@ for the verdicts. Give it the output of `terraform show -json <planfile>`, or
 | `--every` | `15s` | How often to read the checks, as a Go duration, at least `1s`. |
 | `--commit` | none | The commit that plans the change, recorded on each check. |
 | `--pull-request` | none | The pull request that plans the change, recorded on each check and used to name its candidate. |
-| `--repeats` | `1` | How many times each check replays each run of the set, 1 to 5. The line's `ceiling` covers every copy. |
+| `--repeats` | `1` | How many times each check replays each run of the set, 1 to 5. The line's `ceiling` covers every repeat. |
 
 ### Environment for check
 
@@ -345,8 +345,8 @@ for the verdicts. Give it the output of `terraform show -json <planfile>`, or
 | `SPOTLIGHT_URL` | Required. The [Spotlight address](/docs/reference/glossary#spotlight-address). |
 | `SPOTLIGHT_API_TOKEN` | A [workspace token](/docs/reference/api/workspace-token) with `plan`. Used in place of a trust when both are set. |
 | `SPOTLIGHT_OIDC_TRUST` | The id of a [workspace token trust](/docs/reference/terraform/workspace-token-trust) that grants `plan`. The command exchanges the job's OIDC token through it for a short-lived workspace token, exchanges again before that token expires, and once more on a `401`. |
-| `SPOTLIGHT_OIDC_TOKEN` | The OIDC token to exchange. Without it, the command asks GitHub Actions for one, through `ACTIONS_ID_TOKEN_REQUEST_URL` and `ACTIONS_ID_TOKEN_REQUEST_TOKEN`, which need `permissions: id-token: write`. |
-| `SPOTLIGHT_OIDC_AUDIENCE` | The audience to ask the OIDC token for. Default `spotlight`. Must equal the trust's `audience`. |
+| `SPOTLIGHT_OIDC_TOKEN` | The OIDC token to exchange. Without it, the command requests one from GitHub Actions, through `ACTIONS_ID_TOKEN_REQUEST_URL` and `ACTIONS_ID_TOKEN_REQUEST_TOKEN`, which need `permissions: id-token: write`. |
+| `SPOTLIGHT_OIDC_AUDIENCE` | The audience to request the OIDC token for. Default `spotlight`. Must equal the trust's `audience`. |
 | `GITHUB_STEP_SUMMARY` | When set, a Markdown summary is appended to the file it names. |
 
 Credentials are read only when the plan has a station to check.
@@ -390,7 +390,7 @@ check. Starting and reading are tried again when Spotlight cannot be reached or
 answers with a `5xx` status, waiting twice `--every` after the first failure
 and doubling, at most 2 minutes, and given up after 5 failures in a row.
 
-### Verdicts
+### Results
 
 Each station ends with one status:
 
@@ -408,7 +408,7 @@ An undecided check prints why:
 | `undecidedBecause` | Printed after `undecided:` |
 | --- | --- |
 | `stopped` | the replay was stopped |
-| `over-ceiling` | the replay reached its ceiling before every task ran |
+| `over-ceiling` | the replay hit its ceiling before every task ran |
 | `baseline-unfinished` | the baseline replay of the live config did not finish |
 | `too-few-scored` | fewer than half the tasks were scored on both sides |
 | `replay-gone` | the replay is gone |
@@ -430,11 +430,11 @@ core/delivery/build: FAILED
 ```
 
 With `--repeats` above 1, a line `each run replayed <n> times` comes before
-the `candidate` line. The `candidate` and `baseline` line counts copies, then gives each
+the `candidate` line. The `candidate` and `baseline` line counts repeats, then gives each
 side's success with its range over the tasks scored, and the next line the
 candidate's gain over the baseline, worded as for
 [`status`](#spotlight-replay-status). The gain does not decide the status.
-`REGRESSED` lines give each copy's result joined by `/`.
+`REGRESSED` lines give each repeat's result joined by `/`.
 
 A plan that changes no live station prints
 `The plan changes no live station of a line, so there is nothing to check.`
@@ -443,7 +443,7 @@ With `--json`, it prints `{ "stations", "notes", "exitCode" }`, each station as
 [check](/docs/reference/api/replay-checks#check) as Spotlight read it last.
 
 The step summary is headed `Spotlight replay check`, with any notes, then a
-table with the columns Station, Verdict, Regressed, Candidate, Baseline, Gain,
+table with the columns Station, Result, Regressed, Candidate, Baseline, Gain,
 Spent and Replay, then, for each station with a message, a gain or
 regressions, the message, the gain line and each regressed task. A gain reads
 as in `-17 points (-50 to +0), within noise`, or `-` without one.
@@ -460,13 +460,13 @@ as in `-17 points (-50 to +0), within noise`, or `-` without one.
 | Message | Cause |
 | --- | --- |
 | ``name the plan, the output of `terraform show -json <planfile>`, or - to read it from stdin`` | No plan, or more than one. The usage follows. |
-| ``this is the log `terraform plan -json` streams, which contains no station blocks; save the plan with `terraform plan -out=<planfile>`, then give this the output of `terraform show -json <planfile>` `` | The file is the streamed log of `terraform plan -json`. |
-| ``the plan is not JSON; give this the output of `terraform show -json <planfile>` `` | The file is not JSON. |
-| ``this is not a saved plan shown as JSON; give this the output of `terraform show -json <planfile>` `` | The JSON has no `format_version`. |
+| ``this is the log `terraform plan -json` streams, which contains no station blocks; save the plan with `terraform plan -out=<planfile>`, then pass this the output of `terraform show -json <planfile>` `` | The file is the streamed log of `terraform plan -json`. |
+| ``the plan is not JSON; pass this the output of `terraform show -json <planfile>` `` | The file is not JSON. |
+| ``this is not a saved plan shown as JSON; pass this the output of `terraform show -json <planfile>` `` | The JSON has no `format_version`. |
 | `set SPOTLIGHT_URL, and SPOTLIGHT_API_TOKEN or SPOTLIGHT_OIDC_TRUST, to check a plan` | No `SPOTLIGHT_URL`. The usage follows. |
 | `set SPOTLIGHT_API_TOKEN, a workspace token that may plan, or SPOTLIGHT_OIDC_TRUST, a workspace token trust to exchange the job's OIDC token through` | Neither credential. The usage follows. |
 | `SPOTLIGHT_OIDC_TRUST needs an OIDC token: set SPOTLIGHT_OIDC_TOKEN, or run in GitHub Actions with permissions: id-token: write` | A trust, but no OIDC token to exchange. |
-| `the workspace token trust <trust> did not admit the OIDC token: <problem>` | The trust did not accept the exchange. |
+| `the workspace token trust <trust> did not accept the OIDC token: <problem>` | The trust did not accept the exchange. |
 | `--timeout is how long to wait, above 0, not <value>` | `--timeout` is 0 or less. |
 | `--every is at least 1s, not <value>` | `--every` is under `1s`. |
 | `--repeats is how many times to replay each run, from 1 to 5, not <n>` | `--repeats` is below 1 or above 5. |

@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Agent commands
-description: The spotlight commands an agent runs inside its sandbox to hand a task over, answer a remark, read a trace or a station's history, recall and propose team memories, propose a search candidate, record why a stalled search's tasks fail, and find, read and use tools.
+description: The spotlight commands an agent runs inside its sandbox to hand a task over, reply to a review comment, read a trace or a station's history, recall and propose team memories, propose a search candidate, record why a stalled search's tasks fail, and find, read and use tools.
 ---
 
 An agent runs these commands from anywhere in its sandbox. Each one talks to
@@ -15,7 +15,7 @@ spotlight reply --to <handle> [--body <text>] [--resolve]
 spotlight trace --task <id> [--out <path>]
 spotlight history --station <key> [--line <key>] [--fingerprint <fp>] [--outcome <word>] [--since <date>] [--last <n>] [--out <dir>]
 spotlight recall "<words>" | <handle>
-spotlight remember --kind <kind> --body <text> [--path <path>]... [--reach <reach>] [--supersedes <handle>]
+spotlight remember --kind <kind> --body <text> [--path <path>]... [--scope <scope>] [--supersedes <handle>]
 spotlight candidate --name <name> --hypothesis <text | @file> <station.json | ->
 spotlight cause --task <task> --cause config|task|judge|check|infra --evidence <text | @file> [--suggestion <text | @file>]
 spotlight tools
@@ -26,9 +26,9 @@ spotlight <tool> [--<input> <value>...] [--json <object> | --json -]
 
 In a [search's](/docs/reference/app/searches#the-searchs-agent-run) agent run,
 `reply`, `recall` and `remember` are rejected with
-`a search may not <answer a remark, recall what the team remembers or propose a memory>: it studies the station's history and proposes station configs, nothing more`.
+`a search may not <reply to a review comment, recall what the team remembers or propose a memory>: it studies the station's history and proposes station configs, nothing more`.
 
-The tools Spotlight itself gives are listed in
+The tools Spotlight itself adds are listed in
 [Built-in tools and skills](/docs/reference/built-ins/built-in-tools-and-skills).
 [Why agents talk back through a command line](/docs/agents/agents-talk-back-through-a-command-line)
 gives the reasons.
@@ -40,25 +40,25 @@ variable is removed from it.
 
 | Variable | Value |
 | --- | --- |
-| `SPOTLIGHT_HANDOVER_URL` | The address of the run's loopback server, as `http://127.0.0.1:<port>/`. |
-| `SPOTLIGHT_HANDOVER_TOKEN` | A random token for this run, sent as `Authorization: Bearer`. |
+| `SPOTLIGHT_AGENT_API_URL` | The address of the run's loopback server, as `http://127.0.0.1:<port>/`. |
+| `SPOTLIGHT_AGENT_API_TOKEN` | A random token for this run, sent as `Authorization: Bearer`. |
 | `SPOTLIGHT_STATE_DIR` | The harness's state directory, `/workspace/.spotlight/state`. |
 
-Without `SPOTLIGHT_HANDOVER_URL` and `SPOTLIGHT_HANDOVER_TOKEN`, each command
+Without `SPOTLIGHT_AGENT_API_URL` and `SPOTLIGHT_AGENT_API_TOKEN`, each command
 fails:
 
 | Command | Message |
 | --- | --- |
 | `handover` | `no run to hand over: spotlight runs inside a Spotlight workspace` |
-| `reply` | `no run to answer for: spotlight runs inside a Spotlight workspace` |
+| `reply` | `no run to reply from: spotlight runs inside a Spotlight workspace` |
 | `trace` | `no run to read a trace from: spotlight runs inside a Spotlight workspace` |
 | `history` | `no run to read history from: spotlight runs inside a Spotlight workspace` |
 | `recall` | `no run to recall from: spotlight runs inside a Spotlight workspace` |
 | `remember` | `no run to remember from: spotlight runs inside a Spotlight workspace` |
 | `candidate` | `no run to propose a candidate from: spotlight runs inside a Spotlight workspace` |
 | `cause` | `no run to record a cause from: spotlight runs inside a Spotlight workspace` |
-| `tools`, `tools search`, `tools describe` | `no run to reach for tools in: spotlight runs inside a Spotlight workspace` |
-| `<tool>` | `could not read this run's tools to find "<name>": no run to reach for tools in: spotlight runs inside a Spotlight workspace` |
+| `tools`, `tools search`, `tools describe` | `no run to get tools from: spotlight runs inside a Spotlight workspace` |
+| `<tool>` | `could not read this run's tools to find "<name>": no run to get tools from: spotlight runs inside a Spotlight workspace` |
 
 ## Common behaviour
 
@@ -96,7 +96,7 @@ counts.
 
 | Output | When |
 | --- | --- |
-| `Handed over to <next>.` | A station was named. |
+| `Passed to <next>.` | A station was named. |
 | `Put to a person. The task waits here until someone answers.` | `--next review` |
 | `Closed at its current station.` | `--next done` |
 
@@ -132,32 +132,32 @@ With neither a handover nor the file, the task goes to a person. See
 spotlight reply --to <handle> [--body <text>] [--resolve]
 ```
 
-Answers a remark on the task's pull request. The run's briefing lists the open
-remarks and their handles, such as `c12`.
+Replies to a review comment on the task's pull request. The run's briefing lists
+the open review comments and their handles, such as `c12`.
 
 | Flag | Required | Description |
 | --- | --- | --- |
-| `--to` | yes | The remark's handle. |
-| `--body` | yes | The answer. Omitted, `-` or `/dev/stdin`: read from standard input. |
+| `--to` | yes | The review comment's handle. |
+| `--body` | yes | The reply. Omitted, `-` or `/dev/stdin`: read from standard input. |
 | `--resolve` | no | Resolves the thread as well. |
 
 | Output | When |
 | --- | --- |
-| `Answered <handle>.` | Without `--resolve`. |
-| `Answered <handle>, and resolved it.` | With `--resolve`. |
+| `Replied to <handle>.` | Without `--resolve`. |
+| `Replied to <handle>, and resolved it.` | With `--resolve`. |
 
 | Message | Cause |
 | --- | --- |
 | `--to is required` | No `--to`. |
 | `--body is required` | No body, and nothing on standard input. |
-| `say which remark` | The handle is blank. |
-| `say something back` | The body is blank. |
-| `unreadable answer` | The request body was not JSON. |
-| `read the answer: <error>` | Standard input could not be read. |
+| `name the review comment` | The handle is blank. |
+| `write the reply` | The body is blank. |
+| `unreadable reply` | The request body was not JSON. |
+| `read the reply: <error>` | Standard input could not be read. |
 
 ```bash
 spotlight reply --to c12 --body "Renamed, thanks." --resolve
-spotlight reply --to c14 < answer.md
+spotlight reply --to c14 < reply.md
 ```
 
 ## spotlight trace
@@ -174,7 +174,7 @@ Writes a task's trace to a file as indented JSON.
 | `--out` | no | The file to write. Default: a new file `spotlight-trace-*.json` in the temporary directory. |
 
 On success it prints one line: `Wrote the trace to <path>`, the number of
-nodes, the number of faults, the time the trace spans, and advice to search
+nodes, the number of errors, the time the trace spans, and advice to search
 the file rather than load it whole.
 
 | Message | Cause |
@@ -208,9 +208,9 @@ removed first.
 
 | File | Contains |
 | --- | --- |
-| `index.md` | A table of the runs: each run, linked to its journal, then its task's title, config, ending, checks, the next person act, delivery, round, cost, steps, duration and start. A run with no recorded outcome shows its state as its ending. Then each config, oldest first: its fingerprint, its file, how many of the runs used it, what changed since the config before it, and the prompt's change as a diff. |
-| `configs/<fingerprint>.yml` | One config, as YAML: `fingerprint`, `harness`, `model`, `effort`, `image`, `profile`, `repositories`, `skills`, `tools`, `decisions`, `memories`, `judge` and `prompt`. `judge` contains `rubricDigest`, `sample` and `trust`, or is `null`. |
-| `runs/<run>/journal.md` | The run's steps and spans: each step's text, what a tool was given and returned, and each file change as a diff. |
+| `index.md` | A table of the runs: each run, linked to its journal, then its task's title, config, ending, checks, the first human action, the pull request state, the visit, cost, steps, duration and start. A run with no recorded outcome shows its state as its ending. Then each config, oldest first: its fingerprint, its file, how many of the runs used it, what changed since the config before it, and the prompt's change as a diff. |
+| `configs/<fingerprint>.yml` | One config, as YAML: `fingerprint`, `harness`, `model`, `effort`, `image`, `profile`, `repositories`, `skills`, `tools`, `decisions`, `memories`, `judge` and `prompt`. `judge` contains `rubricHash`, `sample` and `minAgreement`, or is `null`. |
+| `runs/<run>/journal.md` | The run's steps and spans: each step's text, a tool's input and output, and each file change as a diff. |
 | `runs/<run>/outcome.json` | `runId`, `taskId`, `fingerprint` and `outcome`, which is `null` for a run with no recorded outcome. |
 | `runs/<run>/diff.patch` | The run's file changes as a unified diff. Written only for a run that changed files. Files are taken in the order they were first changed. A file whose text before and after is over 256,000 characters together, or does not fit in what is left of the run's 1,000,000 characters of changed-file text, is listed as `Omitted <path>: too large to send whole`. |
 
@@ -232,18 +232,18 @@ is written, beyond `--last` if need be. The folder also contains:
 | File | Contains |
 | --- | --- |
 | `current.json` | The station block the search started from, the live config when it began. |
-| `index.md` | After the runs and configs, a "Candidates" table: each candidate, linked to its `score.json`, its config, how many of its replay runs succeeded and were scored, its repeats, its rate, and its hypothesis. When a candidate replayed each run more than once, a line under the table says where its copies are and how its rate is worked out. |
+| `index.md` | After the runs and configs, a "Candidates" table: each candidate, linked to its `score.json`, its config, how many of its replay runs succeeded and were scored, its repeats, its rate, and its hypothesis. When a candidate replayed each run more than once, a line under the table says where its repeats are and how its rate is worked out. |
 | `candidates/<name>/block.json` | The candidate's station block. |
 | `candidates/<name>/changes.diff` | How `block.json` differs from `current.json`, as a unified diff. Left out when they are the same. |
 | `candidates/<name>/hypothesis.md` | What the agent that proposed it expected it to improve. |
-| `candidates/<name>/score.json` | `succeeded` and `scored` (replay runs, copies included), `repeats` (copies of each run), `tasksScored` (runs of the set with a scored copy), `rate` (for each of those, the share of its scored copies that succeeded, averaged; `null` while none was scored), `failed` (the tasks it failed, each once), `verdicts` (how many runs the judge passed and failed, as `pass` and `fail`), `spent` (per currency) and `unpriced` (runs with no cost). |
-| `candidates/<name>/runs/<original run>/journal.md` | The replay run's steps, as for a run. When the candidate replayed each run more than once, each copy is under `runs/<original run>/<copy>/` instead, numbered from 1, and so are the two files below. |
-| `candidates/<name>/runs/<original run>/result.json` | `runId`, `original`, `repeat` (which copy, from 1), `taskId`, `fingerprint`, `state`, `cost`, `succeeded`, `reasons`, `verdict` (`pass`, `fail` or `null`) and `guidance`. `reasons` contains each [reason](/docs/reference/app/replays#results) once, as `<code>: <detail>`. `judged`, `judge-failed` and `check-failed` are bare codes, without the judge's reasons or the check that failed. `guidance` is the judge's [`guidance` field](/docs/reference/app/replays#guidance) when `verdict` is `fail`, or `The judge found the change falls short of what the task needed.` when the judge gave none or Spotlight dropped it. Else it is `null`. |
+| `candidates/<name>/score.json` | `succeeded` and `scored` (replay runs, repeats included), `repeats` (repeats of each run), `tasksScored` (runs of the set with a scored repeat), `rate` (for each of those, the share of its scored repeats that succeeded, averaged; `null` while none was scored), `failed` (the tasks it failed, each once), `verdicts` (how many runs the judge passed and failed, as `pass` and `fail`), `spent` (per currency) and `unpriced` (runs with no cost). |
+| `candidates/<name>/runs/<original run>/journal.md` | The replay run's steps, as for a run. When the candidate replayed each run more than once, each repeat is under `runs/<original run>/<repeat>/` instead, numbered from 1, and so are the two files below. |
+| `candidates/<name>/runs/<original run>/result.json` | `runId`, `original`, `repeat` (which repeat, from 1), `taskId`, `fingerprint`, `state`, `cost`, `succeeded`, `reasons`, `verdict` (`pass`, `fail` or `null`) and `guidance`. `reasons` contains each [reason](/docs/reference/app/replays#results) once, as `<code>: <detail>`. `judged`, `judge-failed` and `check-failed` are bare codes, without the judge's reasons or the check that failed. `guidance` is the judge's [`guidance` field](/docs/reference/app/replays#guidance) when `verdict` is `fail`, or `The judge found the change falls short of what the task needed.` when the judge gave none or Spotlight dropped it. Else it is `null`. |
 | `candidates/<name>/runs/<original run>/diff.patch` | The replay run's file changes, when it changed files. |
 
 The candidate named `seed` is the live config the search started from,
 replayed on the searched tasks. A candidate's runs are its replay's runs on the
-searched tasks, one per task run of the set and copy.
+searched tasks, one per task run of the set and repeat.
 
 ### Outcome words
 
@@ -253,10 +253,10 @@ ended runs are searched, and `--last` of the matches are kept.
 
 | Part | Words |
 | --- | --- |
-| Ending | `completed`, `failed`, `stopped`, `abandoned`, `withdrawn`, `superseded` |
+| Ending | `completed`, `failed`, `stopped`, `exhausted`, `cancelled`, `superseded`. See [Run endings](/docs/reference/app/tasks-runs-and-the-inbox#run-endings). |
 | Failure code | A failed or superseded run's code, such as `exited`. See [Failure codes](/docs/reference/app/tasks-runs-and-the-inbox#failure-codes). |
-| Next person act | `started`, `parked`, `closed`, `answered`, `approved`, `refused`, `sent-back` |
-| Delivery | `open`, `merged`, `closed` |
+| First human action | `started`, `parked`, `accepted`, `answered`, `approved`, `dismissed`, `sent-back` |
+| Pull request state | `open`, `merged`, `closed` |
 | Checks | `checks-passed`, `checks-failed`, `checks-skipped` |
 
 [Station outcomes](/docs/reference/app/tasks-runs-and-the-inbox#station-outcomes)
@@ -306,20 +306,20 @@ The last line says where the memory came from:
 | Last line | The memory |
 | --- | --- |
 | `From a run on task <task id>, approved by <name> on <date>` | Was drawn from a run of the task. |
-| `From what a person said on task <task id>, approved by <name> on <date>` | Was drawn only from what people said on the task, or was edited on the Memory page from one drawn from the task. |
-| `From a run on input from outside the team on task <task id>, approved by <name> on <date>` | Was drawn from a task that came from outside the team, or from what another tool said on the task. |
+| `From notes by a person on task <task id>, approved by <name> on <date>` | Was drawn only from the notes that people wrote on the task, or was edited on the Memory page from one drawn from the task. |
+| `From a run on input from outside the team on task <task id>, approved by <name> on <date>` | Was drawn from a task that came from outside the team, or from a message that another tool wrote on the task. |
 | `Written by <name> on <date>` | Was written on the Memory page. |
 
 `<name>` is `someone` when the person is not known. With no match it prints
 `The team remembers nothing about "<words>". Try other words.`
 
 Every memory a recall returns is recorded against the run, and shows under
-"Given to the agent" in "Remembered" on its Run page; the recall itself is a
+"Supplied to the agent" in "Memories" on its Run page; the recall itself is a
 `spotlight.recall` span in the task's trace.
 
 Given a handle, such as `M-12` or `m-12`, it prints that one memory in full: its
 kind, its status (`active` or `retired`), its body, where it applies, the steps
-and notes it rests on, the `spotlight trace` command for its task, the memory
+and notes it cites, the `spotlight trace` command for its task, the memory
 it replaced, and, once retired, why and what replaced it.
 
 | Message | Cause |
@@ -336,24 +336,24 @@ spotlight recall M-12
 ## spotlight remember
 
 ```text
-spotlight remember --kind <kind> --body <text> [--path <path>]... [--reach <reach>] [--supersedes <handle>]
+spotlight remember --kind <kind> --body <text> [--path <path>]... [--scope <scope>] [--supersedes <handle>]
 ```
 
-Proposes a memory from inside the run. It rests on the step the agent ran the
-command from; where that step can't be found, on the last thing the agent said.
+Proposes a memory from inside the run. It cites the step the agent ran the
+command from; where that step can't be found, it cites the last thing the agent said.
 It waits in the inbox beside the run, with anything drafted from the run, until
-a teammate approves, edits or rejects it, and is kept only once approved. A
+a teammate approves, edits or rejects it, and is stored only once approved. A
 memory from a task that came from outside the team cannot be approved together with other memories. Proposing the same memory twice from one run keeps one.
 
 | Flag | Required | Description |
 | --- | --- | --- |
 | `--kind` | yes | `rationale`, `rejected-approach`, `failure`, `environment`, `preference` or `correction`. |
 | `--body` | yes | What to remember, at most 1,000 characters. Omitted, `-` or `/dev/stdin`: read from standard input. |
-| `--path` | no | A file or folder the memory bears on, relative to the current directory or absolute. It must be inside one of the run's checkouts, and every `--path` in one repository. Within its repository, at most 500 characters. Repeat for more, up to 20 different paths. |
-| `--reach` | no | Where it applies: `team`, `line` or `station`. Default: `line`. |
+| `--path` | no | A file or folder the memory is about, relative to the current directory or absolute. It must be inside one of the run's checkouts, and every `--path` in one repository. Within its repository, at most 500 characters. Repeat for more, up to 20 different paths. |
+| `--scope` | no | Where it applies: `team`, `line` or `station`. Default: `line`. |
 | `--supersedes` | no | The handle of an active memory of the team that this one corrects. Approving it retires that one. |
 
-On success it prints `Proposed <kind> for the <reach>: <body>`, and that the
+On success it prints `Proposed <kind> for the <scope>: <body>`, and that the
 memory waits for a person's approval.
 
 | Message | Cause |
@@ -362,9 +362,9 @@ memory waits for a person's approval.
 | `--body is required` | No body, and nothing on standard input. |
 | `put everything in flags, not "<word>"` | A word outside any flag. |
 | `A memory kind must be one of rationale, rejected-approach, failure, environment, preference, correction, not <kind>.` | `--kind` names no kind. |
-| `A memory reach must be one of team, line, station, not <reach>.` | `--reach` names no reach. |
+| `A memory scope must be one of team, line, station, not <scope>.` | `--scope` names no scope level. |
 | `<path> is outside the repositories this run checked out; name a path inside one of: <directories>` | A `--path` is outside every checkout. |
-| `A memory bears on paths of one repository at a time.` | The paths are in different repositories. |
+| `A memory is about paths of one repository at a time.` | The paths are in different repositories. |
 | `A memory must be at most 1000 characters.` | The body is more than 1,000 characters. |
 | `A memory path must be at most 500 characters.` | A `--path` is more than 500 characters within its repository. |
 | `A memory can cover at most 20 paths.` | More than 20 different paths. |
@@ -418,7 +418,7 @@ try at most three times as many as it may propose.
 | `"<name>" cannot name a candidate: a name is a slug of lowercase letters, digits and hyphens, starting with a letter or digit, at most 63 characters` | `--name` is no slug. |
 | `--hypothesis is required` | No `--hypothesis`. |
 | `name one file that contains the station block, or - to read it from stdin` | No file, or more than one. |
-| `<path> is HCL; give the station block as JSON, as the line resource contains a station` | The file ends in `.tf` or `.hcl`. |
+| `<path> is HCL; supply the station block as JSON, as the line resource contains a station` | The file ends in `.tf` or `.hcl`. |
 | `<path> contains no JSON object; it must contain the station block, as the line resource contains a station` | The file is not a JSON object. |
 | `<file> contains no hypothesis; say what you expect the change to do` | `@<file>` is empty. |
 | `this run cannot propose a candidate: only a search's runs do` | The run is not a search's. |
@@ -477,7 +477,7 @@ Recording another cause for the task replaces this one.
 | `This run is no longer the active run of the search`, or `The run <run> is no longer the active run of the search, so the search takes no more candidates from it` | The search stopped, or moved on from this iteration. |
 
 ```bash
-spotlight cause --task a17c4e02-9b3d-4f61-8e5a-0c2d7b9f4a13 --cause judge --evidence @evidence.md --suggestion "Drop the rubric line that asks for tests."
+spotlight cause --task a17c4e02-9b3d-4f61-8e5a-0c2d7b9f4a13 --cause judge --evidence @evidence.md --suggestion "Drop the rubric line that requires tests."
 ```
 
 ## spotlight tools
@@ -486,9 +486,9 @@ spotlight cause --task a17c4e02-9b3d-4f61-8e5a-0c2d7b9f4a13 --cause judge --evid
 spotlight tools
 ```
 
-Lists the tools the run was given, up to 30 of them. Each entry is the tool's
+Lists the tools enabled for the run, up to 30 of them. Each entry is the tool's
 signature, its description, and a line for each input that has a description. For a tool
-`acme.comment` with a required input `issue` and an optional piped input
+`acme.comment` with a required input `issue` and an optional `stdin` input
 `body`:
 
 ```text
@@ -511,13 +511,13 @@ A tool that requires approval lists `[--intent <string>]` after its own
 inputs, and its description ends with the reason a person approves it and
 `Say what you want to do with --intent; the person reads it first.`
 
-A run given more than 30 tools prints a summary instead: how many tools it
-was given, each integration's name with its number of tools, and the
+A run with more than 30 tools enabled prints a summary instead: how many tools it
+has enabled, each integration's name with its number of tools, and the
 `search` and `describe` commands. Spotlight's own tools are counted under
 `Spotlight`, and catalog tools under `the Spotlight catalog`.
 
 ```text
-This run was given 214 tools, too many to list:
+This run has 214 tools enabled, too many to list:
   Linear  195
   Petstore  19
 
@@ -525,7 +525,7 @@ Find one with: spotlight tools search "<words>"
 Read one with: spotlight tools describe <tool>
 ```
 
-A run given no tools prints `This run was given no tools.`
+A run with no tools enabled prints `This run has no tools enabled.`
 
 | Message | Cause |
 | --- | --- |
@@ -579,7 +579,7 @@ Read one with: spotlight tools describe linear.issue-create
 
 | Message | Cause |
 | --- | --- |
-| `No tool this run was given matches "<words>". Try other words, or run spotlight tools.` | No tool matches any word. Printed to standard output, with exit code `0`. |
+| `No tool enabled for this run matches "<words>". Try other words, or run spotlight tools.` | No tool matches any word. Printed to standard output, with exit code `0`. |
 | `say what the tool does` | No words were given. The usage follows. |
 | `--limit is how many tools to show, at least 1` | `--limit` is below 1. The usage follows. |
 
@@ -594,7 +594,7 @@ spotlight tools search pets by status --limit 3
 spotlight tools describe <tool>
 ```
 
-Prints one tool the run was given, named as `<integration>.<tool>` or as two
+Prints one tool enabled for the run, named as `<integration>.<tool>` or as two
 words, as in `linear.issue-create` or `linear issue-create`. In order, it
 prints:
 
@@ -602,7 +602,7 @@ prints:
 | --- | --- |
 | Heading | The tool's name, and `(from <integration>)` for an integration's tool. Its description follows, with the reason a person approves it for a tool that requires approval. |
 | `Takes:` | The inputs as a TypeScript object type, or `Takes nothing.` for a tool without inputs. |
-| `Answers with (learned from earlier calls, may be incomplete):` | The answer's shape as a TypeScript type, for a tool with a [learned output](#learned-output). Left out otherwise. |
+| `Answers with (inferred from earlier calls, may be incomplete):` | The answer's shape as a TypeScript type, for a tool with an [inferred output](#inferred-output). Left out otherwise. |
 | `For example:` | One call to start from. |
 
 The type marks an optional input, or one with a default, with `?`. Each
@@ -648,20 +648,20 @@ spotlight linear issue-create --title "…" --team-id "…" --intent "…"
 | Message | Cause |
 | --- | --- |
 | `say which tool` | No tool was named. The usage follows. |
-| `this run was given no tool "<name>"; the nearest are <tools>` | No granted tool has that name. Up to three that match it best follow, by the `search` ranking. |
-| `this run was given no tool "<name>"` | No granted tool has that name, and none matches it. |
+| `this run has no tool "<name>" enabled; the nearest are <tools>` | No granted tool has that name. Up to three that match it best follow, by the `search` ranking. |
+| `this run has no tool "<name>" enabled` | No granted tool has that name, and none matches it. |
 
 ```bash
 spotlight tools describe linear.issue-create
 spotlight tools describe petstore find-pets-by-status
 ```
 
-### Learned output
+### Inferred output
 
-After a call to an integration's tool succeeds, Spotlight records the shape of
+After a call to an integration's tool succeeds, Spotlight infers the shape of
 what it answered: field names and types, never values. It does this in the
 background, and never slows or fails the call. Each later successful call is
-merged into it. Every shape `spotlight tools describe` prints is learned.
+merged into it. Every shape `spotlight tools describe` prints is inferred.
 
 | Rule | Value |
 | --- | --- |
@@ -674,7 +674,7 @@ merged into it. Every shape `spotlight tools describe` prints is learned.
 | Different kinds for one field | A union, as in `string \| null`. More than 4 kinds become `unknown`. |
 
 ```text
-Answers with (learned from earlier calls, may be incomplete):
+Answers with (inferred from earlier calls, may be incomplete):
 {
   id: string;
   url?: string;
@@ -683,7 +683,7 @@ Answers with (learned from earlier calls, may be incomplete):
 
 - The shape is kept per team and per tool. It is read when a run starts, so
   it shows in runs that start after a successful call.
-- Redefining or removing the integration forgets it, and so does disbanding
+- Updating or deleting the integration deletes it, and so does deleting
   the team.
 
 ## spotlight &lt;tool&gt;
@@ -693,7 +693,7 @@ spotlight <integration> <tool> [--<input> <value>...] [--json <object> | --json 
 spotlight <integration>.<tool> [--<input> <value>...] [--json <object> | --json -]
 ```
 
-Calls a tool the run was given. A tool named `acme.comment` is called as
+Calls a tool enabled for the run. A tool named `acme.comment` is called as
 `spotlight acme comment` or `spotlight acme.comment`. Its flags are its
 inputs, by the names the tool gives them, as in `--team_id` or `--petId`. A
 built-in tool, such as `pull-request`, is called by its name alone, as in
@@ -705,17 +705,17 @@ for how an integration defines tools and their inputs.
 | Text or a number | `--<input> <value>`. A number is written in decimal, so `0x10` is rejected. |
 | `boolean` | `--<input>`, present or absent, or `--<input>=false` |
 | A list, an object or anything else | `--<input> '<JSON>'`, as in `--filter '{"team": "ENG"}'` |
-| Piped | `--<input> <value>`, or `--<input> -`, or `--<input> /dev/stdin`, or omitted with standard input not a terminal. Empty piped input counts as not given. |
+| Standard input | `--<input> <value>`, or `--<input> -`, or `--<input> /dev/stdin`, or omitted with standard input not a terminal. Empty standard input counts as not given. |
 
 `--json <object>` gives every input at once as one JSON object, keyed by input
 name, with each value in its JSON type. `--json -` or `--json /dev/stdin` reads
 the object from standard input. A flag given beside `--json` replaces that
-field of the object. When `--json` reads standard input, no piped input does:
+field of the object. When `--json` reads standard input, no `stdin` input does:
 an input left out stays out, and naming one with `-` or `/dev/stdin` is
 rejected.
 
 Spotlight checks the inputs against the tool's schemas before it calls the
-host, and rejects a call that does not fit, saying where, as in
+service, and rejects a call that does not fit, saying where, as in
 `linear.issue-create takes input, and input.teamId is not text`. See
 [Input schemas](/docs/reference/terraform/integration#input-schemas).
 
@@ -740,9 +740,9 @@ came. Built-in tools answer with an object, as in `{"url": "…"}` from
 | `<command>: "<argument>" is not a flag` | A word outside any flag. The tool's signature follows. |
 | `--json takes one JSON object, as --json '{"name": "value"}'` | The `--json` value, or what it read from standard input, is not a JSON object. The tool's signature follows. |
 | `read the --json piped in: <error>` | Standard input could not be read for `--json -`. |
-| `--<input> cannot be read from stdin when --json is` | A piped input was named with `-` or `/dev/stdin` while `--json` read standard input. The tool's signature follows. |
+| `--<input> cannot be read from stdin when --json is` | A `stdin` input was named with `-` or `/dev/stdin` while `--json` read standard input. The tool's signature follows. |
 | `<tool> takes <input>, and <where> <why>` | An input does not fit its schema. See [Input schemas](/docs/reference/terraform/integration#input-schemas). |
-| `this run was not given "<name>"; it was given: <tools>` | The tool is not granted to the run. |
+| `this run has no tool "<name>" enabled; it has: <tools>` | The tool is not granted to the run. |
 | `unreadable input: hand the tool JSON` | The input is over 8 MiB, or is not JSON. |
 | `could not read this run's tools to find "<name>": <error>` | The tool list could not be read. |
 

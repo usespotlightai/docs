@@ -10,7 +10,7 @@ egress that the runners of push pools send their traffic through. A
 [`spotlight_runner_pool`](/docs/reference/terraform/runner-pool) names it by
 `id` in `provision.egress`. The egress itself is a `spotlight egress serve`
 process that you run; see [Shared egress](/docs/reference/hosts/egress#shared-egress).
-Writing one needs the `manage-runners` permission; see
+Writing one needs the `runners` permission; see
 [Roles and permissions](/docs/reference/roles-and-permissions).
 
 | Kind | Endpoint | Terraform | Address |
@@ -52,21 +52,21 @@ resource "spotlight_runner_pool" "jobs" {
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `key` | string | required | Lowercase words joined by dashes, at most 64 characters. Fixed: an update that changes it is rejected; Terraform replaces the resource. |
+| `key` | string | required | Lowercase words joined by dashes, at most 64 characters. Immutable: an update that changes it is rejected; Terraform replaces the resource. |
 | `url` | string | required | Where the runners of a pool that names the egress send their traffic. An absolute `http` or `https` URL with no credentials, no query and no fragment, at most 2,048 characters. |
 | `token` | string | none | Write-only. The token the egress calls Spotlight with. 32 to 255 of `A-Z a-z 0-9 . _ ~ -`. Without it, Spotlight issues one; see [Egress token](#egress-token). |
 | `tokenVersion` | integer or null | `null` | At least `0`. A change must come with a new `token`. |
 
 In Terraform, `token` is write-only and needs Terraform 1.11 or later. A token
 Spotlight issues is not kept in the Terraform state, and the provider warns
-`Spotlight issued the egress a token Terraform did not keep`.
+`Spotlight issued the egress a token Terraform did not store`.
 
 | Message | Cause |
 | --- | --- |
 | `is lowercase words joined by dashes, at most 64 characters, as in shared` | A `key` of another shape. |
 | `must be an absolute https URL, as in https://egress.example.com` | A `url` that is not a URL. |
 | `must be an http or https URL` | A `url` with another scheme. |
-| `must carry no credentials. Runners give their proxy credential` | A `url` with a user name or a password. |
+| `must carry no credentials. Runners send their proxy credential` | A `url` with a user name or a password. |
 | `must be at most 2048 characters, with no query and no fragment` | A `url` that is too long, or has a query or a fragment. |
 | `must be 32 to 255 URL-safe characters` | A `token` of another shape. |
 | `is required whenever tokenVersion changes` | A `tokenVersion` change without a `token`. |
@@ -78,11 +78,11 @@ Spotlight issues is not kept in the Terraform state, and the provider warns
   the `Spotlight-Egress-Token` response header, never again. A retry of the
   create does not return it.
 - Spotlight keeps only its hash.
-- A token is given once, ever. A token that another egress has is rejected with
-  `belongs to another egress. Please give each egress its own`. A token
-  rotated away, or used by an egress since deleted or replaced, is rejected for
-  every egress, the egress that used it included, with
-  `was used before. Egress tokens work once only`.
+- Each token is single-use. A token that another egress has is rejected with
+  `is in use by another egress. Please use a different token for each egress`.
+  A token rotated away, or used by an egress since deleted or replaced, is
+  rejected for every egress, the egress that used it included, with
+  `was used before. Each egress token is single-use. Please use a new token`.
 - After a rotation with a new `tokenVersion`, the old token stops working at once.
 
 The egress process reads the token from `SPOTLIGHT_EGRESS_TOKEN`. Runners
@@ -102,7 +102,7 @@ A delete fails with `409` `in-use` while a runner pool names the egress:
 Egress <key> is in use. Runner pools that name it: <pool keys>. Please remove provision.egress from these pools first.
 ```
 
-Deleting an egress retires it. Its token then stops working.
+When an egress is deleted, its token stops working.
 
 In Terraform, do not remove a `spotlight_egress` in the same apply as the
 `provision.egress` that names it. Terraform can delete the egress before it

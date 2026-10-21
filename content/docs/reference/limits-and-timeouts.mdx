@@ -29,12 +29,12 @@ See [Host settings](/docs/reference/hosts/host-configuration).
 
 | Item | Value |
 | --- | --- |
-| Presence report | every 20 seconds |
-| Shown as answering | a report within the last 90 seconds |
-| Remembered after the last report | 24 hours |
+| Heartbeat | every 20 seconds |
+| Shown as online | a heartbeat within the last 90 seconds |
+| Removed after the last heartbeat | 24 hours |
 | Requirements refresh | every minute |
 | Claim long poll | 10 seconds |
-| Retry after a failed report or claim | about 2 seconds, doubling to about 30 seconds |
+| Retry after a failed heartbeat or claim | about 2 seconds, doubling to about 30 seconds |
 | Sandboxes at once | `SPOTLIGHT_CAPACITY`, default 1 |
 
 ## Pools
@@ -77,21 +77,21 @@ See [Egress](/docs/reference/hosts/egress).
 | Upstream TLS handshake | 15 seconds |
 | Shutdown grace | 5 seconds |
 
-A [shared egress](/docs/reference/hosts/egress#shared-egress) and a push pool
-runner's way out:
+A [shared egress](/docs/reference/hosts/egress#shared-egress) and the local
+proxy of a push pool runner:
 
 | Item | Value |
 | --- | --- |
-| Requests each second, for each workspace and egress process | `SPOTLIGHT_EGRESS_RATE`, default 50; `0` is no limit |
-| Open connections, for each workspace and egress process | `SPOTLIGHT_EGRESS_CONNECTIONS`, default 200; `0` is no limit |
-| Asking which runs are still active | Every 30 seconds, at most 500 run proxy credentials in one request |
-| A run with no request | Forgotten after 2 minutes |
+| Requests each second, for each workspace and egress process | `SPOTLIGHT_EGRESS_RATE_LIMIT`, default 50; `0` is no limit |
+| Open connections, for each workspace and egress process | `SPOTLIGHT_EGRESS_MAX_CONNECTIONS`, default 200; `0` is no limit |
+| Checking which runs are still active | Every 30 seconds, at most 500 run proxy credentials in one request |
+| A run with no request | Removed from egress memory after 2 minutes |
 | Fetching again while the runner has no lease on a run | At most every 5 seconds |
 | Sending connection records | Every 5 seconds, at most 2,000 in one call and 10,000 waiting |
 | Time a connection record keeps from egress | At most 1 hour before and 1 minute after Spotlight gets it |
-| Connection records kept | 30 days |
+| Connection records retained | 30 days |
 | Enforcement check | 3 seconds |
-| Way out authority lifetime | 48 hours |
+| Local proxy authority lifetime | 48 hours |
 | Upstream connection | 30 seconds |
 | Upstream TLS handshake | 15 seconds |
 
@@ -104,14 +104,14 @@ See [Inside a sandbox](/docs/reference/hosts/sandbox#run-phases).
 | Packed size | 2 GiB |
 | Unpacked size | 8 GiB |
 | Upload or download | 30 minutes |
-| Kept after its task finishes, or its chat stops carrying the conversation | 7 days |
-| Kept after a newer archive replaces it | 1 hour |
-| Kept after its task or chat is deleted | none; removed within a minute, even when a run started from it or a replay set pins it |
-| Kept after a run that started from it started | 30 days |
-| Kept while a run that started from it is in a replay set | until the run leaves the set, the set is deleted, or its station leaves the line |
-| An archive never sealed, kept | 24 hours |
+| Retained after its task finishes, or its chat stops carrying the conversation | 7 days |
+| Retained after a newer archive replaces it | 1 hour |
+| Retained after its task or chat is deleted | none; removed within a minute, even when a run started from it or a replay set pins it |
+| Retained after a run that started from it started | 30 days |
+| Retained while a run that started from it is in a replay set | until the run leaves the set, the set is deleted, or its station leaves the line |
+| An archive never completed, retained | 24 hours |
 
-An archive a run started from, or one pinned by a replay set, is kept for that
+An archive a run started from, or one pinned by a replay set, is retained for that
 time even when its task has finished or a newer archive has replaced it.
 
 ## Replays
@@ -125,16 +125,16 @@ See [Replays](/docs/reference/app/replays).
 | Runs offered to add to a set | the station's latest 50 ended task runs |
 | Replay runs of a team queued or running at once, not counting a search's | 2 |
 | Ceiling | above 0, at most 1,000, in a three-letter currency |
-| Copies of each run in a replay (repeats) | 1 to 5, default 1 |
+| Repeats of each run in a replay | 1 to 5, default 1 |
 | Resamples behind a 95% interval | 2,000 |
 | Tasks scored on both sides before a gain can read better or worse | 5 |
 | `min_gain` | above 0, at most 1, default 0.05 |
-| Copies of each run when a baseline checks a set | at least 3 |
-| Fewest runs in a set a baseline checks | 5 |
+| Repeats of each run in a calibration | at least 3 |
+| Fewest runs in a set a calibration checks | 5 |
 | Live config success above which a set has almost no room to improve | 95% |
 | Judge agreement below which its verdicts read as partly chance | 80% |
 | A judge's [guidance](/docs/reference/app/replays#guidance) | one sentence of at most 280 characters, with no line break, no 5 words in a row from the rubric or a claim, and no whole sentence of 3 or more words from either |
-| Copies of each run in a replay with the answer (repeats) | those of the live replay that started it |
+| Repeats of each run in a replay with the answer | those of the live replay that started it |
 | Attempts to queue a replay run | 10 |
 | `spotlight replay watch` interval | default 15 seconds, at least 1 second |
 | Replays read for Candidates on the Insights Stations tab | the newest 500 started in the period; see [Replayed candidates API](/docs/reference/api/replayed-candidates) |
@@ -151,8 +151,8 @@ See [Searches](/docs/reference/app/searches).
 | Candidates per iteration | 1 to 5 |
 | Proposals an iteration may try, rejected ones included | 3 times its candidates |
 | Replay runs of a search queued or running at once | 1 to 10, default 4, apart from the team's 2 |
-| Copies of each run in its replays (repeats) | 1 to 5, default 1 |
-| Searches of a station under way at once | 1 |
+| Repeats of each run in its replays | 1 to 5, default 1 |
+| Searches of a station in progress at once | 1 |
 | Ceiling | above 0, at most 1,000, in a three-letter currency |
 | Share of the ceiling for the agent's runs | a tenth |
 | Least a replay run may be given | 0.01 of the ceiling's currency |
@@ -164,7 +164,7 @@ See [Searches](/docs/reference/app/searches).
 | Points in a search's notice | at most 20, of at most 1,000 characters each |
 | A resolved notice shown in the inbox | 30 days after it was resolved |
 | Candidate name | a slug of lowercase letters, digits and hyphens, at most 63 characters |
-| An agent run no runner takes | withdrawn after 60 minutes |
+| An agent run no runner claims | cancelled after 60 minutes |
 | An agent run's spend not known | counted as unpriced 15 minutes after it ended |
 | Tries to open a config pull request | 5: the first, then again after 30 seconds, 2, 8 and 32 minutes |
 
@@ -174,10 +174,10 @@ See [Replay checks API](/docs/reference/api/replay-checks).
 
 | Item | Value |
 | --- | --- |
-| Sets guarding a station's changes | at most 1 |
+| Sets gating a station's changes | at most 1 |
 | `maxRegressions` | 0 or more, default 0 |
 | `minGain` | above 0, at most 1, default 0.05 |
-| Copies of each run in a check (repeats) | 1 to 5, default 1 |
+| Repeats of each run in a check | 1 to 5, default 1 |
 | Ceiling, each replay a check starts | above 0, at most 1,000, default 10 `USD` |
 | Replays a check starts | 1, or 2 when the set has no baseline of the live config |
 | Planned repositories sent with a check | at most 64,000 characters |
@@ -191,10 +191,10 @@ See [Change stacks and decisions](/docs/reference/app/change-stacks-and-decision
 
 | Item | Value |
 | --- | --- |
-| Diff | 6 MiB, 2,000 changes |
-| Drafting attempts | 4 in all, 30 minutes each, 30 seconds apart and doubling |
+| Diff | 6 MiB, 2,000 hunks |
+| Generation attempts | 4 in all, 30 minutes each, 30 seconds apart and doubling |
 | Waiting for a runner to check | 60 minutes |
-| Check output kept | 16,000 characters a step |
+| Check output stored | 16,000 characters a step |
 
 ## Memory
 
@@ -205,9 +205,9 @@ See [Memory](/docs/reference/glossary#memory) and
 | --- | --- |
 | A memory | 1 to 1,000 characters |
 | Reason for retiring a memory | 1 to 500 characters |
-| A path a memory bears on | 1 to 500 characters, within its repository |
-| Paths a memory bears on | at most 20 |
-| Steps and notes a memory rests on | at most 20 steps and 20 notes |
+| A path a memory is about | 1 to 500 characters, within its repository |
+| Paths a memory is about | at most 20 |
+| Steps and notes a memory cites | at most 20 steps and 20 notes |
 | Words a recall looks for | 1 to 500 characters |
 | Memories a recall prints | at most 10 |
 | Memories in a run's briefing | at most 8, and 3,000 characters together; see [Briefing](/docs/reference/hosts/sandbox#briefing) |
@@ -225,16 +225,16 @@ See [Agent commands](/docs/reference/cli/agent-commands).
 | Request timeout | 2 minutes |
 | Tool input | 8 MiB |
 
-## API descriptions
+## API specs
 
-See [API descriptions](/docs/reference/terraform/integration#api-descriptions).
+See [API specs](/docs/reference/terraform/integration#api-specs).
 
 | Item | Value |
 | --- | --- |
-| Description size | 64 MB |
-| Fetching a description | 30 seconds, redirects included |
+| Spec size | 64 MB |
+| Fetching a spec | 30 seconds, redirects included |
 | Reading its operations once fetched | 30 seconds, waiting for a turn included |
-| Descriptions read at once | 2 on each control plane server |
+| Specs read at once | 2 on each control plane server |
 | Tools generated per integration | 1,000, counted after `include` and `exclude` |
 | OpenAPI schema depth followed | 8 levels |
 | GraphQL input object depth followed | 3 levels |
@@ -243,8 +243,8 @@ See [API descriptions](/docs/reference/terraform/integration#api-descriptions).
 | Redirects a request follows | 5 |
 | GraphQL selection `depth` | 1 to 5, default 2 |
 | Generated tool description | 1,000 characters |
-| Descriptions read | OpenAPI 3.0 and 3.1, in JSON or YAML, and GraphQL; not Swagger 2 |
-| `$ref`s followed | only those inside the description |
+| Specs read | OpenAPI 3.0 and 3.1, in JSON or YAML, and GraphQL; not Swagger 2 |
+| `$ref`s followed | only those inside the spec |
 
 ## MCP servers
 
@@ -252,7 +252,7 @@ See [MCP servers](/docs/reference/terraform/integration#mcp-servers).
 
 | Item | Value |
 | --- | --- |
-| Listing the tools again | every 600 seconds, set by [`MCP_RELIST_SECONDS`](/docs/reference/self-hosted-settings#calls-out-of-spotlight), checked every minute |
+| Listing the tools again | every 600 seconds, set by [`SPOTLIGHT_MCP_RELIST_SECONDS`](/docs/reference/self-hosted-settings#calls-out-of-spotlight), checked every minute |
 | Pages of tools read in one listing | 50 |
 | Each MCP request, listing or call | 60 seconds |
 | Tool answer | 4 MB |
@@ -260,9 +260,9 @@ See [MCP servers](/docs/reference/terraform/integration#mcp-servers).
 | Tool description | 1,000 characters |
 | Calls one session carries at once | 1 |
 | Session left unused | closed after 5 minutes |
-| Calls again after the server forgets a session | 1 |
+| Calls again after the server no longer has a session | 1 |
 | Discovery requests | 15 seconds each |
-| What discovery found | kept 10 minutes on each control plane server |
+| What discovery found | cached 10 minutes on each control plane server |
 | Transport | streamable HTTP |
 
 ## Hooks
@@ -273,7 +273,7 @@ See [`spotlight_hook`](/docs/reference/terraform/hook).
 | --- | --- |
 | Request timeout | `timeoutSeconds`, default 10, 1 to 30 |
 | Callback token lifetime | 15 minutes |
-| Response body kept | 16 KiB |
+| Response body stored | 16 KiB |
 | Delivery attempts | 8 in all, 2 seconds to 1 hour apart |
 | Causal chain depth | 8 |
 | Firings for the same change | 3 within 10 minutes |
@@ -293,7 +293,7 @@ See [Resource API](/docs/reference/api/resource-api#headers).
 
 | Item | Value |
 | --- | --- |
-| `Idempotency-Key` kept | 24 hours |
+| `Idempotency-Key` retained | 24 hours |
 | `Idempotency-Key` length | at most 255 characters |
 
 ## Other

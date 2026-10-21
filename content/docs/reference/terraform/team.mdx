@@ -30,7 +30,7 @@ resource "spotlight_team" "core" {
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `key` | string | required | Names the team within its workspace, and prefixes the address of everything it has. Lowercase words joined by dashes, at most 64 characters. Fixed: an update that changes it is rejected; Terraform replaces the resource. |
+| `key` | string | required | Names the team within its workspace, and prefixes the address of everything it has. Lowercase words joined by dashes, at most 64 characters. Immutable: an update that changes it is rejected; Terraform replaces the resource. |
 | `name` | string | required | What the team is called. 1 to 100 characters. |
 | `workspaceId` | string | read-only | The workspace that has the team. |
 
@@ -55,7 +55,7 @@ team of a workspace created in the web app starts with two; see
 
 ## In Terraform
 
-- `spotlight_team` creates, changes and deletes a team. Its import id is
+- `spotlight_team` creates, updates and deletes a team. Its import id is
   `<workspace id>/<key>`.
 - The data source `spotlight_team` reads a team without managing it. See
   [Provider](/docs/reference/terraform/terraform-provider#data-sources).

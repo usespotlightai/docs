@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Searches
-description: The Searches card on a Station page, the Start a search dialog, its aims and its warnings, the search page, search and iteration states, stalls and why a search stalled, scores, gains, the frontier, candidates whose gain showed only on seen tasks, regressions against the live config, the pull request a picked candidate opens and why one fails, and a replay set that guards a station's changes.
+description: The Searches card on a Station page, the Start a search dialog, its aims and its warnings, the search page, search and iteration states, stalls and why a search stalled, scores, gains, the frontier, overfit candidates, regressions against the live config, the pull request a picked candidate opens and why one fails, and a replay set that gates a station's changes.
 ---
 
 A [search](/docs/reference/glossary#search) has an agent propose changed
@@ -30,17 +30,17 @@ first, one row each:
 | Column | Shows |
 | --- | --- |
 | Search | `Search <n>`, numbered from the station's first search, linked to its page. |
-| State | Its [state](#search-states). Hovering over it shows its [ending](#search-endings), once it has one. |
+| State | Its [state](#search-states). Hovering over it shows its [stop reason](#stop-reasons), once it has one. |
 | Replay set | The set it searches on, or `–`. |
-| Best | Its [best candidate](#best-candidate)'s name, or "Live config", with its [reading](#only-on-seen-tasks) when it has one, and a warning icon when it is [over the regression limit](#regressions-against-the-live-config). Without one, "No best candidate yet", or `No candidate matches the live config’s success yet` for a search that aims for the same success for less. |
+| Best | Its [best candidate](#best-candidate)'s name, or "Live config", with its [overfit status](#overfit) when it has one, and a warning icon when it is [over the regression limit](#regressions-against-the-live-config). Without one, "No best candidate yet", or `No candidate matches the live config’s success yet` for a search that aims for the same success for less. |
 | Success | The best candidate's score as a percentage, or `–`. Hovering over it shows `This score is from the held-out tasks.` or `This score is from the searched tasks.`, with `Likely range: <range>`. |
 | Iterations | `<run> / <budget>`. |
 | Spent | `<spent> / <ceiling>`. |
 | Started | When it started. |
 
 "Start a search" opens the [Start a search](#start-a-search) dialog. It
-cannot be selected, with the reason on hover, while a search of the station is under way
-(`A search of this station is underway.`), when the station has no set
+cannot be selected, with the reason on hover, while a search of the station is in progress
+(`A search of this station is in progress.`), when the station has no set
 (`Create a replay set first.`), or when no set covers runs of 5 different tasks
 (`No replay set covers 5 different tasks yet.`). While the station's sets load,
 it is disabled with `Loading the replay sets…`, and when they cannot be read,
@@ -93,14 +93,14 @@ set and budget to see the estimated runs and spend.` Then it shows what the
 | Label | Shows |
 | --- | --- |
 | Tasks | `<n> searched · <n> held out`. |
-| Copies | `Each run once`, or `Each run <n> times`. |
+| Repeats | `Each run once`, or `Each run <n> times`. |
 | At most | `<n> runs`, then `<n> of the live config · <n> of candidates · <n> held out · <n> of the agent`. |
 | Spends at most | The ceiling, then `<amount> for the live config · <amount> per candidate · <amount> per held-out replay · <amount> per agent run`. |
 | Takes | `About <duration>`, from how long the set's runs took, or `Unknown. None of the set's runs was timed.` |
 
 The estimate always holds out as many tasks as the search will, and assumes
 the choice of tasks whose runs cost most, so the search's own split costs as
-much or less. Its counts of runs and its allotments count every copy. Under
+much or less. Its counts of runs and its per-replay limits count every repeat. Under
 it: `An agent run may slightly overspend. The search may end a little over its
 ceiling.` When the endpoint rejects the inputs, the estimate shows the error, or `Please
 fix the marked field to see an estimate.` when every problem it names is at
@@ -112,15 +112,15 @@ Under the estimate, the dialog may warn, from the set's
 | Warning | When |
 | --- | --- |
 | `The set's noise isn't measured. A small gain can be chance. Please replay each run more than once, or replay a set of 5 or more runs to measure it.` | The set's noise is not measured. |
-| `Success moved <n> pts between copies of the same runs. This is more than the line's minimum real gain. If you replay each run <n> times, the noise falls below it. Minimum real gain: +<n> pts` | The copies needed to bring the noise under `min_gain` are more than "Repeats" and at most 5: the spread divided by `min_gain`, squared, rounded up. |
-| `Success moved <n> pts between copies of the same runs. This is more than the line's minimum real gain. Even the maximum of 5 repeats won't bring the noise below it. Read small gains with care, or raise the line's min_gain. Minimum real gain: +<n> pts` | The copies needed are more than 5. |
+| `Success moved <n> pts between repeats of the same runs. This is more than the line's minimum real gain. If you replay each run <n> times, the noise falls below it. Minimum real gain: +<n> pts` | The repeats needed to bring the noise under `min_gain` are more than "Repeats" and at most 5: the spread divided by `min_gain`, squared, rounded up. |
+| `Success moved <n> pts between repeats of the same runs. This is more than the line's minimum real gain. Even the maximum of 5 repeats won't bring the noise below it. Read small gains with care, or raise the line's min_gain. Minimum real gain: +<n> pts` | The repeats needed are more than 5. |
 | `The live config already succeeds on <share> of this set. Aim for the same success for less, or add tasks that the live config fails.` | The live config succeeds on more than 95% of the set. |
-| `The judge gave the same verdict twice on only <share> of <n> changes. Make the rubric more specific before you search.` ("change" for 1) | The set's newest check found the judge agreeing with itself less than 80% of the time. |
-| `The check flipped on <n> of <m> changes that it ran twice. It can flip a candidate's result by chance. The set page lists these changes.` | The set's newest check found a flaky check. |
+| `The judge gave the same verdict twice on only <share> of <n> changes. Make the rubric more specific before you search.` ("change" for 1) | The set's newest calibration found the judge agreeing with itself less than 80% of the time. |
+| `The check flipped on <n> of <m> changes that it ran twice. It can flip a candidate's result by chance. The set page lists these changes.` | The set's newest calibration found a flaky check. |
 | `With each run's answer, the live config gained only <gain> pts on <n> runs. The likely range is <low> to <high>. A better config has little room to show a gain here. Please add tasks that the live config fails.` ("run" for 1) | The newest [replay with the answer](/docs/reference/app/replays#replay-with-the-answer) was compared, its gain covers at least 5 tasks paired on both sides, and it is not `better`. |
 
 Under either `Success moved` warning, unless "Repeats" is the suggestion
-already, `Replay each run <n> times` sets "Repeats" to the copies needed, at
+already, `Replay each run <n> times` sets "Repeats" to the repeats needed, at
 most 5. A warning does not stop the search from starting. "Start search",
 which cannot be selected until the harnesses are known, reads "Starting…" while
 it is sent, then opens the new search's page. An error is shown at its field, such as a
@@ -137,12 +137,12 @@ opens the station's [Searches](#station-page) card. When the search cannot be
 loaded for another reason, the page reads `The search could not be loaded.`,
 with "Try again".
 
-The header shows `Search <n>`, or "Search" while its number is not known, and, for some [endings](#search-endings), a pill,
-such as "Stalled", whose hover gives the ending in words. Under it are the
+The header shows `Search <n>`, or "Search" while its number is not known, and, for some [stop reasons](#stop-reasons), a pill,
+such as "Stalled", whose hover gives the stop reason in words. Under it are the
 replay set's name, linked to its page ("Its replay set" until the name is
 loaded), and how long ago the search ended, or
 started while it has not ended. Hovering over that shows `Started <when>,
-ended <when>`, or `Started <when>`. While the search is under way, "Stop"
+ended <when>`, or `Started <when>`. While the search is in progress, "Stop"
 opens `Stop this search?`: `The search agent stops and no more candidates
 replay. Finished replays keep their scores, and you can still open a pull request for them.`,
 with "Keep it searching" and "Stop search", which reads "Stopping…" while it
@@ -158,9 +158,9 @@ An ⓘ beside a tile's label shows its note on hover.
 
 | Tile | Shows | Note |
 | --- | --- | --- |
-| Best | The [best candidate](#best-candidate)'s name, or "Live config", then its score as a percentage with `held out` or `searched`, its [reading](#only-on-seen-tasks) when it has one, and a warning icon when it is [over the regression limit](#regressions-against-the-live-config). Without one, `–` and "No best candidate yet". Labelled "Cheapest" when the search aims for the same success for less, and then `No candidate matches the live config’s success yet` without one. | `The search aims for <aim>.` and the aim's note, as under "Aim for", then `Likely range: <range>.` |
+| Best | The [best candidate](#best-candidate)'s name, or "Live config", then its score as a percentage with `held out` or `searched`, its [overfit status](#overfit) when it has one, and a warning icon when it is [over the regression limit](#regressions-against-the-live-config). Without one, `–` and "No best candidate yet". Labelled "Cheapest" when the search aims for the same success for less, and then `No candidate matches the live config’s success yet` without one. | `The search aims for <aim>.` and the aim's note, as under "Aim for", then `Likely range: <range>.` |
 | Live config | The live config's search score as a percentage, and `of <n> runs scored`; or `–` and "Not scored yet". | `Likely range: <range>.` and `Minimum real gain: <min_gain>.`, as in `+5 pts`. |
-| Iterations | `<n> of <m>`, the iterations run of its budget, and `<n> candidates proposed` ("candidate" for 1). | `Each iteration tries <n> candidates, <n> at once. Each run once. Search agent: <harness> · <model> · <effort>`, with `Each run <n> times` for more copies, and only the parts its agent has. |
+| Iterations | `<n> of <m>`, the iterations run of its budget, and `<n> candidates proposed` ("candidate" for 1). | `Each iteration tries <n> candidates, <n> at once. Each run once. Search agent: <harness> · <model> · <effort>`, with `Each run <n> times` for more repeats, and only the parts its agent has. |
 | Tasks | The searched tasks, and `searched · <n> held out`. | `The search agent sees only the searched tasks and their scores. It doesn't see the held-out tasks. After the search, the best candidates replay on the held-out tasks to check that they don't only fit what the agent saw.`, then `Held out: <titles>.` with each held-out task's title in the set, or `Task <first 8 characters of its id>`. |
 | Spent | What it spent, and `of <ceiling>`. | |
 
@@ -174,7 +174,7 @@ headed `Why it stalled (iteration <n>)`. The page opened with
 | --- | --- |
 | Whose failures | `Looked at why <name> failed`, or `Looked at why the live config failed`, once the reflection knows the config it looks into. |
 | While it runs | `Two iterations in a row found nothing better. The search agent is looking into why the remaining tasks fail.` |
-| Once it ended | `Two iterations in a row found nothing better. The search agent sorted the <n> tasks that the best config still failed by cause.` ("task" for 1) when it had tasks, then its [outcome](#reflection-outcomes). |
+| Once it ended | `Two iterations in a row found nothing better. The search agent sorted the <n> tasks that the best config still failed by cause.` ("task" for 1) when it had tasks, then its [result](#reflection-results). |
 | Causes | One group per [cause](#causes) recorded, in the order task, judge, check, infra, config: its title, what it means and what to do, then each task the cause was given for. |
 | No cause recorded | Once it ended, the tasks it looked into without recording a cause: `The search agent looked into these tasks but recorded no cause.` |
 
@@ -191,10 +191,10 @@ It is one table:
 
 | Column | Shows |
 | --- | --- |
-| Candidate | Its name, or "Live config"; a blue lightning icon for a [frontier](#frontier) point, whose hover reads "On the frontier" and `No other candidate succeeds more for less.`; its [reading](#only-on-seen-tasks) when it has one; and a warning icon when it is [over the regression limit](#regressions-against-the-live-config). Selecting the row opens its [details](#candidate-details), and selecting it again closes them. |
+| Candidate | Its name, or "Live config"; a blue lightning icon for a [frontier](#frontier) point, whose hover reads "On the frontier" and `No other candidate succeeds more for less.`; its [overfit status](#overfit) when it has one; and a warning icon when it is [over the regression limit](#regressions-against-the-live-config). Selecting the row opens its [details](#candidate-details), and selecting it again closes them. |
 | Searched | Its replay's [state](/docs/reference/app/replays#replay-states) until that replay has finished, "Not scored yet", or its [search score](#scores) as a percentage, with `Likely range: <range> · of <n> runs scored` on hover. |
 | Held out | Its held-out score, with its range on hover; "Replaying" while its held-out replay is queued or running; "Not held out" for a candidate that was not replayed there; else `–`. |
-| Gain | Its [gain](#gains) over the live config on the searched tasks, as in `+12 pts`, green when its verdict is `better` and red when `worse`. Hovering shows `Gain over the live config, searched: <gain>, likely <low> to <high> pts.`, then the same for `held out` once known. `–` without one. |
+| Gain | Its [gain](#gains) over the live config on the searched tasks, as in `+12 pts`, green when its significance is `better` and red when `worse`. Hovering shows `Gain over the live config, searched: <gain>, likely <low> to <high> pts.`, then the same for `held out` once known. `–` without one. |
 | Cost per run | What it spent per scored searched run, or "Unpriced". |
 | Pull request | `–` until it is picked, "Opening…", "Opened", linked to the pull request on GitHub, or "Not opened" with a warning icon, "Why", whose hover reads `<reason>. <message>`: the [reason](#config-pull-request-reasons) in words, then Spotlight's message. |
 
@@ -230,7 +230,7 @@ unless picking it opened a pull request.
 
 Selecting a candidate opens a side pane, which can be resized and closed. Its
 heading is the candidate's name, then its icons: the blue lightning icon for a
-[frontier](#frontier) point, its [reading](#only-on-seen-tasks) when it has
+[frontier](#frontier) point, its [overfit status](#overfit) when it has
 one, and a warning icon when it is
 [over the regression limit](#regressions-against-the-live-config). Its
 replay's [state](/docs/reference/app/replays#replay-states) shows until that
@@ -294,10 +294,10 @@ name with its search score and range.
 
 | Column | Shows |
 | --- | --- |
-| Candidate | Its name, or "Live config", the blue lightning icon for a frontier point, its [reading](#only-on-seen-tasks) when it has one, and a warning icon when it is [over the regression limit](#regressions-against-the-live-config). |
+| Candidate | Its name, or "Live config", the blue lightning icon for a frontier point, its [overfit status](#overfit) when it has one, and a warning icon when it is [over the regression limit](#regressions-against-the-live-config). |
 | Iteration | The iteration that proposed it, or `–` for the live config. |
-| Searched | Its search score with its range, `of <n> runs scored`, counting replay runs, copies included, or "Not scored yet". |
-| Gain on searched | Its [gain](#gains) over the live config on the searched tasks with its range and verdict, then its [side-by-side](#side-by-side-with-the-live-config) wins, losses and ties there, or `–`. |
+| Searched | Its search score with its range, `of <n> runs scored`, counting replay runs, repeats included, or "Not scored yet". |
+| Gain on searched | Its [gain](#gains) over the live config on the searched tasks with its range and significance, then its [side-by-side](#side-by-side-with-the-live-config) wins, losses and ties there, or `–`. |
 | Held out | Its held-out score with its range, "Replaying" while its held-out replay is queued or running, "Not held out" for a candidate that was not replayed there, or `–`. |
 | Gain on held out | Its gain over the live config on the held-out tasks, once its held-out replay has finished, then its side-by-side wins, losses and ties there, else `–`. |
 | Regressions | How many tasks it [regressed](#regressions-against-the-live-config) on against the live config, searched and held out together. Hovering over a count above 0 shows `Searched: <n>` and `Held out: <n>`, without a count that is not made yet. `–` until either count is made, and for the live config. |
@@ -314,7 +314,7 @@ name with its search score and range.
 | `stopped` | Stopped | yes |
 
 A search starts `seeding`: the station's live config is replayed on every run
-of the set, as many times as "Repeats" asks, and this replay becomes the set's
+of the set, as many times as "Repeats" sets, and this replay becomes the set's
 [baseline](/docs/reference/glossary#baseline). Once it finishes, the search is
 `searching`, and wants its first iteration. Each iteration runs its agent once;
 the agent proposes up to "Candidates per iteration" candidates, each replayed on
@@ -325,9 +325,9 @@ cannot afford one more. It then holds out: `holding-out` while the best candidat
 replayed on the held-out runs, then `finished`. A search with no candidate
 whose replay finished goes straight to `finished`.
 
-## Search endings
+## Stop reasons
 
-| Ending | Shown | Pill | State |
+| `stopReason` | Shown | Pill | State |
 | --- | --- | --- | --- |
 | `iterations-spent` | Ran every iteration it was given | None | `finished` |
 | `ceiling-reached` | Reached its ceiling | Hit its ceiling | `finished` |
@@ -339,19 +339,19 @@ whose replay finished goes straight to `finished`.
 
 The pill shows in the [search page](#search-page)'s header. Hovering over it,
 or over the search's state on the [station page](#station-page), shows the
-ending in words.
+stop reason in words.
 
 `ceiling-reached` also ends a search whose replay of the live config ran over
 its ceiling. `stalled` ends a search that [stalled](#stalls) with no room to
 look into why, or whose reflection found nothing the config can fix. A stopped
-search withdraws its agent's run
+search cancels or stops its agent's run
 and stops its replays.
 
 ## Iteration states
 
 | State | Shown | Meaning |
 | --- | --- | --- |
-| `wanted` | Waiting for a runner | Its agent run is not yet queued, or no runner has taken it. |
+| `wanted` | Waiting for a runner | Its agent run is not yet queued, or no runner has claimed it. |
 | `running` | Running | Its agent run is queued or running, and may propose candidates. |
 | `ended` | Ended | Its agent run ended. |
 | `failed` | Failed | Its agent run failed, asked a person, or could not start. |
@@ -360,7 +360,7 @@ Each iteration is of one kind: `propose`, whose agent proposes candidates, or
 `reflect`, a [reflection](#reflections), whose agent proposes nothing and
 records causes. A reflection counts in "Iterations" like any other.
 
-An agent run no runner takes within 60 minutes is withdrawn, and its iteration
+An agent run no runner claims within 60 minutes is cancelled, and its iteration
 fails. An agent run whose spend is not known 15 minutes after it ended is
 counted as [unpriced](#spend-and-ceiling).
 
@@ -373,7 +373,7 @@ Each iteration's agent run is a run of its own kind:
 | Task | Has no task. |
 | Placement | Where the station's runs go: the station's `runners`, else the line's. Its priority is below every task run and chat run. |
 | Workspace | No repository is checked out, and no skills, settings files or team memories are laid out. |
-| Briefing | The station's live config as the search started, the budget left, how many candidates it may propose, how many tasks are held out, what counts as better for the search's [aim](#aims), what a candidate may change, and how to propose one. After a reflection that went on, also each `config` cause it recorded, with its task, evidence and suggestion. A reflection's briefing instead names the config whose failures it looks into, lists each failing task with its original run and the replay run that failed it, describes the five [causes](#causes), and says how to record one. |
+| Briefing | The station's live config as the search started, the budget left, how many candidates it may propose, how many tasks are held out, what counts as better for the search's [aim](#aims), what a candidate may change, and how to propose one. After a reflection that continued, also each `config` cause it recorded, with its task, evidence and suggestion. A reflection's briefing instead names the config whose failures it looks into, lists each failing task with its original run and the replay run that failed it, describes the five [causes](#causes), and says how to record one. |
 | `spotlight history` | Only the searched station. The held-out tasks' runs are left out; the searched runs are always written. A `candidates/` folder contains each candidate so far. Each replay run's `result.json` gives its verdict, a code for each reason it failed and the judge's [`guidance` field](/docs/reference/app/replays#guidance), and never the judge's reasons. See [`spotlight history`](/docs/reference/cli/agent-commands#spotlight-history). |
 | `spotlight candidate` | Proposes a candidate. Not allowed in a reflection. See [`spotlight candidate`](/docs/reference/cli/agent-commands#spotlight-candidate). |
 | `spotlight cause` | Records a task's cause, in a reflection only. See [`spotlight cause`](/docs/reference/cli/agent-commands#spotlight-cause). |
@@ -406,7 +406,7 @@ iterations that found nothing better, it has stalled:
   run, its next iteration is a [reflection](#reflections).
 - Otherwise it ends `stalled`, and its starter gets a [notice](#notices).
 
-A reflection is not a propose iteration, so after one that went on, two more
+A reflection is not a propose iteration, so after one that continued, two more
 propose iterations must find nothing better before the search stalls again.
 
 ### Reflections
@@ -414,9 +414,9 @@ propose iterations must find nothing better before the search stalls again.
 A reflection looks into the failures of the best config so far: the first in
 the order of the search's aim among the live config and every candidate whose
 searched replay finished. It looks into each searched run of the set on which
-that config's success, the share of its scored copies that succeeded, is below
-one half and at least one copy failed. A held-out task is never among them. The
-first failed copy is the replay run it links to.
+that config's success, the share of its scored repeats that succeeded, is below
+one half and at least one repeat failed. A held-out task is never among them. The
+first failed repeat is the replay run it links to.
 
 With no such task, the reflection ends at once, without an agent run, and the
 search ends `stalled`. Otherwise its agent records one [cause](#causes) per
@@ -433,20 +433,20 @@ ends, or fails:
 
 | `cause` | Title | Means | Shown to do |
 | --- | --- | --- | --- |
-| `task` | The task itself | `The task is unclear, out of date, or can't be done as asked. No config would get it right.` | `Fix the task, or take it out of the replay set.` |
-| `judge` | The judge | `The work can be fine, but the judge scored it wrong. The judge's rubric asks for the wrong thing.` | `Fix the judge's rubric.` |
+| `task` | The task itself | `The task is unclear, out of date, or can't be done as written. No config would get it right.` | `Fix the task, or take it out of the replay set.` |
+| `judge` | The judge | `The work can be fine, but the judge scored it wrong. The judge's rubric requires the wrong thing.` | `Fix the judge's rubric.` |
 | `check` | The check | `The check failed for a reason that the change didn't cause, such as a broken or flaky test.` | `Fix the check.` |
 | `infra` | Around the work | `Something around the work failed the run, such as the runner, the network or a missing tool.` | `Replay it again. If it keeps failing, fix what the run needs.` |
 | `config` | The station's config | `A change to the station's config, such as prompt, model or skills, could still fix it.` | `You don't need to do anything. The search keeps trying configs for these tasks.` |
 
 Only `config` lets the search go on.
 
-### Reflection outcomes
+### Reflection results
 
-| `outcome` | When | Shown |
+| `result` | When | Shown |
 | --- | --- | --- |
-| `went-on` | A `config` cause, and the search wanted a propose iteration. | `The search continued. A config change can still fix some of these tasks.` |
-| `out-of-budget` | A `config` cause, but the search could not afford a propose iteration or had none left. | `The search ended with no budget left. A config change can still fix some of these tasks.` |
+| `continued` | A `config` cause, and the search wanted a propose iteration. | `The search continued. A config change can still fix some of these tasks.` |
+| `ceiling-reached` | A `config` cause, but the search could not afford a propose iteration or had none left. | `The search ended at its ceiling. A config change can still fix some of these tasks.` |
 | `no-config-cause` | No `config` cause. | `The search ended. No config change can fix the tasks that are left. The rest of the budget stays unspent.` |
 | `no-failures` | No searched task failed. | `The search ended. No searched task failed.` |
 | `did-not-run` | Its agent run failed before it recorded any cause. | `The search ended. The search agent's run failed before it recorded a cause.` |
@@ -461,8 +461,8 @@ workspace:
 
 | When | Form | Headline |
 | --- | --- | --- |
-| A reflection ended the search | `ended` | By outcome: `<search> ended with nothing the config can fix`, `<search> ended with every searched task passing`, `<search> ended after its reflection failed`, or `<search> ran out of budget`. |
-| A reflection went on and recorded a cause other than `config` | `advice` | `<search> goes on after finding failures outside the config` |
+| A reflection ended the search | `ended` | By result: `<search> ended with nothing the config can fix`, `<search> ended with every searched task passing`, `<search> ended after its reflection failed`, or `<search> reached its ceiling`. |
+| A reflection continued and recorded a cause other than `config` | `advice` | `<search> goes on after finding failures outside the config` |
 | The search stalled with no room for a reflection | `ended` | `<search> ended with no budget left to reflect` |
 
 `<search>` is `The search for a better <station> config`, or `The search for a
@@ -473,14 +473,14 @@ suggestion: "Take the task out of the replay set, or reword it", "Fix the
 judge's rubric", "Fix the station's check" or "Fix what the run needed around
 the work". A task with no title reads "one of the searched tasks". A point is
 cut at 1,000 characters; past 20 points, the last reads `The search page shows <n>
-more.` A reflection that went on with only `config` causes sends no
+more.` A reflection that continued with only `config` causes sends no
 notice. Each reflection sends at most one.
 
 ## Scores
 
 | Score | Meaning |
 | --- | --- |
-| Search score | Its [success](/docs/reference/app/replays#success) on the searched tasks: per task, the share of its scored copies that succeeded, averaged over the tasks scored, with its 95% range. For the live config, from its replay's searched runs only. |
+| Search score | Its [success](/docs/reference/app/replays#success) on the searched tasks: per task, the share of its scored repeats that succeeded, averaged over the tasks scored, with its 95% range. For the live config, from its replay's searched runs only. |
 | Held-out score | Its success on the held-out tasks, worked out the same way, once its held-out replay has finished. For the live config, from its replay's held-out runs. |
 | Cost per run | What its replay on the searched tasks spent per scored run, in the ceiling's currency. Unknown, "Unpriced", while any of that spend was not priced or was in another currency. |
 
@@ -492,7 +492,7 @@ Results and their reasons are a replay's: see
 Each candidate other than the live config reads its gain over the live
 config's replay twice: on the searched tasks, and on the held-out tasks once
 both its held-out replay and the live config's replay have finished. Each is
-paired task by task, with its range and a verdict of "Better", "Worse" or "within
+paired task by task, with its range and a significance of "Better", "Worse" or "within
 noise", as a [replay's gain](/docs/reference/app/replays#gains) is, against the
 line's `min_gain`. The frontier and the best candidate do not depend on it.
 
@@ -505,25 +505,26 @@ Each reads `Side by side with the search's starting config: <n> wins, <n>
 losses, <n> ties`, counting the tasks of that replay, once any was compared. They never change its score, its
 gain, the frontier or the best candidate.
 
-### Only on seen tasks
+### Overfit
 
 Once a candidate's held-out gain is known, a candidate whose searched gain reads
-"Better" gets a reading from it:
+"Better" gets an `overfit` status from it:
 
 | Held-out gain | Shown | Note |
 | --- | --- | --- |
 | `better` | Nothing | |
-| `within-noise` or `worse`, over at least 5 tasks scored on both sides | "Likely overfit": the candidate is marked | "Likely overfit" and `It gained on searched tasks, not on held-out tasks.` |
-| Over fewer than 5 tasks scored on both sides | "Overfit unknown" | "Overfit unknown" and `Too few held-out tasks have a score.` |
+| `within-noise` or `worse`, over at least 5 tasks scored on both sides | "Likely overfit": `likely` | "Likely overfit" and `It gained on searched tasks, not on held-out tasks.` |
+| Over fewer than 5 tasks scored on both sides | "Overfit unknown": `too-few-held-out` | "Overfit unknown" and `Too few held-out tasks have a score.` |
 
 On the Station page's [Searches](#station-page) card, in the "Best" tile, the
-candidates table, the candidate's details and the frontier table, the reading
-is a warning icon named by the reading: amber when marked, grey for "Too few
-held-out tasks to tell". Hovering over or focusing the icon opens its note. A
-candidate whose searched gain does not read "Better" has no reading, nor does
-one before its held-out gain is known, nor the live config. A marked candidate
-stays on the frontier, can still be the [best candidate](#best-candidate), and
-can still be [picked](#picking-a-candidate).
+candidates table, the candidate's details and the frontier table, the overfit
+status is a warning icon named by the status: amber for "Likely overfit", grey
+for "Overfit unknown". Hovering over or focusing the icon opens its note. A
+candidate whose searched gain does not read "Better" has no overfit status, nor
+does one before its held-out gain is known, nor the live config. A likely
+overfit candidate stays on the frontier, can still be the
+[best candidate](#best-candidate), and can still be
+[picked](#picking-a-candidate).
 
 ### Regressions against the live config
 
@@ -627,7 +628,7 @@ cannot be selected, and the reason shows above it:
 | --- | --- |
 | `queued` or `running` | `After its replay on the searched tasks finishes, you can open a pull request.` |
 | `stopped` | `You can't open a pull request for this candidate. Its replay stopped before it finished.` |
-| `over-budget` | `You can't open a pull request for this candidate. Its replay reached its ceiling before it finished.` |
+| `ceiling-reached` | `You can't open a pull request for this candidate. Its replay reached its ceiling before it finished.` |
 | Gone | `You can't open a pull request for this candidate. Its replay is gone.` |
 
 ### The pull request
@@ -649,7 +650,7 @@ The paragraph on the held-out result says one of:
 | When | Says |
 | --- | --- |
 | The candidate has a held-out replay, and it or the live config's had not finished when the pull request opened | `Its held-out replay had not finished when this pull request opened, so Spotlight could not yet check whether its gain also shows on the held-out tasks the search never showed its agent.` |
-| The candidate is [marked](#only-on-seen-tasks) | `Its gain showed only on the tasks the search could see: +20 points on the searched tasks, but −3 points on the held-out tasks the search never showed its agent. It may fit the searched tasks rather than work better in general, so weigh that before merging.` |
+| The candidate is [likely overfit](#overfit) | `Its gain showed only on the tasks the search could see: +20 points on the searched tasks, but −3 points on the held-out tasks the search never showed its agent. It may fit the searched tasks rather than work better in general, so weigh that before merging.` |
 | It reads "Overfit unknown" | `It gained +20 points on the searched tasks, but only 3 held-out tasks scored on both sides, too few to tell whether the gain also shows on tasks the search never showed its agent.` |
 
 Any other candidate's body has no such paragraph.
@@ -700,7 +701,7 @@ with `github-error`.
 | Code | Shown |
 | --- | --- |
 | `no-source` | Line names no repository for its Terraform |
-| `repository-unreachable` | Spotlight's GitHub App can't reach the line's repository |
+| `repository-unreachable` | Spotlight's GitHub App can't access the line's repository |
 | `file-missing` | Line's Terraform file isn't in its repository |
 | `file-unparsable` | Line's Terraform file couldn't be read |
 | `block-not-found` | Station's block isn't in the file |
@@ -719,32 +720,32 @@ Each comes with Spotlight's message, such as
 `file-unwritable` is a file that is a symbolic link in the repository.
 `branch-taken` means the branch has commits Spotlight did not write.
 
-## Guarding a station's changes
+## Gating a station's changes
 
-A replay set's page has a "Guards config changes" switch, at the bottom left
+A replay set's page has a "Gates config changes" switch, at the bottom left
 of its "Checks" panel. When it is on,
 [`spotlight replay check`](/docs/reference/cli/replay-command#spotlight-replay-check)
 replays a planned change of the station on this set. A station has at most one
-such set: turning it on while another set guards the station fails. The switch cannot be changed once the set's station has left its
+such set, the gating set: turning it on while another set gates the station fails. The switch cannot be changed once the set's station has left its
 line. Turning it off leaves checks already started running.
 
 The "Checks" panel's ⓘ reads `spotlight replay check replays a pull
-request's change of this station on this set. One guarding set per station.`,
+request's change of this station on this set. One gating set per station.`,
 then the line's
 [`replay_check`](/docs/reference/terraform/line#replay-check-fields),
 read-only: `Fails past <n> regressions. Ceiling per check: <ceiling> ·
 Minimum real gain: <min_gain>`, or, for a line without one, `Line sets no
 replay_check. Its pull requests aren't checked.`
 
-The panel lists the checks replayed on the set, as Change, Verdict,
+The panel lists the checks replayed on the set, as Change, Result,
 Regressions and When. Change is the pull request (`Pull request #<n>`) or
 commit (`Commit <sha>`) that planned the change, or "A planned change", with
 `attempt <n>` from the second attempt on; the row opens the check's replay.
-Verdict is the check's
-[verdict](/docs/reference/api/replay-checks#verdicts) in words, such as
+Result is the check's
+[result](/docs/reference/api/replay-checks#results) in words, such as
 `Undecided: replay reached its ceiling`. With none, it reads "No checks yet"
 and `This set checks pull requests that change this station.`, or `The set
-doesn't guard config changes.` when the switch is off. "Show older checks"
+doesn't gate config changes.` when the switch is off. "Show older checks"
 loads more.
 
 ## Search replays
@@ -755,7 +756,7 @@ and a held-out replay only the held-out runs. The replay page's header, and
 the Run page of each of its replay runs, read `candidate <name> in its search`,
 or `the live config it started from in its search`, linked to the search.
 
-While a search is under way, its set takes no runs, gives none up, and cannot
+While a search is in progress, its set takes no runs, gives none up, and cannot
 be deleted. The set's page disables "Add runs" and the X beside each run, with
 `A search of this set is running. Add or take out runs after the search ends
 or a person stops it.` on hover, and "Delete", with `A replay or search of this

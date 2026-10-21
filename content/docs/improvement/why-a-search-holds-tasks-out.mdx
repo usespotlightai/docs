@@ -7,7 +7,7 @@ description: Why a search for a better station config keeps some of its tasks fr
 
 A [replay](/docs/improvement/why-changes-are-replayed-on-past-tasks) answers
 one question: does this change do better than the station as it is, on these
-tasks? A search asks it many times over. An agent reads how the station's
+tasks? A search puts that question many times over. An agent reads how the station's
 past runs went, proposes a changed config, sees how that config did when
 replayed, and proposes again. Each round learns from the one before.
 
@@ -67,10 +67,10 @@ A few choices follow from this.
 When a candidate's gain over the live config reads Better on the searched
 tasks but not on the held-out ones, the search marks it "Likely overfit".
 That is the pattern overfitting leaves: the gain showed on the tasks the agent
-tuned against and did not reach the tasks it never saw. A marked candidate can
+tuned against and did not reach the tasks it never saw. A likely overfit candidate can
 still be picked. A held-out gain rests on few tasks and can read Within
 noise for a candidate that does help, so in the docs' view the person who
-picks should weigh it, with the mark in front of them on the search page and
+picks should weigh it, with the status in front of them on the search page and
 in the pull request. With fewer than 5 held-out tasks scored on both sides,
 the held-out gain cannot tell either way, so the search says that instead of
 marking the candidate.
@@ -149,7 +149,7 @@ every candidate is a change to that block.
 ## When the config is not the problem
 
 Some tasks fail for reasons no station config can reach: the task is unclear
-or asks for something impossible, the judge's rubric fails good work, the
+or requires something impossible, the judge's rubric fails good work, the
 check is flaky, or the run broke around the work. In the docs' view, more
 iterations against such tasks spend the budget and find nothing, and an agent
 pushed to beat them anyway is pushed to fit them.
@@ -167,8 +167,8 @@ outside what a search may change. See
 
 A search can start many runs: the live config on every task, each candidate on
 every searched task, the best on every held-out task, and the agent once per
-iteration. With more than one copy of each run, every one of those replays
-starts that many copies. A person sets one ceiling for all of it, and the
+iteration. With more than one repeat of each run, every one of those replays
+starts that many repeats. A person sets one ceiling for all of it, and the
 search plans its spending before it starts.
 
 A tenth of the ceiling is set aside for the agent's runs, shared across the

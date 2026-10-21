@@ -13,7 +13,7 @@ starts, unless Spotlight put it there on purpose.
 
 ## What a long-lived runner leaves behind
 
-The simpler design is a runner that stays up and takes one piece of work after
+The simpler design is a runner that stays up and claims one piece of work after
 another. It is what you get if you point an agent at a checkout on a machine
 and let it run, and it is fast, because everything is already there.
 
@@ -34,7 +34,7 @@ Spotlight deliberately keeps (see [Fresh, not cold](#fresh-not-cold) below).
 A second reason comes from where agents used to run. An agent on someone's
 working laptop is out of sight of the outside world, but it is not contained:
 you cannot firewall a developer's machine the way you can firewall a container
-that has one way out. That containment is the subject of [The sandbox is the
+that has one route out. That containment is the subject of [The sandbox is the
 security boundary](/docs/security/the-sandbox-is-the-security-boundary).
 
 ## Hosts: set up once, trusted once
@@ -54,20 +54,20 @@ the short-lived environment.
 
 Two properties of the host follow from the pattern.
 
-The host only makes outbound connections. It asks the control plane for work;
+The host only makes outbound connections. It requests work from the control plane;
 nothing connects in to it. That is why a host works behind NAT and on a home
 network, and why putting a machine to work needs no inbound firewall rule.
 
 The host never hands a sandbox its own credential. When it claims a run, the
 control plane gives it a credential for that one run, and that is what the
-sandbox receives ([Ways in: pools, trusts and
-tokens](/docs/administration/ways-in-pools-trusts-and-tokens) follows that
+sandbox receives ([Pools, trusts and
+tokens](/docs/administration/pools-trusts-and-tokens) follows that
 credential further). The pool token or workload identity that lets the host
 claim work stays with the host. A sandbox that is compromised can, at worst, act
 as its own run, and only while the run lasts.
 
 In Spotlight's configuration the pool or trust is the resource, and a host is
-live state: it appears on the Runners page while it reports in and leaves the
+live state: it appears on the Runners page while it sends heartbeats and leaves the
 page when it stops. Setting a host up is covered in [Install a host](/docs/hosts/run-a-host).
 
 ## Every ending destroys the sandbox
@@ -85,7 +85,7 @@ the host is down.
 ## Containers now
 
 Spotlight's sandboxes are containers. The host is built so that a different
-kind of executor, such as a virtual machine per run, can be added later.
+kind of sandbox runtime, such as a virtual machine per run, can be added later.
 Containers came first because virtual machines on macOS are slow, and a Mac
 runs at most two of them at a time. For a system that starts a sandbox for
 every run, start-up time and density matter.
@@ -106,7 +106,7 @@ mirror.
 
 Workspace archives carry a task's work between its runs. At the end of a run,
 the runner packs the task's workspace (its checkout and the harness's
-conversation) and stores it. When the run is taken up again after an answer,
+conversation) and stores it. When the run is claimed again after an answer,
 or a later run of the task starts, at the same station or the next, it restores
 the workspace in a fresh sandbox. While the task is still at that station, the
 agent also picks up its conversation where it stopped. [How a conversation survives between
