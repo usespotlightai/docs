@@ -50,8 +50,11 @@ chat.
 
 The agent writes into the folder you chose:
 
-- `main.tf`, starting from the workspace's current configuration, with each
-  line's `source` naming that file
+- the workspace's current configuration, one file for each concern, such as
+  `line-<team>-<line>.tf` for each line, with each line's `source` naming its
+  own file
+- the `backend` that keeps the Terraform state, if the team has one, and a
+  `README.md`
 - a prompt file for each station, `prompts/<team>/<line>/<station>.md`, adapted
   to what it learned
 - each station's `setup` and `check` commands
