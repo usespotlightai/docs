@@ -5,7 +5,7 @@ title: Run Terraform from GitHub Actions without a stored token
 description: Plan pull requests and apply the main branch from GitHub Actions, with each job exchanging its GitHub OIDC token for a short-lived workspace token.
 ---
 
-Two workspace token trusts do the work: one for pull requests, which may only
+Two OIDC trusts do the work: one for pull requests, which may only
 plan, and one for `main`, which may apply. You need:
 
 - A repository that contains the Terraform configuration for the workspace. If you
@@ -31,7 +31,7 @@ data "spotlight_workspace" "acme" {
   slug = "acme"
 }
 
-resource "spotlight_workspace_token_trust" "github_pull_requests" {
+resource "spotlight_oidc_trust" "github_pull_requests" {
   workspace_id = data.spotlight_workspace.acme.id
   key          = "github-pull-requests"
   issuer       = "https://token.actions.githubusercontent.com"
@@ -39,7 +39,7 @@ resource "spotlight_workspace_token_trust" "github_pull_requests" {
   scopes       = ["plan"]
 }
 
-resource "spotlight_workspace_token_trust" "github_main" {
+resource "spotlight_oidc_trust" "github_main" {
   workspace_id = data.spotlight_workspace.acme.id
   key          = "github-main"
   issuer       = "https://token.actions.githubusercontent.com"
@@ -48,11 +48,11 @@ resource "spotlight_workspace_token_trust" "github_main" {
 }
 
 output "plan_trust" {
-  value = spotlight_workspace_token_trust.github_pull_requests.id
+  value = spotlight_oidc_trust.github_pull_requests.id
 }
 
 output "apply_trust" {
-  value = spotlight_workspace_token_trust.github_main.id
+  value = spotlight_oidc_trust.github_main.id
 }
 ```
 
@@ -169,6 +169,9 @@ other workflow.
 Open a pull request that changes the configuration. The `plan` job runs and
 shows the plan. Merge it, and the `apply` job applies it.
 
+To see both trusts and when each last issued a token, open **Settings**, then
+**API access**. The trusts are under **OIDC trusts**.
+
 If a job fails with `401`, the trust did not accept the job's token. Check that
 the trust's `subject` matches the job: `repo:acme/platform:pull_request` for a
 pull request, `repo:acme/platform:ref:refs/heads/main` for a push to `main`.
@@ -178,6 +181,6 @@ lacks. Add it to the trust's `scopes` and apply the trusts root again.
 
 ## Related
 
-- [`spotlight_workspace_token_trust`](/docs/reference/terraform/workspace-token-trust): every field,
+- [`spotlight_oidc_trust`](/docs/reference/terraform/oidc-trust): every field,
   and the settings for GitLab, CircleCI and Buildkite.
 - [Pools, trusts and tokens](/docs/administration/pools-trusts-and-tokens)

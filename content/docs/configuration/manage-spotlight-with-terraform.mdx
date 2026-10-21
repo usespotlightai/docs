@@ -6,7 +6,7 @@ description: Adopt a workspace from its Terraform export, then change its config
 ---
 
 Once a workspace is under Terraform, its teams, lines, skills, integrations,
-hooks, harness profiles, secrets, token trusts and runner configuration change
+hooks, harness profiles, secrets, OIDC trusts and runner configuration change
 through `terraform apply`. You need:
 
 - Terraform 1.11 or later. The module contains write-only values, such as secret
@@ -15,7 +15,7 @@ through `terraform apply`. You need:
   [issue a workspace token](/docs/administration/issue-a-workspace-token) with the scopes
   for what the module manages: `configure`, plus `secrets` if it manages secrets,
   `runners` if it manages runner pools or runner trusts, and `trusts` if it manages
-  workspace token trusts.
+  OIDC trusts.
 
 ## Export the workspace
 
@@ -46,7 +46,7 @@ It writes:
 | --- | --- |
 | `terraform.tf` | The `required_providers` block |
 | `imports.tf` | An `import` block for everything in the workspace. Remove it after the first apply. |
-| `workspace.tf` | The workspace and its token trusts |
+| `workspace.tf` | The workspace and its OIDC trusts |
 | `secrets.tf` | The secrets; left out when there are none |
 | `runners.tf` | Runner trusts, egresses, runner pools and the workspace's runners; left out when there are none |
 | `team-<team>.tf` | One file for each team |

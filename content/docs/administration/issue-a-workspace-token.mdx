@@ -6,7 +6,7 @@ description: Issue a token that lets Terraform, a script or CI act in one worksp
 ---
 
 Only an owner or admin of the workspace can issue or revoke a token, on the
-**Tokens** page of the web app or through the resource API while signed in.
+**API access** page of the web app or through the resource API while signed in.
 
 ## Choose the scopes
 
@@ -17,7 +17,7 @@ Give the token only what its job needs:
 | Terraform that manages lines, skills, integrations, hooks and harness profiles | `configure` |
 | Terraform that also manages secrets | `configure`, `secrets` |
 | Terraform that also manages runner pools, egresses and runner trusts | `configure`, `runners` |
-| Setting up workspace token trusts once, then revoking | `trusts` plus every scope the trusts grant |
+| Setting up OIDC trusts once, then revoking | `trusts` plus every scope the trusts grant |
 | CI that only runs `terraform plan` | `plan` |
 | A script that only reads | `read` |
 
@@ -26,7 +26,7 @@ create trusts that issue tokens with any scope it has, so give it only to a
 token with a short expiry. [Workspace tokens](/docs/reference/api/workspace-token)
 lists what each scope allows.
 
-On the **Tokens** page, the `trusts` scope is the checkbox **Token trusts**.
+On the **API access** page, the `trusts` scope is the checkbox **OIDC trusts**.
 
 ## Issue the token
 
@@ -36,7 +36,7 @@ On the **Tokens** page, the `trusts` scope is the checkbox **Token trusts**.
 <Steps>
 <Step>
 
-Open **Settings** from the workspace menu, then **Tokens**, and click
+Open **Settings** from the workspace menu, then **API access**, and click
 **Create a token**.
 
 </Step>
@@ -49,7 +49,7 @@ Under **Name**, enter a name of lowercase words joined by dashes, such as
 <Step>
 
 Under **What it may do**, select **Read**, **Plan** or **Configure**, and tick
-**Secrets**, **Runners** or **Token trusts** for each further scope the token
+**Secrets**, **Runners** or **OIDC trusts** for each further scope the token
 needs.
 
 </Step>
@@ -139,7 +139,7 @@ issue a new token and revoke the old one.
 <Tabs items={['Web app', 'Resource API']}>
 <Tab value="Web app">
 
-On the **Tokens** page, open the token's actions menu (the three dots at the
+On the **API access** page, open the token's actions menu (the three dots at the
 end of its row), click **Revoke token**, then click **Revoke token** again to
 confirm. The token stops working at once.
 
@@ -188,7 +188,7 @@ repeat.
 
 - [Workspace tokens](/docs/reference/api/workspace-token): the fields, scopes and
   errors.
-- [Web app](/docs/reference/app/web-app#workspace-pages): what the Tokens page
-  shows.
+- [Web app](/docs/reference/app/web-app#workspace-pages): what the API access
+  page shows.
 - [Run Terraform from GitHub Actions without a stored token](/docs/configuration/run-terraform-from-github-actions)
 - [Pools, trusts and tokens](/docs/administration/pools-trusts-and-tokens)
