@@ -24,48 +24,49 @@ Run the install script with the pool's token, as the command on the Runners
 page does. On a [self-hosted Spotlight](/docs/reference/glossary#spotlight-address), use your deployment's address in place of `app.usespotlight.ai`.
 
 ```bash
-curl -fsSL https://app.usespotlight.ai/api/install.sh | SPOTLIGHT_TOKEN=<pool token> sh
+curl -fsSL https://app.usespotlight.ai/api/install.sh | sh -s -- --token <pool token>
 ```
 
-To run more than one sandbox at a time, set the capacity in the same command:
+The script installs the `spotlight` binary, then runs
+[`spotlight host init`](/docs/reference/cli/spotlight-command#spotlight-host-init).
+It asks how many sandboxes run at once (`5` if you press Enter) and which runner
+image to use. To give the answers in the command, as in a script, add flags:
 
 ```bash
-curl -fsSL https://app.usespotlight.ai/api/install.sh | SPOTLIGHT_TOKEN=<pool token> SPOTLIGHT_CAPACITY=4 sh
+curl -fsSL https://app.usespotlight.ai/api/install.sh | sh -s -- --token <pool token> --capacity 8 --yes
 ```
 
-On Linux, run it as root to install a system service with its configuration
-in `/etc/spotlight`, or as yourself to install a service for your user, with
-its configuration in `~/.spotlight`. On a Mac, run it as yourself: the host
-runs as a launchd agent for your user, beside Docker Desktop, OrbStack or
-Colima.
+On Linux, run it as root to install a system service with its settings in
+`/etc/spotlight`, or as yourself to install a service for your user, with its
+settings in `~/.spotlight`. On a Mac, run it as yourself: the host runs as a
+launchd agent for your user, beside Docker Desktop, OrbStack or Colima.
 
-The script ends with:
+When the service runs, this line shows:
 
 ```text
-spotlight host: serving https://app.usespotlight.ai: this machine shows on the workspace's Runners page once it reports
+The host serves https://app.usespotlight.ai. It shows on the Runners page when it connects.
 ```
 
-If you did not give the script an image in `SPOTLIGHT_RUNNER_IMAGE`, it pulls
-Spotlight's runner image, `ghcr.io/usespotlightai/spotlight-runner:<release>`.
-Before the last line, it prints that this image holds no harness. The host
-runs change-stack checks, but no agent run, until it serves an image that
-holds a harness.
+If you did not choose an image, the host uses Spotlight's runner image,
+`ghcr.io/usespotlightai/spotlight-runner:<release>`. Below the last line,
+`init` prints that this image holds no harness. The host runs change-stack
+checks, but no agent run, until it serves an image that holds a harness.
 
 If you install as yourself on Linux and the machine should keep serving after
-you log out, run the command the script prints:
+you log out, run the command `init` prints:
 
 ```bash
 loginctl enable-linger $USER
 ```
 
 If you want to run the host under your own supervisor instead of a service,
-add `SPOTLIGHT_NO_SERVICE=1` to the install command. The script then prints the
-command to start it.
+add `--no-service` to the install command, then start the host with
+`spotlight host`.
 
 ## Give the host a harness
 
 Build an image `FROM` Spotlight's runner image, with the harness your lines
-use, and make it the first entry of `SPOTLIGHT_RUNNER_IMAGE` in `host.env`.
+use, and make it the host's image with `spotlight host config set image=<image>`.
 [Install a harness in your runner image](/docs/hosts/install-a-harness-in-your-runner-image)
 gives the steps.
 
@@ -96,30 +97,30 @@ The sandbox never sees `host.env`, so keys go in `sandbox.env` only. For
 Codex, Cursor, OpenCode or a Claude subscription, see
 [Give hosts your harness keys](/docs/hosts/give-sandboxes-your-harness-keys).
 
-## Restart the host
-
-The host reads its settings when it starts. Run `spotlight host install` again
-to restart the service:
-
-<Tabs items={['As root', 'As yourself']}>
-<Tab value="As root">
+Then have the host read the new key:
 
 ```bash
-sudo /usr/local/bin/spotlight host install
+spotlight host reload
 ```
 
-</Tab>
-<Tab value="As yourself">
+## Change the host settings
+
+Change a setting with `spotlight host config set`, as in:
 
 ```bash
-~/.spotlight/bin/spotlight host install
+spotlight host config set capacity=8
 ```
 
-If `/usr/local/bin` was writable when you installed, the binary is at
-`/usr/local/bin/spotlight` instead.
+The command checks the new value before it saves it. Most settings, such as
+`capacity` and `image`, apply to the running host at once. Running sandboxes
+keep going. A few, such as `token` and `url`, need a restart: the host restarts
+when its running sandboxes finish. To restart at once and stop them, add
+`--now`. `spotlight host config keys` lists every setting and when it applies.
 
-</Tab>
-</Tabs>
+For a host installed as root, run each `spotlight host` command with `sudo`.
+
+To see the settings, run `spotlight host config`. To remove one so its default
+applies, run `spotlight host config unset <key>`.
 
 ## Check that it is serving
 
@@ -131,21 +132,35 @@ runner images hold under **Harnesses**. Its status reads **Idle** until it claim
 If **Harnesses** reads **None** in red, the host's images hold no harness. See
 [Check that it is served](/docs/hosts/install-a-harness-in-your-runner-image#check-that-it-is-served).
 
-If the machine does not appear within a minute, read the host's log:
+If the machine does not appear within a minute, check the host:
 
-| Service | Log |
-| --- | --- |
-| systemd, as root | `journalctl -u spotlight-host` |
-| systemd, as yourself | `journalctl --user -u spotlight-host` |
-| launchd | `~/Library/Logs/spotlight-host.log` |
+```bash
+spotlight host status
+```
+
+It shows whether the service runs, how many sandboxes run, and the settings.
+Its checks say whether Spotlight accepts the token and whether the container
+runtime answers, each with what to do if not. To read the host's log, run
+`spotlight host logs`, or `spotlight host logs -f` to follow it.
 
 The host exits with code `3` when Spotlight does not accept its token. Check that the
 token belongs to a pool that still exists and has not been rotated.
+
+## Remove the host
+
+```bash
+spotlight host uninstall
+```
+
+The command stops and removes the service, then asks whether to delete the
+settings and the host's state too. `--purge` deletes them without the question.
 
 ## Related
 
 - [Host settings](/docs/reference/hosts/host-configuration): every setting the
   host reads.
+- [The spotlight command](/docs/reference/cli/spotlight-command): every
+  `spotlight host` command.
 - [Install script](/docs/reference/cli/install-script)
 - [Install a harness in your runner image](/docs/hosts/install-a-harness-in-your-runner-image)
 - [Why every run gets a fresh sandbox](/docs/hosts/why-every-run-gets-a-fresh-sandbox)

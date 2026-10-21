@@ -46,17 +46,15 @@ chmod 600 ~/.spotlight/registry.json
 
 ## Point the host at the file
 
-Add the file's full path to `host.env`:
+Give the host the file's full path:
 
 ```bash
-SPOTLIGHT_REGISTRY_CONFIG=/etc/spotlight/registry.json
+spotlight host config set registry-config=/etc/spotlight/registry.json
 ```
 
-Then [restart the host](/docs/hosts/run-a-host#restart-the-host). After
-that, a change to the file needs no restart: the host reads the credentials
-again on every pull.
-
-Reinstalling drops this line from `host.env`; add it back afterwards.
+The host restarts with the setting when its running sandboxes finish. To
+restart at once and stop them, add `--now`. After that, a change to the file
+needs no restart: the host reads the credentials again on every pull.
 
 ## Check that it pulls
 

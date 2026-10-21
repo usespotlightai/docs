@@ -161,21 +161,33 @@ On the **Add a host** page, click **Copy command** and run it in the terminal. I
 looks like this, with the pool's token in place of `<pool token>`:
 
 ```bash
-curl -fsSL https://app.usespotlight.ai/api/install.sh | SPOTLIGHT_TOKEN=<pool token> sh
+curl -fsSL https://app.usespotlight.ai/api/install.sh | sh -s -- --token <pool token>
 ```
 
-The command downloads the `spotlight` program and Spotlight's container
-image, then sets the program to keep running in the background. The image
-download takes a few minutes. The last line reads:
+The command downloads the `spotlight` program, then asks two questions:
 
 ```text
-spotlight host: serving https://app.usespotlight.ai: this machine shows on the workspace's Runners page once it reports
+Sandboxes at once [5]:
+Runner image [ghcr.io/usespotlightai/spotlight-runner:<release>]:
 ```
 
-Above it, four lines say that the image holds no harness. You add Claude Code
+Press Enter for each. Five sandboxes let your computer run five agents at the
+same time. Use a lower number if your computer is slow, or a higher number if
+it has much memory. You can change the number later with
+`spotlight host config set capacity=<number>`.
+
+The command then downloads Spotlight's container image and sets the program to
+keep running in the background. The image download takes a few minutes. Then
+this line shows:
+
+```text
+The host serves https://app.usespotlight.ai. It shows on the Runners page when it connects.
+```
+
+Below it, four lines say that the image holds no harness. You add Claude Code
 to it in the next section.
 
-If it stops with `no container runtime answered`, Docker, or whichever of the
+If it stops with `no container runtime answers`, Docker, or whichever of the
 tools above you use, isn't running. Start it and run the command again.
 
 </Step>
@@ -210,29 +222,31 @@ curl -fsSLO https://raw.githubusercontent.com/usespotlightai/spotlight/main/.doc
 <Step>
 
 Build the image on the same release of Spotlight's image that the install
-command downloaded. The first command reads that image from the file the
-install command wrote:
+command downloaded. The first command gets that release from the `spotlight`
+program:
 
 ```bash
-base="$(sed -n 's/^SPOTLIGHT_RUNNER_IMAGE=//p' ~/.spotlight/host.env)"
+base="ghcr.io/usespotlightai/spotlight-runner:$(spotlight version)"
 docker build --file claude-code.Dockerfile --build-arg BASE="$base" --tag my-runner:claude-code .
 ```
 
 With Podman, write `podman` in place of `docker`. The build takes a few
 minutes. Near the end, its output names `my-runner:claude-code`.
 
+If the terminal says `command not found: spotlight`, write
+`~/.spotlight/bin/spotlight` in place of `spotlight`, here and in the next step.
+
 </Step>
 <Step>
 
-Tell Spotlight on your computer to use the new image, then restart it:
+Tell Spotlight on your computer to use the new image:
 
 ```bash
-sed -i.bak 's|^SPOTLIGHT_RUNNER_IMAGE=.*|SPOTLIGHT_RUNNER_IMAGE=my-runner:claude-code|' ~/.spotlight/host.env
-~/.spotlight/bin/spotlight host install
+spotlight host config set image=my-runner:claude-code
 ```
 
-If the install command printed `installed /usr/local/bin/spotlight`, run
-`/usr/local/bin/spotlight host install` instead.
+The last line says `The running host applied the change`. The host uses the
+new image at once. It does not restart.
 
 </Step>
 <Step>
@@ -327,9 +341,8 @@ computer starts a fresh container for the agent.
 
 If the run stops with a message that starts `start agent:` or
 `open a session:` and names authentication, the sandbox could not sign in to
-Claude. Check the line in `~/.spotlight/sandbox.env`, then
-[restart the host](/docs/hosts/run-a-host#restart-the-host) and move the task
-to Backlog and back to Triage.
+Claude. Check the line in `~/.spotlight/sandbox.env`, then run
+`spotlight host reload` and move the task to Backlog and back to Triage.
 
 </Step>
 <Step>

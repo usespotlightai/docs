@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: The spotlight command
-description: The subcommands of the spotlight binary, what each reads, prints and exits with, and the service units spotlight host install writes.
+description: The subcommands of the spotlight binary, what each reads, prints and exits with, and the service units spotlight host init writes.
 ---
 
 `spotlight` is one binary. A host runs `spotlight host`. Each sandbox runs
@@ -17,7 +17,16 @@ changes in a Terraform plan.
 
 ```text
 spotlight host
-spotlight host install
+spotlight host init
+spotlight host config
+spotlight host status
+spotlight host reload
+spotlight host start
+spotlight host stop
+spotlight host restart
+spotlight host logs
+spotlight host uninstall
+spotlight host update [release]
 spotlight runner
 spotlight runner harnesses <json>
 spotlight egress
@@ -43,7 +52,16 @@ spotlight host
 
 Serves a pull pool or a runner trust. The host claims work, starts a fresh
 sandbox and egress for each run or check, and destroys both when it ends.
-Any argument other than `install` prints the usage and exits `1`.
+An unknown argument prints the usage and exits `1`.
+
+The host writes its process id to `host.lock` in the state directory while it
+holds the lock. The other `spotlight host` commands find it there.
+
+| Signal | Action |
+| --- | --- |
+| `SIGHUP` | Reloads the settings. See [spotlight host reload](#spotlight-host-reload). Settings with a problem are logged as `could not reload the settings, so the host keeps the ones it has`. |
+| `SIGUSR1` | Stops claiming, lets the running sandboxes finish, then starts again in the same process. |
+| `SIGINT`, `SIGTERM` | Stops the running sandboxes and exits `0`. |
 
 | Reads | Reference |
 | --- | --- |
@@ -78,27 +96,230 @@ standard error as `spotlight host: <error>`.
 | `1` | A configuration or runtime error. |
 | `3` | Spotlight did not accept the host: an unknown or rotated credential, a host id serving another pool or trust, or a host Spotlight has no report from through that pool or trust. |
 
-## spotlight host install
+## spotlight host init
 
 ```text
-spotlight host install
+spotlight host init [--url URL] [--token TOKEN | --trust ID --oidc-token-file PATH]
+                    [--capacity N] [--image IMAGE] [--name NAME] [--no-service] [--yes]
 ```
 
-Installs `spotlight host` as a service and starts it. It loads the host
-configuration first and does not install if it is invalid:
+Writes the [host settings](/docs/reference/hosts/host-configuration), pulls the
+default runner image and runs the host as a service. Running it again keeps the
+saved values as the defaults.
 
-```text
-spotlight host: <config path> is not ready to serve: <problems>
-```
-
-The service runs the binary at its resolved path (symbolic links followed),
-with `SPOTLIGHT_HOST_CONFIG` set to the configuration path.
-
-| Platform | Service | Messages |
+| Flag | Setting | Without the flag |
 | --- | --- | --- |
-| Linux | systemd unit `spotlight-host` | `spotlight host: running as the systemd service spotlight-host (<unit path>)` |
-| macOS | launchd agent `ai.usespotlight.host` | `spotlight host: running as the launchd agent ai.usespotlight.host, logging to <log path>` |
-| Other | none | ``installing a service on <os> is not supported; run `spotlight host` under your own supervisor`` |
+| `--url` | `url` | Asks `Spotlight URL`. Default: the saved value, else `https://app.usespotlight.ai`. |
+| `--token` | `token` | Asks `Pool token`, without showing what you type. Enter keeps a saved token. Not asked when a trust is given or saved. |
+| `--trust`, `--oidc-token-file` | `trust`, `oidc-token-file` | The saved values. Either flag removes a saved `token`, and `--token` removes a saved trust. |
+| `--capacity` | `capacity` | Asks `Sandboxes at once`. Default: the saved value, else `5`. |
+| `--image` | `image` | Asks `Runner image`. Default: the saved value, else `ghcr.io/usespotlightai/spotlight-runner:<release>`. That default is not saved, so the host follows its own release. |
+| `--name` | `name` | The saved value. Not asked. |
+| `--no-service` | | Saves and pulls, but installs no service. Prints `Start the host with: spotlight host`. |
+| `--yes` | | Asks nothing. |
+
+`init` asks its questions on the terminal (`/dev/tty`), so they work when the
+command reads its standard input from a pipe. With no terminal, or with
+`--yes`, it uses the saved value or the default, and stops when it has no token
+and no trust.
+
+| Step | Action |
+| --- | --- |
+| 1 | Settles each value from its flag, the answer, the saved value or the default. |
+| 2 | Checks the settings as the host does. On a problem it saves nothing. |
+| 3 | Asks Spotlight for the host's requirements with the credential. A refused credential stops it, and nothing is saved. When Spotlight does not answer, it warns and goes on. |
+| 4 | Saves the settings file in one rename, with mode `0600`. Comments and settings it does not set stay. |
+| 5 | Pulls the default image with the [registry credentials](/docs/reference/hosts/host-configuration#registry-credentials). An image with `*` is not pulled. When the pull fails and the machine has a copy, it warns and goes on. |
+| 6 | When a host already runs from these settings, restarts it when its sandboxes finish. Otherwise, without `--no-service`, installs and starts the [service](#service-files). |
+| 7 | When the default image is Spotlight's runner image, prints that it holds no harness. |
+
+| Message | When |
+| --- | --- |
+| `Spotlight at <url> accepts the credential` | Step 3. |
+| `Spotlight at <url> does not answer, so the credential is not checked: <error>` | Step 3, a warning. |
+| `Saved the settings in <config path>` | Step 4. |
+| `Pulled <image>` | Step 5. |
+| `Could not pull <image>, so the host uses the copy on this machine: <error>` | Step 5, a warning. |
+| `Started the systemd service spotlight-host (<unit path>)` | Step 6 on Linux. |
+| `Started the launchd agent ai.usespotlight.host (logs in <log path>)` | Step 6 on macOS. |
+| `The host serves <url>. It shows on the Runners page when it connects.` | Step 6, when the service started. |
+| `The runner image holds no harness, so this host runs checks but no agent run.` | Step 7. Three lines follow with the example images and `Then: spotlight host config set image=IMAGE`. |
+
+As a user other than root on Linux, when lingering is off, it also prints:
+
+```text
+To keep the host running after you log out, run:
+  loginctl enable-linger <user>
+```
+
+| Error | Cause |
+| --- | --- |
+| `nothing saved, because <problems>` | Step 2. The problems name the settings by key. |
+| `nothing saved, because Spotlight at <url> does not accept the credential` | Step 3. |
+| `--token is required: a pull pool's token, from Settings → Runners → Add a host` | No token, no trust and no terminal to ask on. |
+| `a pool token is required` | Three empty answers to `Pool token`. |
+| `no container runtime answers; start Docker or Podman, then run this again: <error>` | Step 5. |
+| `pull <image>: <error>` | Step 5, and the machine has no copy. |
+| ``installing a service on <os> is not supported; run `spotlight host` under your own supervisor`` | Step 6 on a platform other than Linux or macOS. |
+
+## spotlight host config
+
+```text
+spotlight host config [--json]
+spotlight host config get KEY
+spotlight host config set KEY=VALUE… [--now]
+spotlight host config unset KEY… [--now]
+spotlight host config keys
+```
+
+Reads and changes the [host settings](/docs/reference/hosts/host-configuration)
+file. A `KEY` is a setting's key, such as `capacity`, or its variable, such as
+`SPOTLIGHT_CAPACITY`. Any other name in capitals, such as `HTTPS_PROXY`, is
+taken as a variable that applies at a restart.
+
+| Subcommand | Action |
+| --- | --- |
+| `config`, `config list` | Prints the path and each setting the file sets, by key. The token shows as `••••` and its last four characters. |
+| `config --json` | Prints `{"path": …, "settings": [{"key": …, "variable": …, "value": …}]}`, the token masked. |
+| `config get KEY` | Prints the value the file sets, the token in full. Exits `1` when the file does not set it. |
+| `config set KEY=VALUE…` | Sets each value, trimmed. A value is one line. |
+| `config unset KEY…` | Removes each setting, so its default applies. |
+| `config keys` | Prints each key, its variable, and whether it applies live or at a restart. |
+
+`set` and `unset` check the whole file as the host does, and save nothing when
+a check fails:
+
+```text
+spotlight host: nothing changed, because capacity: "0" is not a count of at least 1
+```
+
+They save the file in one rename, with mode `0600`, and keep its comments and
+order. When the environment sets a variable they change, they print
+`The environment sets <variable>, which wins over the file.` Then they apply
+the change:
+
+| Host | Changed settings | Action | Message |
+| --- | --- | --- | --- |
+| none runs, service installed | any | none | `The host is stopped. The change applies when it starts: spotlight host start` |
+| none runs, no service | any | none | `No host runs from these settings. The change applies when it starts.` |
+| runs | all live | [reload](#spotlight-host-reload) | `The running host applied the change` |
+| runs | any applies at a restart | [restart](#spotlight-host-start-stop-and-restart) when the running sandboxes finish | `The host restarts with the change when its <n> running sandboxes finish. …` |
+| runs | any, with `--now` | restart at once, stopping the running sandboxes | `Restarted the host` |
+
+## spotlight host status
+
+```text
+spotlight host status [--json]
+```
+
+Prints the settings path, the service, the sandboxes that run against the
+capacity, the settings as `config` lists them, and these checks:
+
+| Check | Fails when |
+| --- | --- |
+| The settings are valid | A setting does not pass the host's checks. |
+| The host runs | No process holds the state directory's lock. |
+| Spotlight accepts the credential | Spotlight refuses the credential or does not answer. |
+| The container runtime answers | No engine answers. |
+| The default image holds a harness | A warning only, when the default image is Spotlight's runner image. |
+
+Each failed check prints a line saying what to do. The sandboxes are the runs
+whose containers run with the label `ai.usespotlight.host=<host id>`.
+
+With `--json` it prints:
+
+```json
+{
+  "config": "<config path>",
+  "service": { "installed": true, "unit": "<unit path>", "running": true, "process": 4242 },
+  "sandboxes": { "running": 2, "capacity": 5 },
+  "settings": [{ "key": "capacity", "variable": "SPOTLIGHT_CAPACITY", "value": "5" }],
+  "checks": [{ "status": "passed", "message": "The settings are valid." }]
+}
+```
+
+A check's `status` is `passed`, `warning` or `failed`, and a failed check has a
+`fix`. `sandboxes.running` is `null` when no container runtime answers.
+
+| Code | Meaning |
+| --- | --- |
+| `0` | No check failed. |
+| `1` | A check failed. |
+
+## spotlight host reload
+
+```text
+spotlight host reload
+```
+
+Sends `SIGHUP` to the running host. The host reads its settings,
+`sandbox.env` and `egress.env` again, and applies the live settings to the
+sandboxes it starts from then on. Running sandboxes keep going. A lower
+capacity lets them finish. Settings that apply at a restart wait for the next
+one.
+
+| Message | When |
+| --- | --- |
+| `The running host reloaded its settings, sandbox.env and egress.env` | The signal was sent. |
+| `nothing reloaded, because <problems>` | A setting does not pass the checks. Nothing is sent. |
+| `no host runs from <config path>` | No process holds the state directory's lock. |
+
+## spotlight host start, stop and restart
+
+```text
+spotlight host start
+spotlight host stop
+spotlight host restart [--now]
+```
+
+| Command | Linux | macOS |
+| --- | --- | --- |
+| `start` | `systemctl start spotlight-host` | `launchctl bootstrap`, or `launchctl kickstart` when loaded |
+| `stop` | `systemctl stop spotlight-host` | `launchctl bootout` |
+| `restart --now` | `systemctl restart spotlight-host` | `launchctl kickstart -k` |
+
+`systemctl` takes `--user` when the command does not run as root. `stop` and
+`restart --now` stop the running sandboxes with the host.
+
+`restart` without `--now` sends `SIGUSR1` to the running host. The host stops
+claiming, lets its running sandboxes finish, and starts again in the same
+process with the settings it reads then. When no host runs, `restart` starts
+the service. When the settings do not pass the host's checks, `restart` sends
+nothing and fails with `nothing restarted, because the host would not start: <problems>`.
+
+When no service is installed, each command fails with
+``the host is not installed as a service; run `spotlight host init` ``.
+
+## spotlight host logs
+
+```text
+spotlight host logs [-f] [-n LINES]
+```
+
+Prints the service's log: the last `LINES` lines, `100` by default. `-f` or
+`--follow` keeps printing new lines.
+
+| Platform | Reads |
+| --- | --- |
+| Linux | `journalctl --unit spotlight-host`, with `--user` when not root |
+| macOS | `~/Library/Logs/spotlight-host.log` |
+
+## spotlight host uninstall
+
+```text
+spotlight host uninstall [--purge] [--yes]
+```
+
+Stops the service and removes its unit or agent file. Then it asks
+`Also delete the settings <config path> and the state <state>?`. `--purge`
+deletes them without the question, and `--yes` keeps them without it. The state
+directory is deleted only when it holds a `host-id` file. The binary stays; the
+command prints its path.
+
+## Service files
+
+`init` writes the service with the binary at its resolved path (symbolic links
+followed) and `SPOTLIGHT_HOST_CONFIG` set to the settings path.
 
 ### systemd unit
 
@@ -108,13 +329,8 @@ with `SPOTLIGHT_HOST_CONFIG` set to the configuration path.
 | `systemctl` scope | system | `--user` |
 | `WantedBy` | `multi-user.target` | `default.target` |
 
-After writing the unit, `host install` runs `systemctl daemon-reload`,
-`systemctl enable spotlight-host` and `systemctl restart spotlight-host`. As a
-user other than root it also prints:
-
-```text
-spotlight host: to keep it running after you log out: loginctl enable-linger <user>
-```
+After writing the unit, `init` runs `systemctl daemon-reload`,
+`systemctl enable spotlight-host` and `systemctl restart spotlight-host`.
 
 | Setting | Value |
 | --- | --- |
@@ -123,6 +339,7 @@ spotlight host: to keep it running after you log out: loginctl enable-linger <us
 | `Wants` | `network-online.target` |
 | `ExecStart` | `"<binary>" host` |
 | `Environment` | `"SPOTLIGHT_HOST_CONFIG=<config path>"` |
+| `ExecReload` | `/bin/kill -HUP $MAINPID` |
 | `Restart` | `always` |
 | `RestartSec` | `5` |
 | `RestartPreventExitStatus` | `3` |
@@ -142,16 +359,9 @@ spotlight host: to keep it running after you log out: loginctl enable-linger <us
 | `ExitTimeOut` | `90` |
 | `StandardOutPath`, `StandardErrorPath` | `~/Library/Logs/spotlight-host.log` |
 
-`host install` runs `launchctl bootout gui/<uid>/ai.usespotlight.host`, then
+`init` runs `launchctl bootout gui/<uid>/ai.usespotlight.host`, then
 `launchctl bootstrap gui/<uid> <plist path>`. The agent restarts after exit
 code `3` as after any other.
-
-### Exit codes
-
-| Code | Meaning |
-| --- | --- |
-| `0` | The service is installed and started. |
-| `1` | The configuration is invalid, the platform is unsupported, or `systemctl` or `launchctl` failed. |
 
 ## spotlight runner
 
