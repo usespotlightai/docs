@@ -90,13 +90,13 @@ terraform state show spotlight_integration.petstore
 ```
 
 `tools` lists every tool the integration offers, such as
-`"find-pets-by-status" = "petstore.find-pets-by-status"`. `described.tools`
+`"find-pets-by-status" = "petstore.find-pets-by-status"`. `spec.tools`
 counts the generated ones.
 
 The apply's warnings name each operation Spotlight passed over, and why, such
 as one that takes a body other than JSON.
 
-If `described.problem` is set, Spotlight could not read the description, and
+If `spec.problem` is set, Spotlight could not read the description, and
 the apply shows the same reason as a warning on the block's `url`, or on its
 `document`. Fix the cause. If the fix is outside the definition, also
 [raise `revision`](#read-the-description-again). Then run `terraform apply`.

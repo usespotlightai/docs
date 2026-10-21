@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: spotlight_workspace_token_trust
-description: The fields of a workspace token trust, the workloads it admits, and the exchange that mints short-lived workspace tokens through it.
+description: The fields of a workspace token trust, the workloads it admits, and the exchange that issues short-lived workspace tokens through it.
 ---
 
 The `spotlight_workspace_token_trust` resource, and the API's
@@ -42,9 +42,9 @@ resource "spotlight_workspace_token_trust" "github_main" {
 | `audience` | string | `spotlight` | A value the token's `aud` must contain. One word, at most 255 characters. |
 | `subject` | string | required | A pattern the token's `sub` must match. See [patterns](#patterns). |
 | `claims` | map of name to string | `{}` | Further claims the token must carry, each matching its pattern. At most 16. See [patterns](#patterns). |
-| `scopes` | array of strings | required | The scopes of every token the trust mints, as for a [workspace token](/docs/reference/api/workspace-token#scopes). |
-| `lifetimeMinutes` | integer | `15` | 1 to 60. How long a minted token admits its bearer. |
-| `definedBy` | string | read-only | The person who defined the trust, or who issued the token that defined it. |
+| `scopes` | array of strings | required | The scopes of every token the trust issues, as for a [workspace token](/docs/reference/api/workspace-token#scopes). |
+| `lifetimeMinutes` | integer | `15` | 1 to 60. How long an issued token admits its bearer. |
+| `createdBy` | string | read-only | The person who created the trust, or who issued the token that created it. |
 
 ## Patterns
 
@@ -129,9 +129,9 @@ Each exchange is recorded as a
 created workspace token, with the trust, the subject, the scopes and the
 expiry.
 
-## Minted tokens
+## Issued tokens
 
-- A minted token acts for the trust's `definedBy`, within the trust's scopes.
+- An issued token acts for the trust's `createdBy`, within the trust's scopes.
 - It is not listed among the workspace's tokens.
-- Any change to the trust's terms stops every token minted before the change.
-- Deleting the trust stops every token it minted, from that moment.
+- Any change to the trust's terms stops every token issued before the change.
+- Deleting the trust stops every token it issued, from that moment.
