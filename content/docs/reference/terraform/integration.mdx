@@ -95,9 +95,8 @@ A read adds three fields that cannot be set:
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `source` | string | Equal to `integration`. |
 | `tools` | map of name to string | Each tool the integration offers, written or generated, by its name in the integration, to the name stations and hooks use, as in `{ "comment": "acme.comment" }`. |
-| `described` | object or null | The API description or MCP server as Spotlight last read it. `null` when the definition names none. See [Described](#described). |
+| `spec` | object or null | The API description or MCP server as Spotlight last read it. `null` when the definition names none. See [Spec](#spec). |
 
 In Terraform, `tools` is known only after apply when the definition has an
 `openapi`, a `graphql` or an `mcp`. A station that names a generated tool through it that
@@ -205,11 +204,11 @@ for the integration's name in [`OAUTH_CLIENTS`](/docs/reference/self-hosted-sett
 
 | Step | Endpoint | Behaviour |
 | --- | --- | --- |
-| Begin | `POST /api/teams/{teamId}/integrations/{source}/connect` | An optional body with `for` and `back`. `for` is `team`, the default, which needs a signed-in owner or admin of the workspace (the `administer` permission); `me`, the caller's own connection, needs a signed-in person on the team, and an integration whose `holder` is `requester`. `back` is where to land afterwards, a path under `/w/<slug>/inbox` or `/w/<slug>/settings`. Returns `{ "url": ... }`, the authorization URL with `client_id`, `redirect_uri`, `response_type=code`, `scope`, a signed `state`, `code_challenge` with `code_challenge_method=S256`, and `resource` when set, and sets a one-time cookie. `400` when `for` is neither. `404` when there is no such team, the person may not make that connection, the host does not link over OAuth, or there is no client. |
-| Callback | `GET /api/integrations/oauth/callback` | Needs the same signed-in person, still allowed to make the connection, and the cookie. Exchanges the code with its PKCE verifier and keeps the grant sealed. Redirects to `back` with `?connected=<source>`, or else to `/w/<slug>/settings/team/<teamId>/integrations?connected=<source>`, or to `/?integration=failed`. |
-| List | `GET /api/teams/{teamId}/connections` | Needs a signed-in person on the team. Returns `mine`, the caller's own connections, each with `source`, `handle`, `connectedAt` and `tools`, the caller's rule for each tool as `{ tool, rule }`, and `people`, every person's connection in the team with `personId` and `name` as well, for an owner or admin, or `null` for anyone else. Never a token. |
-| Disconnect | `DELETE /api/teams/{teamId}/integrations/{source}/connections/mine` | Needs a signed-in person on the team. Removes the caller's own connection. Returns `204`. There is no endpoint to remove another person's connection. |
-| Set a tool rule | `PUT /api/teams/{teamId}/integrations/{source}/connections/mine/tools/{tool}` | Needs a signed-in person on the team. A body `{ "rule": ... }`: `allowed`, the default, follows the team's rule; `needs-approval` asks the caller first; `blocked` never runs the tool. `{tool}` is the tool's full name, as in `linear.comment`. Applies only to calls made with the caller's own connection, and the stricter of the team's rule and the caller's wins. See [Person rules](/docs/reference/app/tasks-runs-and-the-inbox#person-rules). Returns `204`. `404` when the caller is not on the team, the integration does not offer the tool, or its `connection.holder` is not `requester`. `422` validation error for a malformed tool name or any other rule. |
+| Begin | `POST /api/teams/{teamId}/integrations/{integration}/connect` | An optional body with `for` and `back`. `for` is `team`, the default, which needs a signed-in owner or admin of the workspace (the `administer` permission); `me`, the caller's own connection, needs a signed-in person on the team, and an integration whose `holder` is `requester`. `back` is where to land afterwards, a path under `/w/<slug>/inbox` or `/w/<slug>/settings`. Returns `{ "url": ... }`, the authorization URL with `client_id`, `redirect_uri`, `response_type=code`, `scope`, a signed `state`, `code_challenge` with `code_challenge_method=S256`, and `resource` when set, and sets a one-time cookie. `400` when `for` is neither. `404` when there is no such team, the person may not make that connection, the host does not link over OAuth, or there is no client. |
+| Callback | `GET /api/integrations/oauth/callback` | Needs the same signed-in person, still allowed to make the connection, and the cookie. Exchanges the code with its PKCE verifier and keeps the grant sealed. Redirects to `back` with `?connected=<integration>`, or else to `/w/<slug>/settings/team/<teamId>/integrations?connected=<integration>`, or to `/?integration=failed`. |
+| List | `GET /api/teams/{teamId}/connections` | Needs a signed-in person on the team. Returns `mine`, the caller's own connections, each with `integration`, `handle`, `connectedAt` and `tools`, the caller's rule for each tool as `{ tool, rule }`, and `people`, every person's connection in the team with `personId` and `name` as well, for an owner or admin, or `null` for anyone else. Never a token. |
+| Disconnect | `DELETE /api/teams/{teamId}/integrations/{integration}/connections/mine` | Needs a signed-in person on the team. Removes the caller's own connection. Returns `204`. There is no endpoint to remove another person's connection. |
+| Set a tool rule | `PUT /api/teams/{teamId}/integrations/{integration}/connections/mine/tools/{tool}` | Needs a signed-in person on the team. A body `{ "rule": ... }`: `allowed`, the default, follows the team's rule; `needs-approval` asks the caller first; `blocked` never runs the tool. `{tool}` is the tool's full name, as in `linear.comment`. Applies only to calls made with the caller's own connection, and the stricter of the team's rule and the caller's wins. See [Person rules](/docs/reference/app/tasks-runs-and-the-inbox#person-rules). Returns `204`. `404` when the caller is not on the team, the integration does not offer the tool, or its `connection.holder` is not `requester`. `422` validation error for a malformed tool name or any other rule. |
 
 The `state` expires after 10 minutes. A request with `auth.oauth2` sends the
 access token as `Authorization: Bearer`.
@@ -699,7 +698,7 @@ allow-list. See [Limits and timeouts](/docs/reference/limits-and-timeouts#api-de
 for the size and time Spotlight allows.
 
 A description that cannot be read does not make the definition fail.
-`described.problem` says why, and the same reason is a warning at
+`spec.problem` says why, and the same reason is a warning at
 `<openapi or graphql>.url`, or at `.document` when that is given. The tools of
 the last read that succeeded stay offered; before any such read, none are.
 Problems include:
@@ -723,7 +722,7 @@ Problems include:
 | `names the server "<server>", which is not a web address. Please give the openapi block a baseUrl` | No `baseUrl`, and the description's server cannot be made a web address. |
 | `is not a GraphQL schema Spotlight can read: <error>` | The answer or `document` is not a GraphQL schema. |
 
-### Described
+### Spec
 
 | Field | Terraform | Type | Description |
 | --- | --- | --- | --- |
@@ -790,7 +789,7 @@ Spotlight lists the tools when the integration is created, and again:
 - when the team's connection to the integration is made over OAuth;
 - when the last listing is older than the deployment's `MCP_RELIST_SECONDS`,
   600 by default, checked every minute. One control plane server claims each
-  such listing, moving `described.readAt` on as it does, and the integration's
+  such listing, moving `spec.read_at` on as it does, and the integration's
   `version` does not change.
 
 The listing carries the team's connection when `auth` is `oauth2`, even for a
@@ -802,7 +801,7 @@ it, and the workspace's
 [configuration changes](/docs/reference/api/resource-api#configuration-changes)
 record the change, with each tool no longer offered in `details.stranded`.
 
-Problems a failed listing gives in `described.problem` include:
+Problems a failed listing gives in `spec.problem` include:
 
 | Problem | Cause |
 | --- | --- |
