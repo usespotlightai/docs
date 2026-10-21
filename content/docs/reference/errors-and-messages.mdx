@@ -120,8 +120,23 @@ Each follows `The sandbox's egress didn't start. Error: `.
 | `could not pull the runner image, so it runs the copy it has` | A pull failed, and the host has a copy of the image. | [Pull runner images from a private registry](/docs/hosts/pull-images-from-a-private-registry#check-that-it-pulls) |
 | `the runner image holds no harness, so it runs checks but no agent run; install a harness in an image built from it` | A warning. The image holds none of the harnesses Spotlight looks for. | [Installed harnesses](/docs/reference/hosts/harnesses#installed-harnesses), [Install a harness in your runner image](/docs/hosts/install-a-harness-in-your-runner-image) |
 | `another spotlight host already serves from <state>: <error>` | Another host uses the state directory. | [Validation](/docs/reference/hosts/host-configuration#validation) |
-| `spotlight host: <config path> is not ready to serve: <problems>` | `spotlight host install` found the host configuration invalid. | [spotlight host install](/docs/reference/cli/spotlight-command#spotlight-host-install) |
-| ``spotlight host: installing a service on <os> is not supported; run `spotlight host` under your own supervisor`` | `spotlight host install` on a platform other than Linux or macOS. | [spotlight host install](/docs/reference/cli/spotlight-command#spotlight-host-install) |
+| ``spotlight host: installing a service on <os> is not supported; run `spotlight host` under your own supervisor`` | `spotlight host init` on a platform other than Linux or macOS. | [spotlight host init](/docs/reference/cli/spotlight-command#spotlight-host-init) |
+
+### Host commands
+
+Every message goes to standard error, prefixed `spotlight host: `. The command exits `1`.
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `nothing changed, because <problems>` | `config set` or `config unset` gave settings that do not pass the checks. The problems name the settings by their keys, such as `capacity`. The file stays as it was. | [spotlight host config](/docs/reference/cli/spotlight-command#spotlight-host-config) |
+| `nothing saved, because <problems>` | `init` gave settings that do not pass the checks. | [spotlight host init](/docs/reference/cli/spotlight-command#spotlight-host-init) |
+| `nothing saved, because Spotlight at <url> does not accept the credential` | `init` was given a token or trust that Spotlight refused. | [spotlight host init](/docs/reference/cli/spotlight-command#spotlight-host-init), [Create a pull pool](/docs/hosts/create-a-pull-pool) |
+| `--token is required: a pull pool's token, from Settings → Runners → Add a host` | `init` had no token, no saved token and no terminal to ask on. | [spotlight host init](/docs/reference/cli/spotlight-command#spotlight-host-init) |
+| `pull <image>: <error>` | `init` could not pull the default runner image, and the machine has no copy of it. | [spotlight host init](/docs/reference/cli/spotlight-command#spotlight-host-init), [Pull runner images from a private registry](/docs/hosts/pull-images-from-a-private-registry) |
+| `The runner image holds no harness, so this host runs checks but no agent run.` | A warning from `init` and `status`. The default image is Spotlight's runner image, which holds no harness. | [Install a harness in your runner image](/docs/hosts/install-a-harness-in-your-runner-image) |
+| `nothing reloaded, because <problems>` | `reload` found settings that do not pass the checks. The host keeps the settings it has. | [spotlight host reload](/docs/reference/cli/spotlight-command#spotlight-host-reload) |
+| `no host runs from <config path>` | `reload` found no host that holds the state directory's lock. | [spotlight host reload](/docs/reference/cli/spotlight-command#spotlight-host-reload) |
+| ``the host is not installed as a service; run `spotlight host init` `` | `start`, `stop`, `restart`, `logs` or `uninstall` found no service. | [spotlight host start, stop and restart](/docs/reference/cli/spotlight-command#spotlight-host-start-stop-and-restart) |
 
 ### Host settings
 
@@ -132,8 +147,8 @@ environment, are prefixed `egress: `.
 | Message | Cause | See |
 | --- | --- | --- |
 | `SPOTLIGHT_URL is required` | No address. The runner gives the same message. | [Validation](/docs/reference/hosts/host-configuration#validation) |
-| `SPOTLIGHT_TOKEN and SPOTLIGHT_TRUST are different ways in; give one` | A token together with a trust or a token file. | [Validation](/docs/reference/hosts/host-configuration#validation) |
-| `SPOTLIGHT_TOKEN (a pull pool's token) is required, or SPOTLIGHT_TRUST and SPOTLIGHT_OIDC_TOKEN_FILE to claim through a runner trust` | Neither a token nor a trust. | [Validation](/docs/reference/hosts/host-configuration#validation), [Install a host](/docs/hosts/run-a-host) |
+| `SPOTLIGHT_POOL_TOKEN and SPOTLIGHT_TRUST are two different authentication methods; set one` | A token together with a trust or a token file. | [Validation](/docs/reference/hosts/host-configuration#validation) |
+| `SPOTLIGHT_POOL_TOKEN (a pull pool's token) is required, or SPOTLIGHT_TRUST and SPOTLIGHT_OIDC_TOKEN_FILE to claim through a runner trust` | Neither a token nor a trust. | [Validation](/docs/reference/hosts/host-configuration#validation), [Install a host](/docs/hosts/run-a-host) |
 | `SPOTLIGHT_OIDC_TOKEN_FILE names the workload token file, and is required with SPOTLIGHT_TRUST` | A trust without a token file. | [Validation](/docs/reference/hosts/host-configuration#validation), [Run hosts without a stored token](/docs/hosts/admit-hosts-through-a-runner-trust) |
 | `SPOTLIGHT_CAPACITY: "<x>" is not a count of at least 1` | A capacity that is not a count of at least 1. | [Validation](/docs/reference/hosts/host-configuration#validation) |
 | `SPOTLIGHT_RUN_TIMEOUT: "<x>" is not a duration such as 6h` | A timeout that is not a duration. | [Validation](/docs/reference/hosts/host-configuration#validation) |
@@ -204,21 +219,19 @@ injected, and requests go without it.
 
 ### Install script
 
-Every message goes to standard error, prefixed `spotlight host: `.
+Every message goes to standard error, after `Sorry, the install stopped:`.
 
 | Message | Cause | See |
 | --- | --- | --- |
+| `SPOTLIGHT_VERSION is <value>. Set it to latest, canary or a release, as in v0.1.0.` | Any other value. | [Install script](/docs/reference/cli/install-script#messages) |
 | `need curl or wget to download spotlight` | Neither is on `PATH`. | [Install script](/docs/reference/cli/install-script#messages) |
 | `need sha256sum or shasum to check what it downloads` | Neither is on `PATH`. | [Install script](/docs/reference/cli/install-script#messages) |
 | `unsupported operating system: <os>` | Not Linux or macOS. | [Install script](/docs/reference/cli/install-script#messages) |
 | `unsupported architecture: <arch>` | Not x86-64 or ARM64. | [Install script](/docs/reference/cli/install-script#messages) |
-| `set SPOTLIGHT_TOKEN to a pull pool's token, or SPOTLIGHT_TRUST and SPOTLIGHT_OIDC_TOKEN_FILE to claim through a runner trust` | No token and no trust. | [Install script](/docs/reference/cli/install-script#messages), [Install a host](/docs/hosts/run-a-host#install-the-host) |
 | `no container runtime answered: install and start Docker or Podman (on macOS, Docker Desktop, OrbStack or Colima), then run this again` | No container runtime answered `info`. | [Install script](/docs/reference/cli/install-script#messages), [Install a host](/docs/hosts/run-a-host#install-the-host) |
 | `could not download spotlight from <url>` | The binary download failed. | [Install script](/docs/reference/cli/install-script#messages) |
 | `could not download the checksum from <url>.sha256` | The checksum download failed. | [Install script](/docs/reference/cli/install-script#messages) |
 | `spotlight failed its checksum: expected <sha256>, got <sha256>` | The download does not match its checksum. | [Install script](/docs/reference/cli/install-script#messages) |
-| `could not pull <image>` | The pull of the first entry of `SPOTLIGHT_RUNNER_IMAGE` failed. | [Install script](/docs/reference/cli/install-script#messages) |
-| `<image> holds no harness, so this host runs checks but no agent run.` | The script installed Spotlight's runner image, which holds no harness. | [Install script](/docs/reference/cli/install-script#messages), [Install a harness in your runner image](/docs/hosts/install-a-harness-in-your-runner-image) |
 
 ## Inside a sandbox
 

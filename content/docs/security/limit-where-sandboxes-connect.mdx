@@ -6,7 +6,7 @@ description: Set a host's egress allow-list so agents reach only the hosts you n
 ---
 
 By default a sandbox reaches any public host and no private address. To narrow
-that, you need access to the host's `host.env`. The allow-list you set there
+that, you need a shell on the host machine. The allow-list you set there
 applies to every sandbox the host starts and to the hooks it sends; Spotlight
 itself and the storage it hands runs stay reachable.
 
@@ -33,19 +33,20 @@ An entry is an exact host, or `*.example.com` for the subdomains of
 
 ## Set the allow-list
 
-Add the list to `host.env`, comma-separated:
+Set the list, comma-separated:
 
 ```bash
-SPOTLIGHT_EGRESS_ALLOW=api.anthropic.com,registry.npmjs.org,*.acme.internal
+spotlight host config set egress-allow=api.anthropic.com,registry.npmjs.org,*.acme.internal
 ```
 
-Then [restart the host](/docs/hosts/run-a-host#restart-the-host). The host
-checks the list when it starts, and on an entry it cannot read it does not
-start and names the entry.
+The command checks the list before it saves it. On an entry it cannot read, it
+saves nothing and names the entry. The running host applies the list at once,
+to the sandboxes it starts next. To check the setting, run
+`spotlight host status`.
 
-Reinstalling drops this line from `host.env`; add it back afterwards. If you
-run `spotlight host` under your own supervisor, you can set the variable in its
-environment instead, where it overrides `host.env`.
+If you run `spotlight host` under your own supervisor, you can set
+`SPOTLIGHT_EGRESS_ALLOW` in its environment instead. The environment overrides
+the settings file.
 
 ## Reach a private host
 
@@ -59,11 +60,13 @@ cloud metadata address, are always blocked;
 
 If egress injects a secret into requests for a host whose certificate comes from an
 internal CA, or the host sends a hook to one, give egress the CA. Save the certificates
-as a PEM file beside `host.env` and add:
+as a PEM file, then give egress its path:
 
 ```bash
-SPOTLIGHT_EGRESS_CA_BUNDLE=/etc/spotlight/internal-ca.pem
+spotlight host config set egress-ca-bundle=/etc/spotlight/internal-ca.pem
 ```
+
+The running host applies it to the sandboxes it starts next.
 
 Sandboxes do not trust these authorities. If the agent's own tools connect to
 the host directly, add the CA to your runner image as well; see

@@ -7,8 +7,8 @@ description: Run a line's work in an image with your toolchain and dependencies 
 
 Each run starts from its line's image. To have your toolchain and your
 repository's dependencies already there, you need a line managed through
-Terraform or the resource API, a registry your hosts can pull from, and access
-to each host's `host.env`.
+Terraform or the resource API, a registry your hosts can pull from, and a
+shell on each host machine.
 
 ## Build the image
 
@@ -129,22 +129,25 @@ repositories, they name the same image or none.
 
 ## Let the hosts serve it
 
-A host serves only the images its `SPOTLIGHT_RUNNER_IMAGE` admits. Open the
-host's `host.env` and add your image to that line after the entry already
-there, separated by a comma. An entry is an exact image, or a prefix ending in
-`*` that admits every image under it:
+A host serves only the images its `image` setting admits. On each host, show
+the current value:
 
 ```bash
-SPOTLIGHT_RUNNER_IMAGE=ghcr.io/acme/spotlight-runner-claude-code:<release>,ghcr.io/acme/*
+spotlight host config get image
+```
+
+Set it again with your image after the entries already there, separated by
+commas. An entry is an exact image, or a prefix ending in `*` that admits every
+image under it:
+
+```bash
+spotlight host config set image=ghcr.io/acme/spotlight-runner-claude-code:<release>,ghcr.io/acme/*
 ```
 
 Keep the first entry as it is: the first exact image is the default for lines
-that name none. Then [restart the host](/docs/hosts/run-a-host#restart-the-host).
-
-When you run the install script again, it keeps this line if its first entry
-is your own image. If the first entry is Spotlight's runner image, the script
-replaces the whole line with that image at the release it installs, so add your
-entries back.
+that name none. If `config get` says `image` is not set, the host uses
+Spotlight's runner image; with no exact entry in the list, the host adds that
+image as the default. The running host applies the list at once.
 
 ## Check that it is served
 

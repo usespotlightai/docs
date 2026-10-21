@@ -168,9 +168,15 @@ The console prints `200` and the new token.
 </Tab>
 </Tabs>
 
-Hosts that still use the old token stop with exit code `3`. Give each one the
-new token in `SPOTLIGHT_TOKEN` in its `host.env`, and
-[restart it](/docs/hosts/run-a-host#restart-the-host).
+Hosts that still use the old token stop with exit code `3`. On each one, save
+the new token and start the host again:
+
+```bash
+spotlight host config set token=<new pool token>
+spotlight host start
+```
+
+`spotlight host status` then shows whether Spotlight accepts the token.
 
 ## Related
 

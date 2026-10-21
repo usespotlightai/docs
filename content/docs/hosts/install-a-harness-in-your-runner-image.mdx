@@ -9,21 +9,14 @@ Spotlight's runner image, `ghcr.io/usespotlightai/spotlight-runner:<release>`,
 holds no harness. A host that serves only that image runs change-stack checks,
 but no agent run. Build your own image `FROM` it, with the harness that your
 subscription covers, and let your hosts serve that image. You need Docker or
-Podman on the machine that builds the image, and access to each host's
-`host.env`.
+Podman on the machine that builds the image, and a shell on each host
+machine.
 
 ## Find the release your hosts run
 
 Open **Settings** from the workspace menu, then **Runners**. **Release** shows
-the release of each host. The install script also writes Spotlight's image at
-that release to `host.env`:
-
-```bash
-grep SPOTLIGHT_RUNNER_IMAGE ~/.spotlight/host.env
-```
-
-For a host installed as root, the file is `/etc/spotlight/host.env`. Use this
-release as `<release>` in the steps below.
+the release of each host. On the host machine, `spotlight version` prints it
+too. Use this release as `<release>` in the steps below.
 
 ## Build the image
 
@@ -101,20 +94,19 @@ A host on the machine that built the image can use it without a registry.
 
 ## Let the hosts serve it
 
-Open the host's `host.env` and make your image the first entry of
-`SPOTLIGHT_RUNNER_IMAGE`, in place of Spotlight's image:
+On each host, make your image the default:
 
 ```bash
-SPOTLIGHT_RUNNER_IMAGE=ghcr.io/acme/spotlight-runner-claude-code:<release>
+spotlight host config set image=ghcr.io/acme/spotlight-runner-claude-code:<release>
 ```
 
-The first exact entry is the default image, which every line that names no
-image runs in. Then [restart the host](/docs/hosts/run-a-host#restart-the-host).
+The first exact entry of `image` is the default image, which every line that
+names no image runs in. The running host applies it at once, to the sandboxes
+it starts next.
 
-You can also give the image to the install script, as
-`SPOTLIGHT_RUNNER_IMAGE=<your image>` in the install command. The script pulls
-the image, so it must be in a registry. When you run the script again, it keeps
-the image that `host.env` names.
+You can also give the image when you install the host: `spotlight host init`
+asks for it, or takes `--image <your image>`. Run again, `init` keeps the image
+it saved.
 
 Give the host the key or token for the harness, as in
 [Give hosts your harness keys](/docs/hosts/give-sandboxes-your-harness-keys).
