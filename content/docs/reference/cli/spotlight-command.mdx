@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: The spotlight command
-description: The subcommands of the spotlight binary, what each reads, prints and exits with, and the service units spotlight host init writes.
+description: The subcommands of the spotlight binary, what each reads, prints and exits with, the service units spotlight host init writes, and the login file spotlight login keeps.
 ---
 
 `spotlight` is one binary. A host runs `spotlight host`. Each sandbox runs
@@ -11,7 +11,8 @@ egress for push pools runs `spotlight egress serve`. An agent runs
 the [agent commands](/docs/reference/cli/agent-commands) inside its sandbox.
 A person or a CI job runs [`spotlight replay`](/docs/reference/cli/replay-command)
 from anywhere to replay a station's past tasks, or to check the station
-changes in a Terraform plan.
+changes in a Terraform plan. A person runs [`spotlight login`](#spotlight-login)
+so that `spotlight replay` and the Terraform provider act as them.
 
 ## Synopsis
 
@@ -32,6 +33,8 @@ spotlight runner harnesses <json>
 spotlight egress
 spotlight egress serve
 spotlight replay <subcommand>
+spotlight login [--url <address>] [--no-browser]
+spotlight logout [--url <address>]
 spotlight version
 spotlight help
 ```
@@ -477,6 +480,122 @@ for its settings and messages.
 | `0` | Stopped on `SIGINT` or `SIGTERM`. |
 | `1` | Egress could not start. |
 
+## spotlight login
+
+```text
+spotlight login [--url <address>] [--no-browser]
+```
+
+Logs a person in to Spotlight through the browser, with the OAuth 2.0 device
+authorization grant (RFC 8628), and keeps the login in the
+[credentials file](#credentials-file).
+
+| Flag | Description |
+| --- | --- |
+| `--url` | The [Spotlight address](/docs/reference/glossary#spotlight-address). Without it, `SPOTLIGHT_URL`, else `https://app.usespotlight.ai`. |
+| `--no-browser` | Does not open the browser. |
+
+The address must use `https`. Only a local address, `localhost`, `127.0.0.1`,
+`::1` or a name that ends in `.localhost` or `.test`, may use `http`. The
+address is kept as its scheme and host, and its port when that is not the
+default, so `https://app.usespotlight.ai/` and `https://app.usespotlight.ai:443`
+are the same address.
+
+| Step | Action |
+| --- | --- |
+| 1 | Asks Spotlight for a device code, as the client `spotlight-cli`. |
+| 2 | Prints the page to open, `<address>/device?user_code=<code>`, and the code as `XXXX-XXXX`. |
+| 3 | When standard output is a terminal and `--no-browser` is not given, opens the page with `open` on macOS or `xdg-open` on Linux. |
+| 4 | Asks Spotlight for the login every 5 seconds, 5 seconds more after each `slow_down` answer, until the code is approved, denied or expires after 15 minutes. |
+| 5 | Reads the person's email from the new session. |
+| 6 | Writes the login for the address to the credentials file, and keeps the logins for other addresses. |
+
+The page is the web app's [`/device`](/docs/reference/app/web-app#pages-outside-a-workspace)
+page. The login is a session of the person who approves it. It acts as that
+person, with their role in each workspace they are a member of, and ends after
+7 days without use. Each use renews it.
+
+| Message | When |
+| --- | --- |
+| `Open this page to log in to <address>:` | Step 2. The page follows on the next line. |
+| `Check that the page shows the code <code>.` | Step 2. |
+| `Opened the page in your browser.` | Step 3. |
+| `Waiting for you to approve the login. Press Ctrl-C to stop.` | Step 4 starts. |
+| `Logged in to <address> as <email>.` | Step 6. |
+
+| Error | Cause |
+| --- | --- |
+| `the code expired before the login was approved. Run spotlight login again` | 15 minutes passed. |
+| `the login was denied in the browser` | The person clicked "Deny". |
+| `Spotlight refused the login: <error>. <description>` | Another OAuth error. |
+| `Spotlight at <address> did not give a device code. It answered <status>` | Step 1 failed. |
+| `Spotlight did not accept the new login token. It answered <status>` | Step 5 failed. |
+| `"<value>" is not a Spotlight address. Use a URL such as https://app.usespotlight.ai` | The address is not an `http` or `https` URL with a host. |
+| `<value> does not use https. Only a local address may use http` | An `http` address that is not local. |
+| `HOME is not set. Set SPOTLIGHT_CONFIG_DIR to keep logins` | No place for the credentials file. |
+| `stopped. No login was kept` | `Ctrl-C` or `SIGTERM`. |
+
+Each error is printed after `spotlight login: ` on standard error.
+
+| Code | Meaning |
+| --- | --- |
+| `0` | Logged in. |
+| `1` | An error. |
+| `130` | Stopped with `Ctrl-C` or `SIGTERM`. |
+
+## spotlight logout
+
+```text
+spotlight logout [--url <address>]
+```
+
+Ends the session in Spotlight and removes the login for the address from the
+credentials file. The address is found as for `spotlight login`.
+
+| Message | When |
+| --- | --- |
+| `Logged out of <address>.` | The login was removed. |
+| `You are not logged in to <address>.` | The file has no login for the address. |
+| `Spotlight did not end the session: <error>. The token stays valid until it expires.` | Spotlight did not answer, or answered with an error. The login is still removed. |
+
+Errors are printed after `spotlight logout: ` on standard error. The exit codes
+are those of `spotlight login`.
+
+## Credentials file
+
+`spotlight login` writes `credentials.json` in the first of these directories
+that applies, on every operating system:
+
+| Directory | When |
+| --- | --- |
+| `$SPOTLIGHT_CONFIG_DIR` | `SPOTLIGHT_CONFIG_DIR` is set. |
+| `$XDG_CONFIG_HOME/spotlight` | `XDG_CONFIG_HOME` is set. |
+| `~/.config/spotlight` | Otherwise. |
+
+The file has mode `0600`, and its directory is created with mode `0700`. It
+holds one entry for each address:
+
+```json
+{
+  "logins": {
+    "https://app.usespotlight.ai": {
+      "token": "<token>",
+      "user": "you@example.com"
+    }
+  }
+}
+```
+
+The file is written in one rename. Other fields in the file are kept.
+
+| Reads the login | When |
+| --- | --- |
+| [`spotlight replay`](/docs/reference/cli/replay-command#environment) | `SPOTLIGHT_API_TOKEN` is not set. |
+| [`spotlight replay check`](/docs/reference/cli/replay-command#environment-for-check) | Neither `SPOTLIGHT_API_TOKEN` nor `SPOTLIGHT_OIDC_TRUST` is set. |
+| [The Terraform provider](/docs/reference/terraform/terraform-provider#credentials) | No token and no trust is set. |
+
+Each takes the entry for the address of its `SPOTLIGHT_URL` or `url`.
+
 ## spotlight replay
 
 ```text
@@ -484,7 +603,7 @@ spotlight replay <subcommand>
 ```
 
 Proposes replay candidates and starts, follows and stops replays, reading
-`SPOTLIGHT_URL` and `SPOTLIGHT_API_TOKEN`. `spotlight replay check` checks a
+`SPOTLIGHT_URL` and `SPOTLIGHT_API_TOKEN`, else the login for `SPOTLIGHT_URL`. `spotlight replay check` checks a
 saved Terraform plan's station changes, and may exchange a CI job's OIDC token
 through `SPOTLIGHT_OIDC_TRUST` instead. Its subcommands, flags, output and
 exit codes are on [`spotlight replay`](/docs/reference/cli/replay-command).

@@ -19,10 +19,22 @@ Request and response bodies are JSON with camelCase field names. Errors are
 | Credential | Sent as | Acts |
 | --- | --- | --- |
 | A person's session | the session cookie the web app sets at sign-in | as that person, within their role in each workspace |
+| A person's login from [`spotlight login`](/docs/reference/cli/spotlight-command#spotlight-login) | `Authorization: Bearer <token>` | as that person, within their role in each workspace |
 | A [workspace token](/docs/reference/api/workspace-token) | `Authorization: Bearer <token>` | only within its own workspace, and only as its scopes allow |
 
-A request with neither gets `401`. See
-[Roles and permissions](/docs/reference/roles-and-permissions) for what each
+A login is accepted on every route. On a route that takes workspace tokens, a
+bearer token is tried as a workspace token first, then as a login. A login ends
+after 7 days without use, and each use renews it.
+
+A request with no credential gets `401`. A bearer token that is not accepted
+gets `401` with one of these details:
+
+| Route | Detail |
+| --- | --- |
+| Takes workspace tokens | `The token is unknown, expired or revoked.` |
+| Only people may call | `The token is not a current login. Workspace tokens cannot call this route.` |
+
+See [Roles and permissions](/docs/reference/roles-and-permissions) for what each
 role and scope allows.
 
 ## Operations

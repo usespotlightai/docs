@@ -27,8 +27,8 @@ spotlight replay stop --team <key> <replay id>
 spotlight replay check [--json] [--timeout 60m] [--every 15s] [--commit <sha>] [--pull-request <n>] [--repeats 1] <plan.json | ->
 ```
 
-Every subcommand also takes `--json`. Flags may come before or after the
-argument.
+Every subcommand also takes `--json`, and every subcommand except `check` takes
+`--workspace <slug>`. Flags may come before or after the argument.
 
 ## Install
 
@@ -54,13 +54,25 @@ with `chmod +x spotlight`. For a given release, replace `latest/download` with
 | Variable | Description |
 | --- | --- |
 | `SPOTLIGHT_URL` | Required. The [Spotlight address](/docs/reference/glossary#spotlight-address), as `https://app.usespotlight.ai`. |
-| `SPOTLIGHT_API_TOKEN` | Required. A [workspace token](/docs/reference/api/workspace-token). `read` is enough for `candidates`, `show`, `sets`, `status` and `watch`; `propose`, `start` and `stop` need `plan`. |
+| `SPOTLIGHT_API_TOKEN` | A [workspace token](/docs/reference/api/workspace-token). `read` is enough for `candidates`, `show`, `sets`, `status` and `watch`; `propose`, `start` and `stop` need `plan`. Without it, the login that [`spotlight login`](/docs/reference/cli/spotlight-command#spotlight-login) keeps for `SPOTLIGHT_URL`. |
+| `SPOTLIGHT_WORKSPACE` | The slug of the workspace to act in, as `acme`. `--workspace` overrides it. A login in more than one workspace needs one of them. |
 
-Without either, every subcommand but `check` fails with
-`set SPOTLIGHT_URL and SPOTLIGHT_API_TOKEN to replay`, followed by the usage.
+| Message | Cause |
+| --- | --- |
+| `set SPOTLIGHT_URL to replay` | No `SPOTLIGHT_URL`. The usage follows. |
+| `no credentials for <address>. Run spotlight login, or set SPOTLIGHT_API_TOKEN` | No `SPOTLIGHT_API_TOKEN`, and no login for the address. The usage follows. |
+| `read the login for <address>: <error>` | The [credentials file](/docs/reference/cli/spotlight-command#credentials-file) cannot be read. |
+
 `check` reads more; see [Environment for check](#environment-for-check).
-The token must see exactly one workspace; otherwise the command fails with
-`the token sees <n> workspaces; use a workspace token, which acts in exactly one`.
+A workspace token sees one workspace, and the command acts in it. A login sees
+every workspace that the person is a member of. If it sees more than one, choose
+the workspace with `--workspace <slug>` or `SPOTLIGHT_WORKSPACE`.
+
+| Message | Cause |
+| --- | --- |
+| `you belong to <n> workspaces: <slugs>. Choose one with --workspace or SPOTLIGHT_WORKSPACE` | A login in more than one workspace, with no workspace chosen. |
+| `you are not a member of workspace <slug>. You belong to: <slugs>` | `--workspace` or `SPOTLIGHT_WORKSPACE` names a workspace that the token or login does not see. |
+| `the credential sees no workspace` | The token or login sees no workspace. |
 
 ## Common behaviour
 
@@ -70,6 +82,7 @@ The token must see exactly one workspace; otherwise the command fails with
 | Client header | `Spotlight-Client: cli/<release>` |
 | An error | `spotlight replay: <error>` on standard error. An error from Spotlight is printed as its `detail`, or its `title`, followed by each field error as `<path>: <message>` on a line of its own. |
 | `--json` | Prints Spotlight's answer as indented JSON in place of the text output. |
+| `--workspace <slug>` | The workspace to act in. It overrides `SPOTLIGHT_WORKSPACE`. Every subcommand except `check` takes it. |
 
 `--station` names a station as `<team key>/<line key>/<station key>`, as in
 `core/delivery/implementation`. Another form fails with
@@ -349,7 +362,10 @@ for the results. Give it the output of `terraform show -json <planfile>`, or
 | `SPOTLIGHT_OIDC_AUDIENCE` | The audience to request the OIDC token for. Default `spotlight`. Must equal the trust's `audience`. |
 | `GITHUB_STEP_SUMMARY` | When set, a Markdown summary is appended to the file it names. |
 
-Credentials are read only when the plan has a station to check.
+Without `SPOTLIGHT_API_TOKEN` and `SPOTLIGHT_OIDC_TRUST`, the command uses the
+login that [`spotlight login`](/docs/reference/cli/spotlight-command#spotlight-login)
+keeps for `SPOTLIGHT_URL`. Credentials are read only when the plan has a station
+to check.
 
 ### What it checks
 
@@ -463,8 +479,9 @@ as in `-17 points (-50 to +0), within noise`, or `-` without one.
 | ``this is the log `terraform plan -json` streams, which contains no station blocks; save the plan with `terraform plan -out=<planfile>`, then pass this the output of `terraform show -json <planfile>` `` | The file is the streamed log of `terraform plan -json`. |
 | ``the plan is not JSON; pass this the output of `terraform show -json <planfile>` `` | The file is not JSON. |
 | ``this is not a saved plan shown as JSON; pass this the output of `terraform show -json <planfile>` `` | The JSON has no `format_version`. |
-| `set SPOTLIGHT_URL, and SPOTLIGHT_API_TOKEN or SPOTLIGHT_OIDC_TRUST, to check a plan` | No `SPOTLIGHT_URL`. The usage follows. |
-| `set SPOTLIGHT_API_TOKEN, a workspace token that may plan, or SPOTLIGHT_OIDC_TRUST, a workspace token trust to exchange the job's OIDC token through` | Neither credential. The usage follows. |
+| `set SPOTLIGHT_URL, and SPOTLIGHT_API_TOKEN, SPOTLIGHT_OIDC_TRUST or a login from spotlight login, to check a plan` | No `SPOTLIGHT_URL`. The usage follows. |
+| `no credentials for <address>. Set SPOTLIGHT_API_TOKEN, a workspace token that may plan, or SPOTLIGHT_OIDC_TRUST, a workspace token trust to exchange the job's OIDC token through, or run spotlight login` | No token, no trust and no login for the address. The usage follows. |
+| `read the login for <address>: <error>` | The credentials file cannot be read. |
 | `SPOTLIGHT_OIDC_TRUST needs an OIDC token: set SPOTLIGHT_OIDC_TOKEN, or run in GitHub Actions with permissions: id-token: write` | A trust, but no OIDC token to exchange. |
 | `the workspace token trust <trust> did not accept the OIDC token: <problem>` | The trust did not accept the exchange. |
 | `--timeout is how long to wait, above 0, not <value>` | `--timeout` is 0 or less. |
