@@ -5,7 +5,10 @@ title: Pools, trusts and tokens
 description: The credentials that let a machine or a pipeline act in a Spotlight workspace, what each one can do, what it costs if it leaks, and why Spotlight has several kinds instead of one.
 ---
 
-People reach a Spotlight workspace by signing in. Everything else that acts in
+People reach a Spotlight workspace by signing in: in the web app, or at a
+terminal with [`spotlight login`](/docs/administration/log-in-from-the-command-line),
+which lets the `spotlight` command and the Terraform provider act as that
+person, with their role. Everything else that acts in
 it, a machine running agents or a pipeline applying Terraform, needs a
 credential of its own. Spotlight has eight kinds, and they differ in who stores
 them, how long they last, and what can be done with one that is stolen.
@@ -173,8 +176,10 @@ platform.
 Our recommendation is to use a trust wherever the platform supports one. A host
 on a Kubernetes cluster and Terraform in a CI pipeline both already have a
 workload identity to offer, and using it costs one resource. A pool token earns
-its place on a machine that has no identity of its own, and a stored workspace
-token on a laptop, for work done by hand. The one-run credential is not a
+its place on a machine that has no identity of its own. For work done by hand
+on a laptop, a person's own login needs no workspace token: it acts as that
+person, and it ends after 7 days without use. A stored workspace token remains
+for a script that runs with no person present. The one-run credential is not a
 choice; every run gets one, however its host got in.
 
 The reference pages list the fields:

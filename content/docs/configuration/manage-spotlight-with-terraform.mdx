@@ -11,11 +11,15 @@ through `terraform apply`. You need:
 
 - Terraform 1.11 or later. The module contains write-only values, such as secret
   values, which older versions cannot send.
-- A workspace token for the workspace. If you don't have one,
+- A workspace token for the workspace, to export it. If you don't have one,
   [issue a workspace token](/docs/administration/issue-a-workspace-token) with the scopes
   for what the module manages: `configure`, plus `secrets` if it manages secrets,
   `runners` if it manages runner pools or runner trusts, and `trusts` if it manages
   OIDC trusts.
+- To apply from your machine as yourself, the `spotlight` binary. With it, you
+  can [log in from the command line](/docs/administration/log-in-from-the-command-line)
+  in place of the token. A login acts with your role, so a module that manages
+  secrets, runners or OIDC trusts needs an owner or admin.
 
 ## Export the workspace
 
@@ -64,13 +68,37 @@ the files there, and do not move them into subfolders.
 
 ## Point the provider at Spotlight
 
-Give the provider Spotlight's address and the token through the environment.
+The provider uses a workspace token or an OIDC trust when one is set.
+When neither is set, it uses the login that `spotlight login` keeps for its
+address. See [Provider configuration](/docs/reference/terraform/terraform-provider#provider-configuration).
+
 On a [self-hosted Spotlight](/docs/reference/glossary#spotlight-address), use your deployment's address in place of `app.usespotlight.ai`.
+
+<Tabs items={['As yourself', 'With a workspace token']}>
+<Tab value="As yourself">
+
+Log in once, then give the provider only the address:
+
+```bash
+spotlight login
+export SPOTLIGHT_URL=https://app.usespotlight.ai
+```
+
+Do not set `SPOTLIGHT_API_TOKEN` or `SPOTLIGHT_OIDC_TRUST`. If one of them is
+set, the provider uses it, not your login.
+
+</Tab>
+<Tab value="With a workspace token">
+
+Give the provider Spotlight's address and the token through the environment:
 
 ```bash
 export SPOTLIGHT_URL=https://app.usespotlight.ai
 export SPOTLIGHT_API_TOKEN=<workspace token>
 ```
+
+</Tab>
+</Tabs>
 
 The export has no provider block. To set the address and token in the
 configuration instead, add one and keep the token in a variable:
@@ -87,7 +115,8 @@ variable "spotlight_token" {
 }
 ```
 
-Keep the token out of version control.
+Keep the token out of version control. With a login, the block needs only
+`url`.
 
 ## Give the variables their values
 
@@ -123,7 +152,8 @@ expression in an integration or a hook against Spotlight before anything is
 written, so a misspelt field fails the plan at the attribute that contains it.
 
 If a plan fails with `403`, the diagnostic names the scope the token lacks.
-Issue a new token that also has that scope.
+Issue a new token that also has that scope. With a login, your role does not
+allow the change; ask an owner or admin.
 
 If the configuration is changed outside Terraform, through the resource API,
 the next plan changes it back.
