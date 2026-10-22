@@ -43,7 +43,7 @@ resource "spotlight_workspace" "acme" {
 | --- | --- |
 | create | Needs `create-workspaces`: any signed-in person, never a workspace token. The creator becomes the workspace's owner. |
 | update | Needs `configure`. Changes `name` only. |
-| delete | Needs `administer`. Fails with `409` `in-use` while the workspace has any team, workspace token, workspace token trust, secret, runner pool, runner trust or workspace runners. |
+| delete | Needs `administer`. Fails with `409` `in-use` while the workspace has any team, workspace token, OIDC trust, secret, runner pool, runner trust or workspace runners. |
 | list | Every workspace the caller may read. A workspace token reads only its own. |
 | import | `GET /api/resources/workspaces/import?address=<slug>` |
 

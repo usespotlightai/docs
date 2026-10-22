@@ -1,18 +1,18 @@
 ---
 type: reference
 icon: BookText
-title: spotlight_workspace_token_trust
-description: The fields of a workspace token trust, the workloads it matches, and the exchange that issues short-lived workspace tokens through it.
+title: spotlight_oidc_trust
+description: The fields of an OIDC trust, the workloads it matches, and the exchange that issues short-lived workspace tokens through it.
 ---
 
-The `spotlight_workspace_token_trust` resource, and the API's
-`workspace-token-trust` kind: a trust that lets a CI workload exchange the OIDC
-token its platform issues for a short-lived
-[workspace token](/docs/reference/api/workspace-token).
+The `spotlight_oidc_trust` resource, and the API's `oidc-trust` kind: a trust
+that lets a CI job or another workload exchange the OIDC token its platform
+issues for a short-lived
+[workspace token](/docs/reference/api/workspace-token), so no key is stored.
 
 | Kind | Endpoint | Terraform | Address |
 | --- | --- | --- | --- |
-| `workspace-token-trust` | `/api/resources/workspaces/{workspaceId}/token-trusts` | `spotlight_workspace_token_trust` | `<key>` |
+| `oidc-trust` | `/api/resources/workspaces/{workspaceId}/oidc-trusts` | `spotlight_oidc_trust` | `<key>` |
 
 See [Resource API](/docs/reference/api/resource-api) for the operations, headers
 and errors every kind shares.
@@ -20,7 +20,7 @@ and errors every kind shares.
 ## Example
 
 ```hcl
-resource "spotlight_workspace_token_trust" "github_main" {
+resource "spotlight_oidc_trust" "github_main" {
   workspace_id = spotlight_workspace.acme.id
   key          = "github-main"
   issuer       = "https://token.actions.githubusercontent.com"
@@ -128,6 +128,14 @@ Each exchange is recorded as a
 [configuration change](/docs/reference/api/resource-api#configuration-changes): a
 created workspace token, with the trust, the subject, the scopes and the
 expiry.
+
+## See the trusts
+
+Owners and admins see every trust under "OIDC trusts" on the API access page
+of the workspace settings: what each trust admits, its scopes, who created it,
+and when it last issued a token. The page only reads; Terraform and the
+resource API define trusts. See
+[the web app](/docs/reference/app/web-app#workspace-pages).
 
 ## Issued tokens
 

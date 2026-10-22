@@ -85,7 +85,7 @@ Every resource representation has these fields besides its own.
 | `hook` | `<team key>/<key>` | `core/migrations-need-a-dba` |
 | `secret` | name | `ACME_API_KEY` |
 | `workspace-token` | name | `ci` |
-| `workspace-token-trust` | key | `github-main` |
+| `oidc-trust` | key | `github-main` |
 | `runner-pool` | key | `ephemeral` |
 | `egress` | key | `shared` |
 | `runner-trust` | key | `production-cluster` |
@@ -161,7 +161,7 @@ All paths are under `/api/resources`.
 | `hook` | team | `POST /teams/{teamId}/hooks` | `/hooks/{id}` | `/workspaces/{workspaceId}/hooks` |
 | `secret` | workspace | `POST /workspaces/{workspaceId}/secrets` | `/secrets/{id}` | `/workspaces/{workspaceId}/secrets` |
 | `workspace-token` | workspace | `POST /workspaces/{workspaceId}/tokens` | `/tokens/{id}` | `/workspaces/{workspaceId}/tokens` |
-| `workspace-token-trust` | workspace | `POST /workspaces/{workspaceId}/token-trusts` | `/token-trusts/{id}` | `/workspaces/{workspaceId}/token-trusts` |
+| `oidc-trust` | workspace | `POST /workspaces/{workspaceId}/oidc-trusts` | `/oidc-trusts/{id}` | `/workspaces/{workspaceId}/oidc-trusts` |
 | `runner-pool` | workspace | `POST /workspaces/{workspaceId}/runner-pools` | `/runner-pools/{id}` | `/workspaces/{workspaceId}/runner-pools` |
 | `egress` | workspace | `POST /workspaces/{workspaceId}/egresses` | `/egresses/{id}` | `/workspaces/{workspaceId}/egresses` |
 | `runner-trust` | workspace | `POST /workspaces/{workspaceId}/runner-trusts` | `/runner-trusts/{id}` | `/workspaces/{workspaceId}/runner-trusts` |
@@ -196,7 +196,7 @@ Each kind's fields are on its own page:
 | `hook` | [`spotlight_hook`](/docs/reference/terraform/hook) |
 | `secret` | [`spotlight_secret`](/docs/reference/terraform/secret) |
 | `workspace-token` | [Workspace tokens](/docs/reference/api/workspace-token) |
-| `workspace-token-trust` | [`spotlight_workspace_token_trust`](/docs/reference/terraform/workspace-token-trust) |
+| `oidc-trust` | [`spotlight_oidc_trust`](/docs/reference/terraform/oidc-trust) |
 | `runner-pool` | [`spotlight_runner_pool`](/docs/reference/terraform/runner-pool) |
 | `egress` | [`spotlight_egress`](/docs/reference/terraform/egress) |
 | `runner-trust` | [`spotlight_runner_trust`](/docs/reference/terraform/runner-trust) |
@@ -218,7 +218,7 @@ The export's files are ordered by path and are the same on every export:
 | --- | --- |
 | `terraform.tf` | The `required_providers` block. |
 | `imports.tf` | An `import` block for every resource, in the order the resources depend on one another. |
-| `workspace.tf`, `secrets.tf`, `runners.tf` | The workspace and its token trusts; the secrets; runner trusts, egresses, runner pools and the workspace's runners. |
+| `workspace.tf`, `secrets.tf`, `runners.tf` | The workspace and its OIDC trusts; the secrets; runner trusts, egresses, runner pools and the workspace's runners. |
 | `team-<team>.tf`, `line-<team>-<line>.tf`, `integration-<team>-<integration>.tf` | One file for each team, line and integration. |
 | `skills-<team>.tf`, `hooks-<team>.tf`, `profiles-<team>.tf` | A team's skills, hooks and harness profiles. |
 | `variables.tf` | A sensitive variable for each value Spotlight never returns, such as secret values, runner pool tokens and egress tokens. |
@@ -232,7 +232,7 @@ Workspace tokens are not exported.
 The `hcl` string contains, in order, any variable the resource reads, an `import`
 block that imports it, and the resource. `files` contains the prompt, rubric and skill
 files it reads. `collection` is one of `workspaces`, `teams`, `lines`, `skills`,
-`harness-profiles`, `integrations`, `hooks`, `secrets`, `token-trusts`,
+`harness-profiles`, `integrations`, `hooks`, `secrets`, `oidc-trusts`,
 `runner-trusts`, `runner-pools`, `egresses` or `workspace-runners`.
 
 ## Configuration changes
@@ -258,9 +258,9 @@ anyone else the workspace is `404`.
 | `key` | string | The key or name it had within its team or workspace. |
 | `action` | string | `created`, `updated` or `deleted`. |
 | `by.kind` | string | `person`, `token`, or `spotlight` for a change Spotlight made following another. |
-| `by.userId` | string or null | The person, or for a token the person who issued it. For a token issued by a workspace token trust, the person who created the trust. |
+| `by.userId` | string or null | The person, or for a token the person who issued it. For a token issued by an OIDC trust, the person who created the trust. |
 | `by.tokenId` | string or null | The workspace token. |
-| `by.trust` | string or null | The workspace token trust that issued the token. |
+| `by.trust` | string or null | The OIDC trust that issued the token. |
 | `client` | string or null | The client, from `Spotlight-Client`. |
 | `details` | object | What the kind records beyond the action. A secret records its value version and bound hosts, never its value. An egress update records `tokenRotated: true` when its token changed, never the token. |
 | `at` | string | When, as an ISO 8601 time. |
