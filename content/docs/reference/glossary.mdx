@@ -413,7 +413,7 @@ connects to it. See [`spotlight_integration`](/docs/reference/terraform/integrat
 ## Issue
 
 To create a [workspace token](#workspace-token). A workspace owner or admin
-issues one, a [workspace token trust](#workspace-token-trust) issues a
+issues one, an [OIDC trust](#oidc-trust) issues a
 short-lived one for each exchange, and Spotlight issues one for each run of a
 setup chat. Spotlight shows the token value only once, when it issues it.
 
@@ -580,6 +580,12 @@ it; its person resolves it. See [Notices](/docs/reference/app/tasks-runs-and-the
 
 One instance of an event that hooks fire for, with an id of its own. A hook's
 request carries it as `occurrence`. See [`spotlight_hook`](/docs/reference/terraform/hook).
+
+## OIDC trust
+
+A workspace resource that lets a CI job or another workload exchange the OIDC
+token its platform issues for a short-lived workspace token, so no key is
+stored. See [`spotlight_oidc_trust`](/docs/reference/terraform/oidc-trust).
 
 ## Park
 
@@ -1044,9 +1050,3 @@ resource API and the Terraform provider. A workspace admin or owner issues one.
 Spotlight also issues one for each run of a setup chat; see
 [The run's Spotlight token](/docs/reference/hosts/egress#the-runs-spotlight-token).
 See [Workspace tokens](/docs/reference/api/workspace-token).
-
-## Workspace token trust
-
-A workspace resource that lets a CI workload exchange the OIDC token its
-platform issues for a short-lived workspace token. See
-[`spotlight_workspace_token_trust`](/docs/reference/terraform/workspace-token-trust).

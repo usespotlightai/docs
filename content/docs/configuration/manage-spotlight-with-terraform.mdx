@@ -6,7 +6,7 @@ description: Adopt a workspace from its Terraform export, then change its config
 ---
 
 Once a workspace is under Terraform, its teams, lines, skills, integrations,
-hooks, harness profiles, secrets, token trusts and runner configuration change
+hooks, harness profiles, secrets, OIDC trusts and runner configuration change
 through `terraform apply`. You need:
 
 - Terraform 1.11 or later. The module contains write-only values, such as secret
@@ -15,11 +15,11 @@ through `terraform apply`. You need:
   [issue a workspace token](/docs/administration/issue-a-workspace-token) with the scopes
   for what the module manages: `configure`, plus `secrets` if it manages secrets,
   `runners` if it manages runner pools or runner trusts, and `trusts` if it manages
-  workspace token trusts.
+  OIDC trusts.
 - To apply from your machine as yourself, the `spotlight` binary. With it, you
   can [log in from the command line](/docs/administration/log-in-from-the-command-line)
   in place of the token. A login acts with your role, so a module that manages
-  secrets, runners or token trusts needs an owner or admin.
+  secrets, runners or OIDC trusts needs an owner or admin.
 
 ## Export the workspace
 
@@ -50,7 +50,7 @@ It writes:
 | --- | --- |
 | `terraform.tf` | The `required_providers` block |
 | `imports.tf` | An `import` block for everything in the workspace. Remove it after the first apply. |
-| `workspace.tf` | The workspace and its token trusts |
+| `workspace.tf` | The workspace and its OIDC trusts |
 | `secrets.tf` | The secrets; left out when there are none |
 | `runners.tf` | Runner trusts, egresses, runner pools and the workspace's runners; left out when there are none |
 | `team-<team>.tf` | One file for each team |
@@ -68,7 +68,7 @@ the files there, and do not move them into subfolders.
 
 ## Point the provider at Spotlight
 
-The provider uses a workspace token or a workspace token trust when one is set.
+The provider uses a workspace token or an OIDC trust when one is set.
 When neither is set, it uses the login that `spotlight login` keeps for its
 address. See [Provider configuration](/docs/reference/terraform/terraform-provider#provider-configuration).
 

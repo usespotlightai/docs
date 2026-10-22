@@ -16,7 +16,7 @@ them, how long they last, and what can be done with one that is stolen.
 The eight split into two families. Pool tokens, runner trusts, one-run
 credentials, egress tokens and run proxy credentials let machines do work: claim
 runs, carry them out, and add their secrets to outgoing requests. Workspace
-tokens, workspace token trusts and the token a setup chat's run gets let tools
+tokens, OIDC trusts and the token a setup chat's run gets let tools
 read or change configuration through the
 [resource API](/docs/reference/api/resource-api). The two families never
 overlap. A pool token cannot create or change a line, and a workspace token
@@ -121,16 +121,16 @@ secret to a host its holder controls, and so capture the secret's value.
 workspace, is kept apart because a runner claims runs, checks out repositories
 and acts on them with Spotlight's git access: adding a pool or trusting an
 issuer amounts to handing out a credential. The third, `trusts`, covers
-workspace token trusts, which issue tokens of their own (see below).
+OIDC trusts, which issue tokens of their own (see below).
 
 No token administers the workspace; that stays with admins signed in as
 themselves. The scopes and who may issue a token are listed in [Workspace tokens](/docs/reference/api/workspace-token), and issuing one in [Issue a workspace token](/docs/administration/issue-a-workspace-token).
 
-### Workspace token trusts: tokens that expire on their own
+### OIDC trusts: tokens that expire on their own
 
 A workspace token in a pipeline's secret store has the weakness of any stored
-secret: a leaked token stays valid until someone revokes it. Workspace token
-trusts exist because CI platforms already issue short-lived OIDC tokens to each
+secret: a leaked token stays valid until someone revokes it. OIDC trusts
+exist because CI platforms already issue short-lived OIDC tokens to each
 job, the same kind of token a runner trust accepts, and Spotlight checks them
 with the same verifier it uses for runner trusts.
 
@@ -139,6 +139,8 @@ use, and gets back a workspace token that expires within the hour. There is
 nothing to store in the pipeline and nothing to rotate. A trust can also tell
 jobs apart: its subject and claims are patterns, so a trust for the main branch
 can grant `configure` while a trust for pull requests grants only `plan`.
+Owners and admins see every trust, and when it last issued a token, under
+"OIDC trusts" on the API access page of the workspace settings.
 
 Patterns bring a risk that exact subjects do not. A trust open to every owner
 would match any workload its issuer signs a token for, which on a public CI
@@ -146,7 +148,7 @@ service means anyone's. So a pattern must name its owner before its first
 wildcard, as in `repo:acme/*`.
 
 A trust's tokens act for the person who created the trust, and are tied to the
-trust as it was when they were issued; [`spotlight_workspace_token_trust`](/docs/reference/terraform/workspace-token-trust) lists those rules and the
+trust as it was when they were issued; [`spotlight_oidc_trust`](/docs/reference/terraform/oidc-trust) lists those rules and the
 lifetimes. [Run Terraform from GitHub Actions without a stored token](/docs/configuration/run-terraform-from-github-actions) shows the whole setup.
 
 ### A setup chat's token: stored by egress, never by the agent
@@ -166,8 +168,8 @@ within the hour and is revoked when the run or its attempt ends; see
 
 The pattern across both families is the same. A stored secret, whether a pool
 token or a workspace token, is the most portable: it works anywhere, and it
-keeps working after it leaks until someone notices. An OIDC trust, for runners
-or for tokens, stores nothing, and a stolen token is worth minutes; in exchange
+keeps working after it leaks until someone notices. A trust, whether a runner
+trust or an OIDC trust, stores nothing, and a stolen token is worth minutes; in exchange
 it needs a platform that issues identities, and it moves trust onto that
 platform.
 
@@ -183,5 +185,5 @@ choice; every run gets one, however its host got in.
 The reference pages list the fields:
 [`spotlight_runner_pool`](/docs/reference/terraform/runner-pool),
 [`spotlight_runner_trust`](/docs/reference/terraform/runner-trust), [Workspace tokens](/docs/reference/api/workspace-token),
-[`spotlight_workspace_token_trust`](/docs/reference/terraform/workspace-token-trust)
+[`spotlight_oidc_trust`](/docs/reference/terraform/oidc-trust)
 and [The run's Spotlight token](/docs/reference/hosts/egress#the-runs-spotlight-token).

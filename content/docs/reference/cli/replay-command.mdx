@@ -357,7 +357,7 @@ for the results. Give it the output of `terraform show -json <planfile>`, or
 | --- | --- |
 | `SPOTLIGHT_URL` | Required. The [Spotlight address](/docs/reference/glossary#spotlight-address). |
 | `SPOTLIGHT_API_TOKEN` | A [workspace token](/docs/reference/api/workspace-token) with `plan`. Used in place of a trust when both are set. |
-| `SPOTLIGHT_OIDC_TRUST` | The id of a [workspace token trust](/docs/reference/terraform/workspace-token-trust) that grants `plan`. The command exchanges the job's OIDC token through it for a short-lived workspace token, exchanges again before that token expires, and once more on a `401`. |
+| `SPOTLIGHT_OIDC_TRUST` | The id of an [OIDC trust](/docs/reference/terraform/oidc-trust) that grants `plan`. The command exchanges the job's OIDC token through it for a short-lived workspace token, exchanges again before that token expires, and once more on a `401`. |
 | `SPOTLIGHT_OIDC_TOKEN` | The OIDC token to exchange. Without it, the command requests one from GitHub Actions, through `ACTIONS_ID_TOKEN_REQUEST_URL` and `ACTIONS_ID_TOKEN_REQUEST_TOKEN`, which need `permissions: id-token: write`. |
 | `SPOTLIGHT_OIDC_AUDIENCE` | The audience to request the OIDC token for. Default `spotlight`. Must equal the trust's `audience`. |
 | `GITHUB_STEP_SUMMARY` | When set, a Markdown summary is appended to the file it names. |
@@ -480,10 +480,10 @@ as in `-17 points (-50 to +0), within noise`, or `-` without one.
 | ``the plan is not JSON; pass this the output of `terraform show -json <planfile>` `` | The file is not JSON. |
 | ``this is not a saved plan shown as JSON; pass this the output of `terraform show -json <planfile>` `` | The JSON has no `format_version`. |
 | `set SPOTLIGHT_URL, and SPOTLIGHT_API_TOKEN, SPOTLIGHT_OIDC_TRUST or a login from spotlight login, to check a plan` | No `SPOTLIGHT_URL`. The usage follows. |
-| `no credentials for <address>. Set SPOTLIGHT_API_TOKEN, a workspace token that may plan, or SPOTLIGHT_OIDC_TRUST, a workspace token trust to exchange the job's OIDC token through, or run spotlight login` | No token, no trust and no login for the address. The usage follows. |
+| `no credentials for <address>. Set SPOTLIGHT_API_TOKEN, a workspace token that may plan, or SPOTLIGHT_OIDC_TRUST, an OIDC trust to exchange the job's OIDC token through, or run spotlight login` | No token, no trust and no login for the address. The usage follows. |
 | `read the login for <address>: <error>` | The credentials file cannot be read. |
 | `SPOTLIGHT_OIDC_TRUST needs an OIDC token: set SPOTLIGHT_OIDC_TOKEN, or run in GitHub Actions with permissions: id-token: write` | A trust, but no OIDC token to exchange. |
-| `the workspace token trust <trust> did not accept the OIDC token: <problem>` | The trust did not accept the exchange. |
+| `the OIDC trust <trust> did not accept the OIDC token: <problem>` | The trust did not accept the exchange. |
 | `--timeout is how long to wait, above 0, not <value>` | `--timeout` is 0 or less. |
 | `--every is at least 1s, not <value>` | `--every` is under `1s`. |
 | `--repeats is how many times to replay each run, from 1 to 5, not <n>` | `--repeats` is below 1 or above 5. |
