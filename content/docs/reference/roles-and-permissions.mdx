@@ -5,7 +5,8 @@ title: Roles and permissions
 description: Workspace roles, the permissions they and workspace token scopes grant, and the rules for changing roles, inviting people to the workspace, connecting GitHub and connecting integrations.
 ---
 
-A person's authority comes from their role in a workspace. A workspace token's
+A person's authority comes from their role in a workspace, in the web app and
+through a [login](/docs/reference/glossary#login) from `spotlight login`. A workspace token's
 authority comes from its scopes. Teams have no roles of their own: a
 workspace's members may work in every team of that workspace. Reading how a
 team's work turned out is narrower; see [Team outcomes](#team-outcomes).
@@ -34,7 +35,7 @@ A deleted workspace grants nothing to anyone.
 | `configure` | Create, change and delete teams, lines, integrations, hooks, skills and harness profiles; change the workspace. | Owners, admins. Tokens with `configure`. |
 | `secrets` | Create, change and delete secrets. | Owners, admins. Tokens with `secrets`. |
 | `runners` | Create, change and delete runner pools, egresses, runner trusts and workspace runners. | Owners, admins. Tokens with `runners`. |
-| `trusts` | Create, change and delete workspace token trusts. | Owners, admins. Tokens with `trusts`. |
+| `trusts` | Create, change and delete OIDC trusts. | Owners, admins. Tokens with `trusts`. |
 | `administer` | Issue, change and revoke workspace tokens; read [configuration changes](/docs/reference/api/resource-api#configuration-changes); delete the workspace; invite people, list, resend and revoke invites, and add members to teams; connect GitHub; connect the team to an integration over OAuth. | Owners, admins. Never a token. |
 | `create-workspaces` | Create a workspace. | Every signed-in person. Never a token. |
 
@@ -67,7 +68,7 @@ scopes listed beside it.
 A token's scopes must include `read`, `plan` or `configure`, and name each
 scope once; see [Scopes](/docs/reference/api/workspace-token#scopes) for the
 messages. A token acts only in its own workspace. See
-[`spotlight_workspace_token_trust`](/docs/reference/terraform/workspace-token-trust) for tokens a
+[`spotlight_oidc_trust`](/docs/reference/terraform/oidc-trust) for tokens a
 trust issues.
 
 ## Team outcomes
@@ -97,6 +98,12 @@ their role, their teams and the roles the caller may assign to them. Every membe
 of the workspace may read it. The web app's Members page (see
 [Web app](/docs/reference/app/web-app#workspace-pages)) is shown only to owners
 and admins; a member who opens it is sent to the workspace's own route.
+
+`GET /api/workspaces/{slug}/oidc-trusts` lists the workspace's
+[OIDC trusts](/docs/reference/terraform/oidc-trust), with who created each one
+and when it last issued a token. Only owners and admins may read it. Anyone else
+gets `404`, and a workspace token gets `401`. The web app shows it on the API
+access page.
 
 ## Changing roles
 

@@ -1,0 +1,143 @@
+---
+type: how-to
+icon: SquarePen
+title: Log in from the command line
+description: Log in to Spotlight with spotlight login, so that the spotlight command and Terraform on your machine act as you, and log out when you are done.
+---
+
+You need the `spotlight` binary on your machine. To get it, see
+[Install](/docs/reference/cli/replay-command#install). You also need a
+Spotlight account.
+
+A login acts as you, with your role in each workspace that you are a member of.
+If you are an owner or admin, it can also manage secrets, runners and token
+trusts. See [Roles](/docs/reference/roles-and-permissions#roles). A login is
+for a person at a terminal. In CI, use an OIDC trust; see
+[Run Terraform from GitHub Actions without a stored token](/docs/configuration/run-terraform-from-github-actions).
+
+## Log in
+
+<Steps>
+<Step>
+
+Run:
+
+```bash
+spotlight login
+```
+
+The command prints a page address and a code, then waits:
+
+```text
+Open this page to log in to https://app.usespotlight.ai:
+  https://app.usespotlight.ai/device?user_code=WDJBMJHT
+Check that the page shows the code WDJB-MJHT.
+Opened the page in your browser.
+Waiting for you to approve the login. Press Ctrl-C to stop.
+```
+
+On macOS and Linux, the command opens the page in your browser. If it does not,
+or if you add `--no-browser`, open the address yourself. You can open it on a
+different computer.
+
+</Step>
+<Step>
+
+If the page asks you to log in, click **Continue with GitHub**.
+
+</Step>
+<Step>
+
+The page shows "Approve the Spotlight CLI?" and a code. Make sure that the code
+is the same as the code in your terminal. Then click **Approve**.
+
+If you did not run `spotlight login`, or the codes are different, click
+**Deny**.
+
+</Step>
+<Step>
+
+The page shows "Spotlight CLI is logged in". In your terminal, the command
+prints:
+
+```text
+Logged in to https://app.usespotlight.ai as you@example.com.
+```
+
+</Step>
+</Steps>
+
+If the page asks for a code, type the code from your terminal and click
+**Continue**.
+
+The command keeps the login in `credentials.json`, in `~/.config/spotlight`.
+See [spotlight login](/docs/reference/cli/spotlight-command#spotlight-login) for
+the other places it can use.
+
+## Log in to a self-hosted Spotlight
+
+Give your deployment's [address](/docs/reference/glossary#spotlight-address)
+with `--url`, or set `SPOTLIGHT_URL`:
+
+```bash
+spotlight login --url https://spotlight.example.com
+```
+
+The command keeps one login for each address. To use more than one Spotlight,
+log in to each.
+
+## Use the login with Terraform
+
+On your machine, the provider needs only the address. Do not set `token`,
+`SPOTLIGHT_API_TOKEN`, `oidc.trust` or `SPOTLIGHT_OIDC_TRUST`. If one of them
+is set, the provider uses it, not your login.
+
+```hcl
+provider "spotlight" {
+  url = "https://app.usespotlight.ai"
+}
+```
+
+Then run `terraform plan` or `terraform apply` as usual. The provider uses the
+login for that address, and Spotlight checks your role for each change.
+
+`spotlight replay` also uses the login when `SPOTLIGHT_API_TOKEN` is not set.
+Set `SPOTLIGHT_URL` to the address that you logged in to. If you are a member of
+more than one workspace, choose one with `--workspace <slug>` or
+`SPOTLIGHT_WORKSPACE`. Terraform needs no choice, because each resource names
+its workspace.
+
+## Log out
+
+```bash
+spotlight logout
+```
+
+The command ends the session in Spotlight and removes the login from
+`credentials.json`. It prints `Logged out of <address>.` For a self-hosted
+Spotlight, add `--url <address>`.
+
+If Spotlight does not answer, the command still removes the login, and prints
+that the token stays valid until it expires.
+
+## If something goes wrong
+
+| What you see | What to do |
+| --- | --- |
+| `spotlight login: the code expired before the login was approved. Run spotlight login again` | You did not approve within 15 minutes. Run `spotlight login` again. |
+| `spotlight login: the login was denied in the browser` | Someone clicked **Deny**. Run `spotlight login` again and click **Approve**. |
+| The page shows "Code doesn't work" | The code expired, or it is not complete. Run `spotlight login` again and open the new address. |
+| Terraform shows `No API token` | The provider has no login for its `url`. Make sure that `url` is the address you logged in to, then run `spotlight login`. |
+| Terraform says that the control plane did not accept the login | The session ended. A session ends after 7 days without use. Run `spotlight login` again. |
+| An API call gets `401` with `The token is unknown, expired or revoked.` or `The token is not a current login.` | The session ended, or you logged out. Run `spotlight login` again. |
+
+[Errors and messages](/docs/reference/errors-and-messages#command-line-login)
+lists every message.
+
+## Related
+
+- [spotlight login and spotlight logout](/docs/reference/cli/spotlight-command#spotlight-login):
+  the flags, the credentials file and the exit codes.
+- [Provider configuration](/docs/reference/terraform/terraform-provider#provider-configuration):
+  the order in which the provider uses its credentials.
+- [Pools, trusts and tokens](/docs/administration/pools-trusts-and-tokens)

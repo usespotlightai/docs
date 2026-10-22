@@ -369,6 +369,32 @@ local proxy.
 | `The local proxy could not intercept TLS for <host>. Error: <reason>` | `502`. From the runner's local proxy: no certificate could be made for a bound host. | [Shared egress responses](/docs/reference/hosts/egress#shared-egress-responses) |
 | `The local proxy could not reach <host>.` | `502`. From the runner's local proxy: a request could not be sent on. | [Shared egress responses](/docs/reference/hosts/egress#shared-egress-responses) |
 
+## Command line login
+
+### spotlight login and spotlight logout
+
+Each is printed after `spotlight login: ` or `spotlight logout: ` on standard
+error.
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `the code expired before the login was approved. Run spotlight login again` | The code was not approved within 15 minutes. | [spotlight login](/docs/reference/cli/spotlight-command#spotlight-login), [Log in from the command line](/docs/administration/log-in-from-the-command-line#if-something-goes-wrong) |
+| `the login was denied in the browser` | The person clicked "Deny" on the `/device` page. | [spotlight login](/docs/reference/cli/spotlight-command#spotlight-login), [Log in from the command line](/docs/administration/log-in-from-the-command-line#if-something-goes-wrong) |
+| `Spotlight refused the login: <error>. <description>` | Spotlight answered the login with another OAuth error. | [spotlight login](/docs/reference/cli/spotlight-command#spotlight-login) |
+| `Spotlight at <address> did not give a device code. It answered <status>` | Spotlight did not start the login. | [spotlight login](/docs/reference/cli/spotlight-command#spotlight-login) |
+| `Spotlight did not accept the new login token. It answered <status>` | Spotlight did not return the session of the new login. | [spotlight login](/docs/reference/cli/spotlight-command#spotlight-login) |
+| `"<value>" is not a Spotlight address. Use a URL such as https://app.usespotlight.ai` | `--url` or `SPOTLIGHT_URL` is not an `http` or `https` URL with a host. | [spotlight login](/docs/reference/cli/spotlight-command#spotlight-login) |
+| `<value> does not use https. Only a local address may use http` | An `http` address that is not local. | [spotlight login](/docs/reference/cli/spotlight-command#spotlight-login) |
+| `HOME is not set. Set SPOTLIGHT_CONFIG_DIR to keep logins` | There is no place for the credentials file. | [Credentials file](/docs/reference/cli/spotlight-command#credentials-file) |
+| `stopped. No login was kept` | `Ctrl-C` or `SIGTERM` while the command waited. | [spotlight login](/docs/reference/cli/spotlight-command#spotlight-login) |
+| `Spotlight did not end the session: <error>. The token stays valid until it expires.` | `spotlight logout` could not end the session. The login is still removed from the file. | [spotlight logout](/docs/reference/cli/spotlight-command#spotlight-logout) |
+
+### The /device page
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `Code doesn't work` | The code in the link expired, or it is not complete. | [Pages outside a workspace](/docs/reference/app/web-app#pages-outside-a-workspace), [Log in from the command line](/docs/administration/log-in-from-the-command-line#if-something-goes-wrong) |
+
 ## Resource API and Terraform
 
 ### Problem types
@@ -454,9 +480,16 @@ slugs.
 | `needs HOOK_SIGNING_KEY set to sign OIDC tokens` | A hook with `oidc` where the deployment has no key to sign hook tokens with. | [OIDC](/docs/reference/terraform/hook#oidc) |
 | `must include read, plan or configure. Secrets, runners and trusts need one of them` | A workspace token with none of `read`, `plan` or `configure`. | [Scopes](/docs/reference/api/workspace-token#scopes), [Issue a workspace token](/docs/administration/issue-a-workspace-token) |
 | `must name each scope once` | A workspace token names a scope twice. | [Scopes](/docs/reference/api/workspace-token#scopes) |
-| `must name an owner before any *, as in repo:acme/* or repo:acme/platform:*` | A workspace token trust's subject pattern has no owner before `*`. | [Patterns](/docs/reference/terraform/workspace-token-trust#patterns) |
-| `Spotlight did not accept the exchange. Possible causes: an unknown trust, a token its issuer did not sign for the trust's audience, a workload the trust does not match, or a deleted workspace` | `401`. Spotlight did not accept an exchange through a workspace token trust. | [Exchange](/docs/reference/terraform/workspace-token-trust#exchange), [Run Terraform from GitHub Actions without a stored token](/docs/configuration/run-terraform-from-github-actions) |
+| `must name an owner before any *, as in repo:acme/* or repo:acme/platform:*` | An OIDC trust's subject pattern has no owner before `*`. | [Patterns](/docs/reference/terraform/oidc-trust#patterns) |
+| `Spotlight did not accept the exchange. Possible causes: an unknown trust, a token its issuer did not sign for the trust's audience, a workload the trust does not match, or a deleted workspace` | `401`. Spotlight did not accept an exchange through an OIDC trust. | [Exchange](/docs/reference/terraform/oidc-trust#exchange), [Run Terraform from GitHub Actions without a stored token](/docs/configuration/run-terraform-from-github-actions) |
 | `Both a token and an OIDC trust` | The provider is configured with a token and a trust. | [Provider configuration](/docs/reference/terraform/terraform-provider#provider-configuration) |
+| `No API token` | The provider has no token, no trust and no login for its `url`. The detail says to run `spotlight login` on your machine, or to set a token or, in CI, a trust. | [Credentials](/docs/reference/terraform/terraform-provider#credentials), [Log in from the command line](/docs/administration/log-in-from-the-command-line#if-something-goes-wrong) |
+| `the control plane did not accept the login of <email> for <address>; run spotlight login to sign in again` | `401` to the provider's login. The session ended. | [Credentials](/docs/reference/terraform/terraform-provider#credentials), [Log in from the command line](/docs/administration/log-in-from-the-command-line#if-something-goes-wrong) |
+| `Could not read the Spotlight login` | The provider could not read the credentials file, or the file is not valid JSON. | [Credentials](/docs/reference/terraform/terraform-provider#credentials) |
+| `The token is unknown, expired or revoked.` | `401`. A bearer token that is neither a workspace token nor a current login, on a route that takes workspace tokens. | [Credentials](/docs/reference/api/resource-api#credentials) |
+| `The token is not a current login. Workspace tokens cannot call this route.` | `401`. A bearer token that is not a current login, on a route only people may call. | [Credentials](/docs/reference/api/resource-api#credentials) |
+| `The Authorization header must use the Bearer scheme.` | `401`. A request sends an `Authorization` header with another scheme, such as `Basic`. | [Credentials](/docs/reference/api/resource-api#credentials) |
+| `A device code takes only client_id.` | `400` `invalid_request`. A request for a login code also sends `user_id` or `scope`. | [`spotlight login`](/docs/reference/cli/spotlight-command#spotlight-login) |
 | `A candidate named <address> already exists. Please choose another name.` | `409` `already-exists`. A replay candidate's name is taken at its station. | [Replay candidates](/docs/reference/api/replay-candidate#errors) |
 | `keeps the station's key, <key>` | A replay candidate's `station.key` names another station. | [Checks](/docs/reference/api/replay-candidate#checks) |
 | `Candidate <id> is being replayed. Please stop its replays first.` | `409` `in-use`. Deleting a candidate a replay is running. | [Replay candidates](/docs/reference/api/replay-candidate#errors) |

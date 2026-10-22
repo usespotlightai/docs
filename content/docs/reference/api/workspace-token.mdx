@@ -8,7 +8,7 @@ description: The fields and scopes of a workspace token, its value and header, a
 A workspace token is a bearer credential that acts inside one workspace,
 within its scopes, for the resource API and the Terraform provider. It is
 issued through the resource API, which the web app's
-[Tokens page](/docs/reference/app/web-app#workspace-pages) calls. It has no
+[API access page](/docs/reference/app/web-app#workspace-pages) calls. It has no
 Terraform resource and is not part of an export.
 
 | Kind | Endpoint | Terraform | Address |
@@ -38,7 +38,7 @@ and errors every kind shares.
 | update | `PUT /api/resources/tokens/{id}` | Changes `description` only. Needs `If-Match`. |
 | revoke (delete) | `DELETE /api/resources/tokens/{id}` | Spotlight does not accept the token from this moment. Needs `If-Match`. |
 | import | `GET /api/resources/workspaces/{workspaceId}/tokens/import?address=<name>` | |
-| list | `GET /api/resources/workspaces/{workspaceId}/tokens` | Every token issued by a person. Tokens issued by a [workspace token trust](/docs/reference/terraform/workspace-token-trust), or for a [run](/docs/reference/hosts/egress#the-runs-spotlight-token), are not listed. |
+| list | `GET /api/resources/workspaces/{workspaceId}/tokens` | Every token issued by a person. Tokens issued by an [OIDC trust](/docs/reference/terraform/oidc-trust), or for a [run](/docs/reference/hosts/egress#the-runs-spotlight-token), are not listed. |
 
 Issuing, updating and revoking need the `administer` permission, which only
 a workspace owner or admin has, signed in as a person. No token can issue,
