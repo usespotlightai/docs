@@ -105,6 +105,8 @@ The setup form shows once the GitHub App is installed, and a push pool names
 an egress or a host with a heartbeat in the last 24 hours can use an image that
 contains a harness. Before then the step reads
 `The setup chat needs the GitHub App and egress. Connect a host, or name an egress in a push pool.`
+Only an owner or admin of the workspace sees the form. For anyone else, the
+step reads `Only a workspace owner or admin can set up configuration as code.`
 The form has:
 
 | Part | Contains |
@@ -113,11 +115,22 @@ The form has:
 | Folder | The folder in it, `spotlight` at first. |
 | "Repositories" | The code repositories the chat checks out, "No repositories" at first. |
 | Agent | The harness, model and effort of the chat. The first harness at first, or the one last picked in this browser, here or in another chat. |
-| "Start setup chat" | Starts the chat, once a repository, a folder and a harness are chosen. |
+| "Start setup chat" | Starts the chat, once a repository, a folder and a harness are chosen. Above it, the form reads `Spotlight lets this repository's GitHub Actions plan pull requests and apply its default branch.` |
 
 The chat's first message reads
 `Set up our configuration as code in <repository>, under <folder>/.` Where the
 chat cannot start, the form reads the reason, or
 `Sorry, the setup chat could not start.` Where another person started the chat,
 the step reads `<Name> is setting this up.`, or `A former member is setting this up.`
+
+Once the step is done, it reads
+`GitHub Actions: pull requests in <repository> plan, and pushes to <defaultBranch> apply.`
+When Spotlight could not set the configuration repository's GitHub Actions
+variables, it also reads
+`Add the repository variables that the pull request lists.` When the default
+branch has no branch protection, the step shows a warning icon. Its tooltip
+reads `<branch> has no branch protection. Anyone who can push to <branch> can
+change this workspace's configuration. Please require a pull request review.`
+See
+[Trusts the setup creates](/docs/reference/terraform/oidc-trust#trusts-the-setup-creates).
 See [Chats](/docs/reference/app/tasks-runs-and-the-inbox#chats).

@@ -5,6 +5,16 @@ title: Run Terraform from GitHub Actions without a stored token
 description: Plan pull requests and apply the main branch from GitHub Actions, with each job exchanging its GitHub OIDC token for a short-lived workspace token.
 ---
 
+If the setup chat wrote your configuration, Spotlight already did this. It
+created the trusts `github-pull-requests` and `github-apply`, set the
+repository variables or listed them in the pull request, and the pull request
+added `.github/workflows/spotlight.yml`. See
+[Let the agent write your team's first Terraform](/docs/configuration/let-the-agent-write-your-first-terraform#check-the-trusts-and-repository-variables).
+
+Follow this page for configuration that the setup chat did not make.
+
+## Before you start
+
 Two OIDC trusts do the work: one for pull requests, which may only
 plan, and one for `main`, which may apply. You need:
 
@@ -61,7 +71,9 @@ output "apply_trust" {
 If the configuration manages runner pools, runner trusts or the workspace's
 runners, add `runners` to the `github-main` scopes. If applies go through a
 GitHub environment, use `repo:acme/platform:environment:<name>` as its subject
-so the environment's protection rules gate each apply.
+so the environment's protection rules gate each apply. Create the environment
+and its protection rules before a workflow names it: GitHub creates an
+environment that a workflow names first with no protection.
 
 </Step>
 <Step>

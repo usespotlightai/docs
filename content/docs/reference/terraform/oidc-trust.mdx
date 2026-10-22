@@ -79,6 +79,26 @@ be named. Only claims whose value is a string can match.
 | CircleCI | `https://oidc.circleci.com/org/<organization id>` | set by the platform |
 | Buildkite | `https://agent.buildkite.com` | set by the platform |
 
+## Trusts the setup creates
+
+When an owner or admin starts a
+[setup chat](/docs/reference/app/tasks-runs-and-the-inbox#chats), Spotlight
+creates two trusts for the configuration repository's GitHub Actions, or
+updates them if trusts with these keys exist. `<repository>` is the
+configuration repository, as `<owner>/<name>`, and `<branch>` is its default
+branch.
+
+| `key` | `subject` | `scopes` |
+| --- | --- | --- |
+| `github-pull-requests` | `repo:<repository>:pull_request` | `plan` |
+| `github-apply` | `repo:<repository>:ref:refs/heads/<branch>` | `configure`, `secrets`, `runners` |
+
+Both have the issuer `https://token.actions.githubusercontent.com`, the
+audience `spotlight`, no `claims`, and a lifetime of 15 minutes. A created
+trust's `createdBy` is the person who started the setup chat. The Terraform
+export holds both as `spotlight_oidc_trust` resources with `import`
+blocks.
+
 ## Who may create a trust
 
 Writing a trust needs the `trusts` permission. See

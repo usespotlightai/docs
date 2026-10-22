@@ -68,6 +68,18 @@ denied when GitHub will not say whether you are an admin of the installation.
 Select the **GitHub** row, then **Manage on GitHub**. Add or remove
 repositories there. Uninstalling the App on GitHub disconnects the workspace.
 
+## Let the App set repository variables
+
+The setup chat sets the GitHub Actions variables `SPOTLIGHT_URL`,
+`SPOTLIGHT_PLAN_TRUST` and `SPOTLIGHT_APPLY_TRUST` of the configuration
+repository if the App has the repository permission
+**Variables: read and write**. The permission is optional. Without it, nothing
+fails: the setup pull request lists the variables for you to add. See
+[Let the agent write your team's first Terraform](/docs/configuration/let-the-agent-write-your-first-terraform#check-the-trusts-and-repository-variables).
+
+On a self-hosted Spotlight, give your GitHub App this permission under
+**Permissions & events**, then accept the new permission on each installation.
+
 ## Related
 
 - [Point a line at your repositories](/docs/lines/point-a-line-at-your-repositories)
