@@ -29,16 +29,19 @@ and answer JSON.
 | `/cost` | Spend by harness, model, station and repository, from model to station to repository. |
 | `/tools` | Which skills were enabled for the runs and which they read, week by week, and how each MCP server they called behaved. |
 | `/memory` | The team's active memories, how many runs were briefed with or recalled them, which were flagged wrong, and runs with memories against runs without. |
-| `/runs` | Every run that ended in the period, newest first, a page at a time. |
+| `/traces` | Each task with a run in the range as one trace, with its runs that match the filters. See [`/traces`](#traces). |
 | `/alerts/{alertId}` | A station alert that fired: the rule that fired, the run that fired it, and the measure run by run around it. |
 
 ## Parameters
 
-Every endpoint but `/alerts/{alertId}` takes `period`: `7d`, `30d` or `90d`, whole UTC days up to and
+Every endpoint but `/alerts/{alertId}` and `/traces` takes `period`: `7d`, `30d` or `90d`, whole UTC days up to and
 including today. Default: `30d`. Every answer also covers the period before,
 as long.
 
-`/runs` also takes:
+`/traces` takes `range` in place of `period`: `30m`, `1h`, `6h`, `1d`, `3d`,
+`7d`, `14d`, `30d` or `90d`. Default: `30d`. The range ends now. `7d`, `30d`
+and `90d` start where the period of that name starts; the others count back
+from now. `/traces` also takes:
 
 | Parameter | Narrows to runs |
 | --- | --- |
@@ -52,10 +55,10 @@ as long.
 | `taskId` | Of this task. |
 | `taskIds` | Of these tasks, comma-separated, at most 200. |
 | `personId` | Of tasks this person opened. |
-| `day` | That ended on this UTC day, as `YYYY-MM-DD`. |
+| `day` | That ended on this UTC day of the range, as `YYYY-MM-DD`. |
 | `pullRequestState` | Of tasks whose pull request is now `merged`, `closed` or `open`. |
 | `humanAction` | Whose first human action was `started`, `parked`, `accepted`, `answered` or `sent-back`. |
-| `asked` | `true`: of tasks that asked a person in the inbox during the period. `false` narrows nothing. |
+| `asked` | `true`: of tasks that asked a person in the inbox during the range. `false` narrows nothing. |
 | `week` | That ended in the week starting this UTC Monday, as `YYYY-MM-DD`. |
 | `skillEnabled` | Whose station config enabled this skill. |
 | `skillUsed` | That read this skill. |
@@ -64,8 +67,6 @@ as long.
 | `failedAfter` | That failed where the run's last call to this MCP server failed. |
 | `dismissedTool` | Where a person dismissed an approval of this tool. |
 | `dismissedServer` | Where a person dismissed an approval of a tool of this MCP server; `none` for dismissals of a tool with no server. |
-| `page` | Which page, from 1 to the last page with runs, at most 10,000. A value that is not a whole number above 0 is read as 1. |
-| `size` | Runs per page. Default: 50. At most 200; a larger number is read as 200. |
 
 `/agent-configs` also takes:
 
@@ -87,12 +88,55 @@ as long.
 | `compared` | `true`: in the repositories Spotlight merged into in the period. |
 | `rounds` | That needed `0`, `1`, `2` or `3+` review rounds. |
 | `page` | Which page, from 1. A value that is not a whole number above 0 is read as 1. A page past the last is empty. |
-| `size` | As for `/runs`. |
+| `size` | Pull requests per page. Default: 50. At most 200; a larger number is read as 200. |
 
 With both `taskId` and `taskIds`, only that task's runs are listed, and only if
 it is among `taskIds`.
 
 `/alerts/{alertId}` reads the station's latest 500 runs.
+
+## `/traces`
+
+`GET /api/teams/{teamId}/insights/traces` lists a trace for each task with a
+run that matches the filters: one that ended in the range, cancelled runs
+included, or one that is queued, in progress or stopping. Only the filters
+`lineId`, `stationId`, `harness`, `taskId`, `taskIds` and `personId` can match
+an unfinished run. It reads the newest 5,000 runs that match. Times are in
+milliseconds. See [Traces](/docs/reference/app/insights#traces).
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `range`, `from`, `to` | string | The range and where it starts and ends. |
+| `volume[]` | object | The range cut into evenly long bars, empty ones included: `from`, `to`, `count`, the traces whose latest run is in the bar, and `errors`, their errors. |
+| `traces[]` | object | Tasks with an unfinished run first, then the task whose latest run ended or started last. |
+| `matched` | number | How many runs match: those that ended in the range, and those that are unfinished. |
+| `truncated` | boolean | `true` when more runs match than the 5,000 read. |
+| `people[]` | object | `personId` and `name`, or `null`, for everyone in `openedBy`. |
+
+Each trace:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `taskId`, `title` | string | The task. |
+| `input` | string or `null` | What the task asks for, at most 300 characters. |
+| `output` | string or `null` | The newest note of the listed runs, at most 300 characters. |
+| `station` | station or `null` | Where the task is now. |
+| `stations[]` | station | The stations of the listed runs and `station`, in the line's order. |
+| `startedAt` | string | When the first listed run was queued. |
+| `ms` | number or `null` | From `startedAt` to when the last listed run ended; `null` while a run is unfinished. |
+| `errors` | number | The errors of the listed runs. |
+| `cost` | money or `null` | What the listed runs cost; `null` with none priced, or prices in more than one currency. |
+| `total` | number | How many runs the task had in the range, the filters not applied, unfinished ones included. |
+| `runs[]` | object | The runs that match, unfinished first, then the newest first. |
+
+Each run: `runId`; `station`; `progress`, `queued`, `in-progress` or
+`stopping`, or `null` once it ended; `ending`, or `null` until it ends (see
+[Run endings](/docs/reference/app/tasks-runs-and-the-inbox#run-endings));
+`failure`; `openedBy`, who opened the task; `harness`; `model`, or `null`
+where the run named none; `startedAt`, when a runner claimed it or else when it
+was queued; `endedAt`; and `ms`, `errors` and `cost`, each `null` until its
+usage is recorded. A station is `stationId`, `name`, `color`, `position` and
+`count`, the number of stations on its line.
 
 ## `/shipping`
 
@@ -153,9 +197,9 @@ is answered `404`. See
 | --- | --- |
 | `401` | No session or token, or an unknown, expired or revoked token. |
 | `404` | There is no such team, the team is not in the caller's workspace, the caller is a token without the `read` scope, or the caller is a person neither on the team nor an owner or admin of the workspace: `Team <teamId> not found.` For `/alerts/{alertId}`, also an alert of another team or none: `Alert <alertId> not found.` |
-| `422` | On every endpoint but `/alerts/{alertId}`, `period` is not `7d`, `30d` or `90d`, or is sent twice: `Period must be 7d, 30d or 90d.` See below for the filters. |
+| `422` | On every endpoint but `/alerts/{alertId}` and `/traces`, `period` is not `7d`, `30d` or `90d`, or is sent twice: `Period must be 7d, 30d or 90d.` On `/traces`, `range` is not one it takes, or is sent twice: `Range must be one of 30m, 1h, 6h, 1d, 3d, 7d, 14d, 30d, 90d.` See below for the filters. |
 
-On `/runs`, where `<filter>` names the parameter as `line`, `station`,
+On `/traces`, where `<filter>` names the parameter as `line`, `station`,
 `outcome`, `harness`, `model`, `repository`, `station config`, `task`,
 `person`, `day`, `week`, `skill enabled`, `skill used`, `server`,
 `server that failed`, `server failed after`, `dismissed tool`,
@@ -167,11 +211,9 @@ On `/runs`, where `<filter>` names the parameter as `line`, `station`,
 | `taskIds` names more than 200 tasks. | `Run filter takes at most 200 tasks.` |
 | `outcome`, `pullRequestState`, `humanAction` or `asked` names a value it does not take. | `Run filter <filter> must be one of <values>, not <value>.`, as in `Run filter human action must be one of started, parked, accepted, answered, sent-back, not approved.` |
 | A filter that takes one value is given more than once. | `Run filter takes one <filter>, not <count>.` |
-| `day` is not a day of the period written `YYYY-MM-DD`. | `Run filter day must be a date in the period, in the form YYYY-MM-DD, not <value>.` |
+| `day` is not a day of the range written `YYYY-MM-DD`. | `Run filter day must be a date in the period, in the form YYYY-MM-DD, not <value>.` |
 | `week` is not a Monday written `YYYY-MM-DD`. | `Run filter week must be a Monday in the form YYYY-MM-DD, not <value>.` |
 | A filter value other than a `taskIds` entry is longer than 200 characters. | `Run filter <filter> must be at most 200 characters.` |
-| `page` is past the last page with runs. | `Run page must be at most <last>, not <page>.` |
-| `page` is above 10,000. | `Run page must be at most 10000, not <page>.` |
 
 On `/pull-requests/list`, where `<filter>` names the parameter as `author`,
 `type`, `state`, `week`, `reverted`, `count of review rounds` or `compared`:

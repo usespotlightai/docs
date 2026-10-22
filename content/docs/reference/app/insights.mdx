@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Insights
-description: The team's Insights page, its period and eight tabs, what each figure counts, how pull requests are recorded, typed and followed to merge, a station's own view, config changes and their impact, agent configs and replayed candidates compared, which skills, MCP servers and memories runs use, the Runs filters, and the Traces tab.
+description: The team's Insights page, its period and seven tabs, what each figure counts, how pull requests are recorded, typed and followed to merge, a station's own view, config changes and their impact, agent configs and replayed candidates compared, which skills, MCP servers and memories runs use, and the Traces tab with its runs and filters.
 ---
 
 The Insights page sums up how a team's runs, tasks and pull requests went over
@@ -27,7 +27,6 @@ The tabs, in order:
 | Productivity | `productivity` |
 | Stations | `stations` |
 | Tools and skills | `tools` |
-| Runs | `runs` |
 | Traces | `traces` |
 
 ## Period
@@ -61,7 +60,7 @@ are grouped in sections whose heading folds them away.
 
 ## What is counted
 
-A run is counted in a period when it ended in it. Except on the Runs tab, only
+A run is counted in a period when it ended in it. Except on the Traces tab, only
 runs that ran are counted: every run except cancelled ones. See
 [Run endings](/docs/reference/app/tasks-runs-and-the-inbox#run-endings).
 Only task runs at a station are recorded; chat runs are not.
@@ -103,18 +102,17 @@ own:
 | Runs at each station | `Each station's runs show here once stations run tasks.` |
 | Config changes | `Config changes and results by harness, model and effort show here once stations run tasks.` |
 | Skills and tools | `Skills read and MCP servers called show here once stations run tasks.` |
-| Runs | `Runs that end in this period show here, newest first.` |
 
 A part that could not be read reads `<part> could not be loaded.`, with
 "Try again".
 
-Figures open the Runs tab, narrowed by the pills listed under [Runs](#runs),
+Figures open the Traces tab, narrowed by the pills listed under [Traces](#traces),
 or narrow the Productivity tab's pull request list:
 
 | Selecting | Opens |
 | --- | --- |
-| A tile's figure | The Runs, Cost or People tab, or the pull request list, narrowed to what the tile counts where it can. |
-| A day's "Runs" in "Output against cost", `<n> runs` and `Runs with config` on Overview, a cost slice, a person's name in "What each person did", "Tasks" in "Where tasks wait", "Runs" and "Failed" in "By station", a failure reason, a skill's week, "Briefed", "Recalled" or station, an MCP server's counts, and a dismissed tool's count | The Runs tab, narrowed to those runs. |
+| A tile's figure | The Traces, Cost or People tab, or the pull request list, narrowed to what the tile counts where it can. |
+| A day's "Runs" in "Output against cost", `<n> runs` and `Runs with config` on Overview, a cost slice, a person's name in "What each person did", "Tasks" in "Where tasks wait", "Runs" and "Failed" in "By station", a failure reason, a skill's week, "Briefed", "Recalled" or station, an MCP server's counts, and a dismissed tool's count | The Traces tab, narrowed to those runs. |
 | A count in "Spotlight's share", "Week by week", "By repository", "Spotlight against people", "What Spotlight ships" and "Review depth" | The pull request list, narrowed to those pull requests. |
 
 ## Overview
@@ -172,7 +170,7 @@ Stations are ordered by how many signals are worse, then by how far the worst
 exceeds its comparison, then by runs.
 
 Each station's row shows its name, linked to the station, its line,
-`<n> runs`, which opens the Runs tab at the station, and "Improve", which
+`<n> runs`, which opens the Traces tab at the station, and "Improve", which
 opens the Agent page with the station attached to a new chat. Expanding a row
 lists each worse signal:
 
@@ -215,7 +213,7 @@ harnesses report tokens.
 | Inbox asks per task | Times a station asked a person in the period, per task, with `<n> asks`. | bad |
 | Time to answer | The p50 time from an ask to its answer, with the p90 and `<n> unanswered`. | bad |
 | Sent-back rate | Runs whose first human action was Sent back, of runs, with `<n> runs sent back`. Its change is in points. | bad |
-| Dismissed approvals | Approvals a person dismissed in the period, tool approvals and harness permissions alike. It opens the Runs tab at the tasks with a dismissal, when there are at most 200. | bad |
+| Dismissed approvals | Approvals a person dismissed in the period, tool approvals and harness permissions alike. It opens the Traces tab at the tasks with a dismissal, when there are at most 200. | bad |
 
 "Who is using Spotlight":
 
@@ -469,7 +467,7 @@ their address, by character code:
 | --- | --- |
 | Pull request | Its title and `#<number>`, linked to it on GitHub. |
 | Repository | Its repository. |
-| Written by | "Spotlight", linked to the task, with "Runs", which opens the Runs tab at the task; or its author, or "Someone", with "Spotlight review", linked to the review task, when it has one. |
+| Written by | "Spotlight", linked to the task, with "Runs", which opens the Traces tab at the task; or its author, or "Someone", with "Spotlight review", linked to the review task, when it has one. |
 | Type | Its type. |
 | State | "Merged", "Closed unmerged" or "Open". |
 | Opened | When it opened. |
@@ -540,7 +538,7 @@ runs per day, failures in red, beside the change in its runs. Then:
 | Median, p90 | The time the runs took. |
 
 A column from "Failed" to "Cancelled" shows only when the whole team's count
-in the period is above 0. "Runs" and "Failed" open the Runs tab at the
+in the period is above 0. "Runs" and "Failed" open the Traces tab at the
 station's runs, or its failed ones. Each row has the anchor
 `#station-<stationId>`, which a station alert's "Open in Insights" opens.
 
@@ -554,7 +552,7 @@ agrees with people", which opens it at `#judge`.
 
 | Part | Shows |
 | --- | --- |
-| Over this period | The tiles of "The whole team", for the station's runs alone. "Runs" and "Failed" open the Runs tab at the station's runs, or its failed ones. With task failures and no runs, the tiles read 0. With neither in the period, `No runs at this station in this period.` |
+| Over this period | The tiles of "The whole team", for the station's runs alone. "Runs" and "Failed" open the Traces tab at the station's runs, or its failed ones. With task failures and no runs, the tiles read 0. With neither in the period, `No runs at this station in this period.` |
 | Why runs failed | Shown when the station has failed runs or task failures in the period. See below. |
 | Runs by config | The station's latest 50 runs, whatever the period, grouped by config. See below. |
 | How far the judge agrees with people | Shown when the station has a judge, at `#judge`. See below. |
@@ -564,8 +562,8 @@ agrees with people", which opens it at `#judge`.
 source (`run` or `hook:<key>`) and code, as `<source> · <code>`, with how many
 times, and `· <n> in a row` when one task raised it more than once in a row.
 With both, they are headed "Run failures" and "Task failures". A reason with
-one run opens that run; another opens the Runs tab at the station's failed
-runs. A task failure that one task raised opens the Runs tab at that task. A
+one run opens that run; another opens the Traces tab at the station's failed
+runs. A task failure that one task raised opens the Traces tab at that task. A
 hook the loop guard stopped shows only among task failures.
 
 "Runs by config" groups runs that started one after another with the same
@@ -961,23 +959,47 @@ by", or "A former member"; and "Date". With none, it reads
 With no active memories, and none briefed, recalled or flagged wrong in the
 period, the section reads "No memories yet", with "Open the team's memory".
 
-## Runs
+## Traces
 
-The Runs tab, `?tab=runs`, lists every run that ended in the period, cancelled
-runs included, newest first, 50 to a page. Runs that ended at the same time are
-in reverse order of their ID, by character code:
+The Traces tab, `?tab=traces`, lists the team's task
+[traces](/docs/reference/glossary#trace): one for each task with a run that
+ended in the period, cancelled runs included, or a run that is queued, in
+progress or stopping. Tasks with an unfinished run come first, then the task
+whose latest run ended or started last. The period's end is now, not the end
+of today. The traces are read through the
+[Insights API](/docs/reference/api/insights) `/traces`.
+
+A chart of "Traces" and "Errors" over the period sits above the list. Each
+trace counts in the bar of its latest run. Each row shows:
 
 | Column | Shows |
 | --- | --- |
-| Outcome | The run's [ending](/docs/reference/app/tasks-runs-and-the-inbox#run-endings): Completed, Failed, Stopped, Exhausted, Cancelled or Superseded, linked to the run. |
-| Failure | The run's failure, or `–`. |
-| Station | The station. |
-| Person | Who opened the task, "No one", or "A former member". |
-| Agent config | The harness and model, as `<harness> · <model>`, or `<harness> · Harness default` for a run with no model set. |
-| Duration, Cost, Ended | How long the run took, what it cost, and when it ended. |
+| Started | When the trace's first listed run was queued. |
+| Stations | The stations of the listed runs, and the station the task is at now, in the line's order. |
+| Task | The task, linked to its trace at `/w/<slug>/team/<teamId>/tasks/<taskId>/trace`. |
+| Input | What the task asks for. |
+| Output | The newest note of the listed runs. |
+| Errors | The errors of the listed runs, or `–`. |
+| Duration | From when the first listed run was queued to when the last one ended, or `–` while a run is unfinished. |
+| Cost | What the listed runs cost, or `–` with none priced or prices in more than one currency. |
 
-"Station" (work stations only) and "Outcome" narrow the list. Following a
-figure on another tab narrows it further, shown as a pill that can be removed:
+The arrow before a task, `Show the runs of <task>`, lists its runs under it,
+unfinished first, then the newest first:
+
+| Column | Shows |
+| --- | --- |
+| Started | When the run started, or was queued if no runner claimed it. |
+| Stations | The run's station. |
+| Task, Input, Output | The run's [ending](/docs/reference/app/tasks-runs-and-the-inbox#run-endings), Completed, Failed, Stopped, Exhausted, Cancelled or Superseded, or "Queued", "In progress" or "Stopping", linked to the run; its failure; who opened the task, "No one" or "A former member"; the harness; and the model, or "Harness default" for a run with no model set. |
+| Errors, Duration, Cost | The run's errors, how long it took and what it cost, or `–`. |
+
+Each row starts with a checkbox. Ticking rows shows a bar reading
+`<n> selected`, with "Discuss with the agent", which opens the Agent page with
+those traces attached to a new chat, and "Clear selection".
+
+"Station" (work stations only) and "Outcome", beside the period picker, narrow
+the list to runs that match. Following a figure on another tab narrows it
+further, shown as a pill that can be removed:
 
 | Pill | Narrows to runs |
 | --- | --- |
@@ -1000,26 +1022,19 @@ figure on another tab narrows it further, shown as a pill that can be removed:
 | Dismissed, Dismissed on | Where a person dismissed an approval of the tool, or of a tool of the MCP server; "No server" for a tool of none. |
 
 Every filter narrows the others. The skill, MCP server and dismissal filters
-leave out cancelled runs. The address keeps the filters and the page. Under
-the list, the pager reads `<first>–<last> of <total>`, as in `1–50 of 230`.
-Narrowed to nothing, the list reads `No runs match.`, with "Show every run".
+leave out cancelled runs. An unfinished run is listed only while the filters
+are "Line", "Station", "Harness", "Task", "Tasks" and "Person". The address
+keeps the filters.
 
-## Traces
+While a filter is set, every trace lists its runs that match, and a task with
+other runs in the period reads `<n> of <total> runs`, as in `1 of 4 runs`.
+The arrow folds a trace's runs away. Narrowed to nothing, the list reads
+`No traces match.`, with "Show every trace".
 
-The Traces tab, `?tab=traces`, lists the team's task
-[traces](/docs/reference/glossary#trace), one for each task with a run created,
-that is queued, in the past 7, 30 or 90 days, as the period picker says. The span counts back
-from now rather than in whole UTC days, and has no period before it. The
-traces are not part of the [Insights API](/docs/reference/api/insights).
+The list holds the newest 5,000 runs that match. With more, it reads
+`Only the newest runs show. Narrow the list or pick a shorter period to see the rest.`
 
-A chart of "Traces" and "Errors" over the span sits above the list. Each row
-shows "Started", "Stations", "Task", "Input", "Output", "Errors", "Duration" and
-"Cost", and opens the task's trace at `/w/<slug>/team/<teamId>/tasks/<taskId>/trace`.
-Each row starts with a checkbox. Ticking rows shows a bar reading
-`<n> selected`, with "Discuss with the agent", which opens the Agent page with
-those traces attached to a new chat, and "Clear selection".
-
-With nothing traced in the span, the tab reads "No traces" and
-`No traces in the <span>. Create a task to leave one.`, as in
+With nothing traced in the period, the tab reads "No traces" and
+`No traces in the <period>. Create a task to leave one.`, as in
 `No traces in the past 30 days.`, with "Create a task", which opens the
 team's first line.
