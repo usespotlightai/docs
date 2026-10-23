@@ -75,7 +75,9 @@ holds the lock. The other `spotlight host` commands find it there.
 The host logs JSON lines to standard output. Each line a sandbox prints
 appears in the host's log as an entry with the message `sandbox` and the line
 in `line`. Errors that stop the host print to
-standard error as `spotlight host: <error>`.
+standard error as `spotlight host: <error>`. When the settings have a problem,
+such as no URL or no credential on a machine that is not set up, the error
+ends with `To set up this machine as a host, run: spotlight host init`.
 
 | Message | When |
 | --- | --- |
@@ -128,25 +130,26 @@ and no trust.
 
 | Step | Action |
 | --- | --- |
-| 1 | Settles each value from its flag, the answer, the saved value or the default. |
-| 2 | Checks the settings as the host does. On a problem it saves nothing. |
-| 3 | Asks Spotlight for the host's requirements with the credential. A refused credential stops it, and nothing is saved. When Spotlight does not answer, it warns and goes on. |
-| 4 | Saves the settings file in one rename, with mode `0600`. Comments and settings it does not set stay. |
-| 5 | Pulls the default image with the [registry credentials](/docs/reference/hosts/host-configuration#registry-credentials). An image with `*` is not pulled. When the pull fails and the machine has a copy, it warns and goes on. |
-| 6 | When a host already runs from these settings, restarts it when its sandboxes finish. Otherwise, without `--no-service`, installs and starts the [service](#service-files). |
-| 7 | When the default image is Spotlight's runner image, prints that it holds no harness. |
+| 1 | Checks that a container runtime answers, at the saved `DOCKER_HOST`, else at the usual sockets of Docker, Podman, OrbStack and Colima. Without one it stops before it asks anything, and nothing is saved. |
+| 2 | Settles each value from its flag, the answer, the saved value or the default. |
+| 3 | Checks the settings as the host does. On a problem it saves nothing. |
+| 4 | Asks Spotlight for the host's requirements with the credential. A refused credential stops it, and nothing is saved. When Spotlight does not answer, it warns and goes on. |
+| 5 | Saves the settings file in one rename, with mode `0600`. Comments and settings it does not set stay. |
+| 6 | Pulls the default image with the [registry credentials](/docs/reference/hosts/host-configuration#registry-credentials). An image with `*` is not pulled. When the pull fails and the machine has a copy, it warns and goes on. |
+| 7 | When a host already runs from these settings, restarts it when its sandboxes finish. Otherwise, without `--no-service`, installs and starts the [service](#service-files). |
+| 8 | When the default image is Spotlight's runner image, prints that it holds no harness. |
 
 | Message | When |
 | --- | --- |
-| `Spotlight at <url> accepts the credential` | Step 3. |
-| `Spotlight at <url> does not answer, so the credential is not checked: <error>` | Step 3, a warning. |
-| `Saved the settings in <config path>` | Step 4. |
-| `Pulled <image>` | Step 5. |
-| `Could not pull <image>, so the host uses the copy on this machine: <error>` | Step 5, a warning. |
-| `Started the systemd service spotlight-host (<unit path>)` | Step 6 on Linux. |
-| `Started the launchd agent ai.usespotlight.host (logs in <log path>)` | Step 6 on macOS. |
-| `The host serves <url>. It shows on the Runners page when it connects.` | Step 6, when the service started. |
-| `The runner image holds no harness, so this host runs checks but no agent run.` | Step 7. Three lines follow with the example images and `Then: spotlight host config set image=IMAGE`. |
+| `Spotlight at <url> accepts the credential` | Step 4. |
+| `Spotlight at <url> does not answer, so the credential is not checked: <error>` | Step 4, a warning. |
+| `Saved the settings in <config path>` | Step 5. |
+| `Pulled <image>` | Step 6. |
+| `Could not pull <image>, so the host uses the copy on this machine: <error>` | Step 6, a warning. |
+| `Started the systemd service spotlight-host (<unit path>)` | Step 7 on Linux. |
+| `Started the launchd agent ai.usespotlight.host (logs in <log path>)` | Step 7 on macOS. |
+| `The host serves <url>. It shows on the Runners page when it connects.` | Step 7, when the service started. |
+| `The runner image holds no harness, so this host runs checks but no agent run.` | Step 8. Three lines follow with the example images and `Then: spotlight host config set image=IMAGE`. |
 
 As a user other than root on Linux, when lingering is off, it also prints:
 
@@ -157,13 +160,13 @@ To keep the host running after you log out, run:
 
 | Error | Cause |
 | --- | --- |
-| `nothing saved, because <problems>` | Step 2. The problems name the settings by key. |
-| `nothing saved, because Spotlight at <url> does not accept the credential` | Step 3. |
+| `nothing saved, because no container runtime answers. A host runs each sandbox in a container: start Docker or Podman (on macOS, Docker Desktop, OrbStack or Colima), then run this again: <error>` | Step 1. |
+| `nothing saved, because <problems>` | Step 3. The problems name the settings by key. |
+| `nothing saved, because Spotlight at <url> does not accept the credential` | Step 4. |
 | `--token is required: a pull pool's token, from Settings → Runners → Add a host` | No token, no trust and no terminal to ask on. |
 | `a pool token is required` | Three empty answers to `Pool token`. |
-| `no container runtime answers; start Docker or Podman, then run this again: <error>` | Step 5. |
-| `pull <image>: <error>` | Step 5, and the machine has no copy. |
-| ``installing a service on <os> is not supported; run `spotlight host` under your own supervisor`` | Step 6 on a platform other than Linux or macOS. |
+| `pull <image>: <error>` | Step 6, and the machine has no copy. |
+| ``installing a service on <os> is not supported; run `spotlight host` under your own supervisor`` | Step 7 on a platform other than Linux or macOS. |
 
 ## spotlight host config
 

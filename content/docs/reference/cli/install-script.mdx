@@ -6,11 +6,17 @@ description: The arguments and variables install.sh reads, the steps it takes in
 ---
 
 Spotlight serves a POSIX shell script at `/api/install.sh` on the Spotlight
-address. It needs no sign-in. It installs the `spotlight` binary, then runs
+address. It needs no sign-in. It installs the `spotlight` binary. With
+arguments, it then runs
 [`spotlight host init`](/docs/reference/cli/spotlight-command#spotlight-host-init)
-with the arguments it was given. See [Install a host](/docs/hosts/run-a-host).
+with them. Without arguments, it only installs the binary and prints the next
+steps. See [Install a host](/docs/hosts/run-a-host).
 On a [self-hosted Spotlight](/docs/reference/glossary#spotlight-address), use
 your deployment's address in place of `app.usespotlight.ai`.
+
+```bash
+curl -fsSL https://app.usespotlight.ai/api/install.sh | sh
+```
 
 ```bash
 curl -fsSL https://app.usespotlight.ai/api/install.sh | sh -s -- --token <pool token>
@@ -20,6 +26,11 @@ curl -fsSL https://app.usespotlight.ai/api/install.sh | sh -s -- --token <pool t
 curl -fsSL https://app.usespotlight.ai/api/install.sh \
   | sh -s -- --trust <trust id> --oidc-token-file <token file>
 ```
+
+The script itself needs no container runtime and no token.
+`spotlight host init` checks for a container runtime before it asks anything,
+and [`spotlight login`](/docs/reference/cli/spotlight-command#spotlight-login)
+needs neither.
 
 ## Arguments
 
@@ -65,12 +76,13 @@ The script stops at the first failure. Each failure listed under
 | 1 | Finds `curl` or `wget`, and `sha256sum` or `shasum`. |
 | 2 | Reads the platform from `uname -s` and `uname -m`. |
 | 3 | Chooses and creates the binary directory. |
-| 4 | Finds a container runtime: the first of `docker` or `podman` whose `info` succeeds. |
-| 5 | Downloads `spotlight` and its checksum, checks the checksum, and installs the binary at `<bin dir>/spotlight`. |
-| 6 | Runs `<bin dir>/spotlight host init --url <spotlight address>` with the script's arguments. `init` asks its questions on the terminal, so they work when the script comes from a pipe. |
-| 7 | When `<bin dir>` is not on `PATH`, prints the line to add it. |
+| 4 | Downloads `spotlight` and its checksum, checks the checksum, and installs the binary at `<bin dir>/spotlight`. |
+| 5 | When `<bin dir>` is not on `PATH`, adds a next step: the line that puts it on `PATH`. |
+| 6 | With arguments, runs `<bin dir>/spotlight host init --url <spotlight address>` with them. `init` asks its questions on the terminal, so they work when the script comes from a pipe. Without arguments, adds two next steps: `spotlight login --url <spotlight address>`, and `spotlight host init --url <spotlight address>`. |
+| 7 | Prints the next steps. |
 
-The script exits with the exit code of `spotlight host init`.
+With arguments, the script exits with the exit code of `spotlight host init`.
+Without arguments, it exits `0`.
 
 ## Messages
 
@@ -84,7 +96,6 @@ error.
 | `need sha256sum or shasum to check what it downloads` | Neither is on `PATH`. |
 | `unsupported operating system: <os>` | Not Linux or macOS. |
 | `unsupported architecture: <arch>` | Not x86-64 or ARM64. |
-| `no container runtime answered: install and start Docker or Podman (on macOS, Docker Desktop, OrbStack or Colima), then run this again` | No runtime answered `info`. |
 | `could not download spotlight from <url>` | The binary download failed. |
 | `could not download the checksum from <url>.sha256` | The checksum download failed. |
 | `spotlight failed its checksum: expected <sha256>, got <sha256>` | The download does not match its checksum. |
