@@ -9,8 +9,7 @@ Spotlight serves a POSIX shell script at `/api/install.sh` on the Spotlight
 address. It needs no sign-in. It installs the `spotlight` binary. With
 arguments, it then runs
 [`spotlight host init`](/docs/reference/cli/spotlight-command#spotlight-host-init)
-with them. Without arguments, it only installs the binary and prints the next
-steps. See [Install a host](/docs/hosts/run-a-host).
+with them. Without arguments, it then prints the next steps. See [Install a host](/docs/hosts/run-a-host).
 On a [self-hosted Spotlight](/docs/reference/glossary#spotlight-address), use
 your deployment's address in place of `app.usespotlight.ai`.
 
@@ -26,11 +25,6 @@ curl -fsSL https://app.usespotlight.ai/api/install.sh | sh -s -- --token <pool t
 curl -fsSL https://app.usespotlight.ai/api/install.sh \
   | sh -s -- --trust <trust id> --oidc-token-file <token file>
 ```
-
-The script itself needs no container runtime and no token.
-`spotlight host init` checks for a container runtime before it asks anything,
-and [`spotlight login`](/docs/reference/cli/spotlight-command#spotlight-login)
-needs neither.
 
 ## Arguments
 
