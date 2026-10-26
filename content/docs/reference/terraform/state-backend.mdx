@@ -67,10 +67,13 @@ admin has `plan` and `configure`. A token has the permissions of its
 | any | `403` | The token or role lacks the permission. |
 | any | `404` | No such workspace, or the token or person is not in it. |
 | any | `409` | Another request changed the state at the same time, or a `POST` names a lock that was released. Run the command again. |
+| `POST` | `409` | The state has another `lineage` than the latest version, a lower `serial`, or the same `serial` with other content. The message says which. |
 | any | `422` | A state name that is not lowercase words joined by dashes, lock info without an `ID`, or a body that is not a Terraform state with a `serial` and a `lineage`. |
 
 A `POST` to a locked state must name the lock in `?ID=<lock id>`, as Terraform
-does. A `DELETE` without a body is what `terraform force-unlock` sends, and
+does. After the first version, a `POST` must keep the `lineage` of the latest
+version and a `serial` at least as high. The same `serial` is taken again only
+with the same content, as when Terraform retries a write. A `DELETE` without a body is what `terraform force-unlock` sends, and
 releases the lock whoever holds it.
 
 ## Storage
@@ -78,6 +81,25 @@ releases the lock whoever holds it.
 Each `POST` keeps a new version. Spotlight records the version's number, the
 state's `serial` and `lineage`, its size and MD5, and who wrote it, and keeps
 the body in the deployment's object storage. `GET` answers the latest version.
-Deleting the workspace deletes its states and every version.
+Each state keeps its latest 100 versions: after a write, older versions and
+their bodies are deleted. Deleting the workspace deletes its states and every
+version.
 
 The body is at most 64 MB.
+
+## Audit
+
+These are recorded as [configuration changes](/docs/reference/api/resource-api#configuration-changes)
+of the kind `terraform-state`, keyed by the state name:
+
+| Change | Action | `details` |
+| --- | --- | --- |
+| The first version written | `created` | `version`, `serial`, `lineage` |
+| A later version written | `updated` | `version`, `serial`, `lineage` |
+| The lock released without lock info, as `terraform force-unlock` does | `updated` | `released: "forced"`, `lock`, `heldBy`, `operation` |
+| The lock released by a token or person that did not take it | `updated` | `released: "held-by-another"`, `lock`, `heldBy`, `operation` |
+
+`lock` is the lock ID, `heldBy` the token or person that took the lock, as
+`token:<id>` or `person:<id>`, and `operation` Terraform's operation, such as
+`OperationTypeApply`. A lock taken and released by the same token or person is
+not recorded.
