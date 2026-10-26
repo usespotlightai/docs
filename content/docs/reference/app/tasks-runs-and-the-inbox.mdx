@@ -1152,6 +1152,30 @@ A setup chat needs egress: a host that serves the workspace, or a push pool
 that names an egress. Without either, starting one fails with `422` and
 `A setup chat needs egress. No host serves this workspace, and no push pool names an egress. Please connect a host, or name an egress in a push pool.`
 
+Only an owner or admin of the workspace may start a setup chat. Anyone else
+gets `403` and
+`Only a workspace owner or admin can set up configuration as code. The setup creates the OIDC trusts that GitHub Actions signs in with.`
+Before the chat starts, Spotlight:
+
+1. reads the configuration repository's default branch, and whether a branch
+   protection rule, or a ruleset that requires a pull request review, protects
+   it;
+2. creates or updates the trusts `github-pull-requests` and `github-apply` (see
+   [Trusts the setup creates](/docs/reference/terraform/oidc-trust#trusts-the-setup-creates));
+3. sets the repository's GitHub Actions variables `SPOTLIGHT_URL` to the
+   [Spotlight address](/docs/reference/glossary#spotlight-address), and
+   `SPOTLIGHT_PLAN_TRUST` and `SPOTLIGHT_APPLY_TRUST` to the trusts' ids. If
+   the GitHub App does not have the permission "Variables: read and write",
+   Spotlight sets none, and the chat's agent is briefed to list them in the
+   pull request.
+
+The agent is briefed to add `.github/workflows/spotlight.yml`, which plans
+pull requests that change the folder and applies pushes to the default branch,
+and to list the secrets the person must add. When the default branch is not
+protected, the agent is briefed to say first in the pull request that anyone
+who can push to it can change the workspace's configuration, and to recommend
+branch protection that requires a review.
+
 Chat runs have priority over task runs.
 [Which run goes first](/docs/runs/which-run-goes-first) gives the
 reasons.

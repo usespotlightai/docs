@@ -502,6 +502,11 @@ slugs.
 | --- | --- | --- |
 | `The setup chat needs the GitHub App and egress. Connect a host, or name an egress in a push pool.` | The setup step, before the GitHub App is installed and before a host serves the workspace or a push pool names an egress. | [Setup task](/docs/reference/built-ins/built-in-lines#setup-task) |
 | `A setup chat needs egress. No host serves this workspace, and no push pool names an egress. Please connect a host, or name an egress in a push pool.` | `422`. Starting a setup chat with neither a host nor a push pool that names an egress. | [Chats](/docs/reference/app/tasks-runs-and-the-inbox#chats), [Let the agent write your team's first Terraform](/docs/configuration/let-the-agent-write-your-first-terraform) |
+| `Only a workspace owner or admin can set up configuration as code.` | The setup step, for a member who is not an owner or admin. | [Setup task](/docs/reference/built-ins/built-in-lines#setup-task) |
+| `The OIDC trust <key> already admits another workload (<subject>). Rename or delete that trust, then set up again.` | `409`. Starting a setup chat when `github-pull-requests` or `github-apply` has another form than a setup gives it. | [Trusts the setup creates](/docs/reference/terraform/oidc-trust#trusts-the-setup-creates) |
+| `The default branch <branch> contains * or :, so an OIDC trust cannot name it exactly. Rename the branch, then set up again.` | `422`. Starting a setup chat for a repository whose default branch has `*` or `:` in its name. | [Trusts the setup creates](/docs/reference/terraform/oidc-trust#trusts-the-setup-creates) |
+| `Only a workspace owner or admin can set up configuration as code. The setup creates the OIDC trusts that GitHub Actions signs in with.` | `403`. Starting a setup chat as a member who is not an owner or admin. | [Chats](/docs/reference/app/tasks-runs-and-the-inbox#chats), [Roles and permissions](/docs/reference/roles-and-permissions#actions-only-people-can-take) |
+| `Add the repository variables that the pull request lists.` | The setup step, once done, when the GitHub App may not write the configuration repository's variables. | [Let the App set repository variables](/docs/integrations/connect-github#let-the-app-set-repository-variables) |
 
 ### Runners page
 

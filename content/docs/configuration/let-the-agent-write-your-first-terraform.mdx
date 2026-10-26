@@ -2,11 +2,13 @@
 type: how-to
 icon: SquarePen
 title: Let the agent write your team's first Terraform
-description: Pick a repository and folder in the setup task, talk the setup through with the agent, and review the pull request it opens with your team's lines as Terraform.
+description: Pick a repository and folder in the setup task, talk the setup through with the agent, and review the pull request it opens with your team's lines as Terraform and a GitHub Actions workflow that applies them.
 ---
 
 You need:
 
+- The owner or admin role in the workspace. For anyone else, the step reads
+  `Only a workspace owner or admin can set up configuration as code.`
 - The GitHub App installed on your code repositories and on the repository the
   configuration goes in. If it isn't,
   [connect GitHub](/docs/integrations/connect-github) first.
@@ -27,7 +29,9 @@ You need:
    the folder as `spotlight`, or type the path of another folder from the
    repository root, as in `infra/spotlight`.
 3. Under **Repositories**, tick the code repositories the agent should read.
-4. Choose the agent, then click **Start setup chat**.
+4. Choose the agent. The form reads
+   `Spotlight lets this repository's GitHub Actions plan pull requests and apply its default branch.`
+   Click **Start setup chat**.
 
 The chat opens on the **Agent** page, with every repository you chose checked
 out. If the folder or repository is rejected, the form says why under the
@@ -36,6 +40,26 @@ button.
 A chat is seen only by the person who started it. If someone else on the team
 started the setup chat, the step says who, and the pull request link appears
 for everyone once it is open.
+
+## Check the trusts and repository variables
+
+Before the chat starts, Spotlight reads the configuration repository's default
+branch and creates two
+[OIDC trusts](/docs/reference/terraform/oidc-trust#trusts-the-setup-creates)
+for the repository's GitHub Actions, with you as their creator:
+
+- `github-pull-requests`: a pull request may plan.
+- `github-apply`: a push to the default branch may apply, with the
+  `configure`, `secrets` and `runners` scopes.
+
+If trusts with these keys exist, for example from a setup with another
+repository, Spotlight changes them to match the repository you chose.
+
+Spotlight then sets the repository variables `SPOTLIGHT_URL`,
+`SPOTLIGHT_PLAN_TRUST` and `SPOTLIGHT_APPLY_TRUST`. If the GitHub App does not
+have the permission **Variables: read and write**, Spotlight does not set them,
+and the pull request lists them for you to add. See
+[Let the App set repository variables](/docs/integrations/connect-github#let-the-app-set-repository-variables).
 
 ## Talk it through
 
@@ -61,6 +85,18 @@ The agent writes into the folder you chose:
 - each station's `setup` and `check` commands
 - skills adopted from the team's own rules files
 - a `reviews` policy from `CODEOWNERS`, and `match` hooks for risky paths
+- the two trusts as `spotlight_oidc_trust` resources, with `import`
+  blocks
+
+At the repository root, it adds the workflow `.github/workflows/spotlight.yml`.
+On a pull request that changes the folder, the workflow runs
+`terraform fmt -check`, `terraform init`, `terraform validate` and
+`terraform plan` through the `github-pull-requests` trust. On a push to the
+default branch, it runs `terraform apply` through the `github-apply` trust.
+When Spotlight keeps the state, each job first downloads `spotlight` and signs
+in to the state with
+[`spotlight token`](/docs/reference/cli/spotlight-command#spotlight-token),
+through the same trust.
 
 It runs `terraform init`, `terraform fmt`, `terraform validate` and
 `terraform plan`, signed in to Spotlight's state with the run's token when
@@ -70,14 +106,32 @@ lines with the files it rests on, followed by the plan. The plan should import
 what already exists and change only what the agent adapted.
 
 **Set up configuration as code** now has a check mark. Expand it and click
-**Open pull request**.
+**Open pull request**. The step reads
+`GitHub Actions: pull requests in <repository> plan, and pushes to <defaultBranch> apply.`
+If Spotlight could not set the variables, it also reads
+`Add the repository variables that the pull request lists.`
 
-The agent never applies anything. Review the pull request, merge it, then apply
-it with a token that may configure the workspace:
-[Make the factory yours](/docs/getting-started/make-the-factory-yours) applies
-it from a terminal, and
-[Run Terraform from GitHub Actions](/docs/configuration/run-terraform-from-github-actions)
-applies what is merged.
+The agent never applies anything. Before you merge:
+
+1. In the repository's **Settings**, under **Secrets and variables** and then
+   **Actions**, add what the pull request lists: the `TF_VAR_` secrets, the
+   credentials of the state backend if it is not Spotlight's, and the
+   repository variables if Spotlight could not set them.
+2. Review the pull request and merge it. The workflow applies the
+   configuration from the default branch.
+
+## If the default branch is not protected
+
+If merging into the default branch needs no approving review, anyone who can
+push to it can
+change the workspace's configuration through the `github-apply` trust. The pull
+request says this first, and the step shows a warning icon.
+
+On GitHub, protect the default branch with a branch protection rule or a
+ruleset that requires at least one approving review. Spotlight counts either
+as protection, and nothing less. Reading a branch protection rule needs the
+GitHub App's **Administration** read permission; without it, Spotlight sees
+only rulesets.
 
 ## If the pull request has no plan
 
@@ -91,6 +145,7 @@ and ask the agent in the chat to plan again.
 
 - [Why configuration lives in Terraform](/docs/configuration/why-configuration-lives-in-terraform)
 - [Plan work with the agent](/docs/tasks/plan-work-with-the-agent)
+- [Run Terraform from GitHub Actions without a stored token](/docs/configuration/run-terraform-from-github-actions)
 - [The run's Spotlight token](/docs/reference/hosts/egress#the-runs-spotlight-token),
   the token the setup chat's run gets.
 - [`setup-pull-request`](/docs/reference/built-ins/built-in-tools-and-skills#setup-pull-request),

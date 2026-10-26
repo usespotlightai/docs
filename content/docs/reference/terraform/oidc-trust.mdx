@@ -79,6 +79,41 @@ be named. Only claims whose value is a string can match.
 | CircleCI | `https://oidc.circleci.com/org/<organization id>` | set by the platform |
 | Buildkite | `https://agent.buildkite.com` | set by the platform |
 
+## Trusts the setup creates
+
+When an owner or admin starts a
+[setup chat](/docs/reference/app/tasks-runs-and-the-inbox#chats), Spotlight
+creates two trusts for the configuration repository's GitHub Actions. A trust
+with one of these keys that a setup could have made, with this issuer, a
+`subject` of the form below for any repository, and no `claims` other than
+`repository_id` and `repository_owner_id`, is pointed at the repository and
+branch instead, and keeps its `scopes` and `lifetimeMinutes`. A trust with
+one of these keys in any other form, such as a GitHub environment `subject`,
+stops the setup, which changes nothing; rename or delete that trust, then set
+up again. `<repository>` is the configuration repository, as `<owner>/<name>`,
+and `<branch>` is its default branch.
+
+CI cannot change these trusts: a token issued through `github-apply` has no
+`trusts` scope. An owner or admin changes them.
+
+| `key` | `subject` | `scopes` |
+| --- | --- | --- |
+| `github-pull-requests` | `repo:<repository>:pull_request` | `plan` |
+| `github-apply` | `repo:<repository>:ref:refs/heads/<branch>` | `configure`, `secrets`, `runners` |
+
+Both have the issuer `https://token.actions.githubusercontent.com` and the
+audience `spotlight`. Their `claims` pin the repository's and its owner's
+GitHub ids, `repository_id` and `repository_owner_id`, so a repository created
+later under the same name does not match. `github-pull-requests` issues tokens
+for 15 minutes and `github-apply` for 60, so a long apply can still write its
+state. A created
+trust's `createdBy` is the person who started the setup chat. The Terraform
+export holds both as `spotlight_oidc_trust` resources with `import`
+blocks.
+
+A default branch whose name contains `*` or `:` stops the setup, since a
+trust's `subject` would read `*` as any text.
+
 ## Who may create a trust
 
 Writing a trust needs the `trusts` permission. See
