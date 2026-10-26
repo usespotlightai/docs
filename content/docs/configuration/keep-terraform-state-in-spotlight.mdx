@@ -1,0 +1,126 @@
+---
+type: how-to
+icon: SquarePen
+title: Keep Terraform state in Spotlight
+description: Store the state of the workspace's Terraform configuration in Spotlight, and sign in to it with the same login, token or OIDC trust the provider uses.
+---
+
+Terraform needs a place to keep the state of the configuration between runs.
+Spotlight keeps it for the workspace, through Terraform's built-in `http`
+backend, so the configuration needs no other storage account. A
+[setup chat](/docs/configuration/let-the-agent-write-your-first-terraform)
+writes this backend when the team has none. You need:
+
+- A Terraform configuration for the workspace. If you don't have one,
+  [put the workspace under Terraform](/docs/configuration/manage-spotlight-with-terraform)
+  first.
+- The `spotlight` binary on your machine. See
+  [Install](/docs/reference/cli/replay-command#install).
+- An owner or admin account in the workspace, or a workspace token with the
+  `configure` scope.
+
+The examples use the workspace `acme` and the state name `default`.
+
+## Add the backend
+
+Add a `backend "http"` block to the `terraform` block of the configuration:
+
+```hcl
+terraform {
+  backend "http" {
+    address        = "https://app.usespotlight.ai/api/terraform/workspaces/acme/states/default"
+    lock_address   = "https://app.usespotlight.ai/api/terraform/workspaces/acme/states/default/lock"
+    unlock_address = "https://app.usespotlight.ai/api/terraform/workspaces/acme/states/default/lock"
+    lock_method    = "POST"
+    unlock_method  = "DELETE"
+    username       = "spotlight"
+  }
+}
+```
+
+On a [self-hosted Spotlight](/docs/reference/glossary#spotlight-address), use
+your deployment's address. Keep `username`: Terraform sends the token only
+when a username is set. To keep more than one configuration in a workspace,
+give each its own state name in place of `default`.
+
+## Sign in from your machine
+
+[Log in from the command line](/docs/administration/log-in-from-the-command-line),
+then give Terraform the token of your login:
+
+```bash
+spotlight login
+export TF_HTTP_PASSWORD=$(spotlight token)
+```
+
+`spotlight token` prints `SPOTLIGHT_API_TOKEN` instead when it is set.
+
+## Move the state
+
+Run `terraform init` with `-migrate-state`. Terraform copies the state from
+where it was kept to Spotlight:
+
+```bash
+terraform init -migrate-state
+```
+
+Answer `yes` when Terraform asks to copy the state. Then check that the
+resources are all there:
+
+```bash
+terraform state list
+```
+
+If the configuration had no state yet, run `terraform init` without the flag.
+
+## Sign in from CI
+
+In the workflow from
+[Run Terraform from GitHub Actions](/docs/configuration/run-terraform-from-github-actions),
+download `spotlight` and give Terraform a token before `terraform init`, in
+each job:
+
+```yaml
+      - name: Download spotlight
+        run: |
+          base=https://github.com/usespotlightai/spotlight/releases/latest/download
+          curl -fsSL -o spotlight "$base/spotlight-linux-amd64"
+          curl -fsSL -o spotlight.sha256 "$base/spotlight-linux-amd64.sha256"
+          echo "$(cut -d' ' -f1 spotlight.sha256)  spotlight" | sha256sum -c -
+          chmod +x spotlight
+      - name: Sign in to the state
+        run: |
+          token=$(./spotlight token)
+          echo "::add-mask::$token"
+          echo "TF_HTTP_PASSWORD=$token" >> "$GITHUB_ENV"
+      - run: terraform init -input=false
+```
+
+`spotlight token` exchanges the job's GitHub OIDC token through the trust in
+`SPOTLIGHT_OIDC_TRUST`, so the job stores no token. Keep
+`permissions: id-token: write`.
+
+An apply must finish before its token expires, because Terraform writes the
+state at the end. If an apply can take longer than 15 minutes, set
+`lifetime_minutes` on the apply trust to the longest apply, up to 60. See
+[`spotlight_oidc_trust`](/docs/reference/terraform/oidc-trust#fields).
+
+## Check that it works
+
+Run `terraform plan`. Terraform takes the lock, reads the state from
+Spotlight, and releases the lock. While a plan or apply runs, another run that
+needs the lock fails with `Error acquiring the state lock` and names the run
+that holds it.
+
+If a run stopped and left the lock behind, release it with the lock ID the
+error shows. This needs the `configure` permission:
+
+```bash
+terraform force-unlock <lock id>
+```
+
+## Related
+
+- [State backend](/docs/reference/terraform/state-backend): the addresses,
+  permissions, answers and storage.
+- [`spotlight token`](/docs/reference/cli/spotlight-command#spotlight-token)

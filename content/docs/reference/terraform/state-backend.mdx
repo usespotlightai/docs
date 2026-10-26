@@ -1,0 +1,83 @@
+---
+type: reference
+icon: BookText
+title: State backend
+description: The addresses, sign-in, permissions, answers and storage of the Terraform state that Spotlight keeps through Terraform's http backend.
+---
+
+Spotlight keeps the Terraform state of a workspace's configuration, through
+Terraform's built-in `http` backend. Each workspace has states by name. See
+[Keep Terraform state in Spotlight](/docs/configuration/keep-terraform-state-in-spotlight).
+
+| Request | Address | Permission |
+| --- | --- | --- |
+| `GET` | `/api/terraform/workspaces/{slug}/states/{name}` | `plan` |
+| `POST` | `/api/terraform/workspaces/{slug}/states/{name}` | `configure` |
+| `POST` | `/api/terraform/workspaces/{slug}/states/{name}/lock` | `plan` |
+| `DELETE` with lock info | `/api/terraform/workspaces/{slug}/states/{name}/lock` | `plan` for the token or person that took the lock, else `configure` |
+| `DELETE` without a body | `/api/terraform/workspaces/{slug}/states/{name}/lock` | `configure` |
+
+`{slug}` is the workspace's slug. `{name}` is lowercase words joined by
+dashes, at most 64 characters.
+
+## Example
+
+```hcl
+terraform {
+  backend "http" {
+    address        = "https://app.usespotlight.ai/api/terraform/workspaces/acme/states/default"
+    lock_address   = "https://app.usespotlight.ai/api/terraform/workspaces/acme/states/default/lock"
+    unlock_address = "https://app.usespotlight.ai/api/terraform/workspaces/acme/states/default/lock"
+    lock_method    = "POST"
+    unlock_method  = "DELETE"
+    username       = "spotlight"
+  }
+}
+```
+
+## Sign-in
+
+The backend sends the token as the password of HTTP basic authentication.
+Spotlight ignores the username, but Terraform sends the password only when a
+username is set. Set the password in `TF_HTTP_PASSWORD`, not in the
+configuration. The routes also take `Authorization: Bearer <token>`.
+
+| Token | Source |
+| --- | --- |
+| A [workspace token](/docs/reference/api/workspace-token) | `SPOTLIGHT_API_TOKEN`, or the token itself |
+| A token issued through an [OIDC trust](/docs/reference/terraform/oidc-trust) | [`spotlight token`](/docs/reference/cli/spotlight-command#spotlight-token) with `SPOTLIGHT_OIDC_TRUST` |
+| A login | [`spotlight token`](/docs/reference/cli/spotlight-command#spotlight-token) after `spotlight login` |
+
+A person has the permissions of their role: a member has `plan`, an owner or
+admin has `plan` and `configure`. A token has the permissions of its
+[scopes](/docs/reference/api/workspace-token#scopes).
+
+## Answers
+
+| Request | Status | When |
+| --- | --- | --- |
+| `GET` | `200` | The latest version of the state, as JSON. |
+| `GET` | `204` | No state was written under the name. |
+| `POST` | `200` | The state is kept as a new version. |
+| `POST` lock | `200` | The lock is taken, or the same lock ID holds it already. |
+| `DELETE` lock | `200` | The lock is released, or nothing held it. |
+| any | `423` | Another lock ID holds the lock. The body is that lock's info, which Terraform prints. |
+| `POST` | `400` | The `Content-MD5` header does not match the body. |
+| any | `401` | No token, or a token that is unknown, expired or revoked. |
+| any | `403` | The token or role lacks the permission. |
+| any | `404` | No such workspace, or the token or person is not in it. |
+| any | `409` | Another request changed the state at the same time, or a `POST` names a lock that was released. Run the command again. |
+| any | `422` | A state name that is not lowercase words joined by dashes, lock info without an `ID`, or a body that is not a Terraform state with a `serial` and a `lineage`. |
+
+A `POST` to a locked state must name the lock in `?ID=<lock id>`, as Terraform
+does. A `DELETE` without a body is what `terraform force-unlock` sends, and
+releases the lock whoever holds it.
+
+## Storage
+
+Each `POST` keeps a new version. Spotlight records the version's number, the
+state's `serial` and `lineage`, its size and MD5, and who wrote it, and keeps
+the body in the deployment's object storage. `GET` answers the latest version.
+Deleting the workspace deletes its states and every version.
+
+The body is at most 64 MB.
