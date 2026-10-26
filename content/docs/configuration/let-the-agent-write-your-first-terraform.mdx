@@ -93,6 +93,10 @@ On a pull request that changes the folder, the workflow runs
 `terraform fmt -check`, `terraform init`, `terraform validate` and
 `terraform plan` through the `github-pull-requests` trust. On a push to the
 default branch, it runs `terraform apply` through the `github-apply` trust.
+When Spotlight keeps the state, each job first downloads `spotlight` and signs
+in to the state with
+[`spotlight token`](/docs/reference/cli/spotlight-command#spotlight-token),
+through the same trust.
 
 It runs `terraform init`, `terraform fmt`, `terraform validate` and
 `terraform plan`, signed in to Spotlight's state with the run's token when
@@ -110,21 +114,24 @@ If Spotlight could not set the variables, it also reads
 The agent never applies anything. Before you merge:
 
 1. In the repository's **Settings**, under **Secrets and variables** and then
-   **Actions**, add what the pull request lists: the credentials of the state
-   backend, the `TF_VAR_` secrets, and the repository variables if Spotlight
-   could not set them.
+   **Actions**, add what the pull request lists: the `TF_VAR_` secrets, the
+   credentials of the state backend if it is not Spotlight's, and the
+   repository variables if Spotlight could not set them.
 2. Review the pull request and merge it. The workflow applies the
    configuration from the default branch.
 
 ## If the default branch is not protected
 
-If the default branch has no branch protection, anyone who can push to it can
+If merging into the default branch needs no approving review, anyone who can
+push to it can
 change the workspace's configuration through the `github-apply` trust. The pull
 request says this first, and the step shows a warning icon.
 
 On GitHub, protect the default branch with a branch protection rule or a
-ruleset that requires a pull request review. Spotlight counts either as
-protection.
+ruleset that requires at least one approving review. Spotlight counts either
+as protection, and nothing less. Reading a branch protection rule needs the
+GitHub App's **Administration** read permission; without it, Spotlight sees
+only rulesets.
 
 ## If the pull request has no plan
 
