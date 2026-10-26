@@ -24,8 +24,29 @@ const MOVED: Readonly<Record<string, string>> = {
     '/docs/integrations/generate-tools-from-an-api-spec',
 };
 
+const PROXY_PREFIX = '/ingest';
+const POSTHOG_API_HOST = 'eu.i.posthog.com';
+const POSTHOG_ASSET_HOST = 'eu-assets.i.posthog.com';
+
 interface Env {
   ASSETS: { fetch: (input: Request | URL) => Promise<Response> };
+}
+
+function toPostHog(request: Request, url: URL) {
+  const path = url.pathname.slice(PROXY_PREFIX.length);
+  const upstream = new URL(path + url.search, `https://${POSTHOG_API_HOST}`);
+  if (path.startsWith('/static/')) upstream.hostname = POSTHOG_ASSET_HOST;
+
+  const headers = new Headers(request.headers);
+  headers.delete('cookie');
+  const ip = request.headers.get('cf-connecting-ip');
+  if (ip) headers.set('x-forwarded-for', ip);
+
+  return fetch(upstream, {
+    method: request.method,
+    headers,
+    body: request.body,
+  });
 }
 
 async function markdown(env: Env, request: Request, path: string, vary: boolean) {
@@ -39,7 +60,10 @@ async function markdown(env: Env, request: Request, path: string, vary: boolean)
 
 export default {
   async fetch(request: Request, env: Env) {
-    const { pathname, search } = new URL(request.url);
+    const url = new URL(request.url);
+    const { pathname, search } = url;
+
+    if (pathname.startsWith(`${PROXY_PREFIX}/`)) return toPostHog(request, url);
 
     const asMarkdown = pathname.endsWith('.md') ? '.md' : '';
     const moved = MOVED[pathname.replace(/(\.md|\/)$/, '')];
