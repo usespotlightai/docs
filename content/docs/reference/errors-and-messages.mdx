@@ -273,16 +273,16 @@ Each command exits `1` and prints its message on standard error.
 | `--limit is how many tools to show, at least 1` | `--limit` is below 1. | [spotlight tools search](/docs/reference/cli/agent-commands#spotlight-tools-search) |
 | `say which tool` | `spotlight tools describe` without a tool. | [spotlight tools describe](/docs/reference/cli/agent-commands#spotlight-tools-describe) |
 | `this run has no tool "<name>" enabled; the nearest are <tools>` | `spotlight tools describe` names a tool that is not enabled for the run. | [spotlight tools describe](/docs/reference/cli/agent-commands#spotlight-tools-describe) |
-| `no such command "<name>"` | No granted tool has that name. | [Agent commands](/docs/reference/cli/agent-commands) |
+| `spotlight: no command "<word>".` | The word is not a command. A near command, or the matching tool call, follows. | [Help](/docs/reference/cli/agent-commands#help) |
 | `--<input> is required` | A required input without a default was not given. | [Agent commands](/docs/reference/cli/agent-commands) |
 | `<command>: <flag error>` | A flag the tool does not take, or a missing value. | [Agent commands](/docs/reference/cli/agent-commands) |
 | `this run has no tool "<name>" enabled; it has: <tools>` | The tool is not granted to the run. | [Agent commands](/docs/reference/cli/agent-commands) |
 | `unreadable input: hand the tool JSON` | The input is over 8 MiB, or is not JSON. | [Agent commands](/docs/reference/cli/agent-commands) |
-| `--json takes one JSON object, as --json '{"name": "value"}'` | The `--json` value is not a JSON object. | [spotlight &lt;tool&gt;](/docs/reference/cli/agent-commands#spotlight-tool) |
-| `--<input> cannot be read from stdin when --json is` | A `stdin` input named `-` while `--json -` read standard input. | [spotlight &lt;tool&gt;](/docs/reference/cli/agent-commands#spotlight-tool) |
+| `--json takes one JSON object, as --json '{"name": "value"}'` | The `--json` value is not a JSON object. | [spotlight tools call](/docs/reference/cli/agent-commands#spotlight-tools-call) |
+| `--<input> cannot be read from stdin when --json is` | A `stdin` input named `-` while `--json -` read standard input. | [spotlight tools call](/docs/reference/cli/agent-commands#spotlight-tools-call) |
 | `<tool> takes <input>, and <where> <why>` | A tool input does not fit its schema. | [Input schemas](/docs/reference/terraform/integration#input-schemas) |
-| `<command>: "<value>" follows --<input>, which takes no value; write --<input>=<value>` | A value after a boolean flag, as in `--notify false`. | [spotlight &lt;tool&gt;](/docs/reference/cli/agent-commands#spotlight-tool) |
-| `<command>: "<argument>" is not a flag` | A word outside any flag. | [spotlight &lt;tool&gt;](/docs/reference/cli/agent-commands#spotlight-tool) |
+| `<command>: "<value>" follows --<input>, which takes no value; write --<input>=<value>` | A value after a boolean flag, as in `--notify false`. | [spotlight tools call](/docs/reference/cli/agent-commands#spotlight-tools-call) |
+| `<command>: "<argument>" is not a flag` | A word outside any flag. | [spotlight tools call](/docs/reference/cli/agent-commands#spotlight-tools-call) |
 | `it is larger than the 4 MB Spotlight reads from a tool` | A generated tool's answer is over 4 MB. | [Generated tools](/docs/reference/terraform/integration#generated-tools) |
 | `could not read this run's tools to find "<name>": <error>` | The tool list could not be read. | [Agent commands](/docs/reference/cli/agent-commands) |
 | `a replay may not reply to a review comment: it has no effect outside Spotlight` | `spotlight reply` in a replay run. | [Replay runs](/docs/reference/app/replays#replay-runs) |

@@ -36,16 +36,27 @@ spotlight replay <subcommand>
 spotlight login [--url <address>] [--no-browser]
 spotlight logout [--url <address>]
 spotlight version
-spotlight help
+spotlight help [--all] [<command>...]
 ```
 
-Any other first argument is taken as an [agent command](/docs/reference/cli/agent-commands).
+The [agent commands](/docs/reference/cli/agent-commands) work inside a run.
+
+## Help
 
 | Invocation | Output | Exit code |
 | --- | --- | --- |
-| `spotlight` with no arguments | Usage on standard error. | `1` |
-| `spotlight help`, `-h` or `--help` | Usage on standard output. | `0` |
-| `spotlight version` | The release, such as `v0.1.0`. A binary built without one prints `dev`. | `0` |
+| `spotlight`, `spotlight help`, `-h` or `--help` | The commands, by group, on standard output. Inside a run, the agent commands. Outside one, the commands for hosts, replays and the login. | `0` |
+| `spotlight help --all` | Every command, by group. | `0` |
+| `spotlight <command> --help`, `-h`, or `spotlight help <command>` | The command's usage, flags, environment, examples, exit codes and docs link. | `0` |
+| `spotlight replay` | The help for `spotlight replay`. | `0` |
+| `spotlight version` or `--version` | The release, such as `v0.1.0`. A binary built without one prints `dev`. | `0` |
+
+A word that is not a command fails with `spotlight: no command "<word>".` on
+standard error and exits `1`. A near command follows, as
+`Did you mean spotlight host config?`, then the help to run.
+
+A usage error prints the command's usage line, then
+`Run spotlight <command> --help for flags and examples.`
 
 ## spotlight host
 
@@ -55,7 +66,7 @@ spotlight host
 
 Serves a pull pool or a runner trust. The host claims work, starts a fresh
 sandbox and egress for each run or check, and destroys both when it ends.
-An unknown argument prints the usage and exits `1`.
+An unknown subcommand fails as described in [Help](#help).
 
 The host writes its process id to `host.lock` in the state directory while it
 holds the lock. The other `spotlight host` commands find it there.
@@ -455,13 +466,10 @@ spotlight runner harnesses '[]'
 spotlight egress
 ```
 
-The egress sidecar a host starts next to each sandbox. It takes no arguments
-other than `serve`; any other argument prints the usage and exits `1`:
-
-```text
-  spotlight egress            egress sidecar for one sandbox, which injects its run's secrets for their hosts
-  spotlight egress serve      shared egress for push pools
-```
+The egress sidecar a host starts next to each sandbox. It injects the run's
+secrets into requests to their hosts. `spotlight egress serve` runs one egress
+for the sandboxes of a push pool. An unknown subcommand fails as described in
+[Help](#help).
 
 It logs `egress is the sidecar of the sandbox` when it listens. It reads the
 config the host gave it from `/run/spotlight/egress.json` and deletes the file. See

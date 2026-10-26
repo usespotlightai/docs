@@ -148,10 +148,10 @@ station {
 Outside Terraform, the name is `<integration>.<tool>`, as in `acme.comment`.
 
 Run `terraform apply`. The next run at that station has the tool. Its agent
-calls it as a command:
+calls it with `spotlight tools call`:
 
 ```bash
-spotlight acme comment --issue ACME-42 --body "Fixed in the linked pull request."
+spotlight tools call acme.comment --issue ACME-42 --body "Fixed in the linked pull request."
 ```
 
 `spotlight tools` lists the tools enabled for a run, with their flags.
