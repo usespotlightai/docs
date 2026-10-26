@@ -21,7 +21,7 @@ spotlight cause --task <task> --cause config|task|judge|check|infra --evidence <
 spotlight tools
 spotlight tools search "<words>" [--limit <n>]
 spotlight tools describe <tool>
-spotlight <tool> [--<input> <value>...] [--json <object> | --json -]
+spotlight tools call <tool> [--<input> <value>...] [--json <object> | --json -]
 ```
 
 In a [search's](/docs/reference/app/searches#the-searchs-agent-run) agent run,
@@ -70,6 +70,26 @@ fails:
 | An error from the server | Printed as the server wrote it. |
 | A token that does not match | `not this run's token` |
 | Spotlight unreachable | `reach Spotlight: <error>` |
+
+## Help
+
+In a run, `spotlight`, `spotlight --help` and `spotlight help` list the agent
+commands by group. `spotlight help --all` also lists the commands for hosts,
+replays and the login.
+
+Every command takes `-h` or `--help`, and `spotlight help <command>` prints the
+same text. The help gives the command's usage, its flags, examples and a link
+to its section on this page. It prints to standard output and exits `0`.
+`spotlight tools call <tool> --help` prints what
+[`spotlight tools describe <tool>`](#spotlight-tools-describe) prints.
+
+A usage error prints the command's usage line, then
+`Run spotlight <command> --help for flags and examples.`
+
+A word that is not a command fails with `spotlight: no command "<word>".` and
+exits `1`. A near command follows, as `Did you mean spotlight handover?`.
+When the word is an enabled tool, the line that follows names the call, as
+`Tools are called with spotlight tools call, as in: spotlight tools call linear.comment`.
 
 ## spotlight handover
 
@@ -492,7 +512,7 @@ signature, its description, and a line for each input that has a description. Fo
 `body`:
 
 ```text
-spotlight acme comment --issue <string> [--body <string> (or piped in)] [--json <object> | --json -]
+spotlight tools call acme.comment --issue <string> [--body <string> (or piped in)] [--json <object> | --json -]
   <description>
     --issue  <input description>
 ```
@@ -529,7 +549,7 @@ A run with no tools enabled prints `This run has no tools enabled.`
 
 | Message | Cause |
 | --- | --- |
-| `no such command "tools <word>"` | A word after `tools` other than `search` or `describe`. The usage follows. |
+| `spotlight: no command "tools <word>".` | A word after `tools` other than `search`, `describe` or `call`. A near command follows, if there is one. |
 
 ## spotlight tools search
 
@@ -571,7 +591,7 @@ at 160 characters), and `Needs a person's approval.` for a tool that requires
 approval. The last line names the `describe` command for the best match.
 
 ```text
-spotlight linear issue-create --title <string> --team-id <string> [--json <object> | --json -]
+spotlight tools call linear.issue-create --title <string> --team-id <string> [--json <object> | --json -]
   Create an issue.
 
 Read one with: spotlight tools describe linear.issue-create
@@ -642,7 +662,7 @@ Takes:
 }
 
 For example:
-spotlight linear issue-create --title "…" --team-id "…" --intent "…"
+spotlight tools call linear.issue-create --title "…" --team-id "…" --intent "…"
 ```
 
 | Message | Cause |
@@ -686,18 +706,17 @@ Answers with (inferred from earlier calls, may be incomplete):
 - Updating or deleting the integration deletes it, and so does deleting
   the team.
 
-## spotlight &lt;tool&gt;
+## spotlight tools call
 
 ```text
-spotlight <integration> <tool> [--<input> <value>...] [--json <object> | --json -]
-spotlight <integration>.<tool> [--<input> <value>...] [--json <object> | --json -]
+spotlight tools call <tool> [--<input> <value>...] [--json <object> | --json -]
 ```
 
-Calls a tool enabled for the run. A tool named `acme.comment` is called as
-`spotlight acme comment` or `spotlight acme.comment`. Its flags are its
-inputs, by the names the tool gives them, as in `--team_id` or `--petId`. A
-built-in tool, such as `pull-request`, is called by its name alone, as in
-`spotlight pull-request`. See [`spotlight_integration`](/docs/reference/terraform/integration)
+Calls a tool enabled for the run, by its full name. A tool of an integration
+has the integration's name first, as in `spotlight tools call acme.comment`.
+A built-in tool has its name alone, as in `spotlight tools call pull-request`.
+Its flags are its inputs, by the names the tool gives them, as in `--team_id`
+or `--petId`. See [`spotlight_integration`](/docs/reference/terraform/integration)
 for how an integration defines tools and their inputs.
 
 | Input | How it is given |
@@ -733,7 +752,8 @@ came. Built-in tools answer with an object, as in `{"url": "…"}` from
 
 | Message | Cause |
 | --- | --- |
-| `no such command "<name>"` | No granted tool has that name. The usage and the run's tools follow. |
+| `say which tool` | No tool after `call`. The usage follows. |
+| `this run has no tool "<name>" enabled; the nearest are <tools>` | No enabled tool has that name. Up to three near tools are named. |
 | `--<input> is required` | A required input without a default was not given. The tool's signature follows. |
 | `<command>: <flag error>` | A flag the tool does not take, or a missing value. The tool's signature follows. |
 | `<command>: "<value>" follows --<input>, which takes no value; write --<input>=<value>` | A value after a boolean flag, as in `--notify false`. The tool's signature follows. |
@@ -749,12 +769,12 @@ came. Built-in tools answer with an object, as in `{"url": "…"}` from
 Other failures are the tool's own error as Spotlight reports it.
 
 ```bash
-spotlight acme comment --issue <issue> --body "Deployed to staging."
-git diff | spotlight acme comment --issue <issue>
-spotlight petstore find-pets-by-status --status sold
-spotlight linear issue-create --input '{"teamId": "<team id>", "title": "Flaky upload test"}'
-spotlight linear issue-create --json '{"input": {"teamId": "<team id>", "title": "Flaky upload test"}}'
-spotlight linear issue-create --json - < issue.json
-spotlight acme comment --issue <issue> --body "Deployed to staging." \
+spotlight tools call acme.comment --issue <issue> --body "Deployed to staging."
+git diff | spotlight tools call acme.comment --issue <issue>
+spotlight tools call petstore.find-pets-by-status --status sold
+spotlight tools call linear.issue-create --input '{"teamId": "<team id>", "title": "Flaky upload test"}'
+spotlight tools call linear.issue-create --json '{"input": {"teamId": "<team id>", "title": "Flaky upload test"}}'
+spotlight tools call linear.issue-create --json - < issue.json
+spotlight tools call acme.comment --issue <issue> --body "Deployed to staging." \
   --intent "post the staging deploy on the issue, publicly under the team's name"
 ```
