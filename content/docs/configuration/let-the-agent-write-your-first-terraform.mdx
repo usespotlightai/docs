@@ -53,8 +53,9 @@ The agent writes into the folder you chose:
 - the workspace's current configuration, one file for each concern, such as
   `line-<team>-<line>.tf` for each line, with each line's `source` naming its
   own file
-- the `backend` that keeps the Terraform state, if the team has one, and a
-  `README.md`
+- the `backend` that keeps the Terraform state: the team's own, or
+  [Spotlight's](/docs/configuration/keep-terraform-state-in-spotlight) when
+  the team has none, and a `README.md`
 - a prompt file for each station, `prompts/<team>/<line>/<station>.md`, adapted
   to what it learned
 - each station's `setup` and `check` commands
@@ -62,7 +63,8 @@ The agent writes into the folder you chose:
 - a `reviews` policy from `CODEOWNERS`, and `match` hooks for risky paths
 
 It runs `terraform init`, `terraform fmt`, `terraform validate` and
-`terraform plan`, commits on a branch such as `spotlight-configuration`, and
+`terraform plan`, signed in to Spotlight's state with the run's token when
+Spotlight keeps it, commits on a branch such as `spotlight-configuration`, and
 opens a pull request. The description lists each departure from the built-in
 lines with the files it rests on, followed by the plan. The plan should import
 what already exists and change only what the agent adapted.

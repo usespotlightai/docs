@@ -169,7 +169,7 @@ secret it stores.
 | Expires | An hour after egress fetches the run's secrets. |
 | Revoked | When the run completes, is exhausted or cancelled, when the lease of its attempt expires or the run is suspended, or when the runner loses the run while egress fetches its secrets. Each fetch of the run's secrets revokes the run's earlier token for the same attempt, then issues a new one. |
 | Stand-in | `spotlight-egress:spotlight-api`, in `SPOTLIGHT_API_TOKEN`. See [The agent's environment](/docs/reference/hosts/sandbox#the-agents-environment). |
-| Injected | In `Authorization`, in place of the stand-in or `Bearer ` and the stand-in, on requests to the Spotlight address's host. |
+| Injected | In `Authorization`, as `Bearer ` and the token, in place of the stand-in, `Bearer ` and the stand-in, or `Basic` credentials whose password is the stand-in, on requests to the Spotlight address's host. Terraform's `http` backend sends the Basic form for [the state backend](/docs/reference/terraform/state-backend). |
 
 Egress injects it whatever the host's allow-list says, since the Spotlight
 address is always allowed. When the Spotlight address is plain HTTP, as in
