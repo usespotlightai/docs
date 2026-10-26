@@ -13,6 +13,8 @@ A person or a CI job runs [`spotlight replay`](/docs/reference/cli/replay-comman
 from anywhere to replay a station's past tasks, or to check the station
 changes in a Terraform plan. A person runs [`spotlight login`](#spotlight-login)
 so that `spotlight replay` and the Terraform provider act as them.
+[`spotlight token`](#spotlight-token) prints a token for Terraform's `http`
+backend.
 
 ## Synopsis
 
@@ -35,6 +37,7 @@ spotlight egress serve
 spotlight replay <subcommand>
 spotlight login [--url <address>] [--no-browser]
 spotlight logout [--url <address>]
+spotlight token [--url <address>]
 spotlight version
 spotlight help [--all] [<command>...]
 ```
@@ -572,6 +575,33 @@ credentials file. The address is found as for `spotlight login`.
 Errors are printed after `spotlight logout: ` on standard error. The exit codes
 are those of `spotlight login`.
 
+## spotlight token
+
+```text
+spotlight token [--url <address>]
+```
+
+Prints a token for Spotlight on standard output, followed by a newline, for
+[the state backend](/docs/reference/terraform/state-backend) to send as
+`TF_HTTP_PASSWORD`. The address is found as for `spotlight login`. It takes the
+first of these that is set:
+
+| Source | Prints |
+| --- | --- |
+| `SPOTLIGHT_API_TOKEN` | The token, as it is. |
+| `SPOTLIGHT_OIDC_TRUST` | A token issued through the [OIDC trust](/docs/reference/terraform/oidc-trust), for the OIDC token in `SPOTLIGHT_OIDC_TOKEN`, else the one GitHub Actions issues to the job for the audience in `SPOTLIGHT_OIDC_AUDIENCE`, else `spotlight`. |
+| The login for the address in the [credentials file](#credentials-file) | The login's token. |
+
+| Error | Cause |
+| --- | --- |
+| `no token for <address>. Run spotlight login, or set SPOTLIGHT_API_TOKEN, or SPOTLIGHT_OIDC_TRUST in CI` | None of the sources is set. |
+| `SPOTLIGHT_OIDC_TRUST is set, but no OIDC token was found. Set SPOTLIGHT_OIDC_TOKEN, or run in a GitHub Actions job with the permission id-token: write` | A trust without `SPOTLIGHT_OIDC_TOKEN`, outside a GitHub Actions job that may request OIDC tokens. |
+| `GitHub Actions did not give an OIDC token; the job needs the permission id-token: write: <error>` | GitHub Actions refused the request. |
+| `Spotlight at <address> did not exchange the OIDC token through the OIDC trust <id>: it answered <status>: <body>` | The trust did not accept the job's token. |
+
+Each error is printed after `spotlight token: ` on standard error. The exit
+codes are those of `spotlight login`.
+
 ## Credentials file
 
 `spotlight login` writes `credentials.json` in the first of these directories
@@ -604,6 +634,7 @@ The file is written in one rename. Other fields in the file are kept.
 | [`spotlight replay`](/docs/reference/cli/replay-command#environment) | `SPOTLIGHT_API_TOKEN` is not set. |
 | [`spotlight replay check`](/docs/reference/cli/replay-command#environment-for-check) | Neither `SPOTLIGHT_API_TOKEN` nor `SPOTLIGHT_OIDC_TRUST` is set. |
 | [The Terraform provider](/docs/reference/terraform/terraform-provider#credentials) | No token and no trust is set. |
+| [`spotlight token`](#spotlight-token) | Neither `SPOTLIGHT_API_TOKEN` nor `SPOTLIGHT_OIDC_TRUST` is set. |
 
 Each takes the entry for the address of its `SPOTLIGHT_URL` or `url`.
 
