@@ -201,7 +201,7 @@ reviews {
 | `effort` | string | none | `low`, `medium`, `high`, `xhigh` or `max`. Without it, the harness uses its own default. |
 | `profile` | string | none | The key of a team [harness profile](/docs/reference/terraform/harness-profile). A run at a station naming a profile the team does not have fails with the code `refused`. |
 | `prompt` | string | none | Markdown handed to the agent that works the station. At most 20,000 characters. |
-| `check` | string | none | A command each layer of a change stack generated at this station is checked with, as in `npm test`. One line of at most 500 characters. See [checks](/docs/reference/app/change-stacks-and-decisions#checks). |
+| `check` | string | none | A command each layer of a change stack generated at this station is checked with, as in `npm test`. A shell command or script of one or more lines, at most 65,536 characters. Write a script of many lines as a heredoc (`<<-EOT`). See [checks](/docs/reference/app/change-stacks-and-decisions#checks). |
 | `runners` | array of strings | none | Runner labels this station's work is placed on. Without it, the line's `runners` apply. See [placement](#placement). |
 | `diffs` | boolean | `false` | Whether a change stack is generated from each run's diff. See [Change stacks and decisions](/docs/reference/app/change-stacks-and-decisions). |
 | `decisions` | boolean | `false` | Whether decisions are generated from each run. See [decisions](/docs/reference/app/change-stacks-and-decisions#decisions). |
@@ -354,7 +354,7 @@ field names, as in `risesBy`, also for a line written in Terraform.
 | --- | --- | --- | --- |
 | `name` | string | required | `owner/name`. Each repository once per line. |
 | `image` | string | none | The runner image every station of the line runs in, as in `ghcr.io/acme/api-runner:main`. Without it, the host's default image. Lower case except the tag, at most 255 characters, with an optional tag or `@sha256:` digest. The image is built `FROM ghcr.io/usespotlightai/spotlight-runner` and holds the harness of each station. |
-| `setup` | string | none | A command run in the checkout, as the agent, before each run's agent starts, and before a change stack check wherever a layer changes a lockfile. One line of at most 500 characters. |
+| `setup` | string | none | A command run in the checkout, as the agent, before each run's agent starts, and before a change stack check wherever a layer changes a lockfile. A shell command or script of one or more lines, at most 65,536 characters. |
 
 The repositories of one line name at most one distinct `image`. A read returns
 repositories sorted by name.
