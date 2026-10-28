@@ -25,9 +25,11 @@ out. The agent that improves a station starts from the same record, through
 `spotlight history`, and is told to check what changed between configs before
 it blames the model.
 
-Spotlight has no loop that changes a station with no person in it. In the
-docs' view, such a loop needs this record to measure each change against, so
-the record comes first, and a person still judges each change.
+Spotlight's own loop that improves a station keeps a person in it: Spotlight
+searches for a better config and opens a pull request, and a person merges it.
+See [How Spotlight improves a station](/docs/improvement/how-spotlight-improves-a-station).
+In the docs' view, such a loop needs this record to measure each change
+against, so the record comes first.
 
 ## What the fingerprint leaves out
 
@@ -67,7 +69,7 @@ ones.
 
 ## The agent proposes, a person applies
 
-The agent working on a station proposes one change at a time, as a diff of the
+The agent in a planning chat about a station proposes one change at a time, as a diff of the
 station's Terraform. With one change per config, the next group's tally speaks
 to that change alone. The agent cannot apply it, because a station's
 configuration is written only through Terraform or the resource API.

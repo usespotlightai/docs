@@ -2,81 +2,65 @@
 type: reference
 icon: BookText
 title: Replays
-description: The Replay sets card on a Station page, the replay set and replay pages, what a set is made of and the runs suggested to even it, replay states, results and their reasons, the judge's `guidance` field, success with its range, gains, side-by-side wins, losses and ties, a set's health, the replays that calibrate it and the replay with the answer, why a run cannot be replayed, spend and ceilings, and how a replay run differs from a task run.
+description: The replay set and replay pages, how Spotlight keeps and refreshes a station's replay set, what a set is made of, replay states, results and their reasons, the judge's `guidance` field, success with its range, gains, side-by-side wins, losses and ties, a set's health, the replays that calibrate it and the replay with the answer, why a run cannot be replayed, spend and ceilings, and how a replay run differs from a task run.
 ---
 
 A [replay](/docs/reference/glossary#replay) runs some of a work station's past
 task runs again under a [candidate](/docs/reference/glossary#candidate) config,
-and scores each one. The same data is read and written through the
+and scores each one. Spotlight keeps one replay set for each work station and
+[refreshes it](#how-spotlight-keeps-the-set) from the station's runs. The same
+data is read and written through the
 [Replays API](/docs/reference/api/replays), candidates through the
 [`replay-candidate`](/docs/reference/api/replay-candidate) resource, and both
-from the [`spotlight replay`](/docs/reference/cli/replay-command) command.
+from the [`spotlight replay`](/docs/reference/cli/replay-command) command. See
+[How Spotlight improves a station](/docs/improvement/how-spotlight-improves-a-station#the-replay-set-spotlight-keeps).
 
 Only people on the team, the workspace's owners and admins, and workspace
 tokens with the `read` scope can read a team's replay sets, replays,
-candidates and replay runs. Anyone else is answered `404`. Opening a set,
-renaming or deleting it, adding or removing runs, starting or stopping a
-replay, and proposing or deleting a candidate also need `plan`. See
+candidates and replay runs. Anyone else is answered `404`. Taking a run out of
+a set, starting or stopping a replay, and proposing or deleting a candidate
+also need `plan`. See
 [Team outcomes](/docs/reference/roles-and-permissions#team-outcomes).
-
-## Station page
-
-A work station's "Improve" tab, `…/stations/<stationId>/improve`, has a
-"Replay sets" card under "Try a change", at `#replays`. It lists the station's
-replay sets, one row each:
-
-| Column | Shows |
-| --- | --- |
-| Set | The set's name, linked to the set's page, and "Station gone" when its station has left the line. |
-| Runs | How many runs the set contains. |
-| Latest replay | The latest replay's [success](#success) as `<share> succeeded`, or `No score yet`, and its [state](#replay-states). Hovering over the success shows the replay's candidate, or "Live config", and its [success line](#success-line). A set never replayed reads "Not replayed yet". |
-
-"Create a replay set" requests a name, then opens the new set's page. With no
-sets, the card reads "No replay sets yet" and
-`A replay set contains past runs to replay under a candidate. Create one to start comparing.`,
-with "Create a replay set". To a person who may not read the team's replays,
-the card reads `Only team members can see its replays`.
-
-### Success line
-
-The success line reads the replay's success with its range, as in
-`40% (20–60%) succeeded`, or `No score yet`, then:
-
-| Replay | Then |
-| --- | --- |
-| The set's baseline | `· the baseline` |
-| With a [gain](#gains) over its [reference replay](#reference-replays) | The gain and its range, then `vs <reference> <share>`, then the significance, as in `+10 pts (+2 to +18) vs live config 25% (10–40%) · Better`. |
-| With a reference replay but no gain | `· <reference> <share>`, as in `· live config 25%`. |
-| Compared with nothing | Nothing. |
-
-`<reference>` is the reference replay's label in lower case: `baseline`,
-`live config`, `search's starting config` or `earlier baseline`. `<share>` is
-the reference replay's success on the tasks both replays scored, with its range
-when known. Without that success, the label shows alone. Once any task was
-[set side by side](#side-by-side), the line ends with
-`· Side by side with <replay>: <n> wins, <n> losses, <n> ties`, `<replay>`
-being the reference replay as [shown](#reference-replays), as in `the baseline`.
 
 ## Replay set page
 
 `/w/<slug>/team/<teamId>/lines/<lineId>/stations/<stationId>/replay-sets/<setId>`
 
-The top bar shows the breadcrumbs, `<team> › <line> › <station> › Replay sets
-› <set>`, where "Replay sets" opens the station's replay sets, and "Rename" and
-"Delete" at its right. Under it, the heading shows the station's mark, the
-set's name and `<n> runs · opened <when>`, with this pill:
+A work station's page links to its set from its
+[improvement status](/docs/reference/app/searches#improvement-status): from the
+fact itself while Spotlight waits or cannot search, and from "Replay set" in
+its detail once the station has a set.
+
+The top bar shows the breadcrumbs, `<team> › <line> › <station> › Replay
+set`. Under it, the heading shows the station's mark, "Replay set" and
+`<n> runs · Kept by Spotlight, refreshed <when>`, or `Kept by Spotlight, not
+refreshed yet` before the first refresh. Hovering over "Kept by Spotlight"
+shows a note titled "Kept by Spotlight": `Spotlight refreshes the set from the
+station's runs. It refreshes a full set every 7 days and a set that is not
+full every day. It also refreshes the set before a search or a replay starts.
+It adds the newest run of new tasks. It takes out runs that ended more than 90
+days ago. A task that a person takes out does not come back.`, then these rows:
+
+| Row | Shows |
+| --- | --- |
+| Last change | When the last refresh that changed the set ran, or "None yet" with no such refresh, the only row then. |
+| Added | The runs that refresh added, as `<n>: <title>, <title>, <title>`, with `and <n> more` past 3 titles, a deleted task reading "A deleted task"; or "None". |
+| Taken out | The runs that refresh took out, in the same form. |
+
+The heading has this pill:
 
 | Pill | When | On hover |
 | --- | --- | --- |
 | Station gone | Its station has left its line. | `The station is gone from its line. The set starts no replays, takes no runs and retains no workspaces.` |
 
-To someone who may read the team's replays, an unknown set, or one of another
-station, reads "Replay set not found" and `This team has no replay set at that
-address. Someone may have deleted it.` To anyone else, the page reads "Only
-team members can see its replays".
+To someone who may read the team's replays, an address that is not the
+station's set reads "Replay set not found" and `This team has no replay set at
+that address.` To anyone else, the page reads "Only team members can see its
+replays".
 
-Then come four panels: "Replays" and "Health" one under the other, then
-"Runs" and "Checks" side by side. Each is titled with an ⓘ that explains it on
+Then come five panels: "Replays", "Searches" and "Health" one under the
+other, then "Runs" and "Checks" side by side. "Searches", at `#searches`, is
+described under [Searches card](/docs/reference/app/searches#searches-card). Each is titled with an ⓘ that explains it on
 hover, and shows its actions at its bottom left. A button that cannot be used
 is disabled and gives the reason on hover.
 
@@ -84,43 +68,22 @@ is disabled and gives the reason on hover.
 | --- | --- | --- |
 | Replays | ⓘ: `Each replay reruns the set under one config. The baseline is the latest replay of the live config. Gain: the change in success over the replay it is compared with, on the tasks both scored`. One row per replay of the set, newest first, as "Config", "State", "Success", "Gain", "Spent" and "Started". "Config" is the candidate's name, "Live config", or "A removed candidate", linked to the replay, with `Each run <n> times` when it replays each run more than once. "State" is its [state](#replay-states), with its note on hover. "Success" is its [success](#success), with `Likely range: <low>–<high>%` on hover, `–` while nothing is scored, and, when some of its repeats are unscored, a warning sign with `<n> of its runs have no score yet.` on hover. "Gain" is "Baseline" on the set's baseline, `–` with no [gain](#gains), else the gain in points, coloured by significance. On hover, the gain reads `<significance>. Likely range: <low> to <high> pts`, `<significance>` being `Better`, `Worse` or `within noise`; then, once the [reference replay](#reference-replays)'s success on the tasks both scored is known, `<Reference label>: <share>`, as in `Live config: 50%`; then, once any task was compared [side by side](#side-by-side), `Side by side with <reference>: <n> wins, <n> losses, <n> ties`; joined by ` · `. "Spent" is `<spent> / <ceiling>`. With none, it reads "Not replayed yet" and `Replay the live config first. It becomes the baseline.` | "Start a replay": see below. |
 | Health | One row per check of the set's [health](#health), as "Check" and "Result". | Nothing. |
-| Runs | A bar of how the set's runs [turned out](#outcomes), then one row per run, as "Run", "State" and "Ended". "Run" is its task's title, linked to the run; a task since deleted reads "A deleted task". A run that [cannot be replayed](#why-a-run-cannot-be-replayed) carries a red warning sign, with the reason on hover. "State" is the run's state, such as "Completed" or "Failed", or "Unknown run". See [What a set is made of](#what-a-set-is-made-of). With none, it reads "No runs in this set" and `Add past runs of the station. If Spotlight retained a run's starting point, you can replay the run.` | "Add runs": see below. The X that shows on a row's hover takes the run out of the set. "Add runs" is not offered once the station is gone. While a search of the set is running, runs can be neither added nor taken out, and "Add runs" and the X read `A search of this set is running. Add or take out runs after the search ends or a person stops it.` on hover. |
-| Checks | The [checks](/docs/reference/app/searches#gating-a-stations-changes) replayed on the set, newest first, as "Change", "Result", "Regressions" and "When". "Change" is `Pull request #<n>`, `Commit <first 7 characters>` or "A planned change", linked to the check's replay, with `attempt <n>` when the check was tried again. "Result" is "Checking", "Passed", "Too many regressions" or `Undecided: <reason>`, with the reasons of the [Replay checks API](/docs/reference/api/replay-checks#results). "Show older checks" loads more. With none, it reads "No checks yet" and `This set checks pull requests that change this station.`, or `The set doesn't gate config changes.` when the set does not gate them. | The "Gates config changes" switch, disabled once the station is gone. |
+| Runs | A bar of how the set's runs [turned out](#outcomes), then one row per run, as "Run", "State" and "Ended". "Run" is its task's title, linked to the run; a task since deleted reads "A deleted task". A run that [cannot be replayed](#why-a-run-cannot-be-replayed) carries a red warning sign, with the reason on hover. "State" is the run's state, such as "Completed" or "Failed", or "Unknown run". See [What a set is made of](#what-a-set-is-made-of). With none, it reads "No runs in this set" and `Spotlight adds the station's replayable runs when it refreshes the set.` | The X that shows on a row's hover opens `Take "<title>" out of the set?`, `Spotlight never adds a run of this task to the set again. You can't undo this.`, with "Keep it" and "Take it out", which reads "Taking out…" while it is sent. When the server rejects it, the dialog shows its message, or `Sorry, the run couldn't be taken out. Please try again later.` While a search of the set is running, the X is disabled with `A search of this set is running. Take out runs after the search ends or a person stops it.` on hover. |
+| Checks | The [checks](/docs/reference/api/replay-checks) replayed on the set, newest first, as "Change", "Result", "Regressions" and "When". "Change" is `Pull request #<n>`, `Commit <first 7 characters>` or "A planned change", linked to the check's replay, with `attempt <n>` when the check was tried again. "Result" is "Checking", "Passed", "Too many regressions" or `Undecided: <reason>`, with the reasons of the [Replay checks API](/docs/reference/api/replay-checks#results). "Show older checks" loads more. With none, it reads "No checks yet" and `This set checks pull requests that change this station.` | Nothing. |
 
-The ⓘ of "Checks" reads `spotlight replay check replays a pull request's
-change of this station on this set. One gating set per station.`, then
-`Line sets no replay_check. Its pull requests aren't checked.` when the line
-has no `replay_check`, or else `Fails past <n> regressions. Ceiling per check:
-<ceiling> · Minimum real gain: +<n> pts`, from the line's
-[`replay_check`](/docs/reference/terraform/line#replay-check-fields).
+The ⓘ of "Checks" reads `spotlight replay check replays the change of a pull
+request to this station on the station's replay set. The check does not
+refresh the set.`, then `Line sets no replay_check. Its pull requests aren't
+checked.` when the line has no `replay_check`, or else `Fails past <n>
+regressions. Ceiling per check: <ceiling> · Minimum real gain: +<n> pts`, from
+the line's [`replay_check`](/docs/reference/terraform/line#replay-check-fields).
+See [`spotlight replay check`](/docs/reference/cli/replay-command#spotlight-replay-check).
 
-"Rename" opens "Rename the replay set", `Its runs and replays stay as they
-are.`, with "Name" and "Rename". "Delete" opens `Delete <set>?`, `This also
-deletes the set's replays and results. Spotlight stops retaining its runs'
-starting workspaces. You can't undo this.`, with "Keep it" and "Delete set".
-Delete is disabled while a replay of the set is queued or running, and while
-a search of the set is running, with `A replay or search of this set is
-running. Please delete the set after it ends.` on hover.
-
-"Add runs" opens `Add runs to <set>`, `The station's latest ended runs.
-Spotlight retains a run's starting workspace while it's in the set.` It lists the
-station's ended task runs, the 50 created most recently, newest first,
-after any runs [suggested to even the mix](#suggested-runs). Runs that are no
-longer in the workspace are left out after those 50 are read, so the list can
-have fewer. Each shows its title, its state, when it ended and, when it cannot
-be replayed, the reason, then "Add", "In the set" or "Can't be replayed".
-"Add" reads "Adding…" while the run is added; when the server rejects it, the
-dialog shows nothing, and the server's message shows in an error notice. With
-no ended run, it reads `No ended runs to replay yet. Runs appear here once they
-end.` While the suggestions load, the dialog shows a placeholder, and when they
-cannot be read, `Suggested runs could not be loaded.` with "Try again". "Done"
-closes it. A set contains at most 50 runs.
-
-"Start a replay" is disabled with `Please add runs to the set first.` on an
-empty set, and with `The station is gone from its line.` once the station has
-left the line. It opens `Replay <set>`, `Each of the set's <n> runs restarts
-from its starting point under the chosen config. Nothing reaches the task,
-GitHub or any inbox.`:
+"Start a replay" is disabled with `The set has no runs yet. Spotlight adds
+runs of the station when it refreshes the set.` on an empty set, and with `The
+station is gone from its line.` once the station has left the line. It opens
+"Replay the set", `Each of the set's <n> runs restarts from its starting point
+under the chosen config. Nothing goes to the task, GitHub or any inbox.`:
 
 | Field | Values |
 | --- | --- |
@@ -188,8 +151,8 @@ loads.
 | Part | Shows |
 | --- | --- |
 | Bar | How its runs turned out: the bar split by [outcome](#outcomes), then each outcome that occurs with its count, in the order "Accepted", "Sent back", "Asked a person", "Failed", "Other". |
-| ⓘ beside "Runs" | `Past runs of the station. Each replay reruns all of them.`, then, once the set contains runs, when they ended, as `Ended between <when> and <when> · Median: <when>`, or `Ended <when>` when they all ended at the same moment, left out while no run's end can be read; then `Where their tasks came from: <origin> <count> · <origin> <count>`, with each [origin](#origins), the largest count first, ties in the alphabetical order of the origin's key (such as `github`, `person`, `station`), not of the label shown. |
-| "Unbalanced set" warning sign in the panel's header | With 6 runs or more, when one outcome other than "Other" covers more than two thirds of them. On hover: `<n> of <n> runs <outcome>. Add runs that turned out other ways to balance the set.`, the outcome read as "were accepted", "were sent back", "asked a person" or "failed". |
+| ⓘ beside "Runs" | `Past runs of the station that Spotlight keeps in the set. Each replay reruns all of them.`, then, once the set contains runs, when they ended, as `Ended between <when> and <when> · Median: <when>`, or `Ended <when>` when they all ended at the same moment, left out while no run's end can be read; then `Where their tasks came from: <origin> <count> · <origin> <count>`, with each [origin](#origins), the largest count first, ties in the alphabetical order of the origin's key (such as `github`, `person`, `station`), not of the label shown. |
+| "Unbalanced set" warning sign in the panel's header | With 6 runs or more, when one outcome other than "Other" covers more than two thirds of them. On hover: `<n> of <n> runs <outcome>. Spotlight adds runs that turned out other ways when the station has them.`, the outcome read as "were accepted", "were sent back", "asked a person" or "failed". |
 
 ### Outcomes
 
@@ -219,27 +182,42 @@ Where a run's task came from is recorded when the task is opened.
 | GitHub, Slack, Linear, or the integration's name | An integration opened it on something it received. Tasks opened from `git` count as GitHub. |
 | Unknown | Its run or task can no longer be read, as for a deleted task. |
 
-### Suggested runs
+## How Spotlight keeps the set
 
-Once the set contains runs, the "Add runs" dialog lists up to 5 runs first,
-under "Suggested to even the mix", with `Recent runs with outcomes that the
-set has few of. These runs join the set only when you add them.` Each shows
-its [outcome](#outcomes) and "Add". None is ever added without it.
+Spotlight creates a work station's replay set, empty, when a run of the
+station first ends, and keeps that one set for the station's life. Nobody
+creates, renames or deletes a set, or adds runs to it.
 
-The suggestions come from the same 50 ended task runs the dialog lists.
-From those, Spotlight keeps the runs that can be replayed and are not in the
-set, then takes the newest run of each task, leaving out tasks with a run in
-the set already. Runs are then picked one at a time: the outcome among
-"Accepted", "Sent back", "Asked a person" and "Failed" that the set, with the runs
-picked so far, has fewest of, that some run left has, and that occurs fewer
-times than the most common outcome, "Other" included. Ties go to "Accepted", then
-"Sent back", "Asked a person" and "Failed". The newest run left of that outcome is
-picked. Picking stops at 5, at the room left in the set below 50, or when no
-outcome is short. "Other" is never suggested.
+A refresh reads the station's 100 newest ended task runs and changes the set:
 
-An empty set, a full set, a set whose station has left its line, and a set
-already even get no suggestions, and the part is not shown. Suggested runs are not listed
-again below it.
+| Change | Which runs |
+| --- | --- |
+| Takes out | Runs in the set that ended more than 90 days ago. |
+| Adds | Up to 30 runs in the set in all: the newest run of each task that has no run in the set and that no person took out, among the runs that can be replayed and ended within 90 days. |
+
+The set holds one run of each task. Runs are added one at a time: the outcome
+among "Accepted", "Sent back", "Asked a person" and "Failed" that the set, with
+the runs added so far, has fewest of, that some run left has, and that occurs
+fewer times than the most common outcome, "Other" included. Ties go to
+"Accepted", then "Sent back", "Asked a person" and "Failed". The newest run left
+of that outcome is added. With no such outcome, the newest run left is added.
+See [Outcomes](#outcomes).
+
+| A refresh runs | When |
+| --- | --- |
+| On a schedule | 7 days after the last refresh for a set of 30 runs, and 1 day after it for a set of fewer. A set never refreshed is refreshed at once. |
+| Before a replay starts | Each time a replay is started from the app, the API or `spotlight replay start`, and each time Spotlight starts a search. |
+
+A refresh does not run while the set is in use: while a replay of it is
+queued or running, while a search of it is in progress, or while a
+[replay check](/docs/reference/api/replay-checks) waits for its baseline. A
+replay check does not refresh the set. A set whose station has left its line
+is not refreshed.
+
+A run taken out of the set by a person stays out, and Spotlight never adds a
+run of its task again. A run is taken out with the X beside it on the set's
+page or through the [Replays API](/docs/reference/api/replays); either fails
+while the set is in use.
 
 ## Replay page
 
@@ -250,8 +228,8 @@ another station, reads "Replay not found" and `This team has no replay at that
 address. Someone may have deleted it.` To anyone else, the page reads "Only
 team members can see its replays".
 
-The top bar shows the breadcrumbs, `<team> › <line> › <station> › Replay sets
-› <set> › <candidate>`. While the replay is queued or running, "Stop" at its
+The top bar shows the breadcrumbs, `<team> › <line> › <station> › Replay set
+› <candidate>`. While the replay is queued or running, "Stop" at its
 right opens "Stop this replay?", `Running runs stop and no more start.
 Finished runs keep their results.`, with "Keep it running" and "Stop replay".
 
@@ -263,7 +241,7 @@ or "A removed candidate", with these pills:
 | Stopped, Ceiling reached | The replay is [stopped or reached its ceiling](#replay-states). | The state's note. |
 | Baseline | The replay is the set's baseline. | `The set's baseline replays the live config. Most replays are compared with it. A search's replays are compared with its starting config, and a replay with the answer with the live replay that started it.` |
 
-Under it: the set's name, linked to the set; `· from its search`, linked to
+Under it: "Replay set", linked to the set; `· from its search`, linked to
 the search, for a replay a search started; then `· <when>`, when it ended, or
 when it started while it has not ended, with `Started <when>, ended <when>`,
 or `Started <when>`, on hover.
@@ -303,8 +281,8 @@ replay alone, the judge cell listing each repeat's score, and cost and time
 averaged over the repeats. A value not known reads `–`.
 
 With no tasks, the card reads "No tasks in this replay" and `The set had no
-runs when this replay started. Please add runs to the set, then replay it
-again.`, with "Open the set".
+runs when this replay started. Please replay it again after Spotlight adds
+runs to the set.`, with "Open the set".
 
 ### Task details
 
@@ -661,7 +639,7 @@ success over the whole set:
 | --- | --- | --- |
 | "Not measured" | No replay of the live config over the whole set has finished. | `Replay the live config over the whole set to see how much of it succeeds already.` |
 | `The live config succeeds on <share>` | Its success over the whole set is 95% or less. | `The set has room for a search to find more success.` |
-| `Almost none: the live config succeeds on <share>`, marked | Its success is above 95%. A [search](/docs/reference/app/searches#start-a-search) of the set then aims for the same success for less unless told otherwise. | `The set has no room for more success. Search for the same success at less cost, or add tasks that the live config fails.` |
+| `Almost none: the live config succeeds on <share>`, marked | Its success is above 95%. A [search](/docs/reference/app/searches#aims) of the set then aims for the same success for less unless the station's `objective` says otherwise. | `The set has no room for more success. Search for the same success at less cost, or add tasks that the live config fails.` |
 
 The last two end with `If the set's runs were accepted or sent back, Spotlight
 measures this with the answer after a replay of the whole set.`
@@ -822,9 +800,7 @@ The reference replay is shown, and labelled, as:
 The shown form names it in running text, as in the "Tasks" ⓘ. The "Closer"
 column and the judge hover capitalise it, as in "The baseline". The label heads
 its column under "Tasks" and starts its success on the set page's "Gain"
-hover. In lower case, it follows the significance on the "Gain" tile, and on the
-[success line](#success-line) it follows `vs` after the gain, or `·` without
-one.
+hover. In lower case, it follows the significance on the "Gain" tile.
 
 ## Regressions
 
@@ -852,16 +828,13 @@ and the cell reads `–`. Otherwise the "Judge" column says why:
 
 ## Why a run cannot be replayed
 
-Adding a run that cannot be replayed to a set fails with
-`409`. A run in a set that can no longer be replayed carries a red warning sign
-on the set's page, with its reason on hover, and the "Add runs" dialog shows
-the reason beside the run. The sign shows only `unknown-run`,
-`not-a-task-run`, `task-gone`, `still-running`, `no-starting-point`,
-`no-briefing` and `archive-gone`. The dialog shows these for the runs it lists.
-It leaves out runs that are no longer in the workspace, so it never shows
-`unknown-run`.
-The other reasons of an added run show only as the `409`. A run that cannot be replayed when its replay comes to start it is unscored, with
-`Couldn't be replayed or started: <reason>`, the reason in lower case.
+A refresh adds only runs that can be replayed. A run in a set that can no
+longer be replayed carries a red warning sign on the set's page, with its
+reason on hover. The sign shows only `unknown-run`, `not-a-task-run`,
+`task-gone`, `still-running`, `no-starting-point`, `no-briefing` and
+`archive-gone`. A run that cannot be replayed when its replay comes to start it
+is unscored, with `Couldn't be replayed or started: <reason>`, the reason in
+lower case.
 
 | Code | Shown |
 | --- | --- |
@@ -882,16 +855,12 @@ The other reasons of an added run show only as the `409`. A run that cannot be r
 | `cancelled` | `Never started` |
 | `dispatch-failed` | `Failed to start after several tries` |
 
-`attachments-gone`, `repository-gone` and `not-at-the-station` can arise
-both when a run is added and when its replay comes to start it. `answer-gone`,
-`candidate-unfit`, `cannot-start`, `cancelled` and `dispatch-failed` arise only
-when a replay comes to start the run. `candidate-unfit` means the candidate was
+`attachments-gone`, `answer-gone`, `repository-gone`, `not-at-the-station`,
+`candidate-unfit`, `cannot-start`, `cancelled` and `dispatch-failed` arise when
+a replay comes to start the run. `candidate-unfit` means the candidate was
 removed, or its block no longer fits the line as it is now. `cannot-start`
 means the candidate's station runs no harness a runner can start.
-`dispatch-failed` follows 10 failed attempts to queue the run. `unchecked`
-means checking the run met an unexpected error when it was added, with the
-reason `It could not be checked just now. Please try again later.`; adding it
-again checks it again.
+`dispatch-failed` follows 10 failed attempts to queue the run.
 
 A workspace archive is kept for at least 30 days after the latest run that
 started from it, and while a run that started from it is in a replay set. Once
@@ -933,7 +902,7 @@ shows:
 - `A replay of <task title>`, linked to the original run;
 - `Under <candidate>`, with `(the baseline)` for a baseline; for a search's
   replay, `· candidate <name> in its search`, or `· the live config it started
-  from in its search`, linked to the search; then `in a replay of <set>`,
+  from in its search`, linked to the search; then `in its replay`,
   linked to the replay page.
 
 When the replay cannot be read, the second line reads `Sorry, the replay

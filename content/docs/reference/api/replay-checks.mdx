@@ -2,11 +2,12 @@
 type: reference
 icon: BookText
 title: Replay checks API
-description: The team endpoints that mark the replay set that gates a station's changes and check a planned change of a station against it, with the request body, the check's fields, results, permissions and errors.
+description: The team endpoints that check a planned change of a station against the replay set Spotlight keeps for the station, with the request body, the check's fields, results, permissions and errors.
 ---
 
-A replay check replays a planned change of a work station on the replay set
-that gates the station's changes, compares it with the live config, and
+A replay check replays a planned change of a work station on the
+[replay set](/docs/reference/api/replays#replay-set) Spotlight keeps for the
+station, compares it with the live config, and
 gives a result under the line's [`replay_check`](/docs/reference/terraform/line#replay-check-fields).
 [`spotlight replay check`](/docs/reference/cli/replay-command#spotlight-replay-check)
 calls these endpoints from CI. They sit under `/api/teams/{teamId}`, answer
@@ -17,15 +18,9 @@ JSON, and answer errors as `application/problem+json`, as on the
 
 | Method and path | Returns |
 | --- | --- |
-| `POST /replay-sets/{setId}/gates-changes` | `204`: the set gates its station's changes. |
-| `DELETE /replay-sets/{setId}/gates-changes` | `204`: the set no longer gates them. Checks already started keep running. |
 | `POST /replay-checks` | `201` and a [check](#check), or `200` and the check this change already has. See [Start a check](#start-a-check). Requires `Idempotency-Key`. |
 | `GET /replay-checks/{checkId}` | A [check](#check) and its result. |
 | `GET /replay-sets/{setId}/replay-checks` | The checks replayed over a set, newest first, a page at a time: each check's `id`, `stationId`, `stationKey`, `result`, `undecidedBecause`, `regressions` (how many tasks it regressed on), `attempt`, `reference`, `createdAt` and `replayUrl`. Takes `limit` (default 50, at most 200) and `before`, a check's id; a check that the set does not contain answers an empty page. |
-
-A replay set's reads in the [Replays API](/docs/reference/api/replays) carry
-`gatesChanges`, `true` for the set that gates its station's changes. A
-station has at most one.
 
 ## Start a check
 
@@ -67,7 +62,7 @@ The check:
 3. Checks the block as the line would be with the station replaced, as a
    [replay candidate](/docs/reference/api/replay-candidate#checks) is checked.
 4. Replays it, under the planned repositories, images and setup commands, on
-   every run of the gating set, `repeats` times, on the team's runners. When
+   every run of the station's set, `repeats` times, on the team's runners. When
    the set has no baseline of the current live config with at least as many
    repeats, it also starts a baseline replay of the live config with the same
    `repeats`. See [Ceiling](#ceiling).
@@ -88,7 +83,7 @@ The line's `replay_check.ceiling` caps each replay a check starts, each on its
 own:
 
 - the replay of the planned change, which every check starts;
-- the baseline replay of the live config, only when the gating set has no
+- the baseline replay of the live config, only when the station's set has no
   baseline for the current live config with at least as many repeats of each
   run. A baseline already there costs the check nothing.
 
@@ -110,7 +105,7 @@ replay candidate may not be named starting `Planned change`.
 | Field | Type | Description |
 | --- | --- | --- |
 | `id`, `teamId`, `lineId`, `stationId`, `stationKey` | string | |
-| `setId`, `setName` | string, string or null | The gating set. |
+| `setId` | string | The replay set Spotlight keeps for the station. |
 | `setVersion` | number | The version of the set the check replayed. |
 | `candidateId`, `replayId` | string | The planned candidate and its replay. |
 | `baselineReplayId` | string or null | The replay of the live config it is compared with. Null while it is being started. |
@@ -155,14 +150,13 @@ A task regressed as in a [replay](/docs/reference/app/replays#regressions).
 
 Reading needs a person on the team or an owner or admin of its workspace, or a
 [workspace token](/docs/reference/api/workspace-token) of the team's workspace
-with the `read` scope. Anyone else is answered `404`. Marking a set and
-starting a check also need `plan`. See
+with the `read` scope. Anyone else is answered `404`. Starting a check also
+needs `plan`. See
 [Team outcomes](/docs/reference/roles-and-permissions#team-outcomes).
 
 Starting a check is recorded as a
 [configuration change](/docs/reference/api/resource-api#configuration-changes)
-of the kind `replay-check`. Marking or unmarking a set is recorded as an
-`updated` change of the kind `replay-set`.
+of the kind `replay-check`.
 
 ## Errors
 
@@ -171,5 +165,5 @@ of the kind `replay-check`. Marking or unmarking a set is recorded as an
 | `401` | No session or token, or an unknown token. |
 | `403` | A change by a caller who may read the team but not plan. |
 | `404` | The team, line, station, set or check is not one the caller may see, as in `Replay check <checkId> not found.` |
-| `409` | Marking a set while another at the station gates its changes (`Another replay set already gates config changes of station <stationId>. Only one replay set of a station can gate config changes.`), or a set whose station has left its line. A line with no `replay_check` (`Line <lineKey> has no replay_check block. Please add one with max_regressions, ceiling and currency.`). A station no set gates (`No replay set gates config changes of station <stationKey>. Please turn on "Gates config changes" for one of its replay sets.`). A change with nothing to replay, `nothing-to-replay`: `There is nothing to replay. The plan changes nothing that affects how the station's runs go.`, or `There is nothing to replay. A check pins these changed fields to their live values: <fields>`. |
-| `422` | The planned block is not one the line takes, each problem at its path under `station`. A missing `lineId` (`Line ID must name the line of the station.`) or `stationKey` (`Station key must be the key of the planned station.`), or a `reference` or `line` not in its form. `repeats` not a number (`Repeats must be a number.`) or out of range (`Replay check repeats must be from 1 to 5.`). The `409` causes are checked first, so a check of a line with no `replay_check`, of a station no set gates, or with nothing to replay answers `409` whatever its `repeats`. |
+| `409` | A line with no `replay_check` (`Line <lineKey> has no replay_check block. Please add one with max_regressions, ceiling and currency.`). A station with no replay set yet, or whose set's station has left its line (`Station <stationKey> has no replay set yet. Spotlight keeps one after a run of the station ends.`). A station whose set has no runs (`Station <stationKey> has no runs in its replay set yet.`). A change with nothing to replay, `nothing-to-replay`: `There is nothing to replay. The plan changes nothing that affects how the station's runs go.`, or `There is nothing to replay. A check pins these changed fields to their live values: <fields>`. |
+| `422` | The planned block is not one the line takes, each problem at its path under `station`. A missing `lineId` (`Line ID must name the line of the station.`) or `stationKey` (`Station key must be the key of the planned station.`), or a `reference` or `line` not in its form. `repeats` not a number (`Repeats must be a number.`) or out of range (`Replay check repeats must be from 1 to 5.`). The `409` causes are checked first, so a check of a line with no `replay_check`, of a station with no set or an empty set, or with nothing to replay answers `409` whatever its `repeats`. |

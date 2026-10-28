@@ -318,8 +318,7 @@ The run's [config fingerprint](/docs/reference/glossary#config-fingerprint) is
 a SHA-256 of these parts. The task's title, description and marks are not part
 of it.
 
-The live config of a station shows under "Config" on the station's
-"Overview" tab, and the station's view on Insights groups its runs by config
+The live config of a station shows under "Config" on the station's page, and the station's view on Insights groups its runs by config
 under "Runs by config"; see [Station outcomes](#station-outcomes).
 `GET /api/teams/{teamId}/runs/{runId}/config` returns a run's config and its
 fingerprint, and, when the station's previous run with a recorded config ran
@@ -526,7 +525,7 @@ Each rubric version then shows:
 
 ### Judge and alerts
 
-A work station's "Overview" tab shows its
+A work station's page shows its
 [judge](/docs/reference/terraform/line#judge-fields) under "Judge" and its
 [alerts](/docs/reference/terraform/line#alert-fields) under
 `Alert rules · <n>`, read-only. "Judge" has the anchor `#judge`.
@@ -686,9 +685,9 @@ are shown in these places:
 
 | Where | Shows |
 | --- | --- |
-| "Latest runs on this config", on the station's "Overview" tab | Tiles for "Runs", "Accepted", "Sent back", "Failed", "Cost" and "Median", over the live config: the newest config that ran, in its newest group and in earlier groups of it that only groups that never started separate from it. The newest group of another config that ran ends it and is not counted. "Accepted", "Sent back" and "Failed" add `of <n> runs` and a bar of that share. "Runs" draws the endings of the newest group with a recorded config as a strip, oldest first; "Cost" and "Median" draw that group's costs and durations run by run, when they vary. The tiles are not shown until a run has run a recorded config, or when the outcomes cannot be read. |
-| "Recent runs", on the station's "Overview" tab | The latest 8 runs of the newest group with a recorded config, whether its runs started or not, one row each. With none, "No runs on this config yet" and `Runs on earlier configs are under All runs.`, or, when the station has no runs, "No runs yet" and `Latest runs show here once tasks reach this station.` To a person who may not read the outcomes, `Only team members can see this station's runs`. "All runs" opens the Insights Traces tab at the station. |
-| "Config fingerprint", in the station's "Config" on the "Overview" tab | The newest group with a recorded config, whether its runs started or not: `Live since <day>`, the day its first run ended, or "Live", with `Config <fingerprint>`, the first 8 characters. "View pull request" opens the pull request a picked search candidate opened for that config, when there is one, and "History" opens the station's view on Insights. Before any such group, "None yet" and `The first run of the station sets the first config fingerprint.`; when the outcomes cannot be read, "Unknown" and `Sorry, the station's runs couldn't be loaded.` |
+| "Latest runs on this config", on the station's page | Tiles for "Runs", "Accepted", "Sent back", "Failed", "Cost" and "Median", over the live config: the newest config that ran, in its newest group and in earlier groups of it that only groups that never started separate from it. The newest group of another config that ran ends it and is not counted. "Accepted", "Sent back" and "Failed" add `of <n> runs` and a bar of that share. "Runs" draws the endings of the newest group with a recorded config as a strip, oldest first; "Cost" and "Median" draw that group's costs and durations run by run, when they vary. The tiles are not shown until a run has run a recorded config, or when the outcomes cannot be read. |
+| "Recent runs", on the station's page | The latest 8 runs of the newest group with a recorded config, whether its runs started or not, one row each. With none, "No runs on this config yet" and `Runs on earlier configs are under All runs.`, or, when the station has no runs, "No runs yet" and `Latest runs show here once tasks reach this station.` To a person who may not read the outcomes, `Only team members can see this station's runs`. "All runs" opens the Insights Traces tab at the station. |
+| "Config fingerprint", in the station's "Config" | The newest group with a recorded config, whether its runs started or not: `Live since <day>`, the day its first run ended, or "Live", with `Config <fingerprint>`, the first 8 characters. "View pull request" opens the config pull request a search opened for that config, when there is one, and "History" opens the station's view on Insights. Before any such group, "None yet" and `The first run of the station sets the first config fingerprint.`; when the outcomes cannot be read, "Unknown" and `Sorry, the station's runs couldn't be loaded.` |
 | "Runs by config", on the station's view on Insights | Every group, newest first. With no runs, "No runs yet" and `Runs show here by config once tasks reach this station.` To a person who may not read the outcomes, `Only team members can see this station's runs`. See [One station](/docs/reference/app/insights#one-station). |
 
 Runs are grouped by config, in the order they started: each group contains runs
@@ -758,8 +757,8 @@ linked to the run, then the failure, "Visit", "Checks", "Human action", "Pull re
 ## The inbox
 
 A person's inbox contains every conversation, open or resolved, on every task in
-the workspace that is assigned to them, and the [notices](#notices) put to
-them. Items are ordered by their latest note, notices by when they were
+the workspace that is assigned to them, and the [notices](#notices) of
+their teams. Items are ordered by their latest note, notices by when they were
 raised, newest first, in the sections "Open" and "Resolved".
 
 | Flag | Set when |
@@ -784,32 +783,46 @@ not its conversation. Nothing waits on an inbox request.
 
 ### Notices
 
-A notice tells one person about their team's work, outside any task. Spotlight
-raises one when a [search stalls](/docs/reference/app/searches#notices).
-Nothing waits on it, and it cannot be answered.
+A notice tells a team about its work, outside any task. It goes to the whole
+team: every member of the team sees it in their inbox. Spotlight raises one
+when a [search](/docs/reference/app/searches#notices) of one of the team's
+stations ends, and when Spotlight cannot search a station for a reason the
+team can fix. Nothing waits on it, and it
+cannot be answered.
+
+| Raised when | Form | Headline | Link |
+| --- | --- | --- | --- |
+| A search ends and Spotlight opens a config pull request | `ended` | `Spotlight opened a config pull request for the <station> station` | "Open the search" |
+| A search ends and its config pull request could not be opened | `ended` | `Sorry, the config pull request for the <station> station could not be opened` | "Open the search" |
+| A search ends with no candidate to open a pull request for | `ended` | `The search of the <station> station ended with no pull request` | "Open the search" |
+| Spotlight skips a search because the station has no judge and no check, its replay set has too few tasks, the live config has no room to improve, the search ceiling is too low, or no runner can start the search agent's harness | `advice` | `Spotlight cannot search the <station> station` | "Open the station" |
+
+The points of a notice for an ended search name the candidate and the pull
+request, or the reason there is none, followed by why the search stalled when
+it did. See [Notices](/docs/reference/app/searches#notices) for the texts. A config pull request that merges, or that
+Spotlight closes because the station's live config changed, raises no notice.
 
 | Field | Shows |
 | --- | --- |
-| Form | `ended`: work the person started has ended. `advice`: it carries on, with something they could fix. |
+| Form | `ended`: the work it is about has ended. `advice`: it carries on, with something the team could fix. |
 | Headline | What it is about, at most 200 characters. |
 | Points | 1 to 20, of at most 1,000 characters each: what happened, then what it suggests. |
 | Link | A page of its team, with a label naming it. |
 
 | Flag | Set when |
 | --- | --- |
-| unread | Its person has not opened it, and it is not resolved. |
-| resolved | Its person opened it, which resolves it. A resolved notice shows under "Resolved" for 30 days after it was resolved, then leaves the inbox. |
+| unread | It is not resolved. |
+| resolved | A member of its team opened it, which resolves it for the whole team. A resolved notice shows under "Resolved" for 30 days after it was resolved, then leaves the inbox. |
 
 Its row shows a lightbulb, the headline, an unread dot, the day it was raised,
 and the first point. Its page, `/w/<slug>/inbox/notices/<noticeId>`, shows when
 it was raised, the headline, the points under "Details", and a button that
 opens the link.
 
-A notice reaches only its person, and only while they are a member of its
-team's workspace. To anyone else, and once it has left the inbox, its page
+A notice reaches only the members of its team. To anyone else, and once it has left the inbox, its page
 reads `No longer waiting for you.` Resolving is
 `POST /api/workspaces/{slug}/inbox/notices/{noticeId}/resolve`, answering
-`204`, or `404` for a notice not put to the caller. Deleting
+`204`, or `404` for a notice of a team the caller is not a member of. Deleting
 a team deletes its notices.
 
 ### Grades
@@ -964,7 +977,7 @@ The item shows:
 | Reading | What the runs did, then the alert rule, with cost in the currency of the station's runs. For a rate, `<value> of the last <over> runs <did>.`, where `<did>` is "were sent back", "were accepted", "were merged", "failed" or "failed their checks". For cost, `The last <over> runs cost <value> each on average.` For `risesBy` and `fallsBy`, the comparison follows before the full stop: `, up from <value> in the <over> before`, or `down from` or `the same as`. Then `The alert is set at a <change>-point rise.` (or `fall`), `a rise of <threshold>` for cost, or `The alert is set at above <threshold>.` (or `below`). With `over` set to 1, `the last run` and `the one before`, with "was sent back", "was accepted", "was merged", "failed" or "failed its checks", and `The last run cost <value>` for cost. |
 | Recovery | `The station has been back under the threshold since <day>.`, or `over` in place of `under` for `fallsBy` and `below`, once the alert has resolved. |
 | Chart | The measure over the `over` measured runs up to each run, from 2 × `over` runs before the run that fired it to `over` runs after. Its legend names "Alert level" with the threshold, for `above` and `below`; "Before" with the measure over the runs before, for `risesBy` and `fallsBy`; and "The run it fired at". It is drawn from the station's latest 500 runs; without that run among them, it reads `There is no chart to show. The runs behind this alert are deleted.` |
-| Links | "Open the station", which opens its "Overview" tab; "Open in Insights", which opens the [Stations tab](/docs/reference/app/insights#runs-at-each-station) at the station's row, `#station-<stationId>`, over the shortest period that covers the day it fired; and "Improve", while the station is on one of the team's lines, which opens the Agent page with the station attached to a new chat. |
+| Links | "Open the station", which opens its page; "Open in Insights", which opens the [Stations tab](/docs/reference/app/insights#runs-at-each-station) at the station's row, `#station-<stationId>`, over the shortest period that covers the day it fired; and "Improve", while the station is on one of the team's lines, which opens the Agent page with the station attached to a new chat. |
 
 ### Requests to connect
 

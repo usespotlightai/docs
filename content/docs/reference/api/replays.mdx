@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Replays API
-description: The team endpoints behind replay sets and replays, their request bodies, who may read and change them, and their errors.
+description: The team endpoints behind the replay set Spotlight keeps for each station and its replays, their request bodies, who may read and change them, and their errors.
 ---
 
 Every part of [replays](/docs/reference/app/replays) other than candidates is
@@ -22,15 +22,9 @@ through the [Replayed candidates API](/docs/reference/api/replayed-candidates).
 
 | Method and path | Returns |
 | --- | --- |
-| `GET /lines/{lineId}/stations/{stationId}/replay-sets` | The station's replay sets, each with its runs, whether each can still be replayed, `gatesChanges`, whether the set [gates the station's changes](/docs/reference/api/replay-checks), its [`health` and `minGain`](#set-health), and its [`composition`](#set-composition). |
-| `GET /replay-sets` | Every replay set of the team, including those whose station has left its line. With `line` and `station`, only one station's. |
-| `GET /lines/{lineId}/stations/{stationId}/replayable-runs` | The station's latest 50 ended task runs, newest first, each with its `unreplayableReason` and `reason`, or none. |
-| `GET /replay-sets/{setId}/suggestions` | Up to 5 of the station's recent runs that would even out how the set's runs turned out, each as `replayable-runs` lists it, with its `outcome`. None is added. See [Suggested runs](/docs/reference/app/replays#suggested-runs). |
-| `POST /lines/{lineId}/stations/{stationId}/replay-sets` | `201` and `{ "id" }`: opens an empty set. |
-| `PATCH /replay-sets/{setId}` | `204`: renames the set, also once its station has left its line. |
-| `DELETE /replay-sets/{setId}` | `204`: deletes the set and its replays, and releases the archives it holds. |
-| `POST /replay-sets/{setId}/entries` | `204`: adds a run to the set. |
-| `DELETE /replay-sets/{setId}/entries/{runId}` | `204`: takes a run out of the set, also once its station has left its line. |
+| `GET /lines/{lineId}/stations/{stationId}/replay-set` | The [replay set](#replay-set) Spotlight keeps for the station: its runs, whether each can still be replayed, its [`health` and `minGain`](#set-health), its [`composition`](#set-composition), and its search schedule. `404` while the station has no set: `Station <stationId> has no replay set yet.` |
+| `GET /replay-sets` | Every replay set of the team, including those whose station has left its line. With `line` and `station`, only that station's set, or none. |
+| `DELETE /replay-sets/{setId}/entries/{runId}` | `204`: takes a run out of the set, also once its station has left its line. Spotlight never adds a run of its task to the set again. |
 | `GET /replay-sets/{setId}/replays` | Every replay of the set, newest first, with each run's result, the baseline marked. |
 | `POST /replay-sets/{setId}/replays` | `201`: starts a replay. See [Start a replay](#start-a-replay). |
 | `GET /replays/{replayId}` | One replay, its totals, its baseline's id, the [reference replay](/docs/reference/app/replays#reference-replays) it is compared with in `referenceReplay`, its gain over that replay, and each task against it, regressions first. A replay a search started carries `search`: `{ searchId, candidateName }`, with `seed` for the live config; otherwise `search` is null. |
@@ -42,18 +36,55 @@ through the [Replayed candidates API](/docs/reference/api/replayed-candidates).
 
 | Parameter | Description |
 | --- | --- |
-| `line` | With `station`: the id of the line whose station's sets to list. |
-| `station` | With `line`: the key of the station whose sets to list. A line the caller cannot see, or a key the line has no station by, is answered `404`: `Station <key> not found.` |
+| `line` | With `station`: the id of the line whose station's set to list. |
+| `station` | With `line`: the key of the station whose set to list. A line the caller cannot see, or a key the line has no station by, is answered `404`: `Station <key> not found.` |
 
 ## Request bodies
 
 | Endpoint | Body |
 | --- | --- |
-| Open or rename a set | `{ "name": "<name>" }`. 1 to 100 characters, with surrounding spaces trimmed. |
-| Add a run | `{ "runId": "<run id>" }`. An ended task run at the set's station. |
 | Start a replay | `{ "candidate": "<candidate id or live>", "ceiling": { "amount": <number>, "currency": "<code>" }, "repeats": <number> }`. `repeats` may be left out. |
 
+## Replay set
+
+Spotlight creates a station's set when the station's first run ends, and
+refreshes it from the station's runs. See
+[The replay set Spotlight keeps](/docs/improvement/how-spotlight-improves-a-station#the-replay-set-spotlight-keeps).
+A set read carries:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `id`, `lineId`, `stationId` | string | |
+| `createdAt` | string | RFC 3339 time. |
+| `refreshedAt` | string or null | When Spotlight last refreshed the set from its station's runs. Null before the first refresh. |
+| `lastRefresh` | object or null | `{ at, added, removed }`: the last refresh that changed the set. `added` lists the runs it added, the newest run of each new task, and `removed` those it took out, each `{ runId, title }`, `title` the task's title or null once the task is gone. Null while no refresh changed the set. |
+| `stationGone` | boolean | Its station is gone from its line: it takes no more runs, starts no replays and holds no archives. Runs may still be taken out. |
+| `entries` | array | Its runs, at most 30, each with its `unreplayableReason`, `outcome` and `origin`. |
+| `health`, `minGain` | object, number | See [Set health](#set-health). |
+| `composition` | object | See [Set composition](#set-composition). |
+| `searchSchedule` | object or null | `{ lastStartedAt, lastSkip, lastImprovedAt, checkAfter, minimumTasks }`: when Spotlight last started an automatic search of the station, why it last skipped one, when a [config pull request](/docs/reference/api/searches#config-pull-request) of the station last merged (null if none merged), when it looks at the station next, and the fewest different tasks a set needs before Spotlight can search it, `5`. `lastSkip` is `{ reason, at }`, `at` when Spotlight first skipped for that reason, and is null once a search starts. Null while Spotlight keeps no search schedule for the station, as when the station is gone. |
+
+`lastSkip.reason` is one of:
+
+| `reason` | Means |
+| --- | --- |
+| `disabled` | The search policy of the station is off. |
+| `no-agent` | No harness can run the search agent. |
+| `no-scoring` | The station has no judge and no check. |
+| `set-too-small` | The set has too few tasks: a search needs at least 2 held-out tasks and 3 searched tasks, so 5 tasks. |
+| `no-fresh-held-out` | Earlier searches searched on too many tasks of the set, so too few are left to hold out. |
+| `ceiling-too-low` | The search ceiling is too low to replay each task once per candidate. |
+| `noisy`, `judge-unstable`, `flaky-checks`, `no-headroom` | The set's [health](#set-health) warns: its success moves too much between repeats, the judge does not give the same verdict twice, the check flips on a change it ran twice, or the live config does not do better on the set when it gets the answer. |
+| `monthly-ceiling` | The line's searches spent the monthly ceiling of its search policy. |
+| `pull-request-open` | A config pull request of the station is open. |
+| `cooldown` | The last search of the station started, or a person closed a config pull request of the station on GitHub, less than the `cooldown` ago. |
+
+See [When Spotlight skips a search](/docs/improvement/how-spotlight-improves-a-station#when-spotlight-skips-a-search).
+
 ## Start a replay
+
+Starting a replay first refreshes the set, unless a replay, a search or a
+check that waits for its baseline uses it.
 
 `candidate` is the id of one of the station's proposed candidates, or `live`
 for the station as it is configured now. `ceiling.amount` is above 0 and at
@@ -211,8 +242,7 @@ team's workspace with the `read` scope, sent as `Authorization: Bearer
 <token>`. Anyone else is answered `404`. See
 [Team outcomes](/docs/reference/roles-and-permissions#team-outcomes).
 
-Opening, renaming and deleting sets, adding and removing runs, starting and
-stopping replays also need `plan`: every person who may read, or a token
+Taking runs out of a set, and starting and stopping replays, also need `plan`: every person who may read, or a token
 with `plan` or `configure`. A token with `read` alone gets `403`
 and the title `Not allowed to plan`.
 
@@ -228,6 +258,6 @@ of the kind `replay`, keyed by the replay's id.
 | --- | --- |
 | `401` | No session or token, or an unknown token. |
 | `403` | A change by a caller who may read the team but not plan. |
-| `404` | The team, line, station, set, run, candidate or replay is not one the caller may see, as in `Replay set <setId> not found.` |
-| `409` | Adding a run already in the set (`Run <runId> is already in the replay set.`), to a full set (`Replay set is full. Maximum runs: 50`), or that cannot be replayed (`Run <runId> cannot be replayed. <reason>`, with an [unreplayable reason](/docs/reference/app/replays#why-a-run-cannot-be-replayed)). Deleting a set while a replay or a search of it is in progress, or adding or taking out a run while a search of it is in progress (`Replay set <setId> is being replayed or searched. Please stop its replays and searches first.`). Adding a run to, or replaying, a set whose station has left its line (`The station of replay set <setId> is gone from its line. You can only rename the set, remove runs from it or delete it.`). Stopping a replay that has ended (`Replay <replayId> has already ended or been stopped.`). Starting a replay while the set's baseline changed (`The baseline of replay set <setId> changed while the replay was starting. Please start it again.`). |
-| `422` | A missing or invalid field, at its path: a name out of length (`Replay set name must be 1 to 100 characters.`), a ceiling out of range (`Money ceiling must be above 0 and at most 1,000.`) or not in a three-letter currency, `repeats` not a number (`Repeats must be a number.`) or out of range (`Replay repeats must be from 1 to 5.`), no `candidate` (`Candidate must be a candidate ID or "live".`), or a set with no runs (`Replay must replay at least one run.`). A run of another station (`Run <runId> worked at a different station from the replay set.`). `line` without `station`, or `station` without `line`, on `GET /replay-sets` (`Line and station must be sent together.`). |
+| `404` | The team, line, station, set, run, candidate or replay is not one the caller may see, as in `Replay set <setId> not found.` A station with no set yet (`Station <stationId> has no replay set yet.`). Taking out a run the set does not contain (`Run <runId> is not in the replay set.`). |
+| `409` | Taking out a run while a replay, a search or a check that waits for the set's baseline uses the set (`Replay set <setId> is in use by a replay, a search or a check that waits for its baseline. Please try again after they end.`). Replaying a set whose station has left its line (`The station of replay set <setId> is gone from its line. You can only remove runs from the set.`). Stopping a replay that has ended (`Replay <replayId> has already ended or been stopped.`). Starting a replay while the set's baseline changed (`The baseline of replay set <setId> changed while the replay was starting. Please start it again.`). |
+| `422` | A missing or invalid field, at its path: a ceiling out of range (`Money ceiling must be above 0 and at most 1,000.`) or not in a three-letter currency, `repeats` not a number (`Repeats must be a number.`) or out of range (`Replay repeats must be from 1 to 5.`), no `candidate` (`Candidate must be a candidate ID or "live".`), or a set with no runs (`Replay must replay at least one run.`). `line` without `station`, or `station` without `line`, on `GET /replay-sets` (`Line and station must be sent together.`). |

@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: spotlight replay
-description: The spotlight replay subcommands that propose candidates, list sets, start, follow and stop replays, and check a Terraform plan's station changes, with their flags, environment, output and exit codes.
+description: The spotlight replay subcommands that propose candidates, show a station's replay set, start, follow and stop replays, and check a Terraform plan's station changes, with their flags, environment, output and exit codes.
 ---
 
 `spotlight replay` proposes [replay candidates](/docs/reference/api/replay-candidate)
@@ -19,8 +19,8 @@ It is part of the `spotlight` binary; see
 spotlight replay propose --station <team/line/station> --name <name> <station.json>
 spotlight replay candidates --station <team/line/station>
 spotlight replay show --station <team/line/station> <candidate name or id>
-spotlight replay sets --station <team/line/station>
-spotlight replay start --station <team/line/station> --set <name or id> --candidate <name, id or live> --ceiling <amount> [--currency USD] [--repeats 1]
+spotlight replay set --station <team/line/station>
+spotlight replay start --station <team/line/station> --candidate <name, id or live> --ceiling <amount> [--currency USD] [--repeats 1]
 spotlight replay status --team <key> <replay id>
 spotlight replay watch --team <key> <replay id> [--every 15s]
 spotlight replay stop --team <key> <replay id>
@@ -54,7 +54,7 @@ with `chmod +x spotlight`. For a given release, replace `latest/download` with
 | Variable | Description |
 | --- | --- |
 | `SPOTLIGHT_URL` | Required. The [Spotlight address](/docs/reference/glossary#spotlight-address), as `https://app.usespotlight.ai`. |
-| `SPOTLIGHT_API_TOKEN` | A [workspace token](/docs/reference/api/workspace-token). `read` is enough for `candidates`, `show`, `sets`, `status` and `watch`; `propose`, `start` and `stop` need `plan`. Without it, the login that [`spotlight login`](/docs/reference/cli/spotlight-command#spotlight-login) keeps for `SPOTLIGHT_URL`. |
+| `SPOTLIGHT_API_TOKEN` | A [workspace token](/docs/reference/api/workspace-token). `read` is enough for `candidates`, `show`, `set`, `status` and `watch`; `propose`, `start` and `stop` need `plan`. Without it, the login that [`spotlight login`](/docs/reference/cli/spotlight-command#spotlight-login) keeps for `SPOTLIGHT_URL`. |
 | `SPOTLIGHT_WORKSPACE` | The slug of the workspace to act in, as `acme`. `--workspace` overrides it. A login in more than one workspace needs one of them. |
 
 | Message | Cause |
@@ -90,8 +90,8 @@ the workspace with `--workspace <slug>` or `SPOTLIGHT_WORKSPACE`.
 and a line without that station with
 `line <team>/<line> has no station <key>; it has <keys>`.
 
-`--team` names a team by its key. A set or candidate is named by its id or its
-exact name. A name no set or candidate has fails with
+`--team` names a team by its key. A candidate is named by its id or its
+exact name. A name no candidate has fails with
 `<station> has no <kind> "<name>"; it has <names>`, and a name more than one
 has with `<station> has <n> of <kind> named "<name>"; name one by its id: <ids>`.
 
@@ -161,36 +161,40 @@ spotlight replay show --station <team/line/station> <candidate name or id>
 Prints one candidate: its address and when it was proposed, its id, its
 fingerprint, and what it changes from the live config, as `propose` does.
 
-## spotlight replay sets
+## spotlight replay set
 
 ```text
-spotlight replay sets --station <team/line/station>
+spotlight replay set --station <team/line/station>
 ```
 
-Lists the station's replay sets as a table with the columns `NAME`, `RUNS`,
-`REPLAYABLE` (runs that can still be replayed), `CREATED` and `ID`. With none,
-it prints `<station> has no replay sets; pick one on the station's page.`
-Sets are opened and filled on the [Station page](/docs/reference/app/replays#station-page).
+Shows the [replay set](/docs/reference/api/replays#replay-set) Spotlight keeps
+for the station as a table with the columns `RUNS`, `REPLAYABLE` (runs that can
+still be replayed), `REFRESHED` (when Spotlight last refreshed it, or
+`not yet`) and `ID`. With `--json`, it prints the set. While the station has
+no set, it prints
+`<station> has no replay set yet. Spotlight keeps one after a run of the station ends.`
+See [The replay set Spotlight keeps](/docs/improvement/how-spotlight-improves-a-station#the-replay-set-spotlight-keeps).
 
 ## spotlight replay start
 
 ```text
-spotlight replay start --station <team/line/station> --set <name or id> --candidate <name, id or live> --ceiling <amount> [--currency USD] [--repeats 1]
+spotlight replay start --station <team/line/station> --candidate <name, id or live> --ceiling <amount> [--currency USD] [--repeats 1]
 ```
 
-Starts a replay of the set under the candidate.
+Starts a replay of the station's replay set under the candidate. Spotlight
+refreshes the set first, unless a replay, a search or a check that waits for
+its baseline uses it.
 
 | Flag | Required | Default | Description |
 | --- | --- | --- | --- |
 | `--station` | yes | | The station. |
-| `--set` | yes | | The replay set. |
 | `--candidate` | yes | | A proposed candidate, or `live` for the station as it is configured now. |
 | `--ceiling` | yes | | The most the replay may spend, a number above 0. Spotlight takes at most 1,000. |
 | `--currency` | no | `USD` | The ceiling's currency, as a three-letter code. |
 | `--repeats` | no | `1` | How many times to replay each run, 1 to 5. The ceiling covers every repeat. |
 
 ```text
-Started replay <id> of <set> under <candidate>, spending at most <ceiling>.
+Started replay <id> of the replay set of <station> under <candidate>, spending at most <ceiling>.
 It replays each run <n> times, to measure how much its results move by chance.
 Its baseline, the live config, replays beside it as <id>, with a ceiling of its own.
 Follow it with: spotlight replay watch --team <team> <id>
@@ -201,10 +205,11 @@ a baseline starts beside the replay.
 
 | Message | Cause |
 | --- | --- |
-| `--set and --candidate name what to replay, and under what` | `--set` or `--candidate` is missing. |
+| `--candidate names the config to replay the set under` | `--candidate` is missing. The usage follows. |
+| `<station> has no replay set yet. Spotlight keeps one after a run of the station ends.` | The station has no replay set. |
 | `--ceiling is the most the replay may spend, as a number above 0, not "<value>"` | `--ceiling` is missing, not a number, or 0 or less. |
 | `--repeats is how many times to replay each run, from 1 to 5, not <n>` | `--repeats` is below 1 or above 5. |
-| `start a replay of <set>: <error>` | Spotlight did not start it. See [Errors](/docs/reference/api/replays#errors). |
+| `start a replay of the replay set of <station>: <error>` | Spotlight did not start it. See [Errors](/docs/reference/api/replays#errors). |
 
 ## spotlight replay status
 
@@ -336,7 +341,7 @@ spotlight replay check [--json] [--timeout 60m] [--every 15s] [--commit <sha>] [
 ```
 
 Checks each work station a saved Terraform plan changes against the replay set
-that gates the station's changes, under the live line's
+Spotlight keeps for the station, under the live line's
 [`replay_check`](/docs/reference/terraform/line#replay-check-fields), and waits
 for the results. Give it the output of `terraform show -json <planfile>`, or
 `-` to read it from standard input. Spotlight never runs Terraform. See
@@ -436,7 +441,7 @@ An undecided check prints why:
 note: <note>
 
 core/delivery/build: FAILED
-  1 of 6 tasks regressed (at most 0 may), replaying set "Queue fixes": 6 tasks, 6 scored on both sides
+  1 of 6 tasks regressed (at most 0 may), replaying the station's replay set: 6 tasks, 6 scored on both sides
   candidate 4 of 6 succeeded, 67% (33–100%) over 6 tasks, baseline 5 of 6 succeeded, 83% (50–100%) over 6 tasks
   Within noise of the baseline: -17 points (-50 to +0) over 6 tasks, not clearly past the 5-point gain that counts as real
   spent 3.2 USD of a 10 USD ceiling

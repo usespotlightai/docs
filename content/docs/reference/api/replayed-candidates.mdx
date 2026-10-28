@@ -65,9 +65,7 @@ Each item of a station's `sets`, the newest replayed first:
 | Field | Type | Description |
 | --- | --- | --- |
 | `setId` | string | |
-| `name` | string | |
 | `stationGone` | boolean | Whether its station has left its line. |
-| `gatesChanges` | boolean | Whether it [gates its station's changes](/docs/reference/app/searches#gating-a-stations-changes). |
 | `health` | object | `{ tasks, runs, oldestRunEndedAt, newestRunEndedAt, lastAddedAt, noise, saturation, judge, checks, oracle, minGain }`. `runs` counts the runs the set contains now, and `tasks` the different tasks they worked. The three times are when the oldest and the newest of its runs ended, and when a run was last added to it; each is null while there is none. `noise`, `saturation`, `judge`, `checks` and `oracle` are the set's health, as in the [Replays API](/docs/reference/api/replays#set-health); `minGain` the smallest gain its line counts as real. |
 | `baseline` | object or null | Its newest baseline that is queued, running or finished, whatever the period. Null while it has none. See [Baseline](#baseline). |
 | `chartCurrency` | string or null | The currency its cost and success chart is drawn in: the baseline's, or else that of its newest replayed candidate. Null with neither. |
@@ -118,7 +116,7 @@ Each item of a station's `sets`, the newest replayed first:
 | `gainOverLive` | object or null | Its gain over the baseline on the compared runs, paired run by run, against the line's `min_gain`. Null without a baseline. |
 | `onFrontier` | boolean or null | Whether it is on its search's [frontier](/docs/reference/app/searches#frontier). Null unless `searched`. |
 | `search` | object or null | `{ searchId, state, objective, startedAt, seed }`: the search that proposed it. `state` is `seeding`, `searching`, `holding-out`, `finished` or `stopped`. `objective` is `success` or `cost`, the search's [aim](/docs/reference/app/searches#aims), which decides `onFrontier`. `seed` is `{ successRate, interval, costPerRun, scored, chartStatus }`: the live config the search started from, scored on the same searched runs as its candidates, as the search page gives the live config's search score, with its cost per run in the candidate's `currency`. Its `chartStatus` counts it as finished. Null unless `searched`. |
-| `pullRequest` | object or null | `{ id, state, url, reason }`: the [config pull request](/docs/reference/api/searches#config-pull-request) picking it opened. Null until a person picks it, and for every proposed candidate. |
+| `pullRequest` | object or null | `{ id, state, closedBecause, closeFailure, url, reason }`: the [config pull request](/docs/reference/api/searches#config-pull-request) Spotlight opened for it. Null unless Spotlight picked it, and for every proposed candidate. |
 | `chartStatus` | string | Whether it is drawn on the set's chart. See [Chart status](#chart-status). |
 | `shown` | object | The figures to set beside the live config. See [Shown](#shown). |
 

@@ -209,24 +209,26 @@ Once a change gives the station a new
 [config fingerprint](/docs/reference/glossary#config-fingerprint), the noise
 is unmeasured again, since the new config may be steadier or less so.
 
-A search reads the noise before it starts. With none measured, it warns that a
-small gain may be luck. With a spread larger than `min_gain` allows at the
-number of repeats requested, it warns and suggests more: the repeats needed are
-the spread divided by `min_gain`, squared and rounded up, and it suggests at
-most 5. That rule takes the spread to shrink with the square root of the
-number of repeats, as an average of independent tries does. More than 5 needed
-means no search of that set, at any number of repeats, can tell such a gain
-from noise. A search starts all the same; the warning is advice.
+Spotlight reads the noise before it starts a search. The repeats a set needs
+are the spread divided by `min_gain`, squared and rounded up. That rule takes
+the spread to shrink with the square root of the number of repeats, as an
+average of independent tries does. When the search's repeats are fewer than
+that, Spotlight skips the search and records that the set is noisy: a gain the
+search found could be luck. More than 5 needed means no search of that set, at
+any number of repeats, can tell such a gain from noise. With no noise measured
+yet, a search can start, and its small gains may be luck. See
+[When Spotlight skips a search](/docs/improvement/how-spotlight-improves-a-station#when-spotlight-skips-a-search).
 
 ## Whether a set can tell configs apart
 
 Noise is one way a set can fail to tell a better config from a worse one.
 There are others, and on any of them a search would chase something other than
 a better config. A set's page reads each of them for the live config as it is
-now, as its health, and a search warns about each before it starts.
+now, as its health, and Spotlight skips a search on a set that fails one of
+them.
 
 - Room to improve. When the live config already succeeds on more than 95% of
-  the set, a candidate has almost no tasks left to win. A search of such a set aims, unless told otherwise, for the
+  the set, a candidate has almost no tasks left to win. A search of such a set aims, unless the station's `search` block sets another aim, for the
   same success for less: it ranks the candidates whose gain over the live
   config is not Worse by what a run costs. A set can also leave little room
   well below 95%, when no config could do better on its tasks; see
@@ -244,10 +246,11 @@ accepted, or nearly all sent back, says little about how runs that turned out
 other ways would go. In the docs' view, a candidate that wins on such a set
 may lose on the runs it lacks. So a set's page counts how its original runs
 turned out, where their tasks came from and when they ended, and warns when
-one outcome covers more than two thirds of a set of 6 runs or more. While you
-add runs, it suggests recent ones of the outcomes the set is short of, but
-never adds them itself. In the docs' view, which tasks a set should represent
-is the team's choice.
+one outcome covers more than two thirds of a set of 6 runs or more. When
+Spotlight refreshes the set, it adds runs of the outcomes the set is short of
+first, when the station has such runs. A person can take out a run whose task
+the set should not represent, and Spotlight never adds that task again. See
+[The replay set Spotlight keeps](/docs/improvement/how-spotlight-improves-a-station#the-replay-set-spotlight-keeps).
 
 Nobody has to request these checks. The first baseline of the live config
 as it is now is also the set's calibration: it replays each run at least 3 times, which
@@ -282,8 +285,8 @@ runs. It is never the gain to expect: no config hands the agent the answer.
 
 When even the answer does not do clearly better, the live config already does
 about as well on these tasks as any config could show, and a search on the set
-would find little. What helps is adding tasks the live config fails. A search
-warns about it before it starts.
+would find little. What helps is tasks the live config fails. Spotlight skips
+a search of such a set, and tells the team in an inbox notice.
 
 The replay with the answer is a replay like any other. It has its own ceiling,
 the same as the live replay's, its own runs and its own row on the set's page.
@@ -328,7 +331,7 @@ started from. Runs that ended before Spotlight began recording this cannot be
 replayed.
 
 Spotlight keeps that archive for 30 days after the run started, and for as long
-as the run is in a replay set. After that the archive goes, and the run can
+as the run is in its station's replay set. After that the archive goes, and the run can
 no longer be replayed. A run also cannot be replayed if its task was deleted, if a file
 its task was briefed with is gone, or if a repository it worked in has left the
 line. [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed)
@@ -366,8 +369,10 @@ on the pull request and on the replay set's page.
 A replay never changes the station, however well its candidate does. A person
 reads the result and makes the change in Terraform, the same way as any other
 change to a line. A [search](/docs/improvement/why-a-search-holds-tasks-out),
-which replays many candidates an agent proposes, goes no further: picking one
-of its candidates opens a pull request, which the team reviews and applies. A
+which replays many candidates an agent proposes, goes no further: when one of
+its candidates meets Spotlight's rules, Spotlight opens a pull request, which
+the team reviews and applies. See
+[How Spotlight improves a station](/docs/improvement/how-spotlight-improves-a-station). A
 line can also have its CI [replay each pull request's station changes](/docs/configuration/check-terraform-pull-requests-for-station-regressions)
 before they merge. [Why configuration lives in Terraform](/docs/configuration/why-configuration-lives-in-terraform)
 gives the reasons. Once applied, the change's own runs are recorded under its
@@ -380,4 +385,5 @@ shows whether it still did well on the team's real work.
 - [Replays](/docs/reference/app/replays)
 - [Why a judge must agree with people before its scores show](/docs/improvement/why-a-judge-must-agree-with-people)
 - [Why a search holds tasks out](/docs/improvement/why-a-search-holds-tasks-out)
+- [How Spotlight improves a station](/docs/improvement/how-spotlight-improves-a-station)
 - [Insights: Candidates](/docs/reference/app/insights#candidates)

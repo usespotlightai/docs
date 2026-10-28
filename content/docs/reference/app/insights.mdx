@@ -723,7 +723,7 @@ is picked.
 #### Replayed candidates beside the agent configs
 
 With a station picked, the chart also draws the station's replayed candidates,
-the same points [Candidates](#chart) draws, hollow, for the replay sets
+the same points [Candidates](#chart) draws, hollow, for its replay set,
 charted in the currency the agent configs are compared in; with no such currency,
 none are drawn. The legend names them "Searched", "Proposed" and "Live config,
 replayed", and the side of the chart reads `<outcome> · replay success`. A replayed point's height
@@ -742,9 +742,8 @@ narrow replayed points, and they are not joined to the agent configs' frontier.
 While replayed points are drawn, the card's description adds
 `Replayed points show replay success on past tasks.` Whenever the station has
 replayed points and the agent configs have a currency, except while "Sent back" is
-charted, the table adds a second table, one group per replay set reading
-`<set> replayed`, with "Config", "Source", "Runs scored", "Cost per run",
-"Replay success" and "Held out".
+charted, the table adds a second table of the replayed configs, with "Config",
+"Source", "Runs scored", "Cost per run", "Replay success" and "Held out".
 
 ### Candidates
 
@@ -753,8 +752,8 @@ against the station's live config, replayed on the same tasks, before any of
 them is applied. It counts [replays](/docs/reference/app/replays), and it has
 no filters but the period.
 
-A replay set contains runs, and a task may have more than one run in it. Success
-rates average over the set's runs, and comparisons count them. Scored counts
+A replay set contains past runs of its station. Success rates average over
+the set's runs, and comparisons count them. Scored counts
 count replay runs, so a replay that replays each run 3 times scores up to three
 times the set's runs.
 
@@ -766,9 +765,7 @@ times the set's runs.
 | Proposed | A replay of it started in the period. With more than one over a set, the newest finished one shows, or else the newest. |
 
 The live config shows only as the replays it was compared with, and the
-candidates of
-[replay checks](/docs/reference/app/searches#gating-a-stations-changes) do
-not show: a check's result is on its pull request and on its
+candidates of [replay checks](/docs/reference/api/replay-checks) do not show: a check's result is on its pull request and on its
 [replay set page](/docs/reference/app/replays#replay-set-page). A set's health
 and baseline are current, whatever the period.
 
@@ -782,21 +779,19 @@ line", which opens one of the team's lines.
 
 The card starts on "Table". It is one table: a row for each work station with a candidate in the
 period, the station with the newest replay first, named with its line, or "A
-removed station". Expanding a station lists each replay set its candidates
-were replayed over, the newest replayed first:
+removed station", followed by its replay set:
 
 | Part | Shows |
 | --- | --- |
-| Name | The set's name, linked to its [page](/docs/reference/app/replays#replay-set-page). |
+| Name | "Replay set", linked to the set's [page](/docs/reference/app/replays#replay-set-page). |
 | Size | `<n> tasks`, the different tasks its runs worked, with `(<m> runs)` when it contains more runs than tasks, or "No tasks yet". |
 | Warning icon | When a [health](/docs/reference/app/replays#health) check found a problem, or a health check was not run. Hovering lists each warning as `<check>: <what it says>.`, then `<n> of <m> health checks not run: <checks>.` |
-| Shield icon | When the set [checks the station's pull requests](/docs/reference/app/searches#gating-a-stations-changes). Hovering explains it, starting `Checks pull requests.` |
 | Station gone | When its station has left the line. |
 | No baseline | `The live config hasn't been replayed on this set. Nothing is compared with live.` when the set has no [baseline](/docs/reference/glossary#baseline). |
 
 #### Candidate rows
 
-Expanding a set lists its candidates, the greatest gain over the live config
+Expanding a station lists its candidates, the greatest gain over the live config
 first, those with none last, then "Live config" when the set has a baseline.
 Each row ends with a "Changes" link, described below the table:
 
@@ -821,7 +816,7 @@ a proposed candidate's is its replay's
 
 | "Changes" opens | When |
 | --- | --- |
-| The pull request on GitHub | Picking the candidate opened a pull request. |
+| The pull request on GitHub | Spotlight picked the candidate and opened a pull request. |
 | Its search page, at the candidate | A searched candidate, otherwise. |
 | Its replay page | A proposed candidate, otherwise. |
 | The baseline's replay page | The "Live config" row. |

@@ -178,6 +178,14 @@ the judge. Runs with the same
 fingerprint ran the same config. The web app shows its first 8 characters. See
 [Config](/docs/reference/app/tasks-runs-and-the-inbox#config).
 
+## Config pull request
+
+A pull request Spotlight opens in the line's Terraform repository with the
+config of a [search](#search)'s best candidate. A station has at most one open.
+Spotlight closes it when the station's live config changes before it merges,
+and a person merges it to change the station. See
+[Config pull request](/docs/reference/api/searches#config-pull-request).
+
 ## Configuration change
 
 A record of one create, update or delete of a workspace's configuration: who
@@ -285,12 +293,6 @@ often for less. The station's live config is always on it. In a search that
 aims for the same success for less, only candidates whose gain over the live
 config reads Better or Within noise can be on it. See [Frontier](/docs/reference/app/searches#frontier).
 
-## Gating set
-
-The one replay set of a station whose "Gates config changes" switch is on.
-`spotlight replay check` replays a planned change of the station on it. See
-[Gating a station's changes](/docs/reference/app/searches#gating-a-stations-changes).
-
 ## Grade
 
 A person's score of a judged run, on the judge's scale, given from the inbox.
@@ -351,7 +353,8 @@ See [Limits and timeouts](/docs/reference/limits-and-timeouts#hosts).
 One of the tasks of a replay set that a [search](#search) keeps from its
 agent, about 30% of them. Only the best candidates are replayed on them, once
 the search stops searching, to check they did not just fit the tasks the agent
-saw. See [Why a search holds tasks out](/docs/improvement/why-a-search-holds-tasks-out).
+saw. A task that an earlier search of the station searched on is never held
+out again. See [Why a search holds tasks out](/docs/improvement/why-a-search-holds-tasks-out).
 
 ## Hook
 
@@ -377,6 +380,13 @@ to an approval separately. It is never the human action of a run. See
 One block of changed lines in a diff, with its header. A change stack assigns
 each hunk of a run's diff to exactly one [layer](#layer). See
 [Structure](/docs/reference/app/change-stacks-and-decisions#structure).
+
+## Improvement status
+
+What Spotlight does now to improve a work station: it searches, it picks a
+candidate of a finished search, a config pull request is open, a merged one improved the station, it waits for its next
+check, it has no runs in its replay set yet, it cannot start a search for a
+reason it records, or its search policy is off. See [Station improvement](/docs/reference/api/searches#station-improvement).
 
 ## Inbox
 
@@ -594,15 +604,6 @@ run that waits for an answer is ended, and a queued run is cancelled. For a run
 that waits for a person without a sandbox, see [Suspend](#suspend). See
 [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves).
 
-## Pick
-
-To select a candidate of a [search](#search), so that Spotlight opens a pull
-request that changes the station to that config. A person with the `plan`
-permission can pick a candidate when its replay on the
-[searched tasks](#searched-task) has finished. The search's [seed](#seed)
-cannot be picked. See
-[Picking a candidate](/docs/reference/app/searches#picking-a-candidate).
-
 ## Placement
 
 The requirements that a run's runner must meet: the station's `runners` [labels](#label),
@@ -713,15 +714,19 @@ each of its runs is scored. See [Replays](/docs/reference/app/replays).
 ## Replay check
 
 A [replay](#replay) of a work station's change as a Terraform plan would
-apply it, on the replay set that gates the station's changes, judged against
+apply it, on the station's [replay set](#replay-set), judged against
 the line's `replay_check`. CI runs it with `spotlight replay check`. See
 [Replay checks API](/docs/reference/api/replay-checks).
 
 ## Replay set
 
-A named list of up to 50 of a work station's past task runs, replayed
-together. While a run is in a set, Spotlight retains the workspace it started from. See
-[Replay set page](/docs/reference/app/replays#replay-set-page).
+The list of up to 30 of a work station's past task runs, one for each task,
+that Spotlight keeps for the station and replays together. Each work station
+has one set. Spotlight creates it when the station's first run ends and
+refreshes it from the station's newer runs. While a run is in a set,
+Spotlight retains the workspace it started from. See
+[The replay set Spotlight keeps](/docs/improvement/how-spotlight-improves-a-station#the-replay-set-spotlight-keeps)
+and [Replay set page](/docs/reference/app/replays#replay-set-page).
 
 ## Replay set health
 
@@ -846,8 +851,18 @@ A series of rounds in which an agent proposes changed configs for a work
 station, called [candidates](#candidate), each [replayed](#replay) on a replay
 set's tasks, within a budget. A search aims for more success, or for the same
 success for less. A search that finds nothing better twice in a row stalls,
-and may run a [reflection](#reflection). A person picks a candidate, and
-Spotlight opens a pull request with it. See [Searches](/docs/reference/app/searches).
+and may run a [reflection](#reflection). Spotlight starts each search as the
+line's [search policy](#search-policy) says. When a candidate did better than
+the live config on the [held-out tasks](#held-out-task), Spotlight opens a
+[config pull request](#config-pull-request) with it, and a person merges it. See
+[Searches](/docs/reference/app/searches).
+
+## Search policy
+
+The line's `search` block, and a work station's own: whether Spotlight
+searches the station on its own, how often, after which alerts, and how much
+one search and all the line's searches in a month may spend. See
+[Search fields](/docs/reference/terraform/line#search-fields).
 
 ## Searched task
 

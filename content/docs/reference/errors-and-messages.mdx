@@ -493,6 +493,15 @@ slugs.
 | `A candidate named <address> already exists. Please choose another name.` | `409` `already-exists`. A replay candidate's name is taken at its station. | [Replay candidates](/docs/reference/api/replay-candidate#errors) |
 | `keeps the station's key, <key>` | A replay candidate's `station.key` names another station. | [Checks](/docs/reference/api/replay-candidate#checks) |
 | `Candidate <id> is being replayed. Please stop its replays first.` | `409` `in-use`. Deleting a candidate a replay is running. | [Replay candidates](/docs/reference/api/replay-candidate#errors) |
+| `Search <field> must be from 1h to 365d.`, `Search <field> must be a whole number of minutes, hours or days, as in 90m, 12h or 7d.` | A line's or a station's search `period` or `cooldown` out of range or not in its form. `<field>` is `period` or `cooldown`. | [Search fields](/docs/reference/terraform/line#search-fields) |
+| `Search cooldown must be at most the period, <period>.` | A line's search `cooldown` is longer than its `period`. | [Search fields](/docs/reference/terraform/line#search-fields) |
+| `Search ceiling must be above 0 and at most 1,000.`, `Search monthly_ceiling must be above 0.` | A search `ceiling` or `monthly_ceiling` out of range. | [Search fields](/docs/reference/terraform/line#search-fields) |
+| `Search ceiling must be at most the monthly_ceiling, <amount> <currency>.` | A line's search `ceiling` is above its `monthly_ceiling`. | [Search fields](/docs/reference/terraform/line#search-fields) |
+| `Search currency must be a three-letter currency code, as in USD.` | A line's search `currency` that is not three letters. | [Search fields](/docs/reference/terraform/line#search-fields) |
+| `Search iterations must be a whole number from 1 to 10.`, `Search repeats must be a whole number from 1 to 5.` | A station's search `iterations` or `repeats` out of range. | [Search fields](/docs/reference/terraform/line#search-fields) |
+| `Search objective must be one of success, cost.` | A station's search `objective` is another word. | [Search fields](/docs/reference/terraform/line#search-fields) |
+| `Line station <key> search ceiling must be at most the line's monthly_ceiling, <amount> <currency>.` | A station's search `ceiling` is above the line's `monthly_ceiling`. | [Search fields](/docs/reference/terraform/line#search-fields) |
+| `Line station <key> search cooldown must be at most its period, <period>.` | A station's search `cooldown` is longer than its `period`, its own or the line's. | [Search fields](/docs/reference/terraform/line#search-fields) |
 
 ## Web app
 
@@ -532,7 +541,7 @@ A host whose usable images hold no harness reads "None" in red under
 ### Replays
 
 A run that cannot be replayed shows one of these on a replay set's page, on
-hover over its warning sign, and in the "Add runs" dialog. On a replay's result,
+hover over its warning sign. On a replay's result,
 it follows `Couldn't be replayed or started:` in lower case.
 
 | Message | Cause | See |
@@ -562,13 +571,14 @@ A replay's results give their reasons in words such as
 | Message | Cause | See |
 | --- | --- | --- |
 | `Only team members can see its replays` | The reader is neither on the team nor an owner or admin of the workspace. | [Team outcomes](/docs/reference/roles-and-permissions#team-outcomes) |
-| "Replay set not found", `This team has no replay set at that address. Someone may have deleted it.` | A replay set page for a set the team does not have at that station. | [Replay set page](/docs/reference/app/replays#replay-set-page) |
+| "Replay set not found", `This team has no replay set at that address.` | A replay set page for a set the team does not have at that station. | [Replay set page](/docs/reference/app/replays#replay-set-page) |
+| "No replay set yet", `Spotlight keeps a replay set after a run of the station ends.` | A station whose first run has not ended. | [Replay set page](/docs/reference/app/replays#replay-set-page) |
 | "Replay not found", `This team has no replay at that address. Someone may have deleted it.` | A replay page for a replay the team does not have at that station. | [Replay page](/docs/reference/app/replays#replay-page) |
 | `This team has no such run.` | A replay run's page the reader may not read, or no such run. | [Replay runs](/docs/reference/app/replays#replay-runs) |
-| `Please add runs to the set first.` | "Start a replay" on an empty set. | [Replay set page](/docs/reference/app/replays#replay-set-page) |
+| `The set has no runs yet. Spotlight adds runs of the station when it refreshes the set.` | "Start a replay" on an empty set. | [Replay set page](/docs/reference/app/replays#replay-set-page) |
 | `The station is gone from its line.` | "Start a replay" on a set whose station has left its line. | [Replay set page](/docs/reference/app/replays#replay-set-page) |
-| `A replay or search of this set is running. Please delete the set after it ends.` | "Delete" on a set with a replay or search in progress. | [Replay set page](/docs/reference/app/replays#replay-set-page) |
-| `A search of this set is running. Add or take out runs after the search ends or a person stops it.` | "Add runs" or taking a run out of a set a search is using. | [Replay set page](/docs/reference/app/replays#replay-set-page) |
+| `A search of this set is running. Take out runs after the search ends or a person stops it.` | Taking a run out of a set a search is using. | [Replay set page](/docs/reference/app/replays#replay-set-page) |
+| `Sorry, the run couldn't be taken out. Please try again later.` | Taking a run out of a set failed. | [Replay set page](/docs/reference/app/replays#replay-set-page) |
 | `Please enter a ceiling above 0.`, `Maximum ceiling: 1,000`, `Please enter a three-letter currency code, like USD.` | The ceiling entered when starting a replay. | [Replay set page](/docs/reference/app/replays#replay-set-page) |
 | `Please enter a whole number from 1 to 5.` | The repeats entered when starting a replay. | [Replay set page](/docs/reference/app/replays#replay-set-page) |
 
@@ -580,21 +590,29 @@ messages.
 
 A failed pull request names its reason in words; see
 [Config pull request reasons](/docs/reference/app/searches#config-pull-request-reasons).
+A replay set's "Searches" card shows the last `Spotlight did not start a
+search: …` message until a search starts. The station's status line shows it
+when it reads "Not improving", for every reason but `disabled`, `cooldown` and
+`pull-request-open`.
 
 | Message | Cause | See |
 | --- | --- | --- |
 | `Only team members can see its searches` | The reader is neither on the team nor an owner or admin of the workspace. | [Team outcomes](/docs/reference/roles-and-permissions#team-outcomes) |
-| `A search of this station is in progress.` | "Start a search" while the station is being searched. | [Station page](/docs/reference/app/searches#station-page) |
-| `Create a replay set first.` | "Start a search" at a station with no replay set. | [Station page](/docs/reference/app/searches#station-page) |
-| `No replay set covers 5 different tasks yet.` | "Start a search" when no set covers runs of 5 tasks. | [Station page](/docs/reference/app/searches#station-page) |
-| `The set covers <n> tasks. A search holds some tasks out. Minimum different tasks: 5`, with `1 task` for one | A set too small to search on, in the "Start a search" dialog. | [Start a search](/docs/reference/app/searches#start-a-search) |
-| `Please enter a whole number from <least> to <most>.` | An iteration, candidate, at-once or repeats count out of bounds. | [Start a search](/docs/reference/app/searches#start-a-search) |
-| `Please enter a ceiling above 0.`, `Maximum ceiling: 1,000`, `Please enter a three-letter currency code, like USD.` | The ceiling entered when starting a search. | [Start a search](/docs/reference/app/searches#start-a-search) |
-| `The station is gone from its line.` | A set whose station has left its line, in the "Start a search" dialog. | [Start a search](/docs/reference/app/searches#start-a-search) |
 | "Search not found", `No search at this address. It may belong to another station.` | A search page for a search the team does not have at that station. | [Search page](/docs/reference/app/searches#search-page) |
-| `After its replay on the searched tasks finishes, you can open a pull request.` | "Open pull request" on a candidate whose replay has not finished. | [Picking a candidate](/docs/reference/app/searches#picking-a-candidate) |
-| `You can't open a pull request for this candidate. Its replay stopped before it finished.`, `You can't open a pull request for this candidate. Its replay reached its ceiling before it finished.`, `You can't open a pull request for this candidate. Its replay is gone.` | "Open pull request" on a candidate whose replay was stopped, reached its ceiling, or is gone. | [Picking a candidate](/docs/reference/app/searches#picking-a-candidate) |
-| `Another replay set already gates config changes of station <stationId>. Only one replay set of a station can gate config changes.` | "Gates config changes" on a second set at a station. | [Gating a station's changes](/docs/reference/app/searches#gating-a-stations-changes) |
+| "No searches yet", `Spotlight searches the station on a schedule and when a station alert fires.` | A replay set whose station Spotlight has not searched or skipped yet. | [When a search starts](/docs/improvement/how-spotlight-improves-a-station#when-a-search-starts) |
+| `Spotlight did not start a search: the search policy of the station is off.` | `disabled`. | [When Spotlight skips a search](/docs/improvement/how-spotlight-improves-a-station#when-spotlight-skips-a-search) |
+| `Spotlight did not start a search: no runner can start the harness of the search agent.` | `no-agent`. | [When Spotlight skips a search](/docs/improvement/how-spotlight-improves-a-station#when-spotlight-skips-a-search) |
+| `Spotlight did not start a search: the station has no judge and no check.` | `no-scoring`. | [When Spotlight skips a search](/docs/improvement/how-spotlight-improves-a-station#when-spotlight-skips-a-search) |
+| `Spotlight did not start a search: the replay set has too few tasks. Minimum tasks: 5` | `set-too-small`. | [When Spotlight skips a search](/docs/improvement/how-spotlight-improves-a-station#when-spotlight-skips-a-search) |
+| `Spotlight did not start a search: earlier searches searched on too many tasks of the set. A search needs new tasks to hold out.` | `no-fresh-held-out`. | [When Spotlight skips a search](/docs/improvement/how-spotlight-improves-a-station#when-spotlight-skips-a-search) |
+| `Spotlight did not start a search: the search ceiling is too low to replay each task once per candidate.` | `ceiling-too-low`. | [When Spotlight skips a search](/docs/improvement/how-spotlight-improves-a-station#when-spotlight-skips-a-search) |
+| `Spotlight did not start a search: success moves too much between repeats of the same runs.` | `noisy`. | [When Spotlight skips a search](/docs/improvement/how-spotlight-improves-a-station#when-spotlight-skips-a-search) |
+| `Spotlight did not start a search: the judge does not give the same verdict twice.` | `judge-unstable`. | [When Spotlight skips a search](/docs/improvement/how-spotlight-improves-a-station#when-spotlight-skips-a-search) |
+| `Spotlight did not start a search: the check flips on changes that it ran twice.` | `flaky-checks`. | [When Spotlight skips a search](/docs/improvement/how-spotlight-improves-a-station#when-spotlight-skips-a-search) |
+| `Spotlight did not start a search: the live config does not do better on the set when it gets the answer.` | `no-headroom`. | [When Spotlight skips a search](/docs/improvement/how-spotlight-improves-a-station#when-spotlight-skips-a-search) |
+| `Spotlight did not start a search: the searches of the line spent the monthly ceiling of its search policy.` | `monthly-ceiling`. | [When Spotlight skips a search](/docs/improvement/how-spotlight-improves-a-station#when-spotlight-skips-a-search) |
+| `Spotlight did not start a search: a config pull request of the station is open.` | `pull-request-open`. | [When Spotlight skips a search](/docs/improvement/how-spotlight-improves-a-station#when-spotlight-skips-a-search) |
+| `Spotlight did not start a search: the last search of the station started too recently.` | `cooldown`. | [When Spotlight skips a search](/docs/improvement/how-spotlight-improves-a-station#when-spotlight-skips-a-search) |
 
 The [Searches API](/docs/reference/api/searches#errors), the
 [Replay checks API](/docs/reference/api/replay-checks#errors) and
@@ -606,6 +624,10 @@ list their own messages.
 | Message | Cause | See |
 | --- | --- | --- |
 | `No longer waiting for you.` | A notice or inbox item that is not put to the reader, or has left the inbox. | [Notices](/docs/reference/app/tasks-runs-and-the-inbox#notices) |
+| `Spotlight opened a config pull request for the <station> station` | A search finished, and Spotlight opened a config pull request for its best candidate. The notice links the pull request. | [Which candidate becomes a pull request](/docs/improvement/how-spotlight-improves-a-station#which-candidate-becomes-a-pull-request) |
+| `Sorry, the config pull request for the <station> station could not be opened` | Spotlight picked a candidate, but the pull request failed. The notice gives the reason. | [Config pull request reasons](/docs/reference/app/searches#config-pull-request-reasons) |
+| `The search of the <station> station ended with no pull request` | A search finished, and Spotlight picked no candidate: none passed, the station is gone, a config pull request of the station is open, or a person closed a config pull request for each passing candidate. The notice gives the reason. | [Which candidate becomes a pull request](/docs/improvement/how-spotlight-improves-a-station#which-candidate-becomes-a-pull-request) |
+| `Spotlight cannot search the <station> station` | Spotlight skipped a search because the station has no judge and no check, its replay set has too few tasks, the live config does not do better on the set when it gets the answer, the search ceiling is too low, or no runner can start the harness of the search agent. The notice says what to change. | [When Spotlight skips a search](/docs/improvement/how-spotlight-improves-a-station#when-spotlight-skips-a-search) |
 
 ### Change review
 

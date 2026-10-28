@@ -10,14 +10,15 @@ repository, and you want each pull request that changes a work station to be
 tried on the station's past tasks before it merges. A CI job runs
 `spotlight replay check` on the saved plan. For each work station the plan
 changes, Spotlight [replays](/docs/improvement/why-changes-are-replayed-on-past-tasks)
-a set of the station's past tasks under the planned change, compares the
+the station's replay set of past tasks under the planned change, compares the
 results with the station as it is now, and the job fails if the change did
 worse on more tasks than the line allows. You need:
 
 - The line's Terraform planned in GitHub Actions. The workflow below builds on
   [Run Terraform from GitHub Actions without a stored token](/docs/configuration/run-terraform-from-github-actions).
-- For each station to check, a [replay set](/docs/improvement/replay-past-tasks-against-a-station-change#pick-the-tasks-to-replay)
-  of its past runs.
+- For each station to check, at least one ended run. Spotlight keeps a
+  [replay set](/docs/improvement/how-spotlight-improves-a-station#the-replay-set-spotlight-keeps)
+  for each station from its runs.
 - A host serving the workspace with the station's harness. Checks run on the
   team's runners, after task runs.
 - A way for the job to call Spotlight with the `plan` scope: a
@@ -38,26 +39,16 @@ images your hosts run with `SPOTLIGHT_RUNNER_IMAGE`. See
 
 </Callout>
 
-## Choose the tasks each check replays
+## Check the tasks each check replays
 
-Each station has at most one replay set that gates its changes, its gating set. A check of the
-station replays that set.
+A check of a station replays the replay set that Spotlight keeps for it. The
+set holds up to 30 of the station's recent runs, one for each task, and
+Spotlight refreshes it from new runs. A station with no set yet, or with no runs
+in its set, fails its check.
 
-<Steps>
-<Step>
-
-Open the Station page, then the **Improve** tab, and under **Replay sets**
-select the set. Make sure it
-contains runs the station did well as well as runs it did badly.
-
-</Step>
-<Step>
-
-Under **Checks**, turn on **Gates config changes**. If another set at the station gates its
-changes already, turn it off there first.
-
-</Step>
-</Steps>
+Open the station's replay set page and read the runs in it. If a run is not a
+fair test of the station, such as a task that cannot be done as written, take
+it out of the set. Spotlight never adds a run of that task to the set again.
 
 While a check is running, it keeps replaying the set as it was when the check
 started. A later change to the set makes the next check start afresh.
@@ -97,7 +88,7 @@ resource "spotlight_line" "core_delivery" {
 
 A line without `replay_check` is not checked: the job fails for its stations
 and says so. Once it is applied, hover over the ⓘ beside **Checks** on the
-set's page to read the line's threshold. The threshold always comes from the line as it is applied, never
+station's replay set page to read the line's threshold. The threshold always comes from the line as it is applied, never
 from the plan, so a pull request cannot loosen its own check. In the same way,
 a change to a station's `check`, `judge`, `diffs` or `runners` is replayed with
 the live station's, and the output says which it pinned. See
@@ -185,7 +176,7 @@ job ends with exit code `3` and the check's link.
 | Exit code | Meaning |
 | --- | --- |
 | `0` | Every changed station passed, or the plan changes nothing a check replays. |
-| `1` | A check could not start or failed to run, such as for a line with no `replay_check` or a station whose changes no set gates. |
+| `1` | A check could not start or failed to run, such as for a line with no `replay_check`, or a station with no replay set yet or no runs in it. |
 | `2` | A change regressed on more tasks than its line allows. |
 | `3` | A check is undecided, or still running at the timeout. |
 
@@ -206,7 +197,7 @@ it depends on. A changed secret makes every work station undecided.
 Running the check again on the same change, against the same live config,
 the same runs of the set, the same threshold and the same scoring, answers
 with the earlier check while it is running, passed or failed. Each check also
-shows on the gating set's page, under **Checks**. [Results](/docs/reference/cli/replay-command#results) lists every
+shows on the station's replay set page, under **Checks**. [Results](/docs/reference/cli/replay-command#results) lists every
 result and why a check can be undecided.
 
 ## Related
@@ -215,4 +206,4 @@ result and why a check can be undecided.
 - [Replay checks API](/docs/reference/api/replay-checks)
 - [`replay_check`](/docs/reference/terraform/line#replay-check-fields)
 - [Replay past tasks against a change to a station](/docs/improvement/replay-past-tasks-against-a-station-change)
-- [Search for a better station config](/docs/improvement/search-for-a-better-station-config)
+- [How Spotlight improves a station](/docs/improvement/how-spotlight-improves-a-station)

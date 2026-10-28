@@ -24,42 +24,49 @@ GitHub or anyone's inbox. You need:
 - The team's configuration in Terraform, to apply the change afterwards. See
   [Manage Spotlight with Terraform](/docs/configuration/manage-spotlight-with-terraform).
 
-## Pick the tasks to replay
+## Check the tasks to replay
 
-A replay set is a list of the station's past runs that you replay together,
-up to 50.
+Spotlight keeps one replay set for each work station: up to 30 of its past
+runs, one run of each task, refreshed from the station's newer runs. A replay
+replays every run in the set. See
+[The replay set Spotlight keeps](/docs/improvement/how-spotlight-improves-a-station#the-replay-set-spotlight-keeps).
 
 <Steps>
 <Step>
 
-On the line's board, select the station's name to open the Station page, then
-select the **Improve** tab. Under **Replay sets**, select **Create a replay
-set**, enter a **Name**, and select **Open set**. The set's page opens.
+On the line's board, select the station's name to open the Station page. At
+the right of **What needs attention**, hover over the ⓘ beside the improvement
+status, and select **Replay set**. If the status itself links to the set, as
+**Waiting for next check** does, select the status. The set's page opens.
+
+If the status reads **No runs yet**, the station's replay set has no runs.
+Wait for a run of the station to end.
 
 </Step>
 <Step>
 
-Select **Add runs**. The dialog lists the station's latest ended runs. Select
-**Add** beside each run to replay, then **Done**.
-
-Once the set contains runs, the dialog may list up to 5 of them first, under
-**Suggested to even the mix**, each with how it turned out. Add any of them as
-you would any other run. Nothing is added until you select **Add**.
-
-A run that cannot be replayed reads **Can't be replayed** and says why, such as
-**Run recorded no starting point**. See
+Under **Runs**, read the runs the set contains. A run that cannot be replayed
+has a red warning sign. Hover over it for the reason, such as **Run recorded
+no starting point**. See
 [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed).
+
+</Step>
+<Step>
+
+If a run's task should not count, such as a task that is unclear or that no
+config can do, hover over its row, select the X, then **Take it out**.
+Spotlight never adds a run of that task to the set again, and you cannot undo
+this. While a search of the set runs, or a replay of it is in progress, no run
+can be taken out.
 
 </Step>
 </Steps>
 
-Add runs the station did well as well as runs it did badly. While a run is in a
-set, Spotlight keeps the workspace it started from.
-
 Above the set's runs, a bar shows how they turned out. Hover over the ⓘ
 beside **Runs** for where their tasks came from and when they ended. If a
 warning sign shows at the right of the panel's title, most of the set's runs
-turned out one way: add runs that turned out other ways. See
+turned out one way. Spotlight adds runs that turned out other ways when the
+station has them. See
 [What a set is made of](/docs/reference/app/replays#what-a-set-is-made-of).
 
 ## Propose the change
@@ -137,8 +144,12 @@ block as JSON. See
 <Steps>
 <Step>
 
-On the Station page's **Improve** tab, under **Replay sets**, select the set.
-On the set's page, under **Replays**, select **Start a replay**.
+Open the station's replay set, as in
+[Check the tasks to replay](#check-the-tasks-to-replay). On the set's page, under **Replays**, select **Start a
+replay**.
+
+If the button is greyed out, hover over it for the reason, such as an empty
+set.
 
 </Step>
 <Step>
@@ -173,7 +184,7 @@ Select **Start replay**. The replay's page opens.
 
 ```bash
 spotlight replay start --station core/delivery/implementation \
-  --set "Queue fixes" --candidate "Higher effort" --ceiling 5
+  --candidate "Higher effort" --ceiling 5
 ```
 
 The ceiling is in `USD` unless you add `--currency`. To replay each run more
@@ -184,8 +195,10 @@ replay's id and the command to follow it.
 </Tabs>
 
 A replay you start is compared with the set's baseline: the station's live
-config replayed on the same runs. If the set has no baseline covering all its runs,
-because it was never replayed or runs were added since:
+config replayed on the same runs. Before the replay starts, Spotlight
+refreshes the set, unless a replay, a search or a check uses it. If the set
+has no baseline covering all its runs, because it was never replayed or a
+refresh added runs since:
 
 - Under **Live config**, the replay becomes the baseline.
 - Under a proposed candidate, a baseline starts beside it, with a ceiling of its
@@ -240,8 +253,7 @@ compared with, as in `+12 pts`, with a significance of **Better**, **Worse** or
 [Gains](/docs/reference/app/replays#gains) for when each significance shows.
 
 Act on **Better** or **Worse**. If a result you expected to matter reads
-**Within noise**, add runs of more tasks to the set, or replay with more
-repeats. To change the smallest gain that counts, see
+**Within noise**, replay with more repeats. To change the smallest gain that counts, see
 [Set how large a gain must be](#set-how-large-a-gain-must-be).
 
 Under **Tasks**, the replay's page lists each task, regressions first. A
@@ -267,7 +279,7 @@ losses beside the success rate. See
 [Side by side](/docs/reference/app/replays#side-by-side) for how the judge
 compares the changes.
 
-If the candidate did worse, propose another candidate and replay the same set.
+If the candidate did worse, propose another candidate and replay the set.
 To see what a replay with a gain is compared with, hover over its **Gain** on
 the set's page. Once that replay's success is known, the hover names it, as in
 `Baseline: 50%` or `Earlier baseline: 50%`. A replay without a gain reads `–`.
@@ -275,23 +287,26 @@ the set's page. Once that replay's success is known, the hover names it, as in
 ## Read the set's health
 
 Read whether a set can tell a better config from a worse one before you read
-small gains on it or [search](/docs/improvement/search-for-a-better-station-config)
-on it. There is nothing to start: the set's first baseline checks it, then
+small gains on it. Spotlight
+[skips a search](/docs/improvement/how-spotlight-improves-a-station#when-spotlight-skips-a-search)
+of a set that fails one of these checks. There is nothing to start: the set's first baseline checks it, then
 Spotlight replays the live config with each run's answer.
 
 On the set's page, read the rows under **Health**. Hover over the ⓘ beside a
 check for its advice. A check marked with a warning sign found a problem:
 
 - **Noise** more than the gain the line counts as real: replay candidates
-  with more repeats, add runs of more tasks, or
+  with more repeats, set more `repeats` in the station's
+  [`search` block](/docs/reference/terraform/line#station-search-fields), or
   [raise `min_gain`](#set-how-large-a-gain-must-be).
-- **Room to improve** reads **Little** or **Almost none**: add runs of tasks
-  the live config fails, or search for the same success for less. See
+- **Room to improve** reads **Little** or **Almost none**: give the station
+  harder tasks, or set the station's search `objective` to `cost`, for the
+  same success for less. See
   [Read the room to improve](#read-the-room-to-improve).
 - **Judge agreeing with itself** below 80%: make the judge's rubric more
   specific. See [Set a station's judge and alerts](/docs/improvement/set-a-stations-judge-and-alerts).
 - **Flaky checks** lists tasks whose check flipped: fix the flaky tests, or
-  take those tasks' runs out of the set.
+  take those tasks' runs out of the set. Their tasks never come back.
 
 The checks belong to the station's config as it is now. Once an applied
 change gives the station a new config fingerprint, they read **Not
@@ -313,10 +328,10 @@ its own, the same as the live replay's.
 While it runs, **Room to improve** reads **Measuring with the answer**. Once
 it finishes:
 
-- If it reads **Little**, add runs of tasks the live config fails, or search
-  for the same success for less.
-- If it reads **Too few runs to tell**, add runs that people accepted or sent
-  back.
+- If it reads **Little**, give the station harder tasks, or set the
+  station's search `objective` to `cost`.
+- If it reads **Too few runs to tell**, wait until people accept or send back
+  more of the station's runs. Spotlight adds them when it refreshes the set.
 - If it reads **Couldn't measure with the answer** because the replay with the
   answer was stopped or ran over its ceiling, replay the live config over the
   whole set again.
@@ -361,8 +376,8 @@ Choose a period that covers when the replays started.
 </Step>
 <Step>
 
-Under **Replayed candidates**, find the station and, under it, the replay
-set; both start expanded, and selecting a station's or a set's row collapses it.
+Under **Replayed candidates**, find the station. Its row starts expanded,
+and selecting it collapses it.
 Each candidate's row sets its **Replay success** beside the live config's,
 **Against live** gives its gain over the live config in points, and **Cost per
 run** and **Live cost** give what each spent per run. Select **Changes** on a
@@ -371,8 +386,8 @@ row to open its replay, its search or its pull request.
 </Step>
 <Step>
 
-To plot success against cost, choose **Chart**. Each replay set has a chart of
-its candidates, with replay success up the side and cost per run along the
+To plot success against cost, choose **Chart**. Each station's replay set has
+a chart of its candidates, with replay success up the side and cost per run along the
 bottom. The diamonds are the live config replayed: one on each search's
 tasks, beside that search's candidates, and one on the whole set, beside the
 proposed candidates. A candidate above its diamond and no further right did
@@ -416,12 +431,9 @@ Runs with the new config start a new group under **Runs by config** on the
 station's view on Insights. See
 [Check whether it helped](/docs/improvement/improve-a-station-from-its-runs#check-whether-it-helped).
 
-To have every pull request that changes the station replayed on a set before
-it merges, turn on **Gates config changes** on the set's page. See
+To have every pull request that changes the station replayed on its replay
+set before it merges, see
 [Check Terraform pull requests for station regressions](/docs/configuration/check-terraform-pull-requests-for-station-regressions).
-
-To let go of a set you no longer need, select **Delete** on its page. Its
-replays go with it, and Spotlight stops retaining its runs' workspaces for it.
 
 ## Related
 
@@ -430,4 +442,4 @@ replays go with it, and Spotlight stops retaining its runs' workspaces for it.
 - [`spotlight replay`](/docs/reference/cli/replay-command)
 - [Replay candidates](/docs/reference/api/replay-candidate)
 - [Improve a station from its runs](/docs/improvement/improve-a-station-from-its-runs)
-- [Search for a better station config](/docs/improvement/search-for-a-better-station-config)
+- [How Spotlight improves a station](/docs/improvement/how-spotlight-improves-a-station)
