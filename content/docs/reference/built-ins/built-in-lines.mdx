@@ -83,6 +83,22 @@ none.
 | Delivery | `code-review` | "Review the change against what the task requested, not against how you would have written it." | Pass the task back to implementation with findings, or to `spec` when the fault is in the plan, or open a pull request and pass the task to `done`. |
 | Review | `code-review` | "Review the pull request this task names." | Leave comments with `spotlight tools call review-comment`, submit them with `spotlight tools call review`, make no edits, and pass the task to `done`. |
 
+## Station judges
+
+Each `work` station has a [judge](/docs/reference/terraform/line#judge-fields)
+with a rubric that starts with `scores: yes-no`, a `sample` of `0.2` and a
+`min_agreement` of `0.6`. The judge scores one run in five. Its scores show on
+the Station page once it agrees enough with people. See
+[Why a judge must agree with people](/docs/improvement/why-a-judge-must-agree-with-people).
+
+| Line | Station | The rubric checks that |
+| --- | --- | --- |
+| Delivery | `triage` | The note says what the request comes down to and what it leaves open, the run changed no file, and the task went to a person when the request was unclear. |
+| Delivery | `spec` | The plan names the approach, the real files and functions, the tests and what is out of scope, and does not reopen what the request wants. |
+| Delivery | `implementation` | The change does what the spec describes and no more, has tests that fail without it, passes the tests and the linter, and is pushed. |
+| Delivery | `code-review` | Each finding is real, has a severity and says what would fix it, and the task went back to the right station or on to a pull request. |
+| Review | `code-review` | Each finding is a comment on its line with a severity, changes are requested only for a high finding, and the run pushed nothing. |
+
 A built-in line is changed and deleted like any other line. See
 [Change a line's stations](/docs/lines/change-a-lines-stations).
 

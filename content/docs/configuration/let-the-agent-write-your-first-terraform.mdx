@@ -83,6 +83,9 @@ The agent writes into the folder you chose:
 - a prompt file for each station, `prompts/<team>/<line>/<station>.md`, adapted
   to what it learned
 - each station's `setup` and `check` commands
+- a `judge` for each `work` station, with its rubric in
+  `judges/<team>/<line>/<station>.md`, adapted to what a good run at that
+  station does for the team
 - skills adopted from the team's own rules files
 - a `reviews` policy from `CODEOWNERS`, and `match` hooks for risky paths
 - the two trusts as `spotlight_oidc_trust` resources, with `import`
@@ -102,7 +105,8 @@ It runs `terraform init`, `terraform fmt`, `terraform validate` and
 `terraform plan`, signed in to Spotlight's state with the run's token when
 Spotlight keeps it, commits on a branch such as `spotlight-configuration`, and
 opens a pull request. The description lists each departure from the built-in
-lines with the files it rests on, followed by the plan. The plan should import
+lines with the files it rests on, the stations that have a judge and what
+each rubric checks, followed by the plan. The plan should import
 what already exists and change only what the agent adapted.
 
 **Set up configuration as code** now has a check mark. Expand it and click
