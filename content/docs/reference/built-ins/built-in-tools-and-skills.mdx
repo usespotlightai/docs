@@ -25,16 +25,23 @@ under [spotlight tools call](/docs/reference/cli/agent-commands#spotlight-tools-
 ### pull-request
 
 Opens a pull request for the task's branch, `spotlight/<taskId>`, into the
-repository's default branch (`main` if GitHub names none). If a pull request is
-already open for the branch, that one is returned. It answers with
+repository's default branch (`main` if GitHub names none). It answers with
 `{"url": "<address>"}`. The task then has the `git.pull-request`
 [mark](/docs/reference/events/github-events#marks).
+
+If the task already has a pull request, the call opens no other. It changes the
+title and body of that pull request to the ones given, and answers with its
+address. Without `body`, the body stays as it is. `repository` has no effect
+on this change: the pull request stays in its repository.
 
 | Input | Type | Required | Stdin | Description |
 | --- | --- | --- | --- | --- |
 | `title` | string | yes | no | What it does. |
 | `body` | string | no | yes | The detail, as Markdown. |
 | `repository` | string | no | no | Which of the line's repositories, where it works several. |
+
+The `pull-request.opening` [hook](/docs/integrations/hooks) runs before a pull
+request is opened. It does not run before a change to the title and body.
 
 ### review-comment
 
