@@ -10,8 +10,8 @@ asks you something, when its run fails, when a tool needs your approval, or
 when a tool needs to act as you at a service you have not connected.
 Each of these is an item in your inbox. Items that grade a run, propose
 memories or report a station alert are inbox requests. They wait on nothing,
-and so do notices about your team's work, such as a search that ended
-with a config pull request.
+and so do notices about your team's work that need a person, such as a config
+pull request that Spotlight opened.
 
 ## Open the item
 
@@ -128,22 +128,38 @@ The card's title then reads `Memory approved by <name>` or
 
 ## Act on a notice
 
-A notice has a lightbulb beside its headline. It goes to every member of your
-team. When one of you opens it, it is resolved for the whole team: it moves
-under **Resolved** and leaves the inbox 30 days later. Read the points under
-**Details**, and select the button under them to open the page it is about.
+A notice has a lightbulb beside its headline. Most notices go to every member
+of your team. When one of you opens it, it is resolved for the whole team: it
+moves under **Resolved** and leaves the inbox 30 days later. A notice about a
+change that you asked to test in a chat, and that did not become the pull
+request, goes to you alone. Read the points under
+**Details**, and select **Open the station** under them to open the station.
 
-- If Spotlight opened a config pull request, review it and merge it to change
-  the station. To say no to its config, close it on GitHub. See
-  [What a person does](/docs/improvement/how-spotlight-improves-a-station#what-a-person-does).
-- If Spotlight could not open the pull request, the points give the reason.
-  See [Config pull request reasons](/docs/reference/app/searches#config-pull-request-reasons).
-- If a search ended with no pull request, or Spotlight cannot search a station,
-  the points say why. See
-  [When Spotlight skips a search](/docs/improvement/how-spotlight-improves-a-station#when-spotlight-skips-a-search).
+- If Spotlight opened a config pull request, select **Review the pull
+  request** to open it on GitHub. Its description says what changes, how the
+  candidate scored and why, task by task. Merge it to change the station, or
+  close it to say no to its config.
+- If Spotlight could not open the pull request, the points give the reason,
+  such as a line with no `source` block. Fix it in the line's Terraform.
+- If Spotlight cannot search a station, the points say what to fix, such as
+  `Please add a judge or a check to the station in the Terraform of the line.`
+- If a search stalled on causes outside the config, each point names a task,
+  its cause and what to fix, such as the judge's rubric or the station's
+  check.
+- If a change that you asked to test did not become the pull request, the
+  first point says why, such as `No candidate did better than the live config
+  on the held-out tasks.` or `Candidate <name> became the config pull
+  request.`, and the next ones how each of your changes did. If another
+  candidate became the pull request, the team gets that notice. To try another change, go back to the chat. See
+  [Test the change](/docs/improvement/improve-a-station-from-its-runs#test-the-change).
 
-A config pull request that merges, or that Spotlight closes because the
-station's live config changed, sends no notice. See
+See [What a person does](/docs/improvement/how-spotlight-improves-a-station#what-a-person-does)
+and [Notices](/docs/reference/app/searches#notices).
+
+A search that you did not ask for and that ends with no pull request sends no
+notice, nor does a config
+pull request that merges, or that Spotlight closes because the station's live
+config changed. See
 [What happens to the pull request](/docs/improvement/how-spotlight-improves-a-station#what-happens-to-the-pull-request).
 
 ## Send the task somewhere else instead

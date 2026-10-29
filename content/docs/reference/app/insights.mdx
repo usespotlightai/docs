@@ -725,7 +725,7 @@ is picked.
 With a station picked, the chart also draws the station's replayed candidates,
 the same points [Candidates](#chart) draws, hollow, for its replay set,
 charted in the currency the agent configs are compared in; with no such currency,
-none are drawn. The legend names them "Searched", "Proposed" and "Live config,
+none are drawn. The legend names them "Searched" and "Live config,
 replayed", and the side of the chart reads `<outcome> · replay success`. A replayed point's height
 is its replay success, scored by the candidate's own checks and judge,
 whatever outcome the card charts; it is not the live outcome the agent configs show.
@@ -747,9 +747,10 @@ charted, the table adds a second table of the replayed configs, with "Config",
 
 ### Candidates
 
-"Replayed candidates" sets the station configs the team replayed on past tasks
-against the station's live config, replayed on the same tasks, before any of
-them is applied. It counts [replays](/docs/reference/app/replays), and it has
+"Replayed candidates" sets the station configs that Spotlight's
+[searches](/docs/reference/app/searches) replayed on past tasks against the
+station's live config, replayed on the same tasks, before any of them is
+applied. It counts [replays](/docs/reference/app/replays), and it has
 no filters but the period.
 
 A replay set contains past runs of its station. Success rates average over
@@ -759,21 +760,19 @@ times the set's runs.
 
 #### Which candidates show
 
-| Candidate | Shows when |
-| --- | --- |
-| Searched | Its [search](/docs/reference/app/searches) started in the period. |
-| Proposed | A replay of it started in the period. With more than one over a set, the newest finished one shows, or else the newest. |
+A searched candidate shows when its [search](/docs/reference/app/searches)
+started in the period.
 
 The live config shows only as the replays it was compared with, and the
-candidates of [replay checks](/docs/reference/api/replay-checks) do not show: a check's result is on its pull request and on its
-[replay set page](/docs/reference/app/replays#replay-set-page). A set's health
+candidates of [replay checks](/docs/reference/api/replay-checks) do not show: a check's result is in its CI output. A set's health
 and baseline are current, whatever the period.
 
 The section reads the newest 500 replays started in the period. When there
 were more, it shows `Only the latest replays in this period are counted.`
 
-With none, it reads "No candidates replayed in this period", with "Open the
-line", which opens one of the team's lines.
+With none, it reads "No candidates replayed in this period" and `Spotlight
+replays the candidates of each automatic search here.`, with "Open the line",
+or "Open the team's lines" when no line is known.
 
 #### Stations and sets
 
@@ -783,7 +782,7 @@ removed station", followed by its replay set:
 
 | Part | Shows |
 | --- | --- |
-| Name | "Replay set", linked to the set's [page](/docs/reference/app/replays#replay-set-page). |
+| Name | "Replay set". |
 | Size | `<n> tasks`, the different tasks its runs worked, with `(<m> runs)` when it contains more runs than tasks, or "No tasks yet". |
 | Warning icon | When a [health](/docs/reference/app/replays#health) check found a problem, or a health check was not run. Hovering lists each warning as `<check>: <what it says>.`, then `<n> of <m> health checks not run: <checks>.` |
 | Station gone | When its station has left the line. |
@@ -793,13 +792,15 @@ removed station", followed by its replay set:
 
 Expanding a station lists its candidates, the greatest gain over the live config
 first, those with none last, then "Live config" when the set has a baseline.
-Each row ends with a "Changes" link, described below the table:
+A row ends with "Pull request" when Spotlight opened a
+[config pull request](/docs/reference/app/searches#the-pull-request) for the
+candidate, which opens it on GitHub in a new tab:
 
 | Column | Shows |
 | --- | --- |
-| Config | The candidate's name, a trophy ("Best value") when it is on its search's [frontier](/docs/reference/app/searches#frontier), and its replay's [state](/docs/reference/app/replays#replay-states) until that replay has finished. Selecting it shows the whole row. |
+| Config | The candidate's name, a trophy ("Best value") when it is on its search's [frontier](/docs/reference/app/searches#frontier), and its replay's state, "Queued", "Running", "Stopped" or "Ceiling reached", until that replay has finished. Selecting it shows the whole row. |
 | What changed | How its config differs from the live config, as a plan. |
-| Source | "Search", "Proposed", or "Live" for the live config. Hovering over the heading explains each, and the trophy. |
+| Source | "Search", or "Live" for the live config. Hovering over the heading explains each, and the trophy. |
 | Replay success | A bar from 0% to 100%: the candidate's success, with its 95% range on hover, against a mark for the live config's, coloured by the significance of the gain over live. |
 | Candidate, Live | The candidate's success and the live config's, as percentages. |
 | Against live | Its [gain](/docs/reference/app/replays#gains) over the live config in points, as in `+16 pts`, with the significance and the set's minimum real gain on hover; or "Not compared". |
@@ -810,16 +811,7 @@ Each row ends with a "Changes" link, described below the table:
 Once a candidate has runs compared with the baseline, "Replay success",
 "Candidate", "Live", "Cost per run" and "Runs" count those runs alone. Until
 then they count every run it was scored on, and "Live" reads `–`. A searched
-candidate's success is its [search score](/docs/reference/app/searches#scores);
-a proposed candidate's is its replay's
-[success](/docs/reference/app/replays#success) over the set.
-
-| "Changes" opens | When |
-| --- | --- |
-| The pull request on GitHub | Spotlight picked the candidate and opened a pull request. |
-| Its search page, at the candidate | A searched candidate, otherwise. |
-| Its replay page | A proposed candidate, otherwise. |
-| The baseline's replay page | The "Live config" row. |
+candidate's success is its [search score](/docs/reference/app/searches#scores).
 
 The "Live config" row shows the baseline's success under "Live", its cost
 under "Live cost", and the runs it was scored on.
@@ -832,9 +824,7 @@ cost per run along the bottom and "Replay success" up the side:
 | Shape | Point | Height |
 | --- | --- | --- |
 | Diamond | `Live config, replayed (the search's tasks)`: the live config a search started from. One per search; with more than one search over the set, `Live config, replayed (tasks of the search on <day>)`. | Its search score: the live config's success on that search's searched runs. |
-| Diamond | `Live config, replayed (whole set)`: the set's baseline. Drawn only when the set has a proposed candidate. | Its success over the whole set. |
 | Circle | "Searched". | Its [search score](/docs/reference/app/searches#scores), on its search's searched runs. |
-| Square | "Proposed". | Its replay's success over the set. |
 
 A searched candidate on its search's frontier is highlighted, as "On the
 search's frontier" in the legend; which candidates are on it follows the

@@ -132,8 +132,8 @@ covers too few tasks to replace the rate, but where the rate reads Within
 noise, it can say which way the candidate leans.
 
 A replay other than a baseline keeps one reference replay, chosen when it
-starts: a proposed candidate the baseline that was current then, a search's candidates
-the live config the search replayed when it started, and a replay with the
+starts: a search's candidates the live config the search replayed when it
+started, a replay check's candidate the set's baseline, and a replay with the
 answer the live replay whose finishing started it. Its task-by-task rows and
 its gain use that one replay, and so do its wins and losses, where it has
 them; a replay with the answer is never set side by side. A baseline started
@@ -202,8 +202,7 @@ same number of repeats.
 
 Replaying the live config with repeats shows how far a set's success moves when
 nothing changed: the spread between the repeats' success rates, and which tasks
-went both ways. That spread is the set's noise, and the replay set's page
-shows it once measured. It is measured on the station's config as it is now,
+went both ways. That spread is the set's noise. It is measured on the station's config as it is now,
 from the newest finished replay of the live config with at least 2 repeats.
 Once a change gives the station a new
 [config fingerprint](/docs/reference/glossary#config-fingerprint), the noise
@@ -223,8 +222,8 @@ yet, a search can start, and its small gains may be luck. See
 
 Noise is one way a set can fail to tell a better config from a worse one.
 There are others, and on any of them a search would chase something other than
-a better config. A set's page reads each of them for the live config as it is
-now, as its health, and Spotlight skips a search on a set that fails one of
+a better config. Spotlight reads each of them for the live config as it is
+now, as the set's health, and skips a search on a set that fails one of
 them.
 
 - Room to improve. When the live config already succeeds on more than 95% of
@@ -244,26 +243,26 @@ them.
 What the set contains matters as well. A set whose original runs were nearly all
 accepted, or nearly all sent back, says little about how runs that turned out
 other ways would go. In the docs' view, a candidate that wins on such a set
-may lose on the runs it lacks. So a set's page counts how its original runs
-turned out, where their tasks came from and when they ended, and warns when
-one outcome covers more than two thirds of a set of 6 runs or more. When
-Spotlight refreshes the set, it adds runs of the outcomes the set is short of
-first, when the station has such runs. A person can take out a run whose task
-the set should not represent, and Spotlight never adds that task again. See
+may lose on the runs it lacks. So when Spotlight refreshes the set, it adds
+runs of the outcomes the set is short of first, when the station has such
+runs. A task that a search found to be the cause of its own failure, such as a
+task that is unclear or that no config can do, leaves the set at the next
+refresh. See
 [The replay set Spotlight keeps](/docs/improvement/how-spotlight-improves-a-station#the-replay-set-spotlight-keeps).
 
-Nobody has to request these checks. The first baseline of the live config
-as it is now is also the set's calibration: it replays each run at least 3 times, which
-measures the noise, and once it finishes, each change is judged and checked a
-second time. Its ceiling grows with its repeats, so it costs about three times
-a single replay. In the docs' view, a set is only worth reading once it has
-been calibrated, and the first baseline has to replay the live config anyway. A
-set of fewer than 5 runs is never calibrated, since it is too small to measure
-noise on. A search's starting replay and a pull request check's baseline are
-never the calibration. The second judgings cost model calls, so they count against
-the check's ceiling and stop once it would be spent; the rest are not judged
-again. A
-second judging or check never changes a run's result. In the docs' view, it
+Nobody has to request these checks. The first search on a new set, or on a
+set whose runs or live config changed since it was last measured, calibrates
+the set as it starts: its replay of the live config replays each run 3 times,
+which measures the noise, and once it finishes, each change is judged and
+checked a second time. It then replays the live config with the answer, as
+below. That first search costs more for it. In the docs' view, a set is only
+worth reading once it has been calibrated, and a search has to replay the live
+config anyway. The health this measures decides from the next search on
+whether a search starts. A set of fewer than 5 runs is never calibrated, since
+it is too small to measure noise on. The second judgings cost model calls, so
+they count against the replay's ceiling and stop once it would be spent; the
+rest are not judged again. A second judging or check never changes a run's
+result. In the docs' view, it
 measures the judge and the check, not the run. The second judgings also do not
 add to what the check's runs cost.
 
@@ -286,12 +285,11 @@ runs. It is never the gain to expect: no config hands the agent the answer.
 When even the answer does not do clearly better, the live config already does
 about as well on these tasks as any config could show, and a search on the set
 would find little. What helps is tasks the live config fails. Spotlight skips
-a search of such a set, and tells the team in an inbox notice.
+a search of such a set until harder tasks come in.
 
 The replay with the answer is a replay like any other. It has its own ceiling,
-the same as the live replay's, its own runs and its own row on the set's page.
-The set's health, the replay's own page and the API all read its gain against
-the live replay that started it, task by task and with a range. Its changes are never judged blind beside that
+the same as the live replay's, and its own runs. The set's health reads its
+gain against the live replay that started it, task by task and with a range. Its changes are never judged blind beside that
 replay's. In the docs' view, an upper
 bound that skipped the usual scoring would not be comparable with the gains
 it bounds.
@@ -305,18 +303,12 @@ another.
 
 A replay spends what its runs cost, and what generating change stacks for their
 changes and judging them cost. Each repeat of a run is a run of its own, so a
-replay with 3 repeats starts three times the runs. A person sets a ceiling on
-each replay, and once a replay's spend reaches it, nothing more of it starts.
-Runs already running finish, so a replay can end a little over its ceiling, and
-its page says by how much. The baseline started beside a proposed candidate has
-a ceiling of its own, the same as the replay that started it, so the two can
-spend twice that ceiling. When that baseline is also a calibration, its ceiling
-can be larger, so at 1 or 2 repeats the two can spend more; see
-[Calibration](/docs/reference/app/replays#calibration). A replay of the live config
-becomes the baseline itself when the set has none, or when the set's runs
-changed since the last one. Costs in another currency than the ceiling's, and
-costs never reported, do not count against it. The replay page shows them apart
-from the spend the ceiling counts.
+replay with 3 repeats starts three times the runs. Each replay has a ceiling,
+taken from the search's ceiling or the line's `replay_check`, and once a
+replay's spend reaches it, nothing more of it starts. Runs already running
+finish, so a replay can end a little over its ceiling. Costs in another
+currency than the ceiling's, and costs never reported, do not count against
+it. See [Spend and ceiling](/docs/reference/app/replays#spend-and-ceiling).
 
 Replays take runners the team's real work needs. At most 2 of a team's replay
 runs run at once, apart from a search's, which keep to a limit the search
@@ -339,8 +331,7 @@ lists each reason.
 
 ## Replays beside live runs
 
-Once a team has replayed a few candidates, the question is which of them, if
-any, to apply. The Candidates section of the Stations tab on the team's
+The Candidates section of the Stations tab on the team's
 Insights page sets every candidate replayed in a period beside the live config
 replayed on the same replay set, station by station, and its Config changes
 section can draw a station's replayed candidates on the same chart as the
@@ -357,19 +348,18 @@ what their height is, so neither is read as the other.
 A candidate is read against the live config replayed on the same runs, not
 against the live runs, because only that replay worked the same tasks at about
 the same time. A search's candidates are set beside the live config on that
-search's own runs, and a proposed candidate beside the set's baseline.
+search's own runs.
 A search's held-out score is never drawn as a point. In the docs' view, it
 comes from other tasks than the search score, so one point cannot show
 both, and it is the score to trust, so it is given as a figure of its own.
 The candidates of a pull request's replay check are left out: their result is
-on the pull request and on the replay set's page.
+in the check's output.
 
 ## A replay changes nothing
 
-A replay never changes the station, however well its candidate does. A person
-reads the result and makes the change in Terraform, the same way as any other
-change to a line. A [search](/docs/improvement/why-a-search-holds-tasks-out),
-which replays many candidates an agent proposes, goes no further: when one of
+A replay never changes the station, however well its candidate does. A
+[search](/docs/improvement/why-a-search-holds-tasks-out), which replays many
+candidates an agent proposes, goes no further: when one of
 its candidates meets Spotlight's rules, Spotlight opens a pull request, which
 the team reviews and applies. See
 [How Spotlight improves a station](/docs/improvement/how-spotlight-improves-a-station). A
@@ -381,7 +371,6 @@ shows whether it still did well on the team's real work.
 
 ## Related
 
-- [Replay past tasks against a change to a station](/docs/improvement/replay-past-tasks-against-a-station-change)
 - [Replays](/docs/reference/app/replays)
 - [Why a judge must agree with people before its scores show](/docs/improvement/why-a-judge-must-agree-with-people)
 - [Why a search holds tasks out](/docs/improvement/why-a-search-holds-tasks-out)
