@@ -1,0 +1,283 @@
+---
+type: concept
+icon: Lightbulb
+title: How Spotlight improves a station
+description: What a team sets up once, how a person asks for a test of a change, how Spotlight keeps a replay set and searches for a better config of each work station, which candidate becomes a config pull request, what happens to that pull request, and when the inbox asks a person to act.
+---
+
+A work station gets better when its config gets better: its prompt, its model,
+its skills, its tools. Spotlight looks for those changes itself. It keeps a set
+of the station's past runs, has an agent propose changed configs, replays each
+one on those runs, and opens a pull request for a config that did better. A
+person merges or closes the pull request. Nothing changes at the station
+before that.
+
+A person does three things in this loop, and can do a fourth:
+
+- Set it up once, in the line's Terraform.
+- Merge or close the config pull requests that Spotlight opens.
+- Fix a setting when the inbox asks for it.
+- Ask for a test of a change, from a chat with the agent about the station.
+
+Everything else happens without a person. This page explains each part and the
+reasons for it. The rules and texts are in
+[Searches](/docs/reference/app/searches),
+[Replays](/docs/reference/app/replays) and the line's
+[`search` block](/docs/reference/terraform/line#search-fields).
+
+## Set it up once
+
+Automatic improvement is on by default. A line without a `search` block
+searches each of its work stations with the defaults. Three things decide
+whether a search can give a result:
+
+- The station has a [judge or a check](/docs/improvement/set-a-stations-judge-and-alerts).
+  Without one of them, a replay cannot say whether a config did better.
+- The line has a [`source`](/docs/reference/terraform/line#source-fields)
+  block, which names the repository and file of its Terraform. Spotlight opens
+  its pull requests there.
+- The line's [`search` block](/docs/reference/terraform/line#search-fields)
+  sets what one search may spend, its `ceiling`, and what all the line's
+  searches may spend in one calendar month, its `monthly_ceiling`. A station's
+  own `search` block changes the policy for that station.
+
+With `enabled = false` on the line or on a station, Spotlight does not search
+it, and a search of it that runs stops when the change is applied. The
+station's Overview shows its policy as "Automatic improvement". See
+[Automatic improvement card](/docs/reference/app/searches#automatic-improvement-card).
+
+## The replay set Spotlight keeps
+
+A [replay](/docs/improvement/why-changes-are-replayed-on-past-tasks) starts a
+past run again under another config and scores what it does. To compare two
+configs, both must be replayed on the same runs. These runs are the station's
+replay set.
+
+Spotlight keeps exactly one replay set for each work station. It creates the
+set when a run of the station ends for the first time, and then refreshes it
+from the station's newer runs:
+
+- every 7 days when the set is full, at 30 runs,
+- every day when it is not full,
+- and just before a search of the set starts.
+
+A refresh takes out runs that ended more than 90 days ago, and adds the newest
+run of each task that has no run in the set. When it can choose, it adds runs
+whose outcome the set has few of, so that the set does not hold only runs that
+went well, or only runs that failed. The set has one run of each task. A
+refresh also takes out a task that a search found to be the cause of its own
+failure, such as a task that is unclear or that no config can do, and does not
+add it back. See
+[How Spotlight keeps the set](/docs/reference/app/replays#how-spotlight-keeps-the-set)
+for the exact rules.
+
+A refresh never runs while the set is in use: while a search of it runs, or
+while a [replay check](/docs/configuration/check-terraform-pull-requests-for-station-regressions)
+waits for its baseline. A set that changed while a search used it would make
+the search's scores meaningless, because the candidates would not all have
+been replayed on the same tasks.
+
+In the docs' view, a set that people choose by hand goes stale: the tasks of
+last quarter stay in it, and the tasks of this week never come in. A set that
+follows the station's own runs measures a config against the work the station
+does now. The same set is what the line's
+[`spotlight replay check`](/docs/reference/cli/replay-command#spotlight-replay-check)
+replays a planned change on, so a search and a check measure against the same
+tasks. A check of a station whose set has no runs yet fails with an error, and
+does not pass.
+
+## When a search starts
+
+A search is a series of iterations. In each one, an agent reads how the
+station's past runs went and proposes changed configs, called candidates, and
+Spotlight replays each candidate on the set. See
+[Why a search holds tasks out](/docs/improvement/why-a-search-holds-tasks-out)
+for how a search is built.
+
+Spotlight starts a search of a work station for three reasons:
+
+- The `period` of the search policy ran out since the station's last search
+  started. By default, this is 7 days.
+- One of the station's [alerts](/docs/improvement/set-a-stations-judge-and-alerts#set-alerts)
+  fired, and the policy has `on_alert` set. An alert does not wait for the
+  period, but it waits for the `cooldown`, by default 3 days after the last
+  search started.
+- A person asked for it. In a chat that improves the station, the agent
+  proposes a change and tests it with the
+  [`test-station-change`](/docs/reference/built-ins/built-in-tools-and-skills#test-station-change)
+  tool. A test is a search of one iteration whose only candidate is the
+  proposed change, with no search agent. The person can also ask for a search
+  that starts from the change, so that the search agent refines it. A
+  requested search does not wait for the period or the cooldown, and does not
+  move them: the next automatic search is due as before. A station takes at
+  most 3 requests a day.
+
+A station has one search at a time. When a search of the station is running
+and still takes candidates, a requested change joins it as one candidate, with
+no search or refinement of its own.
+Nobody stops a search by hand, and every search keeps to the ceilings that the
+team wrote in Terraform. A requested search also keeps to the other rules of
+the next section, apart from the cooldown: when one of them applies, the agent
+gets the reason, tells the person, and shows the change as a Terraform diff
+in its place.
+
+The first search on a new set, or on a set that changed since it was last
+measured, first measures the set. It replays the live config on every run of
+the set 3 times, which shows how far success moves by chance, and judges and
+checks each change a second time. It then replays the live config with each
+run's answer, which shows how much room the set leaves to improve. The
+[health](/docs/reference/app/replays#health) found this way decides whether
+the next search starts. See
+[Calibration](/docs/reference/app/replays#calibration).
+
+## When Spotlight skips a search
+
+A due search does not always start. Spotlight first checks whether the search
+can give a result that people can trust and act on. When it cannot, Spotlight
+skips the search, records the reason, and checks again later. The reasons are
+of two kinds.
+
+Some go away by themselves, as time passes and the station has new runs. The
+cooldown has not passed, a config pull request of the station is still open,
+the line's searches spent their monthly ceiling, the set has too few tasks (a
+search needs at least 5), or too few of its tasks are fresh. A task that an
+earlier search of the station searched on is never held out again, because its
+runs may have shaped the candidates. The live config can also leave no room to
+improve on the set, until harder tasks come in. Spotlight says nothing about
+these reasons.
+
+The others need a person. The station has no judge and no check, the search
+ceiling is too low to replay each task once per candidate, no runner can start
+the search agent's harness, success moves too much between repeats of the same
+runs, the judge does not give the same verdict twice, or the check flips on the
+same change. For each of these, Spotlight sends the team an inbox notice that
+says what to fix. See [Skip reasons](/docs/reference/app/searches#skip-reasons)
+for every reason and its text.
+
+A skip costs nothing. A search on a set that cannot tell configs apart costs
+money and can report a gain that is only chance. In the docs' view, a skip that
+names its reason is more useful than such a result, and a notice only for what
+a person must fix keeps the inbox worth reading.
+
+## Which candidate becomes a pull request
+
+When a search finishes, Spotlight ranks its candidates by what the search aims
+for, more success or the same success for less, and takes the first candidate
+that meets all of these rules:
+
+- On the held-out tasks, it did better than the live config, by at least the
+  line's [`min_gain`](/docs/reference/terraform/line#replay-check-fields) and
+  by more than noise. A search that aims for the same success for less asks
+  instead that the candidate did as well as the live config, within noise, and
+  cost less per run.
+- It did not regress on more tasks than the line's regression limit,
+  `max_regressions`.
+- It has no overfit mark: its gain did not show only on the tasks the agent
+  saw.
+- No person closed a config pull request for the same config on GitHub while
+  the station's live config was the same as it is now.
+
+The held-out tasks decide, because the agent never saw them. A gain on the
+searched tasks alone can come from a config that fits those tasks and nothing
+else. See [Overfit](/docs/reference/app/searches#overfit).
+
+When a candidate meets the rules, Spotlight edits the station's block in the
+line's Terraform, commits it to a branch of its own, and opens a config pull
+request. The team gets an inbox notice that links to it on GitHub and to the
+station. When no candidate meets the rules, a search that the schedule or an
+alert started ends with no pull request and no notice.
+
+The pull request notices go to the team, whoever asked for the search. A
+person who asked for a test gets a notice of their own when their change did
+not become the pull request: the search opened none, opened one for another
+candidate, or stopped. It says why, and how their change did. See
+[Spotlight's pick](/docs/reference/app/searches#spotlights-pick).
+
+The pull request holds everything a reviewer needs, with no link back into
+Spotlight: what changes, from what to what; why the search's agent expects it
+to be better; how the candidate and the live config scored; a table of each
+task, with a one-line reason for each side's result; facts about the search;
+and what else Spotlight found. See
+[The pull request](/docs/reference/app/searches#the-pull-request).
+
+A station has at most one open config pull request. While one is open,
+Spotlight starts no new search of the station, and a search that finishes
+then opens no second pull request. A new search would compare its candidates
+with a live config that is about to change.
+
+## What happens to the pull request
+
+Spotlight follows each config pull request after it opens, until it is merged
+or closed:
+
+- A person merges it. Spotlight records that the station improved.
+- The station's live config changes, for example because someone applied
+  another change to the line. When the live config matches neither the config
+  the pull request started from nor the config it proposes, the pull request
+  is stale: its scores no longer describe a change to the station as it is.
+  Spotlight closes it on GitHub, with the comment `Spotlight closed this pull
+  request. The station's live config changed after this pull request opened.`
+  A merged pull request is never closed as stale.
+- A person closes it on GitHub. Spotlight takes this as a no to that config.
+  The station's cooldown starts again from the close, and Spotlight does not
+  propose the same config again while the station's live config stays the
+  same. When the person reopens the pull request, the config can be proposed
+  again.
+
+When GitHub refuses to close a stale pull request, Spotlight tries again a few
+times. If the error does not go away, Spotlight records the pull request as
+closed, with the reason it could not close it. Spotlight hears about merges and
+closes from GitHub's webhooks, and also reads the state of each open pull
+request from GitHub every 6 hours, in case a webhook did not arrive.
+
+A merged pull request and a pull request closed as stale send no inbox notice.
+In the docs' view, the person who merged it, or who changed the line, knows
+already. See
+[Config pull request states](/docs/reference/app/searches#config-pull-request-states).
+
+## What a person does
+
+The inbox speaks to the team only when a person must act, and to a person who
+asked for a test when their change did not hold up:
+
+- Spotlight opened a config pull request. Review it, then merge it to change
+  the station, or close it to say no to its config. The change goes through
+  the same review and the same `terraform apply` as any other change to the
+  line. If the line
+  [checks its pull requests](/docs/configuration/check-terraform-pull-requests-for-station-regressions),
+  that check replays the change again.
+- Spotlight could not open the pull request. The notice gives the reason, such
+  as a line with no `source` block.
+- Spotlight cannot search the station, for a reason only a person can fix,
+  such as no judge and no check.
+- A search ended with no pull request after it stalled, looked into why its
+  tasks fail, and found causes outside the config: the judge, the check, what
+  the run needed around the work, or the task itself. The notice has one point
+  for each task, with what to fix. A task that is itself the cause leaves the
+  set at the next refresh, and needs nothing from a person. See
+  [Stalls](/docs/reference/app/searches#stalls).
+- A change that a person asked to test did not become the pull request. The
+  notice to that person says why, such as `No candidate did better than the
+  live config on the held-out tasks.`, and how the change did, such as
+  `The replay of <name> stopped at the search ceiling.`
+
+A person can also ask for a test of a change from a chat about the station.
+See [Improve a station from its runs](/docs/improvement/improve-a-station-from-its-runs#test-the-change).
+
+A person can change the search policy in the line's Terraform at any
+time: turn it off, change its ceilings, period or cooldown, or set the search
+agent, iterations, repeats or aim for a station.
+
+Nobody picks a candidate by hand. In the docs' view, a fixed rule for which
+candidate goes forward keeps each pull request comparable with the next, and
+the review of the pull request remains the place where a person decides.
+[Why configuration lives in Terraform](/docs/configuration/why-configuration-lives-in-terraform)
+gives the reasons the repository stays the record.
+
+## Related
+
+- [Why a search holds tasks out](/docs/improvement/why-a-search-holds-tasks-out)
+- [Why changes are replayed on past tasks](/docs/improvement/why-changes-are-replayed-on-past-tasks)
+- [Searches](/docs/reference/app/searches)
+- [Replays](/docs/reference/app/replays)
+- [`search` fields](/docs/reference/terraform/line#search-fields)

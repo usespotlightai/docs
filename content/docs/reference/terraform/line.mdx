@@ -20,8 +20,8 @@ The request body is the line definition. A read returns `teamId`, `key` and
 for the first team of a workspace created in the web app.
 
 In Terraform, each element of `repositories`, `stations` and `reactions` is a
-`repository`, `station` or `reaction` block, and `reviews`, `replayCheck` and
-`source` are `reviews`, `replay_check` and `source` blocks. Within a `station` block, `judge` is a `judge` block and each element of
+`repository`, `station` or `reaction` block, and `reviews`, `replayCheck`, `search` and
+`source` are `reviews`, `replay_check`, `search` and `source` blocks. Within a `station` block, `judge` and `search` are `judge` and `search` blocks, a station's `search.agent` is an `agent` block, and each element of
 `alerts` is an `alert` block.
 
 ## Example
@@ -73,6 +73,17 @@ resource "spotlight_line" "core_delivery" {
       rises_by = 0.2
       over     = 20
     }
+
+    search {
+      ceiling    = 20
+      iterations = 4
+      objective  = "cost"
+
+      agent {
+        harness = "claude-code"
+        effort  = "high"
+      }
+    }
   }
 
   station {
@@ -100,6 +111,15 @@ resource "spotlight_line" "core_delivery" {
     ceiling         = 10
     currency        = "USD"
     min_gain        = 0.05
+  }
+
+  search {
+    monthly_ceiling = 100
+    currency        = "USD"
+    ceiling         = 10
+    period          = "7d"
+    on_alert        = true
+    cooldown        = "3d"
   }
 
   source {
@@ -137,7 +157,13 @@ The same line as a request body:
       "runners": ["gpu"],
       "passesTo": ["code-review"],
       "judge": { "rubric": "Did the run meet the task?", "sample": 0.2, "minAgreement": 0.6 },
-      "alerts": [{ "measure": "sent_back_rate", "risesBy": 0.2, "over": 20 }]
+      "alerts": [{ "measure": "sent_back_rate", "risesBy": 0.2, "over": 20 }],
+      "search": {
+        "ceiling": 20,
+        "iterations": 4,
+        "objective": "cost",
+        "agent": { "harness": "claude-code", "effort": "high" }
+      }
     },
     {
       "key": "code-review",
@@ -152,6 +178,14 @@ The same line as a request body:
     { "happening": "github.checks.failed", "from": "implementation", "to": "implementation" }
   ],
   "replayCheck": { "maxRegressions": 0, "ceiling": 10, "currency": "USD" },
+  "search": {
+    "monthlyCeiling": 100,
+    "currency": "USD",
+    "ceiling": 10,
+    "period": "7d",
+    "onAlert": true,
+    "cooldown": "3d"
+  },
   "source": { "repository": "acme/platform", "path": "teams/core/delivery.tf" }
 }
 ```
@@ -185,7 +219,8 @@ reviews {
 | `reviews` | object | none | The review policy: which pull requests the line reviews. Only on a line whose `role` is `review`. See [review policy fields](#reviews-fields). |
 | `runners` | array of strings | `[]` | Runner labels the line's work is placed on. Empty: any runner of the workspace qualifies. See [placement](#placement). |
 | `replayCheck` | object | none | How a planned change of a station on this line must do to pass [`spotlight replay check`](/docs/reference/cli/replay-command#spotlight-replay-check). Without it, no planned change of the line is checked. See [replay check fields](#replay-check-fields). |
-| `source` | object | none | Where the line's Terraform lives, which Spotlight opens a pull request against when a person picks a [search](/docs/reference/app/searches) candidate. See [source fields](#source-fields). |
+| `search` | object | see [search fields](#search-fields) | How Spotlight searches the line's work stations for a better config on its own, and how much it may spend. Without it, every default applies, so every work station is searched. A read leaves it out when none is written. See [search fields](#search-fields). |
+| `source` | object | none | Where the line's Terraform lives, which Spotlight opens a config pull request against when a [search](/docs/reference/app/searches) finds a better station config. See [source fields](#source-fields). |
 
 ## Station fields
 
@@ -212,6 +247,7 @@ reviews {
 | `ends` | boolean | `false` | Whether a run here may finish the task by handing over with `done`. From any other station, `done` goes to a person instead. |
 | `judge` | object | none | Scores the station's runs against a rubric, a list of claims, or both. Only on a `work` station. See [judge fields](#judge-fields). A read leaves it out when none is set. |
 | `alerts` | array of objects | `[]` | Thresholds on a measure of the station's runs, kept in the order written. Only on a `work` station. See [alert fields](#alert-fields). |
+| `search` | object | none | Changes the line's `search` for this station. Only on a `work` station. See [station search fields](#station-search-fields). A read leaves it out when none is set. |
 
 Spotlight checks catalog tools and skills against what the workspace's plan
 includes when the line is written. It does not check at write time that a
@@ -397,10 +433,10 @@ See [Replay checks API](/docs/reference/api/replay-checks).
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `maxRegressions` | number | `0` | How many tasks a planned change may regress on and still pass. A whole number, 0 or more. A [search](/docs/reference/app/searches#regressions-against-the-live-config) of one of the line's work stations also marks a candidate whose regressions on its searched and held-out tasks together are more than this. The candidate can still be picked. In Terraform, `max_regressions`. |
-| `ceiling` | number | `10` | The most each replay a check starts may spend, above 0 and at most 1,000: the planned change's replay, and the baseline replay when the gating set has none for the live config. See [Ceiling](/docs/reference/api/replay-checks#ceiling). |
+| `maxRegressions` | number | `0` | How many tasks a planned change may regress on and still pass. A whole number, 0 or more. A [search](/docs/reference/app/searches#regressions-against-the-live-config) of one of the line's work stations also marks a candidate whose regressions on its searched and held-out tasks together are more than this, and Spotlight opens no config pull request for such a candidate. In Terraform, `max_regressions`. |
+| `ceiling` | number | `10` | The most each replay a check starts may spend, above 0 and at most 1,000: the planned change's replay, and the baseline replay when the station's replay set has none for the live config. See [Ceiling](/docs/reference/api/replay-checks#ceiling). |
 | `currency` | string | `USD` | The three-letter currency `ceiling` is counted in. Stored in upper case. |
-| `minGain` | number | `0.05` | The smallest gain in success rate that counts as more than noise, as a share above 0 and at most 1. A gain over the baseline or the live config reads better only when its whole 95% interval is above 0 and it is at least this, and worse in the same way for a loss. It is read by the replays, searches and checks of the line's work stations; a line without `replay_check` reads them against `0.05`. It does not decide whether a check passes. See [Gains](/docs/reference/app/replays#gains). In Terraform, `min_gain`. |
+| `minGain` | number | `0.05` | The smallest gain in success rate that counts as more than noise, as a share above 0 and at most 1. A gain over the baseline or the live config reads better only when its whole 95% interval is above 0 and it is at least this, and worse in the same way for a loss. It is read by the replays, searches and checks of the line's work stations; a line without `replay_check` reads them against `0.05`. A candidate of a search must do better than the live config on the held-out tasks by this before Spotlight opens a config pull request for it. It does not decide whether a check passes. See [Gains](/docs/reference/app/replays#gains). In Terraform, `min_gain`. |
 
 | Message | Path |
 | --- | --- |
@@ -409,11 +445,87 @@ See [Replay checks API](/docs/reference/api/replay-checks).
 | `Replay check minGain must be a share above 0 and at most 1.` | `replayCheck.minGain` |
 | `Replay check currency must be a three-letter currency code, as in USD.` | `replayCheck.currency` |
 
+## Search fields [#search-fields]
+
+The search policy (`search`) decides when Spotlight searches the line's work
+stations for a better config, and how much the searches may spend. Spotlight
+starts each search itself and opens a config pull request for a candidate that
+did better than the live config. See
+[How Spotlight improves a station](/docs/improvement/how-spotlight-improves-a-station).
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `enabled` | boolean | `true` | Whether Spotlight searches the line's work stations on its own. Applying `false` stops every running search of the line's stations that does not turn it back on in its own `search`. |
+| `monthlyCeiling` | number | `50` | The most all searches of the line's stations may spend in one calendar month (UTC), in `currency`. Above 0. In Terraform, `monthly_ceiling`. |
+| `currency` | string | `USD` | The three-letter currency of `monthlyCeiling`, `ceiling` and a station's `ceiling`. Stored in upper case. |
+| `ceiling` | number | `10` | The most one search may spend, in `currency`. Above 0, at most 1,000 and at most `monthlyCeiling`. |
+| `period` | string | `7d` | The longest time between two searches of a station. A duration from `1h` to `365d`. |
+| `onAlert` | boolean | `true` | Whether a [station alert](/docs/reference/app/tasks-runs-and-the-inbox#station-alerts) that goes off starts a search of its station before `period` ends. In Terraform, `on_alert`. |
+| `cooldown` | string | `3d` | The shortest time between the starts of two searches of a station, and between a person closing one of the station's config pull requests on GitHub and the next search. A duration from `1h` to `365d`, at most `period`. |
+
+A duration is a whole number followed by `m` (minutes), `h` (hours) or `d`
+(days), as in `90m`, `12h` or `7d`. A read returns every field, defaults
+filled in, when the line has a `search` block.
+
+Spotlight skips a search when what the line's searches started this month
+spent, plus the search's `ceiling`, is more than `monthlyCeiling`. It also
+skips a search inside `cooldown`. A search stopped because its policy was turned
+off opens no config pull request. A skipped
+search has a recorded reason; see
+[When Spotlight skips a search](/docs/improvement/how-spotlight-improves-a-station#when-spotlight-skips-a-search).
+
+| Message | Path |
+| --- | --- |
+| `Search monthly_ceiling must be above 0.` | `search.monthlyCeiling` |
+| `Search ceiling must be above 0 and at most 1,000.` | `search.ceiling` |
+| `Search ceiling must be at most the monthly_ceiling, <amount> <currency>.` | `search.ceiling` |
+| `Search currency must be a three-letter currency code, as in USD.` | `search.currency` |
+| `Search period must be a whole number of minutes, hours or days, as in 90m, 12h or 7d.` | `search.period` |
+| `Search period must be from 1h to 365d.` | `search.period` |
+| `Search cooldown must be a whole number of minutes, hours or days, as in 90m, 12h or 7d.` | `search.cooldown` |
+| `Search cooldown must be from 1h to 365d.` | `search.cooldown` |
+| `Search cooldown must be at most the period, <period>.` | `search.cooldown` |
+
+Each is returned with `422`.
+
+### Station search fields [#station-search-fields]
+
+A station's `search` changes the line's `search` for that station. A field it
+leaves out comes from the line's `search`, or from its default when the line
+has none. `agent`, `iterations`, `repeats` and `objective` are set only
+here; when one is left out, Spotlight picks it.
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `enabled` | boolean | the line's | Whether Spotlight searches this station on its own. Applying `false` stops a running search of the station. |
+| `ceiling` | number | the line's | The most one search of this station may spend, in the line's `currency`. Above 0, at most 1,000 and at most the line's `monthlyCeiling`. |
+| `period` | string | the line's | The longest time between two searches of this station. A duration from `1h` to `365d`. |
+| `onAlert` | boolean | the line's | Whether an alert that goes off on this station starts a search. In Terraform, `on_alert`. |
+| `cooldown` | string | the line's | The shortest time between the starts of two searches of this station. A duration from `1h` to `365d`, at most the station's period. |
+| `agent` | object | the station's own | The agent that proposes candidate configs: `harness` (required), `model` and `effort` (`low`, `medium`, `high`, `xhigh` or `max`). Without it, the station's own harness, model and effort. |
+| `iterations` | number | `3` | How many iterations one search runs. A whole number from 1 to 10. |
+| `repeats` | number | `1` | How many times a search replays each task. A whole number from 1 to 5. |
+| `objective` | string | from the set's health | What a search improves: `success` or `cost`. Without it, `cost` when the live config succeeded on more than 95% of the replay set in its latest replay, and `success` otherwise. |
+
+| Message | Path |
+| --- | --- |
+| `Search ceiling must be above 0 and at most 1,000.` | `stations[<n>].search.ceiling` |
+| `Search period must be from 1h to 365d.` | `stations[<n>].search.period` |
+| `Search cooldown must be from 1h to 365d.` | `stations[<n>].search.cooldown` |
+| `Search iterations must be a whole number from 1 to 10.` | `stations[<n>].search.iterations` |
+| `Search repeats must be a whole number from 1 to 5.` | `stations[<n>].search.repeats` |
+| `Line station <station> search ceiling must be at most the line's monthly_ceiling, <amount> <currency>.` | `stations[<n>].search.ceiling` |
+| `Line station <station> search cooldown must be at most its period, <period>.` | `stations[<n>].search.cooldown` |
+
+A malformed `period` or `cooldown` reads as on the line. Each is returned
+with `422`. `<station>` is the station's key.
+
 ## Source fields
 
 The source (`source`) names the file that contains this `spotlight_line`
-resource. A picked [search](/docs/reference/app/searches#the-pull-request)
-candidate is opened as a pull request against it.
+resource. When a [search](/docs/reference/app/searches#the-pull-request) of one
+of the line's work stations finds a better config, Spotlight opens a config
+pull request against it.
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -477,13 +589,14 @@ A line's stations are rejected unless they follow every rule below.
 - If any station has both `check` and `diffs: true`, every repository must have
   `setup`.
 - A line must name `reviews` only if its `role` is `review`.
-- Only a `work` station may have a `judge` or `alerts`. On a backlog the
+- Only a `work` station may have a `judge`, `alerts` or `search`. On a backlog the
   error reads `Line <line> station <station> is a backlog and has no runs to judge.`,
   and on the completed station
   `Line <line> station <station> is the completed station and has no runs to judge.`;
-  for alerts both end `and has no runs to alert on.` `<line>` and `<station>`
-  are keys. The error is returned at `stations[<n>].judge` or
-  `stations[<n>].alerts`.
+  for alerts both end `and has no runs to alert on.`, and for a search
+  `and has no runs to improve.` `<line>` and `<station>`
+  are keys. The error is returned at `stations[<n>].judge`,
+  `stations[<n>].alerts` or `stations[<n>].search`.
 
 ## Reserved station keys
 

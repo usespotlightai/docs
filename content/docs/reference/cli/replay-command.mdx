@@ -2,37 +2,28 @@
 type: reference
 icon: BookText
 title: spotlight replay
-description: The spotlight replay subcommands that propose candidates, list sets, start, follow and stop replays, and check a Terraform plan's station changes, with their flags, environment, output and exit codes.
+description: The spotlight replay check command, which checks the station changes in a Terraform plan against each station's replay set, with its flags, environment, output and exit codes.
 ---
 
-`spotlight replay` proposes [replay candidates](/docs/reference/api/replay-candidate)
-and starts, follows and stops [replays](/docs/reference/app/replays) from any
-computer, through the resource API and the [Replays API](/docs/reference/api/replays).
-`spotlight replay check` checks the station changes in a Terraform plan,
-through the [Replay checks API](/docs/reference/api/replay-checks).
-It is part of the `spotlight` binary; see
+`spotlight replay check` checks the station changes in a Terraform plan
+against the [replay set](/docs/reference/app/replays#how-spotlight-keeps-the-set)
+Spotlight keeps for each station, through the
+[Replay checks API](/docs/reference/api/replay-checks). It is part of the
+`spotlight` binary; see
 [The spotlight command](/docs/reference/cli/spotlight-command).
 
 ## Synopsis
 
 ```text
-spotlight replay propose --station <team/line/station> --name <name> <station.json>
-spotlight replay candidates --station <team/line/station>
-spotlight replay show --station <team/line/station> <candidate name or id>
-spotlight replay sets --station <team/line/station>
-spotlight replay start --station <team/line/station> --set <name or id> --candidate <name, id or live> --ceiling <amount> [--currency USD] [--repeats 1]
-spotlight replay status --team <key> <replay id>
-spotlight replay watch --team <key> <replay id> [--every 15s]
-spotlight replay stop --team <key> <replay id>
 spotlight replay check [--json] [--timeout 60m] [--every 15s] [--commit <sha>] [--pull-request <n>] [--repeats 1] <plan.json | ->
 ```
 
-Every subcommand also takes `--json`, and every subcommand except `check` takes
-`--workspace <slug>`. Flags may come before or after the argument.
+Flags may come before or after the argument. `spotlight replay` alone prints
+its help, as `spotlight help replay` does.
 
 ## Install
 
-`spotlight replay` needs only the `spotlight` binary, not a host. The
+`spotlight replay check` needs only the `spotlight` binary, not a host. The
 [install script](/docs/reference/cli/install-script) sets up a host, so
 download the binary from the release instead:
 
@@ -49,294 +40,10 @@ Compare the file's SHA-256 with `spotlight.sha256`, then make it executable
 with `chmod +x spotlight`. For a given release, replace `latest/download` with
 `download/<version>`.
 
-## Environment
-
-| Variable | Description |
-| --- | --- |
-| `SPOTLIGHT_URL` | Required. The [Spotlight address](/docs/reference/glossary#spotlight-address), as `https://app.usespotlight.ai`. |
-| `SPOTLIGHT_API_TOKEN` | A [workspace token](/docs/reference/api/workspace-token). `read` is enough for `candidates`, `show`, `sets`, `status` and `watch`; `propose`, `start` and `stop` need `plan`. Without it, the login that [`spotlight login`](/docs/reference/cli/spotlight-command#spotlight-login) keeps for `SPOTLIGHT_URL`. |
-| `SPOTLIGHT_WORKSPACE` | The slug of the workspace to act in, as `acme`. `--workspace` overrides it. A login in more than one workspace needs one of them. |
-
-| Message | Cause |
-| --- | --- |
-| `set SPOTLIGHT_URL to replay` | No `SPOTLIGHT_URL`. The usage follows. |
-| `no credentials for <address>. Run spotlight login, or set SPOTLIGHT_API_TOKEN` | No `SPOTLIGHT_API_TOKEN`, and no login for the address. The usage follows. |
-| `read the login for <address>: <error>` | The [credentials file](/docs/reference/cli/spotlight-command#credentials-file) cannot be read. |
-
-`check` reads more; see [Environment for check](#environment-for-check).
-A workspace token sees one workspace, and the command acts in it. A login sees
-every workspace that the person is a member of. If it sees more than one, choose
-the workspace with `--workspace <slug>` or `SPOTLIGHT_WORKSPACE`.
-
-| Message | Cause |
-| --- | --- |
-| `you belong to <n> workspaces: <slugs>. Choose one with --workspace or SPOTLIGHT_WORKSPACE` | A login in more than one workspace, with no workspace chosen. |
-| `you are not a member of workspace <slug>. You belong to: <slugs>` | `--workspace` or `SPOTLIGHT_WORKSPACE` names a workspace that the token or login does not see. |
-| `the credential sees no workspace` | The token or login sees no workspace. |
-
-## Common behaviour
-
-| | Value |
-| --- | --- |
-| Request timeout | 2 minutes |
-| Client header | `Spotlight-Client: cli/<release>` |
-| An error | `spotlight replay: <error>` on standard error. An error from Spotlight is printed as its `detail`, or its `title`, followed by each field error as `<path>: <message>` on a line of its own. |
-| `--json` | Prints Spotlight's answer as indented JSON in place of the text output. |
-| `--workspace <slug>` | The workspace to act in. It overrides `SPOTLIGHT_WORKSPACE`. Every subcommand except `check` takes it. |
-
-`--station` names a station as `<team key>/<line key>/<station key>`, as in
-`core/delivery/implementation`. Another form fails with
-`--station is a team, line and station key, as in core/delivery/build, not "<value>"`,
-and a line without that station with
-`line <team>/<line> has no station <key>; it has <keys>`.
-
-`--team` names a team by its key. A set or candidate is named by its id or its
-exact name. A name no set or candidate has fails with
-`<station> has no <kind> "<name>"; it has <names>`, and a name more than one
-has with `<station> has <n> of <kind> named "<name>"; name one by its id: <ids>`.
-
-## Exit codes
-
-| Code | Meaning |
-| --- | --- |
-| `0` | Done. For `status` and `watch`, the candidate regressed on no task. |
-| `1` | A usage error, an error from Spotlight, or Spotlight could not be reached. |
-| `2` | `status` or `watch` only: the candidate regressed against its [reference replay](/docs/reference/glossary#reference-replay) on at least one task. The message reads `the candidate regressed against its reference replay on <n> of <m> tasks`. |
-
-`check` has exit codes of its own; see
-[`spotlight replay check`](#spotlight-replay-check).
-
-## spotlight replay propose
-
-```text
-spotlight replay propose --station <team/line/station> --name <name> <station.json>
-```
-
-Proposes a candidate for the station from a file that contains its station block as
-JSON, in the shape of one entry of a line's `stations`. Give `-` to read the
-block from standard input. Nothing is applied.
-
-| Flag | Required | Description |
-| --- | --- | --- |
-| `--station` | yes | The station. |
-| `--name` | yes | The candidate's name. See [Fields](/docs/reference/api/replay-candidate#fields). |
-
-The request carries a new `Idempotency-Key`. If Spotlight cannot be reached or
-answers with a `5xx` status, the request is sent once more with the same key,
-so the retry never proposes the candidate twice.
-
-```text
-Proposed core/delivery/implementation/Higher effort (<id>); nothing is applied.
-What it changes from the live config <fingerprint>:
-  effort high → xhigh
-```
-
-The fingerprint is shown to 12 characters. A candidate that changes nothing
-prints `It changes nothing from the live config <fingerprint>.`
-
-| Message | Cause |
-| --- | --- |
-| `--name tells the candidate from the station's others` | No `--name`, or a blank one. |
-| `name one file that contains the station block, as the line resource contains a station, or - to read it from stdin` | No file, or more than one. |
-| `<path> is HCL; Spotlight writes HCL but never reads it, so supply the station block as JSON, as the line resource contains it` | The file ends in `.tf` or `.hcl`. |
-| `<path> contains no JSON object; it must contain the station block, as the line resource contains a station` | The file is not a JSON object. |
-| `propose <name>: <error>` | Spotlight rejected the candidate. See [Checks](/docs/reference/api/replay-candidate#checks). |
-
-## spotlight replay candidates
-
-```text
-spotlight replay candidates --station <team/line/station>
-```
-
-Lists the station's proposed candidates as a table with the columns `NAME`,
-`CHANGES` (how many), `PROPOSED` and `ID`. With none, it prints
-`<station> has no candidates.`
-
-## spotlight replay show
-
-```text
-spotlight replay show --station <team/line/station> <candidate name or id>
-```
-
-Prints one candidate: its address and when it was proposed, its id, its
-fingerprint, and what it changes from the live config, as `propose` does.
-
-## spotlight replay sets
-
-```text
-spotlight replay sets --station <team/line/station>
-```
-
-Lists the station's replay sets as a table with the columns `NAME`, `RUNS`,
-`REPLAYABLE` (runs that can still be replayed), `CREATED` and `ID`. With none,
-it prints `<station> has no replay sets; pick one on the station's page.`
-Sets are opened and filled on the [Station page](/docs/reference/app/replays#station-page).
-
-## spotlight replay start
-
-```text
-spotlight replay start --station <team/line/station> --set <name or id> --candidate <name, id or live> --ceiling <amount> [--currency USD] [--repeats 1]
-```
-
-Starts a replay of the set under the candidate.
-
-| Flag | Required | Default | Description |
-| --- | --- | --- | --- |
-| `--station` | yes | | The station. |
-| `--set` | yes | | The replay set. |
-| `--candidate` | yes | | A proposed candidate, or `live` for the station as it is configured now. |
-| `--ceiling` | yes | | The most the replay may spend, a number above 0. Spotlight takes at most 1,000. |
-| `--currency` | no | `USD` | The ceiling's currency, as a three-letter code. |
-| `--repeats` | no | `1` | How many times to replay each run, 1 to 5. The ceiling covers every repeat. |
-
-```text
-Started replay <id> of <set> under <candidate>, spending at most <ceiling>.
-It replays each run <n> times, to measure how much its results move by chance.
-Its baseline, the live config, replays beside it as <id>, with a ceiling of its own.
-Follow it with: spotlight replay watch --team <team> <id>
-```
-
-The second line appears only with `--repeats` above 1, and the third only when
-a baseline starts beside the replay.
-
-| Message | Cause |
-| --- | --- |
-| `--set and --candidate name what to replay, and under what` | `--set` or `--candidate` is missing. |
-| `--ceiling is the most the replay may spend, as a number above 0, not "<value>"` | `--ceiling` is missing, not a number, or 0 or less. |
-| `--repeats is how many times to replay each run, from 1 to 5, not <n>` | `--repeats` is below 1 or above 5. |
-| `start a replay of <set>: <error>` | Spotlight did not start it. See [Errors](/docs/reference/api/replays#errors). |
-
-## spotlight replay status
-
-```text
-spotlight replay status --team <key> <replay id>
-```
-
-Prints the current state of the replay, and the replay it is compared with, its
-[reference replay](/docs/reference/app/replays#reference-replays), and exits `2` if it
-regressed on any task.
-
-```text
-Replay <id> under <candidate> (<kind>): <state>, <spent> of <ceiling> spent
-It replays each run <n> times.
-Succeeded: <n> of <scored> (<share>%); <share>% (<low>–<high>%) over <n> of <m> tasks, <n> unscored
-Compared with the baseline, <state>: <n> of <scored> (<share>%); <share>% (<low>–<high>%) over <n> of <m> tasks, <n> unscored
-On the tasks both scored: <share>% (<low>–<high>%)
-Within noise of the baseline: +4 points (-8 to +16) over 12 tasks, not clearly past the 5-point gain that counts as real
-```
-
-When runs already running took the replay past its ceiling, the first line
-ends with `, over the ceiling by <amount>, spent by runs already running when it
-was hit`. `<kind>` is the candidate's kind: `proposed`, `live` for a replay
-of the live config, `searched` for a search's candidate, `planned` for a
-[replay check](/docs/reference/api/replay-checks)'s planned change, or `oracle`
-for a [replay with the answer](/docs/reference/app/replays#replay-with-the-answer).
-A replay whose candidate is deleted reads `under a candidate since deleted`.
-The second line appears only when the replay replays each run more than once.
-On the `Succeeded` and `Compared with` lines, `<n> of <scored>` counts repeats,
-and the [success](/docs/reference/app/replays#success) with its 95% range
-follows, over the tasks with a scored repeat of the tasks replayed.
-
-The `Compared with` line names the reference replay:
-
-| Reference replay | Named |
-| --- | --- |
-| The set's baseline now | `the baseline` |
-| Another, for an `oracle` replay | `the live config` |
-| Another, for a `searched` replay | `the search's starting config` |
-| Another, for any other replay | `an earlier baseline` |
-
-The `On the tasks both scored` line gives the reference replay's success on the
-tasks both replays scored, the tasks the gain pairs, with its range. It
-appears only when that success is known and differs from the one on the
-`Compared with` line.
-
-For the set's baseline, the `Compared with` lines read
-`It is the set's baseline.` A replay compared with nothing reads
-`It is compared with nothing: <reason>.`:
-
-| Reason | Cause |
-| --- | --- |
-| `the live replay it was compared with is gone` | An `oracle` replay whose live replay is gone. |
-| `the set has no baseline` | Any other replay, while the set has no baseline. |
-| `the replay it was set beside is gone` | Any other replay, while the set has a baseline: its reference replay is gone. |
-
-When there is a gain, the line after the `Compared with` lines reads the
-[gain](/docs/reference/app/replays#gains) over the reference replay, in points, with
-its range and the tasks both scored:
-
-| Significance | Line |
-| --- | --- |
-| `better` | `Better than <reference>: <gain> points (<low> to <high>) over <n> tasks, past the <min_gain>-point gain that counts as real` |
-| `worse` | `Worse than <reference>: <gain> points (<low> to <high>) over <n> tasks` |
-| `within-noise` | `Within noise of <reference>: <gain> points (<low> to <high>) over <n> tasks, not clearly past the <min_gain>-point gain that counts as real` |
-
-`<reference>` is the reference replay as the `Compared with` line names it.
-
-A table follows with one row per task, regressions first: a `REGRESSED` mark,
-`TASK`, `CANDIDATE` and `COMPARED WITH` (each a result: `pending`, `succeeded`,
-`failed` or `unscored`, or `none`; with repeats, each repeat's result joined by
-`/`, as in `succeeded/failed/succeeded`), `COST Δ`, `STEPS Δ` and `SCORE Δ`,
-each averaged over the repeats. A difference not known reads `-`.
-
-With `--json`, it prints `{ "replay", "referenceReplay" }`, each as the
-[Replays API](/docs/reference/api/replays) reads a replay. `referenceReplay` is
-the reference replay, or null without one.
-
-If the reference replay cannot be read, the command fails with
-`read the replay it is compared with, <id>: <error>`.
-
-## spotlight replay watch
-
-```text
-spotlight replay watch --team <key> <replay id> [--every 15s]
-```
-
-Reads the replay every `--every` until both it and its reference replay have ended,
-then prints what `status` prints and exits as `status` does. A replay compared
-with nothing is waited for alone. Until then it prints one line each time:
-
-```text
-<state>: <n> of <m> ended, <spent> spent
-```
-
-With `--json`, it prints only the final answer.
-
-| Flag | Default | Description |
-| --- | --- | --- |
-| `--team` | required | The team's key. |
-| `--every` | `15s` | How often to read the replay, as a Go duration such as `30s` or `1m`. At least `1s`. |
-
-A read that fails because Spotlight could not be reached, or answered with a
-`5xx` status, is tried again. The command prints
-`could not read the status (<error>); trying again`, unless `--json` is given, and waits
-twice `--every` after the first failure in a row, doubling after each, at most
-2 minutes. After 5 failures in a row it ends with
-`gave up after 5 failed tries in a row: <error>`. Any other error ends the
-command at once. An `--every` under `1s` fails with
-`--every is at least 1s, not <value>`.
-
-## spotlight replay stop
-
-```text
-spotlight replay stop --team <key> <replay id>
-```
-
-Stops the replay: nothing more of it starts, and its running runs are
-stopped. It then reads the replay and prints
-`Stopped replay <id>, now <state>: nothing more of it starts, and its running runs stop.`
-With `--json`, it prints the replay as read after stopping, as the
-[Replays API](/docs/reference/api/replays) reads one. A replay that has already
-ended fails with `409`.
-
 ## spotlight replay check
 
-```text
-spotlight replay check [--json] [--timeout 60m] [--every 15s] [--commit <sha>] [--pull-request <n>] [--repeats 1] <plan.json | ->
-```
-
 Checks each work station a saved Terraform plan changes against the replay set
-that gates the station's changes, under the live line's
+Spotlight keeps for the station, under the live line's
 [`replay_check`](/docs/reference/terraform/line#replay-check-fields), and waits
 for the results. Give it the output of `terraform show -json <planfile>`, or
 `-` to read it from standard input. Spotlight never runs Terraform. See
@@ -351,7 +58,7 @@ for the results. Give it the output of `terraform show -json <planfile>`, or
 | `--pull-request` | none | The pull request that plans the change, recorded on each check and used to name its candidate. |
 | `--repeats` | `1` | How many times each check replays each run of the set, 1 to 5. The line's `ceiling` covers every repeat. |
 
-### Environment for check
+## Environment
 
 | Variable | Description |
 | --- | --- |
@@ -367,7 +74,7 @@ login that [`spotlight login`](/docs/reference/cli/spotlight-command#spotlight-l
 keeps for `SPOTLIGHT_URL`. Credentials are read only when the plan has a station
 to check.
 
-### What it checks
+## What it checks
 
 The command reads every managed `spotlight_line` of the provider
 `usespotlightai/spotlight` that the plan updates, and compares each station's
@@ -406,7 +113,7 @@ check. Starting and reading are tried again when Spotlight cannot be reached or
 answers with a `5xx` status, waiting twice `--every` after the first failure
 and doubling, at most 2 minutes, and given up after 5 failures in a row.
 
-### Results
+## Results
 
 Each station ends with one status:
 
@@ -415,7 +122,7 @@ Each station ends with one status:
 | `PASSED` | The change regressed on no more tasks than the line allows, and enough tasks were scored. |
 | `FAILED` | It regressed on more tasks than the line allows. |
 | `UNDECIDED` | The check could not decide, or the station was not checked. |
-| `RUNNING` | The check was still running at `--timeout`: `still running after <timeout>; it keeps running, so follow it at its link`. |
+| `RUNNING` | The check was still running at `--timeout`: `still running after <timeout>. The check keeps running in Spotlight.` |
 | `UNCHANGED` | The plan changes nothing that changes how the station's runs go, so there is nothing to replay. |
 | `ERRORED` | The check could not start, or reading it failed. The message says why. See [Errors](/docs/reference/api/replay-checks#errors). |
 
@@ -430,41 +137,53 @@ An undecided check prints why:
 | `replay-gone` | the replay is gone |
 | `no-baseline` | no baseline replay of the live config the check started against is left, and none can come, since the live config or its set moved on |
 
-### Output
+## Output
 
 ```text
 note: <note>
 
 core/delivery/build: FAILED
-  1 of 6 tasks regressed (at most 0 may), replaying set "Queue fixes": 6 tasks, 6 scored on both sides
+  1 of 6 tasks regressed (at most 0 may), replaying the station's replay set: 6 tasks, 6 scored on both sides
   candidate 4 of 6 succeeded, 67% (33–100%) over 6 tasks, baseline 5 of 6 succeeded, 83% (50–100%) over 6 tasks
   Within noise of the baseline: -17 points (-50 to +0) over 6 tasks, not clearly past the 5-point gain that counts as real
   spent 3.2 USD of a 10 USD ceiling
   scored with the live check, judge, which the plan also changes
-  REGRESSED <task id> "<title>": failed where the baseline succeeded, check-failed: npm test
-  <link to the check's replay>
+
+  Task             Live config                  Candidate                         Regressed
+  Fix queue drain  Succeeded: Judge passed it.  Failed: Checks failed: npm test.  Yes
+  Add retry flag   Succeeded: Judge passed it.  Succeeded: Judge passed it.       No
 ```
 
 With `--repeats` above 1, a line `each run replayed <n> times` comes before
-the `candidate` line. The `candidate` and `baseline` line counts repeats, then gives each
-side's success with its range over the tasks scored, and the next line the
-candidate's gain over the baseline, worded as for
-[`status`](#spotlight-replay-status). The gain does not decide the status.
-`REGRESSED` lines give each repeat's result joined by `/`.
+the `candidate` line. The `candidate` and `baseline` line counts repeats, then
+gives each side's success with its range over the tasks scored, or `nothing
+scored yet`. The next line gives the candidate's gain over the baseline, as
+`Better than the baseline: …, past the <n>-point gain that counts as real`,
+`Worse than the baseline: …` or `Within noise of the baseline: …, not clearly
+past the <n>-point gain that counts as real`. The gain does not decide the
+status.
+
+The table lists every task of the set, the regressed tasks first. "Task" is the
+task's title, or `Untitled task`. "Live config" and "Candidate" give each
+side's result, `Succeeded`, `Succeeded <n>%` when its repeats disagree,
+`Failed`, `Not scored`, `Running` or `Not replayed`, then its one-line
+[reason](/docs/reference/api/replay-checks#task-rows), cut at 160 characters.
+"Regressed" is `Yes` or `No`. The output has no link into Spotlight.
 
 A plan that changes no live station prints
 `The plan changes no live station of a line, so there is nothing to check.`
 With `--json`, it prints `{ "stations", "notes", "exitCode" }`, each station as
-`{ station, resource, status, message, url, check }`, `check` being the
+`{ station, resource, status, message, check }`, `check` being the
 [check](/docs/reference/api/replay-checks#check) as Spotlight read it last.
 
 The step summary is headed `Spotlight replay check`, with any notes, then a
-table with the columns Station, Result, Regressed, Candidate, Baseline, Gain,
-Spent and Replay, then, for each station with a message, a gain or
-regressions, the message, the gain line and each regressed task. A gain reads
-as in `-17 points (-50 to +0), within noise`, or `-` without one.
+table with the columns Station, Result, Regressed, Candidate, Baseline, Gain
+and Spent. Then, for each station with a message, a gain or tasks, a heading
+with the station, the message, the gain line, and the same task table, with
+the columns Task, Live config, Candidate and Regressed. A gain reads as in
+`-17 points (-50 to +0), within noise`, or `-` without one.
 
-### Exit codes for check
+## Exit codes
 
 | Code | Meaning |
 | --- | --- |

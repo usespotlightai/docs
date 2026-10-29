@@ -52,13 +52,11 @@ task waits at the backlog until a person or a reaction moves it. See
 ## Baseline
 
 The replay of a station's live config on a replay set's runs that the set's
-other replays are compared with, other than a
-[replay with the answer](/docs/reference/app/replays#replay-with-the-answer),
-which is compared with the live replay that started it. It starts the first time a set is
-replayed, again once runs are added after it or a replay requests more repeats
-of each run than it has, and when a [search](#search) of the set starts, as the
-search's [seed](#seed). See
-[Regressions](/docs/reference/app/replays#regressions).
+other replays are compared with, other than a replay with the answer, which is
+compared with the live replay that started it. A [search's](#search)
+[seed](#seed) is one. A [replay check](#replay-check) starts one when the set
+has none for the current live config, with at least as many repeats of each
+run. See [Regressions](/docs/reference/app/replays#regressions).
 
 ## Before event
 
@@ -89,22 +87,24 @@ open review comments on the pull request, and how to hand over. See
 
 ## Calibration
 
-A [baseline](#baseline) of a station's live config over a whole replay set
-that also measures the set's [noise](#noise), flaky checks and the judge's
-agreement with itself. Spotlight makes a baseline a calibration when the set
-has 5 runs or more and has no calibration at the config's current
-[config fingerprint](#config-fingerprint). A search's baseline and a replay
-check's baseline are never a calibration. A calibration replays each run 3
-times or more. Then it checks each change again, and judges each change again
-while the cost fits under its ceiling. See
+A [seed](#seed) of a search that also measures the replay set's
+[noise](#noise), flaky checks and the judge's agreement with itself. The first
+search on a set of 5 runs or more calibrates it when the set has no
+calibration over its current runs at the live config's
+[config fingerprint](#config-fingerprint): after the set was created or a
+refresh changed its runs. A calibration replays each run 3 times or more, then
+checks and judges each change again while the cost fits under its ceiling. Its
+readings gate the next search, not the one that measured them. A replay
+check's baseline is never a calibration. See
 [Calibration](/docs/reference/app/replays#calibration).
 
 ## Candidate
 
-A work station's block as someone wants to try it, proposed to be
-[replayed](#replay) on the station's past tasks. It is never applied. A person
-proposes one as a [replay candidate](/docs/reference/api/replay-candidate); a
-[search's](#search) agent proposes them as it searches.
+A work station's block as it is tried, [replayed](#replay) on the station's
+past tasks. It is never applied as it is. A [search's](#search) agent proposes
+candidates as it searches, and a [replay check](#replay-check) replays the
+block a Terraform plan would apply as one. See
+[`spotlight candidate`](/docs/reference/cli/agent-commands#spotlight-candidate).
 
 ## Catalog
 
@@ -177,6 +177,16 @@ their setup commands, skills, tools, the decisions and memories switches, and
 the judge. Runs with the same
 fingerprint ran the same config. The web app shows its first 8 characters. See
 [Config](/docs/reference/app/tasks-runs-and-the-inbox#config).
+
+## Config pull request
+
+A pull request Spotlight opens in the line's Terraform repository with the
+config of a [search](#search)'s best candidate. Its description says what
+changes, how each task went under both configs, and what Spotlight found. A
+station has at most one open. Spotlight closes it when the station's live
+config changes before it merges, and a person merges it to change the station,
+or closes it to say no. See
+[Config pull request states](/docs/reference/app/searches#config-pull-request-states).
 
 ## Configuration change
 
@@ -285,12 +295,6 @@ often for less. The station's live config is always on it. In a search that
 aims for the same success for less, only candidates whose gain over the live
 config reads Better or Within noise can be on it. See [Frontier](/docs/reference/app/searches#frontier).
 
-## Gating set
-
-The one replay set of a station whose "Gates config changes" switch is on.
-`spotlight replay check` replays a planned change of the station on it. See
-[Gating a station's changes](/docs/reference/app/searches#gating-a-stations-changes).
-
 ## Grade
 
 A person's score of a judged run, on the judge's scale, given from the inbox.
@@ -351,7 +355,8 @@ See [Limits and timeouts](/docs/reference/limits-and-timeouts#hosts).
 One of the tasks of a replay set that a [search](#search) keeps from its
 agent, about 30% of them. Only the best candidates are replayed on them, once
 the search stops searching, to check they did not just fit the tasks the agent
-saw. See [Why a search holds tasks out](/docs/improvement/why-a-search-holds-tasks-out).
+saw. A task that an earlier search of the station searched on is never held
+out again. See [Why a search holds tasks out](/docs/improvement/why-a-search-holds-tasks-out).
 
 ## Hook
 
@@ -594,15 +599,6 @@ run that waits for an answer is ended, and a queued run is cancelled. For a run
 that waits for a person without a sandbox, see [Suspend](#suspend). See
 [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves).
 
-## Pick
-
-To select a candidate of a [search](#search), so that Spotlight opens a pull
-request that changes the station to that config. A person with the `plan`
-permission can pick a candidate when its replay on the
-[searched tasks](#searched-task) has finished. The search's [seed](#seed)
-cannot be picked. See
-[Picking a candidate](/docs/reference/app/searches#picking-a-candidate).
-
 ## Placement
 
 The requirements that a run's runner must meet: the station's `runners` [labels](#label),
@@ -667,7 +663,7 @@ memories with the briefed memories, under "Supplied to the agent". See
 The replay a replay is compared with: its task-by-task rows, its gain and its
 regressions are measured against it. Usually its set's [baseline](#baseline);
 for a replay with the answer, the live replay that started it. See
-[Reference replays](/docs/reference/app/replays#reference-replays).
+[Regressions](/docs/reference/app/replays#regressions).
 
 ## Reflection
 
@@ -707,21 +703,30 @@ edited, or rejects it. Only an approved memory becomes active and gets a
 
 A run of some of a work station's past task runs again, under a
 [candidate](#candidate) or the station's live config, from where each run
-started, each up to 5 times. A replay changes nothing outside Spotlight, and
-each of its runs is scored. See [Replays](/docs/reference/app/replays).
+started, each up to 5 times. Spotlight starts replays for its
+[searches](#search), for [replay checks](#replay-check), and to replay the
+live config with the answer. A replay changes nothing outside Spotlight, and
+each of its runs is scored. Replays and their runs do not show in the app. See
+[Replays](/docs/reference/app/replays).
 
 ## Replay check
 
 A [replay](#replay) of a work station's change as a Terraform plan would
-apply it, on the replay set that gates the station's changes, judged against
+apply it, on the station's [replay set](#replay-set), judged against
 the line's `replay_check`. CI runs it with `spotlight replay check`. See
 [Replay checks API](/docs/reference/api/replay-checks).
 
 ## Replay set
 
-A named list of up to 50 of a work station's past task runs, replayed
-together. While a run is in a set, Spotlight retains the workspace it started from. See
-[Replay set page](/docs/reference/app/replays#replay-set-page).
+The list of up to 30 of a work station's past task runs, one for each task,
+that Spotlight keeps for the station and replays together. Each work station
+has one set. Spotlight creates it when the station's first run ends and
+refreshes it from the station's newer runs. A refresh takes out runs older
+than 90 days, and tasks that a search's [reflection](#reflection) blamed on
+the task itself. While a run is in a set, Spotlight retains the workspace it
+started from. See
+[The replay set Spotlight keeps](/docs/improvement/how-spotlight-improves-a-station#the-replay-set-spotlight-keeps)
+and [How Spotlight keeps the set](/docs/reference/app/replays#how-spotlight-keeps-the-set).
 
 ## Replay set health
 
@@ -729,9 +734,10 @@ Whether a [replay set](#replay-set) can tell a better config from a worse one,
 read for the station's live config as it is now: its [noise](#noise), how
 much of it the live config succeeds on already, whether the station's judge
 and check give the same answer twice, and how much better the live config
-does when handed each run's answer. The set's first baseline of the live
-config calibrates the set and measures the first four; the replay with the answer
-that Spotlight starts after it measures the last. See
+does when handed each run's answer. The [calibration](#calibration) in a
+search's seed measures the first four; the replay with the answer that
+Spotlight starts after it measures the last. Spotlight skips a search on a set
+whose health it cannot trust. See
 [Health](/docs/reference/app/replays#health).
 
 ## Replay with the answer
@@ -740,10 +746,11 @@ A replay of a station's live config that gives each run the answer that people
 gave to the original run. For an accepted run, the answer is the change that
 people accepted. For a run that was sent back, it is what people wrote on the
 task after the run. Spotlight starts it after a replay of the live config over
-the whole set finishes, other than a search's replay, and it replays only the
+the whole set finishes, other than a search's seed that is not a
+calibration, and it replays only the
 accepted and sent-back runs. It shows how much better the config does when it
 knows the answer. This is how much the station can improve. See
-[Replay with the answer](/docs/reference/app/replays#replay-with-the-answer).
+[Health](/docs/reference/app/replays#health).
 
 ## Repository
 
@@ -846,8 +853,20 @@ A series of rounds in which an agent proposes changed configs for a work
 station, called [candidates](#candidate), each [replayed](#replay) on a replay
 set's tasks, within a budget. A search aims for more success, or for the same
 success for less. A search that finds nothing better twice in a row stalls,
-and may run a [reflection](#reflection). A person picks a candidate, and
-Spotlight opens a pull request with it. See [Searches](/docs/reference/app/searches).
+and may run a [reflection](#reflection). Spotlight starts each search as the
+line's [search policy](#search-policy) says, or when a chat that improves the
+station asks it to test a change, and stops a running search when the policy
+is turned off. When a candidate did better than the live config on
+the [held-out tasks](#held-out-task), Spotlight opens a
+[config pull request](#config-pull-request) with it, and a person merges it. See
+[Searches](/docs/reference/app/searches).
+
+## Search policy
+
+The line's `search` block, and a work station's own: whether Spotlight
+searches the station on its own, how often, after which alerts, and how much
+one search and all the line's searches in a month may spend. See
+[Search fields](/docs/reference/terraform/line#search-fields).
 
 ## Searched task
 
@@ -875,9 +894,9 @@ grants name. Spotlight removes the grants when the lease ends, and purges them
 
 The first replay of a [search](#search): a replay of the station's live config
 on every run of the replay set. It becomes the set's [baseline](#baseline), and
-the search compares each candidate with it. The search is `seeding` while the
-seed runs. The search stops with `seed-failed` when the live config cannot be
-replayed. See [Search states](/docs/reference/app/searches#search-states).
+the search compares each candidate with it. On a new or refreshed set, it is
+also the set's [calibration](#calibration). The search stops when the live
+config cannot be replayed.
 
 ## Sent back
 
@@ -940,7 +959,7 @@ commit each repository was checked out at. A replay starts from it. See
 A replay set's hold on the workspace archives that its runs started from.
 While a run is in a set, Spotlight does not purge the archive that the run
 started from. See
-[Replay set page](/docs/reference/app/replays#replay-set-page).
+[How Spotlight keeps the set](/docs/reference/app/replays#how-spotlight-keeps-the-set).
 
 ## Station
 

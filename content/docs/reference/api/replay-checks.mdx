@@ -2,11 +2,12 @@
 type: reference
 icon: BookText
 title: Replay checks API
-description: The team endpoints that mark the replay set that gates a station's changes and check a planned change of a station against it, with the request body, the check's fields, results, permissions and errors.
+description: The team endpoints that check a planned change of a station against the replay set Spotlight keeps for the station, with the request body, the check's fields, results, permissions and errors.
 ---
 
-A replay check replays a planned change of a work station on the replay set
-that gates the station's changes, compares it with the live config, and
+A replay check replays a planned change of a work station on the
+[replay set](/docs/reference/app/replays#how-spotlight-keeps-the-set) Spotlight keeps for the
+station, compares it with the live config, and
 gives a result under the line's [`replay_check`](/docs/reference/terraform/line#replay-check-fields).
 [`spotlight replay check`](/docs/reference/cli/replay-command#spotlight-replay-check)
 calls these endpoints from CI. They sit under `/api/teams/{teamId}`, answer
@@ -17,15 +18,8 @@ JSON, and answer errors as `application/problem+json`, as on the
 
 | Method and path | Returns |
 | --- | --- |
-| `POST /replay-sets/{setId}/gates-changes` | `204`: the set gates its station's changes. |
-| `DELETE /replay-sets/{setId}/gates-changes` | `204`: the set no longer gates them. Checks already started keep running. |
 | `POST /replay-checks` | `201` and a [check](#check), or `200` and the check this change already has. See [Start a check](#start-a-check). Requires `Idempotency-Key`. |
 | `GET /replay-checks/{checkId}` | A [check](#check) and its result. |
-| `GET /replay-sets/{setId}/replay-checks` | The checks replayed over a set, newest first, a page at a time: each check's `id`, `stationId`, `stationKey`, `result`, `undecidedBecause`, `regressions` (how many tasks it regressed on), `attempt`, `reference`, `createdAt` and `replayUrl`. Takes `limit` (default 50, at most 200) and `before`, a check's id; a check that the set does not contain answers an empty page. |
-
-A replay set's reads in the [Replays API](/docs/reference/api/replays) carry
-`gatesChanges`, `true` for the set that gates its station's changes. A
-station has at most one.
 
 ## Start a check
 
@@ -64,10 +58,11 @@ The check:
 1. Reads `replay_check` from the line as it is applied, never from the plan.
 2. Replaces the planned block's `check`, `judge`, `diffs` and `runners` with
    the live station's, and records in `scoringPinnedToLive` each one the plan changed.
-3. Checks the block as the line would be with the station replaced, as a
-   [replay candidate](/docs/reference/api/replay-candidate#checks) is checked.
+3. Checks the block as the line would be with the station replaced, by every
+   rule of [`spotlight_line`](/docs/reference/terraform/line), each problem at
+   its path under `station`.
 4. Replays it, under the planned repositories, images and setup commands, on
-   every run of the gating set, `repeats` times, on the team's runners. When
+   every run of the station's set, `repeats` times, on the team's runners. When
    the set has no baseline of the current live config with at least as many
    repeats, it also starts a baseline replay of the live config with the same
    `repeats`. See [Ceiling](#ceiling).
@@ -88,7 +83,7 @@ The line's `replay_check.ceiling` caps each replay a check starts, each on its
 own:
 
 - the replay of the planned change, which every check starts;
-- the baseline replay of the live config, only when the gating set has no
+- the baseline replay of the live config, only when the station's set has no
   baseline for the current live config with at least as many repeats of each
   run. A baseline already there costs the check nothing.
 
@@ -101,17 +96,14 @@ check whose replay reached its ceiling is `undecided`, `over-ceiling`, unless
 it has already `failed`.
 
 The check replays a candidate Spotlight names `Planned change, PR #<n>`, or
-after the commit's first 7 characters, or the date. It is not a
-[replay candidate](/docs/reference/api/replay-candidate) resource. A proposed
-replay candidate may not be named starting `Planned change`.
+after the commit's first 7 characters, or the date.
 
 ## Check
 
 | Field | Type | Description |
 | --- | --- | --- |
 | `id`, `teamId`, `lineId`, `stationId`, `stationKey` | string | |
-| `setId`, `setName` | string, string or null | The gating set. |
-| `setVersion` | number | The version of the set the check replayed. |
+| `setId` | string | The replay set Spotlight keeps for the station. |
 | `candidateId`, `replayId` | string | The planned candidate and its replay. |
 | `baselineReplayId` | string or null | The replay of the live config it is compared with. Null while it is being started. |
 | `attempt` | number | Counts checks of the same change against the same live config, from 1. |
@@ -120,49 +112,85 @@ replay candidate may not be named starting `Planned change`.
 | `scoringPinnedToLive` | array of strings | What the plan changed of `check`, `judge`, `diffs` and `runners`, which the check pinned to the live station's values. |
 | `threshold` | object | `{ maxRegressions, minGain, ceiling, unpricedRun }`, from the live line when the check started. `minGain` is its `replay_check.min_gain`; `ceiling` caps each replay of the check; `unpricedRun` is what an unpriced run counts against it, or null once the replay is gone. |
 | `repeats` | number | How many times the check replays each run of the set. |
-| `gain` | object or null | The candidate's gain in success over the baseline, `{ gain, low, high, significance, minGain, tasks }`, as a [replay's gain](/docs/reference/api/replays#gain). It does not decide `result`. Null with no baseline or no replay, and while no task was scored on both sides. |
+| `gain` | object or null | The candidate's gain in success over the baseline, `{ gain, low, high, significance, minGain, tasks }`: the gain and its 95% interval as shares, `better`, `worse` or `within-noise` as in [Gains](/docs/reference/app/replays#gains), the line's `min_gain`, and the tasks scored on both sides. It does not decide `result`. Null with no baseline or no replay, and while no task was scored on both sides. |
 | `result` | string | See [Results](#results). |
 | `undecidedBecause` | string or null | See [Results](#results). |
-| `tasks` | number | How many tasks the set replays. |
+| `taskCount` | number | How many tasks the set replays. |
 | `compared` | number | How many were scored on both sides. |
-| `candidate`, `baseline` | object | Each `{ state, entries, scored, succeeded, successRate, interval, tasksScored, spent }`. `state` is the replay's [state](/docs/reference/app/replays#replay-states), or null once it is gone. `entries`, `scored` and `succeeded` count repeats; `successRate` and `interval` are as on a [replay](/docs/reference/api/replays#success-ranges-and-noise), and `tasksScored` counts tasks with a scored repeat. |
-| `regressions` | array | Each task it regressed on: `{ taskId, originalRunId, title, candidate, baseline, scoreDelta, reasons }`. `candidate` and `baseline` list the [result](/docs/reference/app/replays#results) of each side's repeats, in order; `reasons` are the reasons of the change's repeats as `{ code, detail }`, each once. |
-| `replayUrl` | string or null | The check's replay in the web app. |
+| `candidate`, `baseline` | object | Each `{ state, entries, scored, succeeded, successRate, interval, tasksScored, spent }`. `state` is the replay's state, `queued`, `running`, `finished`, `stopped` or `ceiling-reached`, or null once it is gone. `entries`, `scored` and `succeeded` count repeats; `successRate` is the share of scored repeats that succeeded, `interval` its 95% interval `{ low, high }`, and `tasksScored` counts tasks with a scored repeat. |
+| `tasks` | array | Each task of the set, the regressed tasks first: `{ taskId, originalRunId, title, regressed, live, candidate }`. See [Task rows](#task-rows). |
 | `reused` | boolean | `true` when starting a check answered one this change already had. Always `false` on a read. |
 | `createdAt` | string | An RFC 3339 time. |
 
+## Task rows
+
+Each item of `tasks` gives the task's `title` (null once the task is deleted),
+`regressed`, `true` when the candidate did worse than the live config on the
+task as in [Regressions](/docs/reference/app/replays#regressions), and one side
+each for the live config and the candidate:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `result` | string | `succeeded` or `failed` when every repeat agrees; `mixed` when the repeats disagree; `unscored` when nothing scored the run; `pending` while the replay runs; `absent` when the side did not replay the task. |
+| `successRate` | number or null | The share of the scored repeats that succeeded, from 0 to 1. |
+| `reason` | string | Why the side got its result, in one line of at most 200 characters, as in `Judge failed it: The tests do not cover the new branch.` |
+
+`reason` is one [result reason](/docs/reference/app/replays#results) of a
+repeat that shows the side's result: a failed repeat for `failed` and `mixed`.
+It reads the reason, then a colon and its detail when it has one:
+
+| Code | Reads |
+| --- | --- |
+| `unreplayable` | `Spotlight could not replay or start the run` |
+| `not-run` | `The run did not start` |
+| `run-failed` | `The run failed` |
+| `run-stopped` | `The replay stopped before the run finished` |
+| `asked-a-person` | `The run asked a person, and a replay cannot answer` |
+| `check-failed` | `Checks failed` |
+| `check-skipped` | `Checks could not run` |
+| `change-not-generated` | `Spotlight could not make the change` |
+| `no-change` | `The run changed no files for the checks` |
+| `no-change-stack` | `The change did not get to Spotlight` |
+| `judged` | `Judge passed it` |
+| `judge-failed` | `Judge failed it` |
+| `unjudged` | `Judge could not judge it` |
+| `nothing-judges` | `No check or judge scores this station` |
+
+Without a reason, it reads `Checks passed.`, `The run failed.`, `The repeats
+did not agree.`, `Nothing scored the run.`, `The replay has not finished.` or
+`Not replayed.`, by `result`. The same rows make up the task-by-task table of
+[`spotlight replay check`](/docs/reference/cli/replay-command#output) and of a
+[config pull request](/docs/reference/app/searches#the-pull-request).
+
 ## Results
 
-| Result | Shown in the web app | When |
-| --- | --- | --- |
-| `failed` | Too many regressions | More tasks regressed than `maxRegressions` allows. Decided as soon as it happens, while replays still run. A task counts only once each of its repeats, on both sides, has ended. |
-| `running` | Checking | The change's replay or its baseline is queued or running, or the baseline is still being started. |
-| `undecided` | Undecided: `<reason>` | See below. |
-| `passed` | Passed | None of the above. |
-
-A task regressed as in a [replay](/docs/reference/app/replays#regressions).
-
-| `undecidedBecause` | Shown in the web app after `Undecided:` |
+| Result | When |
 | --- | --- |
-| `replay-gone` | `replay is gone` |
-| `stopped` | `replay was stopped` |
-| `over-ceiling` | `replay reached its ceiling` |
-| `no-baseline` | `no live-config replay to compare with` |
-| `baseline-unfinished` | `live config's replay didn't finish` |
-| `too-few-scored` | `under half the tasks scored on both sides` |
+| `failed` | More tasks regressed than `maxRegressions` allows. Decided as soon as it happens, while replays still run. A task counts only once each of its repeats, on both sides, has ended. |
+| `running` | The change's replay or its baseline is queued or running, or the baseline is still being started. |
+| `undecided` | See below. |
+| `passed` | None of the above. |
+
+| `undecidedBecause` | When |
+| --- | --- |
+| `replay-gone` | The change's replay is gone. |
+| `stopped` | The change's replay was stopped. |
+| `over-ceiling` | The change's replay reached its ceiling. |
+| `no-baseline` | There is no replay of the live config to compare with. |
+| `baseline-unfinished` | The live config's replay did not finish. |
+| `too-few-scored` | Fewer than half the tasks were scored on both sides. |
 
 ## Who may read and change
 
 Reading needs a person on the team or an owner or admin of its workspace, or a
 [workspace token](/docs/reference/api/workspace-token) of the team's workspace
-with the `read` scope. Anyone else is answered `404`. Marking a set and
-starting a check also need `plan`. See
+with the `read` scope. Anyone else is answered `404`. Starting a check also
+needs `plan`. See
 [Team outcomes](/docs/reference/roles-and-permissions#team-outcomes).
 
 Starting a check is recorded as a
 [configuration change](/docs/reference/api/resource-api#configuration-changes)
-of the kind `replay-check`. Marking or unmarking a set is recorded as an
-`updated` change of the kind `replay-set`.
+of the kind `replay-check`.
 
 ## Errors
 
@@ -170,6 +198,6 @@ of the kind `replay-check`. Marking or unmarking a set is recorded as an
 | --- | --- |
 | `401` | No session or token, or an unknown token. |
 | `403` | A change by a caller who may read the team but not plan. |
-| `404` | The team, line, station, set or check is not one the caller may see, as in `Replay check <checkId> not found.` |
-| `409` | Marking a set while another at the station gates its changes (`Another replay set already gates config changes of station <stationId>. Only one replay set of a station can gate config changes.`), or a set whose station has left its line. A line with no `replay_check` (`Line <lineKey> has no replay_check block. Please add one with max_regressions, ceiling and currency.`). A station no set gates (`No replay set gates config changes of station <stationKey>. Please turn on "Gates config changes" for one of its replay sets.`). A change with nothing to replay, `nothing-to-replay`: `There is nothing to replay. The plan changes nothing that affects how the station's runs go.`, or `There is nothing to replay. A check pins these changed fields to their live values: <fields>`. |
-| `422` | The planned block is not one the line takes, each problem at its path under `station`. A missing `lineId` (`Line ID must name the line of the station.`) or `stationKey` (`Station key must be the key of the planned station.`), or a `reference` or `line` not in its form. `repeats` not a number (`Repeats must be a number.`) or out of range (`Replay check repeats must be from 1 to 5.`). The `409` causes are checked first, so a check of a line with no `replay_check`, of a station no set gates, or with nothing to replay answers `409` whatever its `repeats`. |
+| `404` | The team, line, station or check is not one the caller may see, as in `Replay check <checkId> not found.` |
+| `409` | A line with no `replay_check` (`Line <lineKey> has no replay_check block. Please add one with max_regressions, ceiling and currency.`). A station with no replay set yet, or whose set's station has left its line (`Station <stationKey> has no replay set yet. Spotlight keeps one after a run of the station ends.`). A station whose set has no runs (`Station <stationKey> has no runs in its replay set yet.`). A change with nothing to replay, `nothing-to-replay`: `There is nothing to replay. The plan changes nothing that affects how the station's runs go.`, or `There is nothing to replay. A check pins these changed fields to their live values: <fields>`. |
+| `422` | The planned block is not one the line takes, each problem at its path under `station`. A missing `lineId` (`Line ID must name the line of the station.`) or `stationKey` (`Station key must be the key of the planned station.`), or a `reference` or `line` not in its form. `repeats` not a number (`Repeats must be a number.`) or out of range (`Replay check repeats must be from 1 to 5.`). The `409` causes are checked first, so a check of a line with no `replay_check`, of a station with no set or an empty set, or with nothing to replay answers `409` whatever its `repeats`. |
