@@ -31,7 +31,7 @@ A deleted workspace grants nothing to anyone.
 | Permission | Allows | Granted to |
 | --- | --- | --- |
 | `read` | See a workspace and its resources, and export it as Terraform. | Every role. Every token. |
-| `plan` | Check expressions, at `POST /api/expressions/check`. Take runs out of replay sets, start and stop replays, propose and delete replay candidates, stop searches, and start replay checks, on a team whose outcomes the caller may read. | Every person. Tokens with `plan` or `configure`. |
+| `plan` | Check expressions, at `POST /api/expressions/check`. Start replay checks, on a team whose outcomes the caller may read. | Every person. Tokens with `plan` or `configure`. |
 | `configure` | Create, change and delete teams, lines, integrations, hooks, skills and harness profiles; change the workspace. | Owners, admins. Tokens with `configure`. |
 | `secrets` | Create, change and delete secrets. | Owners, admins. Tokens with `secrets`. |
 | `runners` | Create, change and delete runner pools, egresses, runner trusts and workspace runners. | Owners, admins. Tokens with `runners`. |
@@ -83,13 +83,13 @@ Anyone else is answered `404`, as for something that does not exist.
 
 | Outcome | Where |
 | --- | --- |
-| Station outcomes | "Latest runs on this config", "Recent runs" and "Config fingerprint" on a work station's "Overview" tab, and "Runs by config" on the station's view on Insights. See [Station outcomes](/docs/reference/app/tasks-runs-and-the-inbox#station-outcomes). |
-| Judge | The judge's agreement with people under "Judge" on a work station's "Overview" tab and under "How far the judge agrees with people" on the station's view on Insights, a run's judge score and people's grades, and grading a run. See [Judge and alerts](/docs/reference/app/tasks-runs-and-the-inbox#judge-and-alerts), [Agreement](/docs/reference/app/tasks-runs-and-the-inbox#agreement) and [Grades](/docs/reference/app/tasks-runs-and-the-inbox#grades). |
+| Station outcomes | "Latest runs on this config", "Recent runs" and "Config fingerprint" on a work station's page, and "Runs by config" on the station's view on Insights. See [Station outcomes](/docs/reference/app/tasks-runs-and-the-inbox#station-outcomes). |
+| Judge | The judge's agreement with people under "Judge" on a work station's page and under "How far the judge agrees with people" on the station's view on Insights, a run's judge score and people's grades, and grading a run. See [Judge and alerts](/docs/reference/app/tasks-runs-and-the-inbox#judge-and-alerts), [Agreement](/docs/reference/app/tasks-runs-and-the-inbox#agreement) and [Grades](/docs/reference/app/tasks-runs-and-the-inbox#grades). |
 | Grade items | Inbox items asking to grade a run. They reach no one else. |
 | Station alert items | Inbox items saying that an alert of a station fired. They reach no one else. |
 | Insights | Every tab of a team's Insights page, the [Insights API](/docs/reference/api/insights), and the [Replayed candidates API](/docs/reference/api/replayed-candidates). |
-| Replays | A work station's "Replays" section, its replay sets, replays and replay runs, the [Replays API](/docs/reference/api/replays), and the team's [replay candidates](/docs/reference/api/replay-candidate). Changing them also needs `plan`. A replay run, with its config and event stream, is readable only through the team it replayed for, even after its station is removed. See [Replays](/docs/reference/app/replays). |
-| Searches and replay checks | A work station's improvement status, its searches, the config pull requests searches open, and its replay checks: the [Searches API](/docs/reference/api/searches) and the [Replay checks API](/docs/reference/api/replay-checks). Stopping a search and starting a check also need `plan`. See [Searches](/docs/reference/app/searches). |
+| Replay checks | A work station's replay checks, through the [Replay checks API](/docs/reference/api/replay-checks). Starting a check also needs `plan`. Replays, searches and their runs do not show in the app. |
+| Search notices | Inbox notices about a station's searches: a config pull request opened or failed, a stalled search's causes, and a skip a person must fix. They reach every member of the team. See [Notices](/docs/reference/app/searches#notices). |
 
 ## Members
 

@@ -9,9 +9,8 @@ description: The subcommands of the spotlight binary, what each reads, prints an
 `spotlight runner` and `spotlight egress` from the runner image. A shared
 egress for push pools runs `spotlight egress serve`. An agent runs
 the [agent commands](/docs/reference/cli/agent-commands) inside its sandbox.
-A person or a CI job runs [`spotlight replay`](/docs/reference/cli/replay-command)
-from anywhere to replay a station's past tasks, or to check the station
-changes in a Terraform plan. A person runs [`spotlight login`](#spotlight-login)
+A person or a CI job runs [`spotlight replay check`](/docs/reference/cli/replay-command)
+from anywhere to check the station changes in a Terraform plan. A person runs [`spotlight login`](#spotlight-login)
 so that `spotlight replay` and the Terraform provider act as them.
 [`spotlight token`](#spotlight-token) prints a token for Terraform's `http`
 backend.
@@ -631,8 +630,7 @@ The file is written in one rename. Other fields in the file are kept.
 
 | Reads the login | When |
 | --- | --- |
-| [`spotlight replay`](/docs/reference/cli/replay-command#environment) | `SPOTLIGHT_API_TOKEN` is not set. |
-| [`spotlight replay check`](/docs/reference/cli/replay-command#environment-for-check) | Neither `SPOTLIGHT_API_TOKEN` nor `SPOTLIGHT_OIDC_TRUST` is set. |
+| [`spotlight replay check`](/docs/reference/cli/replay-command#environment) | Neither `SPOTLIGHT_API_TOKEN` nor `SPOTLIGHT_OIDC_TRUST` is set. |
 | [The Terraform provider](/docs/reference/terraform/terraform-provider#credentials) | No token and no trust is set. |
 | [`spotlight token`](#spotlight-token) | Neither `SPOTLIGHT_API_TOKEN` nor `SPOTLIGHT_OIDC_TRUST` is set. |
 
@@ -644,8 +642,8 @@ Each takes the entry for the address of its `SPOTLIGHT_URL` or `url`.
 spotlight replay <subcommand>
 ```
 
-Proposes replay candidates and starts, follows and stops replays, reading
-`SPOTLIGHT_URL` and `SPOTLIGHT_API_TOKEN`, else the login for `SPOTLIGHT_URL`. `spotlight replay check` checks a
-saved Terraform plan's station changes, and may exchange a CI job's OIDC token
-through `SPOTLIGHT_OIDC_TRUST` instead. Its subcommands, flags, output and
-exit codes are on [`spotlight replay`](/docs/reference/cli/replay-command).
+Its one command, `spotlight replay check`, checks a saved Terraform plan's
+station changes, reading `SPOTLIGHT_URL` and `SPOTLIGHT_API_TOKEN`, or
+exchanging a CI job's OIDC token through `SPOTLIGHT_OIDC_TRUST`, else the
+login for `SPOTLIGHT_URL`. Its flags, output and exit codes are on
+[`spotlight replay`](/docs/reference/cli/replay-command).

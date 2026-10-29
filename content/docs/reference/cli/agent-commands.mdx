@@ -449,9 +449,17 @@ try at most three times as many as it may propose.
 | `This search iteration looks into why the search stalled, so it proposes no candidates; record a cause for each failing task with spotlight cause` | The run is a [reflection's](/docs/reference/app/searches#reflections). |
 | `This run is no longer the active run of the search` | The search stopped, or moved on from this iteration. |
 
-Other problems with the block are those of a
-[replay candidate](/docs/reference/api/replay-candidate#checks), at their path
-under `station`.
+Spotlight also checks the block as the line would be with the station
+replaced, by every rule of [`spotlight_line`](/docs/reference/terraform/line),
+and names each problem at its path under `station`, as in
+`station.judge.rubric`. On top of those rules:
+
+| Message | Cause |
+| --- | --- |
+| `is a station block, as in a line` | At `station`: the block is not an object. |
+| `keeps the station's key, <key>` | At `station.key`: `key` names another station. |
+| `keeps the station on the line it is part of` | At `station`: the line would no longer contain the station. |
+| `names a harness a runner can start` | At `station.harness`: the block runs no harness Spotlight can start. |
 
 ```bash
 spotlight candidate --name terse-prompt --hypothesis @why.md station.json

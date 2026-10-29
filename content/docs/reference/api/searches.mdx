@@ -1,267 +1,71 @@
 ---
 type: reference
 icon: BookText
-title: Searches API
-description: The team endpoints that read what Spotlight does to improve a station, read and stop the searches it starts for a better station config, read the pull request a search opens and how it ended, and record why a stalled search's tasks fail, with their fields, permissions and errors.
+title: Search agent API
+description: The two endpoints a search's agent calls from inside its run, to propose a candidate config and to record why a stalled search's tasks fail, with their bodies and errors.
 ---
 
-[Searches](/docs/reference/app/searches) are read and stopped through these
-endpoints, under `/api/teams/{teamId}`. They answer JSON, and errors are
-`application/problem+json` as on the
-[resource API](/docs/reference/api/resource-api#errors). `{lineId}` and
-`{stationId}` are as in the [Replays API](/docs/reference/api/replays).
+Spotlight starts [searches](/docs/reference/app/searches) itself, from the
+line's [search policy](/docs/reference/terraform/line#search-fields), and
+picks a candidate when a search finishes. No endpoint starts, stops or reads a
+search, or picks a candidate. See
+[How Spotlight improves a station](/docs/improvement/how-spotlight-improves-a-station).
 
-## Endpoints
+A search's agent calls the two endpoints below from inside its run. Only the
+runner with the lease on the run may call them, with its runner token; any
+other caller is answered `401`. They answer JSON, and errors are
+`application/problem+json` as on the
+[resource API](/docs/reference/api/resource-api#errors).
 
 | Method and path | Returns |
 | --- | --- |
-| `GET /lines/{lineId}/stations/{stationId}/improvement` | What Spotlight does now to improve the station. See [Station improvement](#station-improvement). |
-| `GET /lines/{lineId}/stations/{stationId}/searches` | The station's searches, newest first, each a [search](#search). |
-| `GET /searches` | The team's searches, newest first, a page at a time. |
-| `GET /searches/{searchId}` | One search with its split, iterations, candidates and frontier. See [Search detail](#search-detail). |
-| `POST /searches/{searchId}/stop` | `204`: stops the search. Its agent's run is cancelled or stopped, its replays stop, and nothing more starts. |
-| `GET /config-pull-requests/{pullRequestId}` | A [config pull request](#config-pull-request). |
-| `GET /search-runs/{runId}` | A search's agent run: its search and iteration, the agent it ran, its steps, and what it spent. |
+| `POST /api/runs/{runId}/search-candidates` | `201`: proposes a candidate. See [Propose a candidate](#propose-a-candidate). |
+| `POST /api/runs/{runId}/failure-causes` | `201`: records why a failing task failed. See [Record a cause](#record-a-cause). |
 
-`GET /searches` takes:
+## Propose a candidate
 
-| Parameter | Description |
-| --- | --- |
-| `limit` | At most this many. Default 50, at most 200. |
-| `before` | Only searches started before this one, by its id. A search that the team does not own answers an empty page. |
-
-No endpoint starts a search or picks a candidate. Spotlight starts searches
-from the line's [search policy](/docs/reference/terraform/line#search-fields), and
-picks a candidate when a search finishes. See
-[How Spotlight improves a station](/docs/improvement/how-spotlight-improves-a-station#when-a-search-starts).
-
-A search's agent proposes candidates at `POST /api/runs/{runId}/search-candidates`,
-which only the runner with the lease on the run may call, with its runner token. The
-agent reaches it through
+The agent reaches it through
 [`spotlight candidate`](/docs/reference/cli/agent-commands#spotlight-candidate).
-From a reflection's run it fails with `409`.
+Spotlight replays the candidate on the search's searched tasks at once.
 
-A reflection's agent records a cause at `POST /api/runs/{runId}/failure-causes`,
-on the same terms, through
-[`spotlight cause`](/docs/reference/cli/agent-commands#spotlight-cause). The
-body is `{ "taskId", "cause", "evidence", "suggestion" }`, `suggestion`
-optional; it answers `201` and `{ "taskId", "cause", "replayRunId" }`.
+| Field | Type | Description |
+| --- | --- | --- |
+| `name` | string | A slug unique in the search: lowercase letters, digits and hyphens, starting with a letter or digit, at most 63 characters. |
+| `hypothesis` | string | What the candidate is expected to improve, and why. |
+| `station` | object | The station block, as the line stores it, changed only where a search may change it. |
+
+It answers `{ "candidateId", "name", "replayId" }`, `replayId` being its replay
+on the searched tasks. Proposing the same name again from the same run answers
+with the candidate it proposed. A rejected proposal does not count as one of
+the iteration's candidates, but the run may only try so often.
 
 | Status | Cause |
 | --- | --- |
-| `404` | The run is not a search run that the runner leases, it is no longer the active run of the search, or the reflection does not look into the task. |
-| `409` | The run's iteration proposes candidates. |
+| `404` | The run is no longer the active run of the search, or it is not a search run that this runner leases. |
+| `409` | The iteration proposed all the candidates it may, or tried too often; another iteration uses the name already; or the iteration is a reflection, which proposes no candidates. |
+| `422` | A `name` that is no slug, no `hypothesis`, or a station block the line rejects or that changes what a search may not. Each problem names its path. |
+
+## Record a cause
+
+A reflection's agent, in an iteration that looks into why a stalled search's
+tasks fail, reaches it through
+[`spotlight cause`](/docs/reference/cli/agent-commands#spotlight-cause). One
+cause per task: recording a task's cause again replaces the one before.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `taskId` | string | A failing task the reflection's briefing lists. |
+| `cause` | string | `config` when a change to the station's config could fix it; `task` when the task itself is why; `judge` when the judge scored it wrong; `check` when the check failed for a reason the change did not cause; `infra` when the run failed around the work. |
+| `evidence` | string | What in the runs shows the cause, 1 to 4,000 characters. |
+| `suggestion` | string | Optional. What a person, or the next iteration, should change, at most 4,000 characters. |
+
+It answers `{ "taskId", "cause", "replayRunId" }`, `replayRunId` being the
+failing replay run the cause is about. A `task` cause takes the task out of the
+station's replay set at its next refresh. See
+[How Spotlight keeps the set](/docs/reference/app/replays#how-spotlight-keeps-the-set).
+
+| Status | Cause |
+| --- | --- |
+| `404` | The run is no longer the active run of the search, it is not a search run that this runner leases, or the reflection does not look into the task. |
+| `409` | The run's iteration proposes candidates; it looks into no causes. |
 | `422` | A `cause` other than `config`, `task`, `judge`, `check` or `infra`; no `evidence`, or more than 4,000 characters of it; a `suggestion` over 4,000 characters. |
-
-## Search
-
-Each item of a list, and the first fields of a search's detail:
-
-| Field | Type | Description |
-| --- | --- | --- |
-| `id`, `lineId`, `stationId`, `setId` | string | |
-| `state` | string | `seeding`, `searching`, `holding-out`, `finished` or `stopped`. See [Search states](/docs/reference/app/searches#search-states). |
-| `stopReason` | string or null | Why it stopped searching. See [Stop reasons](/docs/reference/app/searches#stop-reasons). |
-| `trigger` | string | Why Spotlight started it: `schedule` when the period of the search policy ran out, `alert` when a station alert fired. |
-| `agent` | object | `{ harness, model, effort }`. |
-| `budget` | object | `{ iterations, perIteration, ceiling, concurrency, repeats }`. `iterations` is 1 to 10, `perIteration` 1 to 5, `concurrency` 1 to 10, and `repeats`, how many times each of its replays replays each run, 1 to 5. `ceiling` is `{ amount, currency }`, the most the whole search may spend. |
-| `objective` | string | `success` or `cost`: what it aims for, which orders its frontier and its best. See [Aims](/docs/reference/app/searches#aims). |
-| `spent` | object | `{ amount, currency }`: its replays and its agent's runs so far, in the ceiling's currency. |
-| `iterationsRun` | number | How many times its agent ran, or is running. |
-| `proposed` | number | How many candidates its agent proposed. |
-| `best` | object or null | `{ candidateId, name, isSeed, searchScore, searchInterval, heldOutScore, heldOutInterval, costPerRun, overfit, regressions, exceedsRegressionLimit }`: the [best candidate](/docs/reference/app/searches#best-candidate), with fields as on a [candidate](#candidate). `isSeed` is `true` when it is the live config. |
-| `maxRegressions` | number or null | The line's regression limit, `replay_check.max_regressions`, as the line is now. Null when the line has no `replay_check` block. See [Regressions against the live config](/docs/reference/app/searches#regressions-against-the-live-config). |
-| `pick` | object or null | What Spotlight did with its candidates once it finished: `{ outcome, candidateId, name, reason }`. See [Pick](#pick). Null until it finished, and for a stopped search. |
-| `startedAt`, `endedAt` | string, string or null | RFC 3339 times. |
-
-### Pick
-
-| Field | Type | Description |
-| --- | --- | --- |
-| `outcome` | string | `picked` when a candidate passed every condition and Spotlight opens a [config pull request](#config-pull-request) for it; `declined` when none did. |
-| `candidateId`, `name` | string or null | The picked candidate. Null when `declined`. |
-| `reason` | string or null | Why no candidate was picked. Null when `picked`. |
-
-| `reason` | Means |
-| --- | --- |
-| `no-candidate` | No candidate finished its replay on the held-out tasks. |
-| `no-held-out-gain` | Aiming for `success`: no candidate did better than the live config on the held-out tasks by the line's `min_gain`. |
-| `not-cheaper` | Aiming for `cost`: no candidate cost less per run than the live config and did not do worse on the held-out tasks. |
-| `over-regression-limit` | The best candidate is over the line's regression limit, `replay_check.max_regressions`. |
-| `likely-overfit` | The best candidate is likely [overfit](/docs/reference/app/searches#overfit), or too few of its held-out tasks were scored to tell. |
-| `station-gone` | The station is gone from its line. |
-| `pull-request-open` | A candidate passed, but a [config pull request](#config-pull-request) of the station is open. A station has at most one open config pull request. |
-| `rejected-before` | Every candidate that passed proposes a config whose config pull request was closed on GitHub while the station's live config stayed the same. |
-
-Spotlight takes the candidates with a held-out score, best first, as the
-search's `objective` orders them. A candidate passes when it did better than
-the live config on the held-out tasks (`success`), or cost less per run and did
-not do worse there (`cost`), is not over the regression limit, and has no
-overfit status. Spotlight picks the first passing candidate whose config no
-person closed a pull request for. When none passes, `reason` is the first
-condition the best candidate failed. See
-[Which candidate becomes a pull request](/docs/improvement/how-spotlight-improves-a-station#which-candidate-becomes-a-pull-request).
-
-## Search detail
-
-| Field | Type | Description |
-| --- | --- | --- |
-| `split` | object | `searchedTasks`, `heldOutTasks`, and `searched` and `heldOut`, each a list of `{ runId, taskId }` from the set. |
-| `iterations` | array | Each `{ number, kind, runId, state, attempts, proposed, agentSpent, reflection }`. `kind` is `propose` or `reflect`. `state` is `wanted`, `running`, `ended` or `failed`. `attempts` counts its proposals, rejected ones included; `proposed` lists the candidates it accepted, by id. `agentSpent` is what its agent run spent, once known. `reflection` is a [reflection](#reflection) for a `reflect` iteration, else null. |
-| `seed` | object | The live config the search started from, as a [candidate](#candidate). Its search score counts the searched runs only, its held-out score the held-out runs. |
-| `candidates` | array | Every candidate its agent proposed. |
-| `frontier` | array of strings | The candidates on the [frontier](/docs/reference/app/searches#frontier), by id, cheapest first, the seed always among them. With `objective` set to `cost`, only candidates whose `searchedGain.significance` is `better` or `within-noise`. |
-| `minGain` | number | The smallest gain over the seed the line counts as real: `replay_check.min_gain`, or `0.05` when the line has none. |
-
-### Reflection
-
-What an iteration that looked into why the search
-[stalled](/docs/reference/app/searches#stalls) looked into and found.
-
-| Field | Type | Description |
-| --- | --- | --- |
-| `incumbent` | string or null | The candidate whose failures it looked into, by id: the best config before it, or the seed's when nothing beat the live config. Null until it looked. |
-| `tasks` | array | The searched tasks that config still failed, each `{ taskId, originalRunId, replayRunId }`: the task, its run in the set, and the replay run that failed it. Never a held-out task. |
-| `causes` | array | One per task given a cause, each `{ taskId, originalRunId, replayRunId, cause, evidence, suggestion, recordedAt }`. `cause` is `config`, `task`, `judge`, `check` or `infra`; see [Causes](/docs/reference/app/searches#causes). `suggestion` is a string or null. |
-| `result` | string or null | Once it ended: `continued`, `no-config-cause`, `no-failures`, `did-not-run` or `ceiling-reached`. See [Reflection results](/docs/reference/app/searches#reflection-results). |
-| `endedSearch` | boolean | Whether the search stopped searching when it ended: `true` for every `result` but `continued`. |
-
-### Candidate
-
-| Field | Type | Description |
-| --- | --- | --- |
-| `candidateId` | string | |
-| `name` | string | The slug the agent named it by, or `seed` for the live config. |
-| `isSeed` | boolean | Whether it is the live config. |
-| `iteration` | number or null | The iteration that proposed it. Null for the seed. |
-| `hypothesis` | string or null | What its agent expected it to improve, and why. |
-| `fingerprint` | string or null | Its [config fingerprint](/docs/reference/glossary#config-fingerprint). |
-| `changes` | array | How it differs from the live config, each `{ part, name, kind, was, now }`, as on a [replay candidate](/docs/reference/api/replay-candidate#fields). |
-| `replayId`, `replayState` | string, string or null | Its replay on the searched runs; for the seed, its replay of the whole set. |
-| `heldOutReplayId`, `heldOutReplayState` | string or null | Its replay on the held-out runs, when it had one. |
-| `searchScore` | number or null | Its [success](/docs/reference/app/replays#success) on the searched runs, 0 to 1. |
-| `searchInterval` | object or null | `{ rate, low, high }`: `searchScore` with its 95% interval. |
-| `searchScored` | number | How many searched replay runs, repeats included, were scored. |
-| `searchedGain` | object or null | Its gain over the seed on the searched runs, paired task by task, as a [replay's gain](/docs/reference/api/replays#gain). Null for the seed. |
-| `heldOutScore` | number or null | Its success on the held-out runs, 0 to 1, once that replay finished. |
-| `heldOutInterval` | object or null | `heldOutScore` with its 95% interval. |
-| `heldOutGain` | object or null | Its gain over the seed on the held-out runs, once both its held-out replay and the seed's replay finished. Null for the seed. |
-| `searchedPairs` | object or null | `{ wins, losses, ties }`: the searched tasks whose change the judge, comparing it [side by side](/docs/reference/app/replays#side-by-side) with the seed's replay, found better, worse or as good. Null for the seed. |
-| `heldOutPairs` | object or null | The same on the held-out tasks. Null for the seed and before its held-out replay. |
-| `costPerRun` | number or null | What it spent per scored searched run. Null while any of it went unpriced or was in another currency. |
-| `spent` | object | `{ amount, currency }`. |
-| `onFrontier` | boolean | Whether it is on the frontier. |
-| `overfit` | string or null | When `searchedGain.significance` is `better`: `likely` when `heldOutGain.significance` is not, over at least 5 tasks scored on both sides, so its gain showed only on the tasks the search could see; `too-few-held-out` when `heldOutGain.tasks` is under 5. Null otherwise, until `heldOutGain` is known, and for the seed. See [Overfit](/docs/reference/app/searches#overfit). |
-| `regressions` | object | `{ searched, heldOut, total }`: how many tasks it [regressed](/docs/reference/app/replays#regressions) on against the seed. `searched` is null until its searched replay finished. `heldOut` is null until both its held-out replay and the seed's replay finished. `total` is the sum of the two, with a null counted as 0, and is null while both are null. All three are null for the seed. See [Regressions against the live config](/docs/reference/app/searches#regressions-against-the-live-config). |
-| `exceedsRegressionLimit` | boolean | Whether `regressions.total` is more than the search's `maxRegressions`. `false` when `maxRegressions` is null, and while `total` is null. A candidate over the limit stays on the frontier, and Spotlight does not pick it. |
-| `pullRequest` | object or null | `{ id, state, closedBecause, closeFailure, url, reason }` of the [config pull request](#config-pull-request) Spotlight opened for it. Null unless Spotlight picked it, and always for the seed. |
-
-A searched candidate is not a [replay candidate](/docs/reference/api/replay-candidate)
-resource: it is not listed, imported, read or deleted there.
-
-## Config pull request
-
-| Field | Type | Description |
-| --- | --- | --- |
-| `id` | string | |
-| `state` | string | See [Config pull request states](#config-pull-request-states). |
-| `closedBecause` | string or null | `stale` when the station's live config changed after it opened, `by-person` when it was closed on GitHub. Null unless `state` is `closing` or `closed`. |
-| `closeFailure` | object or null | Why Spotlight could not close a stale pull request on GitHub, as `reason`. Null unless that close failed. |
-| `url` | string or null | The pull request on GitHub, once opened. |
-| `reason` | object or null | Why it failed: `{ code, message, attribute, expression, wanted }`. `code` is one of the [config pull request reasons](/docs/reference/app/searches#config-pull-request-reasons). `attribute` is the station attribute it is about, `expression` the Terraform expression that computes it, and `wanted` the value to set by hand. Null unless `state` is `failed`. |
-| `teamId`, `searchId`, `candidateId`, `lineId`, `stationId` | string | |
-| `candidateName`, `stationKey` | string | |
-| `repository`, `path` | string or null | The line's `source` when the candidate was picked. Null when the line named none. |
-| `branch` | string | The branch Spotlight commits to. |
-| `createdAt`, `updatedAt` | string | RFC 3339 times. |
-
-A search opens at most one config pull request, and a station has at most one
-open: `opening`, `opened` or `closing`.
-
-### Config pull request states
-
-| `state` | Means |
-| --- | --- |
-| `opening` | Spotlight is opening it on GitHub. A try that fails with a temporary error is tried again: after 30 seconds, then 2, 8 and 32 minutes. |
-| `opened` | It is open on GitHub. |
-| `closing` | The station's live config changed, and Spotlight is closing it on GitHub. `closedBecause` is `stale`. A failed try is tried again on the same terms as opening. |
-| `merged` | It was merged on GitHub. |
-| `closed` | It is closed and not merged. `closedBecause` says why. |
-| `failed` | Spotlight could not open it: after a permanent error, or after 5 tries. `reason` says what to change by hand. Spotlight does not try again. |
-
-Spotlight follows an `opened` pull request:
-
-- When the line changes, and the station's live config matches neither the
-  config the pull request started from nor the config it proposes, the pull
-  request is stale. Spotlight closes it on GitHub, then comments `Spotlight
-  closed this pull request. The station's live config changed after this pull
-  request opened.` A permanent GitHub error, or 5 failed tries, ends it as
-  `closed` with `closeFailure` set. A `merged` pull request is never closed as
-  stale.
-- When a person closes it on GitHub, it is `closed` with `closedBecause` set to
-  `by-person`. The station's cooldown starts again from that moment, and
-  Spotlight does not propose its config again while the station's live config
-  stays the same. Reopening it on GitHub makes it `opened` again, and
-  Spotlight may propose its config again. The cooldown is not undone.
-- When it is merged on GitHub, it is `merged`, and the station's replay set
-  records it as `searchSchedule.lastImprovedAt`. A closed pull request that is
-  later found merged becomes `merged`.
-- Every 6 hours, Spotlight reads the state of each `opened` pull request from
-  GitHub, in case a webhook did not arrive.
-
-## Station improvement
-
-`GET /lines/{lineId}/stations/{stationId}/improvement` answers what Spotlight
-does now to improve the station:
-
-| Field | Type | Description |
-| --- | --- | --- |
-| `status` | string | See the table below. |
-| `searchId` | string or null | The search that runs, or whose pick is pending. Null unless `status` is `searching` or `picking`. |
-| `pickPhase` | string or null | `choosing` while Spotlight has not picked a candidate of the finished search, `opening` while the picked candidate has no config pull request yet. Null unless `status` is `picking`. |
-| `pullRequestUrl` | string or null | The open config pull request, or the merged one that improved the station. Null for other statuses, and while the pull request is not on GitHub yet. |
-| `improvedAt` | string or null | When a merged config pull request improved the station. Null unless `status` is `improved`. |
-| `skip` | object or null | `{ reason, at }`: why Spotlight cannot start a search until a person acts, with a `reason` from the [skip reasons](/docs/reference/api/replays#replay-set). Null unless `status` is `not-improving` because of a skip. |
-| `pullRequestFailure` | object or null | Why the newest config pull request of the station could not be opened, as a config pull request's `reason`. Null unless `status` is `not-improving` because of it. |
-| `minimumTasks` | number | The fewest different tasks a set needs before Spotlight can search it: `5`. |
-| `setId` | string or null | The station's replay set. Null while there is none. |
-| `lastStartedAt` | string or null | When Spotlight last started a search of the station. Null before the first. |
-| `checkAfter` | string or null | When Spotlight next looks at the station. Null while there is no replay set. |
-
-The first row that applies decides `status`:
-
-| `status` | When |
-| --- | --- |
-| `searching` | A search of the station is in progress. |
-| `picking` | The station's newest search finished, and Spotlight has not picked a candidate yet, or has picked one that has no config pull request yet. |
-| `pull-request-open` | A config pull request of the station is `opening`, `opened` or `closing`. |
-| `off` | The station's search policy has `enabled` set to `false`. |
-| `not-started` | The station has no replay set, or no runs in it. |
-| `not-improving` | The station's newest config pull request `failed` after the last merge and after the last search started; or Spotlight skipped the last search, after the last merge, for `no-agent`, `no-scoring`, `ceiling-too-low`, `noisy`, `judge-unstable` or `flaky-checks`. A person must act. |
-| `improved` | A config pull request of the station merged at or after the last search started. |
-| `waiting` | Spotlight waits until `checkAfter`, including after a skip for `cooldown`, `pull-request-open`, `set-too-small`, `no-fresh-held-out`, `monthly-ceiling` or `no-headroom`. |
-
-See [How Spotlight improves a station](/docs/improvement/how-spotlight-improves-a-station#the-improvement-status).
-
-## Who may read and change
-
-Reading needs a person on the team or an owner or admin of
-its workspace, or a [workspace token](/docs/reference/api/workspace-token) of
-the team's workspace with the `read` scope. Anyone else is answered `404`.
-Stopping a search also needs `plan`: a token with `read` alone gets `403`. See
-[Team outcomes](/docs/reference/roles-and-permissions#team-outcomes).
-
-A search Spotlight starts is recorded as a
-[configuration change](/docs/reference/api/resource-api#configuration-changes)
-of the kind `replay-search` with the action `created`, made by Spotlight, and
-stopping it as `updated`. A pick is recorded as `config-pull-request`, keyed by
-its branch, with the action `created`, made by Spotlight.
-
-## Errors
-
-| Status | Cause |
-| --- | --- |
-| `401` | No session or token, or an unknown token. |
-| `403` | A change by a caller who may read the team but not plan. |
-| `404` | The team, line, station, search or pull request is not one the caller may see, as in `Search <searchId> not found.` or `Station <stationId> not found.` |
-| `409` | Stopping a search that has ended (`Search <searchId> has ended.`). |

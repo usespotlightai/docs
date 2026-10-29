@@ -455,7 +455,7 @@ did better than the live config. See
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `enabled` | boolean | `true` | Whether Spotlight searches the line's work stations on its own. |
+| `enabled` | boolean | `true` | Whether Spotlight searches the line's work stations on its own. Applying `false` stops every running search of the line's stations that does not turn it back on in its own `search`. |
 | `monthlyCeiling` | number | `50` | The most all searches of the line's stations may spend in one calendar month (UTC), in `currency`. Above 0. In Terraform, `monthly_ceiling`. |
 | `currency` | string | `USD` | The three-letter currency of `monthlyCeiling`, `ceiling` and a station's `ceiling`. Stored in upper case. |
 | `ceiling` | number | `10` | The most one search may spend, in `currency`. Above 0, at most 1,000 and at most `monthlyCeiling`. |
@@ -469,7 +469,8 @@ filled in, when the line has a `search` block.
 
 Spotlight skips a search when what the line's searches started this month
 spent, plus the search's `ceiling`, is more than `monthlyCeiling`. It also
-skips a search inside `cooldown`. A skipped
+skips a search inside `cooldown`. A search stopped because its policy was turned
+off opens no config pull request. A skipped
 search has a recorded reason; see
 [When Spotlight skips a search](/docs/improvement/how-spotlight-improves-a-station#when-spotlight-skips-a-search).
 
@@ -496,7 +497,7 @@ here; when one is left out, Spotlight picks it.
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `enabled` | boolean | the line's | Whether Spotlight searches this station on its own. |
+| `enabled` | boolean | the line's | Whether Spotlight searches this station on its own. Applying `false` stops a running search of the station. |
 | `ceiling` | number | the line's | The most one search of this station may spend, in the line's `currency`. Above 0, at most 1,000 and at most the line's `monthlyCeiling`. |
 | `period` | string | the line's | The longest time between two searches of this station. A duration from `1h` to `365d`. |
 | `onAlert` | boolean | the line's | Whether an alert that goes off on this station starts a search. In Terraform, `on_alert`. |

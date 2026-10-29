@@ -108,7 +108,7 @@ See [Inside a sandbox](/docs/reference/hosts/sandbox#run-phases).
 | Retained after a newer archive replaces it | 1 hour |
 | Retained after its task or chat is deleted | none; removed within a minute, even when a run started from it or a replay set pins it |
 | Retained after a run that started from it started | 30 days |
-| Retained while a run that started from it is in a replay set | until the run leaves the set, the set is deleted, or its station leaves the line |
+| Retained while a run that started from it is in a replay set | until the run leaves the set, or its station leaves the line |
 | An archive never completed, retained | 24 hours |
 
 An archive a run started from, or one pinned by a replay set, is retained for that
@@ -126,7 +126,6 @@ See [Replays](/docs/reference/app/replays).
 | A run stays in a replay set | until 90 days after it ended |
 | Refresh of a full set | every 7 days |
 | Refresh of a set with fewer than 30 runs | every day |
-| Candidate name | 1 to 100 characters |
 | Replay runs of a team queued or running at once, not counting a search's | 2 |
 | Ceiling | above 0, at most 1,000, in a three-letter currency |
 | Repeats of each run in a replay | 1 to 5, default 1 |
@@ -134,13 +133,13 @@ See [Replays](/docs/reference/app/replays).
 | Tasks scored on both sides before a gain can read better or worse | 5 |
 | `min_gain` | above 0, at most 1, default 0.05 |
 | Repeats of each run in a calibration | at least 3 |
+| Reason given for a task's side | one line of at most 200 characters |
 | Fewest runs in a set a calibration checks | 5 |
 | Live config success above which a set has almost no room to improve | 95% |
 | Judge agreement below which its verdicts read as partly chance | 80% |
 | A judge's [guidance](/docs/reference/app/replays#guidance) | one sentence of at most 280 characters, with no line break, no 5 words in a row from the rubric or a claim, and no whole sentence of 3 or more words from either |
 | Repeats of each run in a replay with the answer | those of the live replay that started it |
 | Attempts to queue a replay run | 10 |
-| `spotlight replay watch` interval | default 15 seconds, at least 1 second |
 | Replays read for Candidates on the Insights Stations tab | the newest 500 started in the period; see [Replayed candidates API](/docs/reference/api/replayed-candidates) |
 
 ## Searches
@@ -177,6 +176,9 @@ See [Searches](/docs/reference/app/searches).
 | Tries to close a stale config pull request | 5, on the same schedule |
 | Open config pull requests of a station | 1 |
 | Reading an open config pull request's state from GitHub | every 6 hours |
+| A config pull request's description | at most 60,000 characters; Spotlight leaves out its last sections past that |
+| Changes listed in a config pull request | 30; long values folded under "Was and now" for the first 8, each value cut at 1,000 characters |
+| Tasks in each table of a config pull request | 20, then `+<n> more tasks.` |
 
 ## Replay checks
 
@@ -194,6 +196,7 @@ See [Replay checks API](/docs/reference/api/replay-checks).
 | `spotlight replay check` wait | default 60 minutes |
 | `spotlight replay check` interval | default 15 seconds, at least 1 second |
 | Failed tries in a row before `spotlight replay check` gives up | 5 |
+| Reason in a `spotlight replay check` task table | cut at 160 characters |
 
 ## Change stacks and decisions
 

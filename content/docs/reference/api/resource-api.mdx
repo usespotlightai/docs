@@ -102,7 +102,6 @@ Every resource representation has these fields besides its own.
 | `egress` | key | `shared` |
 | `runner-trust` | key | `production-cluster` |
 | `workspace-runners` | the workspace's slug | `acme` |
-| `replay-candidate` | `<team key>/<line key>/<station key>/<name>` | `core/delivery/implementation/Higher effort` |
 
 ## Errors
 
@@ -178,7 +177,6 @@ All paths are under `/api/resources`.
 | `egress` | workspace | `POST /workspaces/{workspaceId}/egresses` | `/egresses/{id}` | `/workspaces/{workspaceId}/egresses` |
 | `runner-trust` | workspace | `POST /workspaces/{workspaceId}/runner-trusts` | `/runner-trusts/{id}` | `/workspaces/{workspaceId}/runner-trusts` |
 | `workspace-runners` | workspace | `POST /workspaces/{workspaceId}/workspace-runners` | `/workspace-runners/{id}` | `/workspaces/{workspaceId}/workspace-runners` |
-| `replay-candidate` | station | `POST /lines/{lineId}/stations/{stationKey}/replay-candidates` | `/replay-candidates/{id}`, read and delete only | `/workspaces/{workspaceId}/replay-candidates` |
 
 Import is the list path followed by `/import`, except for workspaces.
 
@@ -191,9 +189,6 @@ Rules particular to a kind:
   revokes it.
 - `workspace-runners`: a workspace has at most one, so its list returns zero or
   one item.
-- `replay-candidate`: has no update. Proposing and deleting one need `plan`,
-  and only someone who may read the station's team sees one. It is not
-  exported.
 
 Each kind's fields are on its own page:
 
@@ -213,7 +208,6 @@ Each kind's fields are on its own page:
 | `egress` | [`spotlight_egress`](/docs/reference/terraform/egress) |
 | `runner-trust` | [`spotlight_runner_trust`](/docs/reference/terraform/runner-trust) |
 | `workspace-runners` | [`spotlight_workspace_runners`](/docs/reference/terraform/workspace-runners) |
-| `replay-candidate` | [Replay candidates](/docs/reference/api/replay-candidate) |
 
 ## Export
 
@@ -265,7 +259,7 @@ anyone else the workspace is `404`.
 | Field | Type | Description |
 | --- | --- | --- |
 | `seq` | integer | Rises with every change. Pass it as `before` to page back. |
-| `resource` | string | The kind, as in `line` or `secret`. `replay` is a replay started or stopped, `replay-search` a search Spotlight started, or a search stopped, `replay-check` a replay check started, `config-pull-request` a search's candidate that Spotlight picked, keyed by its branch, and `terraform-state` a [Terraform state](/docs/reference/terraform/state-backend#audit) written, or its lock released by force or by another token or person, keyed by the state name. |
+| `resource` | string | The kind, as in `line` or `secret`. `replay` is a replay Spotlight started or stopped, `replay-search` a search Spotlight started, `replay-check` a replay check started, `config-pull-request` a search's candidate that Spotlight picked, keyed by its branch, and `terraform-state` a [Terraform state](/docs/reference/terraform/state-backend#audit) written, or its lock released by force or by another token or person, keyed by the state name. |
 | `resourceId` | string | The resource's `id`. |
 | `key` | string | The key or name it had within its team or workspace. |
 | `action` | string | `created`, `updated` or `deleted`. |

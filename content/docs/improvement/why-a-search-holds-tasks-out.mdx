@@ -94,8 +94,7 @@ reason the run failed. When the judge failed the run, it also gets the
 judge's `guidance` field: one sentence that says what the run should do
 differently, in terms of the task. Spotlight drops guidance that repeats
 the rubric or a claim, or that names a claim by its number or place, and gives a fixed
-sentence in its place. People still see the judge's full reasons and claims on
-the replay and run pages. See
+sentence in its place. See
 [Guidance](/docs/reference/app/replays#guidance).
 
 ## A frontier of candidates
@@ -108,8 +107,7 @@ So a search keeps the frontier: the candidates for which no other succeeds as
 often for less. Everything off the
 frontier is beaten on both counts by something on it. The live config is
 always on the frontier, so every candidate is read against the station as it
-is. The search page names a best candidate, and the frontier shows the
-cheaper ones that succeed almost as often, for a person who reads the search.
+is. The search names a best candidate on the frontier by what it aims for.
 
 What the search names as best depends on what it aims for. The station's
 `search` block can set the aim; without it, the set's health decides, as
@@ -120,7 +118,7 @@ every candidate whose gain over the live config does not read Better or Within
 noise, and ranks the rest by what a run costs. Only candidates cheaper than
 the live config are then replayed on the held-out tasks: in the docs' view, a
 candidate that costs as much has nothing to offer such a search. The best is then the
-cheapest, and the page calls it that.
+cheapest.
 
 A search aims for the same success for less, unless the station's `search`
 block sets another aim, when the live config already succeeds on more than 95%
@@ -165,8 +163,11 @@ So when two iterations in a row find nothing better than the best config
 before them, a search with room left spends its next iteration looking
 instead of proposing. Its agent gives each task the best config still fails
 one cause. Only a cause in the config keeps the search going, and the next
-agent is told what was found. The other causes go to the team as an inbox notice, since fixing a task, a judge or a check is
-outside what a search may change. See
+agent is told what was found. A search can change none of the other causes.
+A task that is itself the cause leaves the replay set at its next refresh.
+When the search then ends with no pull request, the causes in the judge, the
+check or the run's setup go to the team as an inbox notice, one point for each
+task. See
 [Stalls](/docs/reference/app/searches#stalls).
 
 ## Budgets

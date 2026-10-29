@@ -46,9 +46,10 @@ set holds up to 30 of the station's recent runs, one for each task, and
 Spotlight refreshes it from new runs. A station with no set yet, or with no runs
 in its set, fails its check.
 
-Open the station's replay set page and read the runs in it. If a run is not a
-fair test of the station, such as a task that cannot be done as written, take
-it out of the set. Spotlight never adds a run of that task to the set again.
+Nobody chooses the runs by hand. A task that a search of the station found
+to be the cause of its own failure, such as a task that cannot be done as
+written, leaves the set at its next refresh. See
+[The replay set Spotlight keeps](/docs/improvement/how-spotlight-improves-a-station#the-replay-set-spotlight-keeps).
 
 While a check is running, it keeps replaying the set as it was when the check
 started. A later change to the set makes the next check start afresh.
@@ -87,8 +88,7 @@ resource "spotlight_line" "core_delivery" {
   against it too.
 
 A line without `replay_check` is not checked: the job fails for its stations
-and says so. Once it is applied, hover over the ⓘ beside **Checks** on the
-station's replay set page to read the line's threshold. The threshold always comes from the line as it is applied, never
+and says so. The threshold always comes from the line as it is applied, never
 from the plan, so a pull request cannot loosen its own check. In the same way,
 a change to a station's `check`, `judge`, `diffs` or `runners` is replayed with
 the live station's, and the output says which it pinned. See
@@ -169,7 +169,7 @@ raise it to match. See
 
 The command waits for the checks, up to 60 minutes unless you pass
 `--timeout`. A check still running then keeps running in Spotlight, and the
-job ends with exit code `3` and the check's link.
+job ends with exit code `3`.
 
 ## Read the result
 
@@ -183,8 +183,10 @@ job ends with exit code `3` and the check's link.
 The job's summary gets a table with one row per station: its result, how many
 tasks regressed, how the change and the live config did, each with its range,
 the change's gain over the live config with `better`, `worse` or
-`within noise`, what the check spent, and a link to its replay in Spotlight. Each
-regressed task is listed under it, with why. The log prints the same.
+`within noise`, and what the check spent. Under it, each station has a table
+of its tasks, as **Task**, **Live config**, **Candidate** and **Regressed**,
+with each side's result and a one-line reason, such as `Failed: Checks
+failed.` The log prints the same.
 
 Some changes are not checked, and the output notes why: a new line, a line
 that is removed, a station that is added or removed, or a station where
@@ -196,8 +198,7 @@ it depends on. A changed secret makes every work station undecided.
 
 Running the check again on the same change, against the same live config,
 the same runs of the set, the same threshold and the same scoring, answers
-with the earlier check while it is running, passed or failed. Each check also
-shows on the station's replay set page, under **Checks**. [Results](/docs/reference/cli/replay-command#results) lists every
+with the earlier check while it is running, passed or failed. [Results](/docs/reference/cli/replay-command#results) lists every
 result and why a check can be undecided.
 
 ## Related
@@ -205,5 +206,4 @@ result and why a check can be undecided.
 - [`spotlight replay check`](/docs/reference/cli/replay-command#spotlight-replay-check)
 - [Replay checks API](/docs/reference/api/replay-checks)
 - [`replay_check`](/docs/reference/terraform/line#replay-check-fields)
-- [Replay past tasks against a change to a station](/docs/improvement/replay-past-tasks-against-a-station-change)
 - [How Spotlight improves a station](/docs/improvement/how-spotlight-improves-a-station)

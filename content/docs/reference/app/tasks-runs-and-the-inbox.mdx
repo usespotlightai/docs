@@ -138,6 +138,7 @@ replay run, which runs a past task run again under a candidate config, has no
 task and is described in [Replays](/docs/reference/app/replays#replay-runs). A
 search's agent run, which proposes candidates, has no task either; see
 [The search's agent run](/docs/reference/app/searches#the-searchs-agent-run).
+Neither shows in the app.
 
 ### Run states
 
@@ -230,9 +231,7 @@ the line's repositories, and none of them can be changed there. While a
 runner has a lease on the run and the composer is empty, "Send" becomes "Stop".
 
 Once the task has left the run's station, the composer is replaced by
-`The task has moved to another station. Messages here reach no one.` A replay
-run and a search's agent run have the composer turned off, with
-`The agent runs autonomously. It can't receive messages.`
+`The task has moved to another station. Messages here reach no one.`
 
 ### Failure codes
 
@@ -783,24 +782,22 @@ not its conversation. Nothing waits on an inbox request.
 
 ### Notices
 
-A notice tells a team about its work, outside any task. It goes to the whole
-team: every member of the team sees it in their inbox. Spotlight raises one
-when a [search](/docs/reference/app/searches#notices) of one of the team's
-stations ends, and when Spotlight cannot search a station for a reason the
-team can fix. Nothing waits on it, and it
-cannot be answered.
+A notice tells a team about its work, outside any task, when a person must
+act. It goes to the whole team: every member of the team sees it in their
+inbox. Spotlight raises one about a [search](/docs/reference/app/searches#notices)
+of one of the team's stations. Nothing waits on it, and it cannot be answered.
 
-| Raised when | Form | Headline | Link |
+| Raised when | Form | Headline | Links |
 | --- | --- | --- | --- |
-| A search ends and Spotlight opens a config pull request | `ended` | `Spotlight opened a config pull request for the <station> station` | "Open the search" |
-| A search ends and its config pull request could not be opened | `ended` | `Sorry, the config pull request for the <station> station could not be opened` | "Open the search" |
-| A search ends with no candidate to open a pull request for | `ended` | `The search of the <station> station ended with no pull request` | "Open the search" |
-| Spotlight skips a search because the station has no judge and no check, its replay set has too few tasks, the live config has no room to improve, the search ceiling is too low, or no runner can start the search agent's harness | `advice` | `Spotlight cannot search the <station> station` | "Open the station" |
+| Spotlight opens a config pull request | `ended` | `Spotlight opened a config pull request for the <station> station` | "Review the pull request", to the pull request on GitHub, and "Open the station" |
+| A config pull request could not be opened | `ended` | `Sorry, the config pull request for the <station> station could not be opened` | "Open the station" |
+| A search ends with no pull request after it stalled on causes outside the config | `advice` | `The search of the <station> station stalled on causes outside the config` | "Open the station" |
+| Spotlight skips a search because the station has no judge and no check, the search ceiling is too low, no runner can start the search agent's harness, the replay set is noisy, the judge is unstable or the checks are flaky | `advice` | `Spotlight cannot search the <station> station` | "Open the station" |
 
-The points of a notice for an ended search name the candidate and the pull
-request, or the reason there is none, followed by why the search stalled when
-it did. See [Notices](/docs/reference/app/searches#notices) for the texts. A config pull request that merges, or that
-Spotlight closes because the station's live config changed, raises no notice.
+See [Notices](/docs/reference/app/searches#notices) for the points. A search
+that ends with no pull request and no causes to fix, a config pull request
+that merges, and one that Spotlight closes because the station's live config
+changed raise no notice.
 
 | Field | Shows |
 | --- | --- |
@@ -808,6 +805,7 @@ Spotlight closes because the station's live config changed, raises no notice.
 | Headline | What it is about, at most 200 characters. |
 | Points | 1 to 20, of at most 1,000 characters each: what happened, then what it suggests. |
 | Link | A page of its team, with a label naming it. |
+| External link | Only on some notices: a pull request at `https://github.com/`, with a label naming it. |
 
 | Flag | Set when |
 | --- | --- |
@@ -817,7 +815,8 @@ Spotlight closes because the station's live config changed, raises no notice.
 Its row shows a lightbulb, the headline, an unread dot, the day it was raised,
 and the first point. Its page, `/w/<slug>/inbox/notices/<noticeId>`, shows when
 it was raised, the headline, the points under "Details", and a button that
-opens the link.
+opens the link, after a button that opens the external link in a new tab when
+the notice has one.
 
 A notice reaches only the members of its team. To anyone else, and once it has left the inbox, its page
 reads `No longer waiting for you.` Resolving is
