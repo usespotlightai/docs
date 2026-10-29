@@ -18,6 +18,7 @@ Spotlight has tools and skills of its own. An agent calls a tool with
 | `review` | Runs at a station that lists it in `tools`. | `spotlight-review` |
 | `propose-task` | Every chat run. A station cannot enable it. | none |
 | `setup-pull-request` | Every run of a setup chat. A station cannot enable it. | none |
+| `test-station-change` | Every run of a chat that improves a station. A station cannot enable it. | none |
 
 In the input tables, an input with `stdin` may come from standard input, as described
 under [spotlight tools call](/docs/reference/cli/agent-commands#spotlight-tools-call).
@@ -96,6 +97,73 @@ call answers the pull request the chat already opened. See
 | `body` | string | no | yes | The decisions and the plan, as Markdown. |
 
 The `pull-request.opening` [hook](/docs/integrations/hooks) does not run for it.
+
+### test-station-change
+
+Measures a change to the station that the chat improves. Spotlight replays the
+change against the station's live config on its replay set. When the change
+becomes a config pull request, the team gets the usual inbox notice. When it
+does not, the person who started the chat gets a notice that says why. A chat improves a station when
+it was opened with the station attached, as from "Ask the agent" or
+"Review with agent" on the station's page. See
+[Ask the agent for a change](/docs/improvement/improve-a-station-from-its-runs#ask-the-agent-for-a-change).
+
+| Input | Type | Required | Stdin | Description |
+| --- | --- | --- | --- | --- |
+| `name` | string | yes | no | A slug that names the change, as `shorter-prompt`: up to 63 lowercase letters, digits and hyphens, not starting with a hyphen, and not `seed`. It must differ from the names of the other candidates of the search. |
+| `hypothesis` | string | yes | no | What the change should improve, 1 to 4,000 characters. |
+| `config` | string | yes | yes | The changed station block as JSON, as the line resource contains a station. |
+| `mode` | string | no | no | `test`, the default, or `search`. |
+| `line` | string | no | no | The line of the station, by its key. Another line than the chat's is refused. |
+| `station` | string | no | no | The station, by its key. Another station than the chat's is refused. |
+
+```bash
+spotlight tools call test-station-change --name shorter-prompt \
+  --hypothesis "A shorter prompt keeps the agent on the task." < station.json
+```
+
+What the call starts:
+
+| Mode | Starts |
+| --- | --- |
+| `test` | A search of one iteration whose only candidate is the change, against the live config, with the `request` [trigger](/docs/reference/app/searches#automatic-searches). It runs no search agent. |
+| `search` | A search that starts from the change: its first candidate is the change, and the search agent can refine it in the iterations of the station's search policy. |
+
+When a search of the station is running and still takes candidates, the change
+joins it as one candidate of its current or next iteration, whatever the mode.
+In mode `search`, a change that joins gets no search and no refinement of its
+own. A running search takes as many changes as it proposes candidates in one
+iteration.
+
+A station takes at most 3 requested starts or joins in one UTC day. A call
+again with the same name and the same change answers as the earlier call did,
+and starts nothing.
+
+The change may differ from the live config only in the fields a search may
+change: `prompt`, `harness`, `model`, `effort`, `profile`, `skills`, `tools`,
+`decisions`, `memories` and `description`. A search the tool starts keeps to the
+station's search ceiling and the line's monthly ceiling, one search at a time
+and one open config pull request for each station, and the
+[health of the replay set](/docs/reference/app/searches#skip-reasons). It does
+not wait for the period or the cooldown of the search policy, and it does not
+move them: the next automatic search of the station is due as before. Its
+searched tasks count as used, so later searches do not hold them out.
+
+The call answers with JSON:
+
+| Field | Description |
+| --- | --- |
+| `started` | `true` when the change was taken, else `false`. |
+| `outcome` | `started` when the call started a search, `joined` when the change joined a running search. |
+| `mode` | `test` or `search`, as called. |
+| `next` | What happens next, for the agent to tell the person. A start reads `Spotlight replays the live config and the change on <n> searched tasks. If the change does better, Spotlight replays it on <n> held-out tasks.`, then in mode `search` `Then the search agent can refine the change in up to <n> more iterations.` A join reads `A search of the station is running. The change joined it as one candidate of iteration <n> of <m>.`, then in mode `search` `The change gets no search of its own, and no refinement of its own.` Both end with `If the change passes the gates of the line, Spotlight opens a config pull request. The result arrives in the inbox of the person. Tell them what happens next. Do not show a Terraform diff.` |
+| `refusal` | Why the change was not taken, as a code. See [Test refusals](/docs/reference/errors-and-messages#test-refusals). |
+| `reason` | The refusal in words. |
+| `problems` | For `invalid-change`: each problem with the change, as `<field>: <reason>`. |
+
+After a refusal, `next` reads `Tell the person the reason. Then show the change
+as a Terraform diff for a person to apply.`, and after `invalid-change`, `Fix
+the change and call the tool again.`
 
 ## Built-in skills
 

@@ -2,7 +2,7 @@
 type: how-to
 icon: SquarePen
 title: Improve a station from its runs
-description: Compare how a station's runs turned out under each config, have the agent propose a change from them, and apply it with Terraform.
+description: Compare how a station's runs turned out under each config, have the agent propose a change from them and test it on past tasks, and merge the pull request Spotlight opens.
 ---
 
 Use this when a station's runs keep failing, get sent back or cost more than
@@ -75,24 +75,37 @@ saw sent back, and press Enter.
 The first message names the station and its line. The agent writes
 the station's recent runs into its workspace with
 [`spotlight history`](/docs/reference/cli/agent-commands#spotlight-history) and
-reads them. It proposes one change at a time, as a diff of the station's block
-in the line's `spotlight_line` resource and of its prompt file,
-`prompts/<team>/<line>/<station>.md`, and says which outcome should show that
-the change worked.
+reads them. It proposes one change at a time, and says which outcome should
+show that the change worked.
 
-The agent cannot change the station itself. Reply in the chat to question the
-proposal or ask for another one.
+## Test the change
 
-## Check the change on past tasks
+The agent tests its change with the
+[`test-station-change`](/docs/reference/built-ins/built-in-tools-and-skills#test-station-change)
+tool: Spotlight replays the change against the live config on the station's
+replay set. The agent says in the chat what happens next.
 
-To see how the change does on tasks the station has already worked before it
-merges, have the line's CI replay it on the station's replay set. See
-[Check Terraform pull requests for station regressions](/docs/configuration/check-terraform-pull-requests-for-station-regressions).
-Spotlight also searches for better configs of the station itself, and opens a
-pull request when it finds one. See
-[How Spotlight improves a station](/docs/improvement/how-spotlight-improves-a-station).
+- To have the search agent refine the change, ask the agent for a search in
+  place of a test. If a search of the station is already running, the change
+  joins it as one candidate, with no refinement of its own.
+- If the change did better, Spotlight opens a config pull request, and your
+  team gets an item in the inbox that links to it. Review it, and merge it to
+  change the station. Otherwise you get an item that says why the change did
+  not hold up. See
+  [Answer the inbox](/docs/inbox/answer-the-inbox#act-on-a-notice).
+- A station takes at most 3 tests a day. Asking again with the same change
+  starts nothing new.
+- If the test cannot start, the agent gives the reason, such as an open config
+  pull request for the station, and shows the change as a diff of the station's
+  block in the line's `spotlight_line` resource and of its prompt file,
+  `prompts/<team>/<line>/<station>.md`. Make that change yourself, as below.
+  See [Test refusals](/docs/reference/errors-and-messages#test-refusals).
 
-## Apply the change
+Reply in the chat to question the proposal or ask for another one.
+
+## Apply a change by hand
+
+If the test could not start, apply the agent's diff:
 
 <Steps>
 <Step>
@@ -108,6 +121,9 @@ Run `terraform apply`.
 
 </Step>
 </Steps>
+
+If the line [checks its pull requests](/docs/configuration/check-terraform-pull-requests-for-station-regressions),
+CI replays the change on the station's replay set before it merges.
 
 ## Check whether it helped
 
@@ -127,4 +143,5 @@ change.
 - [Why each run records its station's config](/docs/improvement/why-each-run-records-its-stations-config)
 - [Check Terraform pull requests for station regressions](/docs/configuration/check-terraform-pull-requests-for-station-regressions)
 - [How Spotlight improves a station](/docs/improvement/how-spotlight-improves-a-station)
+- [`test-station-change`](/docs/reference/built-ins/built-in-tools-and-skills#test-station-change)
 - [Plan work with the agent](/docs/tasks/plan-work-with-the-agent)

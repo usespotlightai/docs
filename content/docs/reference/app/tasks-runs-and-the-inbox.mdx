@@ -783,19 +783,27 @@ not its conversation. Nothing waits on an inbox request.
 ### Notices
 
 A notice tells a team about its work, outside any task, when a person must
-act. It goes to the whole team: every member of the team sees it in their
-inbox. Spotlight raises one about a [search](/docs/reference/app/searches#notices)
-of one of the team's stations. Nothing waits on it, and it cannot be answered.
+act. Most go to the whole team: every member of the team sees them in their
+inbox. A person who asked for a test of a change, from a chat that improves a
+station, gets a notice of their own when the change did not become the pull
+request. Spotlight raises notices about
+the [searches](/docs/reference/app/searches#notices) of the team's stations. Nothing waits on it, and it cannot be answered.
 
 | Raised when | Form | Headline | Links |
 | --- | --- | --- | --- |
 | Spotlight opens a config pull request | `ended` | `Spotlight opened a config pull request for the <station> station` | "Review the pull request", to the pull request on GitHub, and "Open the station" |
 | A config pull request could not be opened | `ended` | `Sorry, the config pull request for the <station> station could not be opened` | "Open the station" |
 | A search ends with no pull request after it stalled on causes outside the config | `advice` | `The search of the <station> station stalled on causes outside the config` | "Open the station" |
+| A search that the reader requested a candidate of picks no candidate | `ended` | `Spotlight did not open a config pull request for the <station> station` | "Open the station" |
+| A search that the reader requested a candidate of opens a pull request for another candidate | `ended` | `Spotlight opened a config pull request for another candidate of the <station> station` | "Open the station" |
+| A search that the reader requested a candidate of stops before a result | `ended` | `The search of the <station> station stopped before a result` | "Open the station" |
 | Spotlight skips a search because the station has no judge and no check, the search ceiling is too low, no runner can start the search agent's harness, the replay set is noisy, the judge is unstable or the checks are flaky | `advice` | `Spotlight cannot search the <station> station` | "Open the station" |
 
-See [Notices](/docs/reference/app/searches#notices) for the points. A search
-that ends with no pull request and no causes to fix, a config pull request
+The first two go to the team, whatever started the search. The next three go
+only to a person who requested a candidate of the search. See
+[Notices](/docs/reference/app/searches#notices) for the points. A search
+that nobody requested a candidate of, and that ends with no pull request and
+no causes to fix, a config pull request
 that merges, and one that Spotlight closes because the station's live config
 changed raise no notice.
 
@@ -810,7 +818,7 @@ changed raise no notice.
 | Flag | Set when |
 | --- | --- |
 | unread | It is not resolved. |
-| resolved | A member of its team opened it, which resolves it for the whole team. A resolved notice shows under "Resolved" for 30 days after it was resolved, then leaves the inbox. |
+| resolved | A member of its team opened it, which resolves it for the whole team. A notice to one person is resolved when that person opens it. A resolved notice shows under "Resolved" for 30 days after it was resolved, then leaves the inbox. |
 
 Its row shows a lightbulb, the headline, an unread dot, the day it was raised,
 and the first point. Its page, `/w/<slug>/inbox/notices/<noticeId>`, shows when
@@ -818,7 +826,8 @@ it was raised, the headline, the points under "Details", and a button that
 opens the link, after a button that opens the external link in a new tab when
 the notice has one.
 
-A notice reaches only the members of its team. To anyone else, and once it has left the inbox, its page
+A notice reaches only the members of its team, and a notice to one person
+only that person. To anyone else, and once it has left the inbox, its page
 reads `No longer waiting for you.` Resolving is
 `POST /api/workspaces/{slug}/inbox/notices/{noticeId}/resolve`, answering
 `204`, or `404` for a notice of a team the caller is not a member of. Deleting
