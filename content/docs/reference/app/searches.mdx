@@ -52,6 +52,7 @@ policy that is on, and starts a search when one is due:
 | --- | --- |
 | `schedule` | The policy's `period` has passed since the station's last search started, or the station has had no search. |
 | `alert` | One of the station's [alerts](/docs/reference/terraform/line#alert-fields) fired since its last search, and `on_alert` is `true`. The period need not have passed. |
+| `request` | A chat that improves the station called [`test-station-change`](/docs/reference/built-ins/built-in-tools-and-skills#test-station-change). The period and the cooldown need not have passed. |
 
 While the station's search policy is off, Spotlight starts no search and looks
 again a day later. A search is not started while another search of the
@@ -72,6 +73,26 @@ that starts takes:
 | Aim | The station's `objective`, else [chosen](#aims) from the set's health. |
 | Agent | The station's `agent`, else the station's own harness, model and effort. |
 | Held-out tasks | Drawn from the set's tasks that no earlier search of the station searched on. |
+
+A `request` search starts at once or not at all. In mode `test` it has 1
+iteration, whose only candidate is the requested change, and it runs no search
+agent; in mode `search` its first candidate is the requested change, and the
+rest of the table applies. It keeps to the same rules as the others, apart
+from `cooldown`: the station's search policy is on, the station has a replay
+set, its last search has given its result, and the [skip reasons](#skip-reasons)
+other than `cooldown` do not apply, `no-agent` not in mode `test`. A station
+takes at most 3 requested starts or joins in one UTC day. Otherwise the tool
+answers with a [refusal](/docs/reference/errors-and-messages#test-refusals).
+When a search of the station is in progress, in state `seeding` or
+`searching`, and has an iteration left, a requested change joins it as one
+candidate of that iteration instead, and gets no search or refinement of its
+own. A search takes at most as many requested changes as it has candidates
+per iteration.
+
+A `request` search does not change when the station's next automatic search is
+due: its period, cooldown and any alert that waits stay as they were. Its
+searched tasks count as used, so no later search of the station holds them
+out.
 
 The first search on a new set, on a set a refresh changed, or after a change
 to the station's config, [calibrates the set](/docs/reference/app/replays#calibration)
@@ -386,7 +407,8 @@ When a search finishes, Spotlight ranks its candidates that have a held-out
 score in the order of the search's [aim](#aims), and picks the first that
 passes every rule below and that Spotlight may propose. It then opens a
 [pull request](#the-pull-request) for it. When none passes, it picks none, the
-search gets no pull request, and nobody is told. A stopped search gets no pick.
+search gets no pull request, and only the people who
+[requested](#automatic-searches) a candidate of it are told. A stopped search gets no pick.
 Nobody picks a candidate by hand.
 
 | Rule | A candidate passes when |
@@ -415,7 +437,8 @@ A search that picks none records why, as its `pick` `reason`:
 
 Past `station-gone`, `pull-request-open` and `rejected-before`, the `reason` is
 the first rule the top-ranked candidate fails. A search that picks none sends
-no notice, unless it [stalled](#stalls) on causes a person must fix; see
+the team no notice, unless it [stalled](#stalls) on causes a person must fix.
+It sends each person who requested a candidate of it a notice of their own. See
 [Notices](#notices).
 
 ### The pull request
@@ -448,7 +471,7 @@ The sections follow:
 | How it scored | A table of the candidate's and the live config's success on the searched and on the held-out tasks, each with its range as `72% (50–89%)`, and their cost per run, `—` where not known. Then how many tasks it regressed on against the live config, as in `Against the live config it regressed on 2 searched tasks; on the held-out tasks, 1 held-out task. The search never showed its agent the held-out tasks.`; a sentence for each [gain](#gains), as in `On the held-out tasks it gained +12 points (+3 to +21) on the live config, more than the 5-point gain the line counts as real.`; and a sentence for its [side-by-side](#side-by-side-with-the-live-config) wins, losses and ties on the searched and on the held-out tasks, once any was compared. |
 | Not checked | The attributes the file computes in Terraform, which Spotlight could not check against the config the search started from. Only when there are any. |
 | Task by task | A table for the held-out tasks, then one for the searched tasks: "Task", "Live config", "Candidate" and "Regressed" (`Yes` or `No`), regressed tasks first, then tasks the candidate lost. Each side reads `<result>: <reason>`, as for a [replay's results](/docs/reference/app/replays#results). A title is cut at 120 characters, `Untitled task` without one. At most 20 rows show, then `+<n> more tasks.` |
-| About this search | `Started by:` `the schedule of the search policy` or `a station alert`; `Iterations: <n> of <max>, with up to <n> candidates in each`; `Reflections:` how many iterations looked into why tasks failed, when any did; `Spent: <spent> of the <ceiling> ceiling`; `Search agent:` its harness, model and effort; `Tasks: <n> searched, <n> held out`; `Replay set: <n> runs,` and when it was refreshed; and `Noise:` how far success moves between repeats, or that Spotlight has not measured it yet, then the line's `min_gain`. |
+| About this search | `Started by:` `the schedule of the search policy`, `a station alert` or `a person, from a chat that improves the station`; `Iterations: <n> of <max>, with up to <n> candidates in each`; `Reflections:` how many iterations looked into why tasks failed, when any did; `Spent: <spent> of the <ceiling> ceiling`; `Search agent:` its harness, model and effort; `Tasks: <n> searched, <n> held out`; `Replay set: <n> runs,` and when it was refreshed; and `Noise:` how far success moves between repeats, or that Spotlight has not measured it yet, then the line's `min_gain`. |
 | What else Spotlight found | What the search's newest [reflection](#reflection-results) found, one point per cause outside the config. Only when there is any. |
 
 When the description would pass 60,000 characters, Spotlight leaves out the
@@ -555,10 +578,13 @@ which the [notice](#notices) gives as `Reason: <message>`.
 A search sends the team an [inbox notice](/docs/reference/app/tasks-runs-and-the-inbox#notices)
 only when a person must act. Every person on the team sees it in their inbox,
 while they are on the team. Each links to the station with "Open the station".
+These notices go to the team, whatever started the search. A person who
+requested a candidate gets a notice of their own only when their change did
+not become the pull request; see below.
 
 | When | Form | Headline | Points |
 | --- | --- | --- | --- |
-| Spotlight opened a pull request for the picked candidate | `ended` | `Spotlight opened a config pull request for the <station> station` | `Candidate <name> changes <attributes>.`, `Held-out gain: <gain> points`. Also links to the pull request on GitHub with "Review the pull request". |
+| Spotlight opened a pull request for the picked candidate | `ended` | `Spotlight opened a config pull request for the <station> station` | `Candidate <name> changes <attributes>.`, then `Held-out gain: <gain> points`, or for a search that aims for the same success for less, `Cost per run: <cost> <currency>, against <cost> <currency> for the live config`. Also links to the pull request on GitHub with "Review the pull request". |
 | The pull request could not be opened | `ended` | `Sorry, the config pull request for the <station> station could not be opened` | `Candidate <name> changes <attributes>.`, `Reason: <message>`. |
 | A search ended with no pull request after it [stalled](#stalls) on causes outside the config | `advice` | `The search of the <station> station stalled on causes outside the config` | One point per task, as under [Reflection results](#reflection-results). |
 | A search was [skipped](#skip-reasons) for a reason a person must fix | `advice` | `Spotlight cannot search the <station> station` | Advice by reason, below. |
@@ -566,7 +592,8 @@ while they are on the team. Each links to the station with "Open the station".
 `the <station> station` reads `a station` when the station has no name to
 give. `<attributes>` lists the changed attributes, as in `prompt, model`; with
 none known, the point reads `Candidate <name> changes the station config.` The
-gain reads as in `+12 points`, or `Held-out gain: not measured`. A notice
+gain reads as in `+12 points`, or `Held-out gain: not measured`; a cost
+without a measure reads `Cost per run: not measured`. A notice
 links to a pull request only at `https://github.com/`.
 
 | Skip `reason` | Points |
@@ -578,5 +605,38 @@ links to a pull request only at `https://github.com/`.
 | `judge-unstable` | `The judge of the station does not give the same verdict twice for the same run.`, `Please make the rubric of the judge more exact.` |
 | `flaky-checks` | `The check of the station gives a different result when it runs twice on the same change.`, `Please fix the check of the station.` |
 
-A search that ends with no pull request and no causes to fix, a merged pull
-request and a pull request Spotlight closes as stale send no notice.
+A person who requested a candidate of a search gets one of these, addressed
+to them alone, when none of their candidates became the pull request. Each
+ends with one point for each candidate the person requested, below.
+
+| When | Form | Headline | Points |
+| --- | --- | --- | --- |
+| The search picked no candidate | `ended` | `Spotlight did not open a config pull request for the <station> station` | Why, by `reason`, below. |
+| The search picked another candidate | `ended` | `Spotlight opened a config pull request for another candidate of the <station> station` | `Candidate <name> became the config pull request.` |
+| The search stopped before a result, because search was turned off, the station left its line or the live config's replay failed | `ended` | `The search of the <station> station stopped before a result` | `A person turned off search for the station.`, `The station is no longer on the line.` or `The replay of the live config failed.` |
+
+| `reason` | Point |
+| --- | --- |
+| `no-candidate` | `No candidate did better than the live config on the searched tasks.` |
+| `no-held-out-gain` | `No candidate did better than the live config on the held-out tasks.` |
+| `not-cheaper` | `No candidate cost less per run than the live config.` |
+| `over-regression-limit` | `The best candidate failed more tasks than the regression limit of the line allows.` |
+| `likely-overfit` | `The best candidate did better on the searched tasks only, not on the held-out tasks.` |
+| `station-gone` | `The station is no longer on the line.` |
+| `pull-request-open` | `A config pull request for the station is open.` |
+| `rejected-before` | `A person closed a config pull request with the same config before.` |
+
+A requested candidate's point reads:
+
+| Its replay | Point |
+| --- | --- |
+| Not started before the search ended | `Spotlight did not replay <name>: the search ended first.` |
+| Not finished before the search ended | `Spotlight did not finish the replay of <name>: the search ended first.` |
+| Stopped at the search's ceiling | `The replay of <name> stopped at the search ceiling.` |
+| Stopped or deleted | `The replay of <name> failed.` |
+| Finished, with a held-out score | `Candidate <name>, held-out gain: <gain> points`, or for a search that aims for the same success for less, `Candidate <name>, cost per run: <cost> <currency>, compared with <cost> <currency> for the live config` |
+| Finished, with no held-out score | `Candidate <name> did not beat the live config on the searched tasks. Searched gain: <gain> points`, or `Searched gain: not measured` |
+
+A search that nobody requested a candidate of, and that ends with no pull
+request and no causes to fix, a merged pull request and a pull request
+Spotlight closes as stale send no notice.
