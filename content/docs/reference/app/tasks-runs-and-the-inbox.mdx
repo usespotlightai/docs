@@ -756,9 +756,19 @@ linked to the run, then the failure, "Visit", "Checks", "Human action", "Pull re
 ## The inbox
 
 A person's inbox contains every conversation, open or resolved, on every task in
-the workspace that is assigned to them, and the [notices](#notices) of
-their teams. Items are ordered by their latest note, notices by when they were
-raised, newest first, in the sections "Open" and "Resolved".
+the workspace that is assigned to them, the [running work](#running-work) on
+those tasks, and the [notices](#notices) of their teams. Items are ordered by
+their latest note, notices by when they were raised, and runs by when they were
+queued, newest first.
+
+| Section | Contains | At first |
+| --- | --- | --- |
+| Open | The open conversations that are not working, the open inbox requests and the notices that are not resolved. | Expanded |
+| Running | The working conversations and the running work. | Collapsed |
+| Resolved | The resolved conversations, inbox requests and notices. | Collapsed |
+
+"Running" and "Resolved" are at the bottom of the list. The sections that are
+collapsed or expanded are kept in the browser.
 
 | Flag | Set when |
 | --- | --- |
@@ -779,6 +789,18 @@ the item's station, or `The task moved on to <Station>. Nothing is left to answe
 [Grades](#grades), [memory reviews](#memory-reviews) and
 [station alerts](#station-alerts) are inbox requests: items on a task that are
 not its conversation. Nothing waits on an inbox request.
+
+### Running work
+
+A task assigned to the person that has a current run, and no open
+conversation, shows its run under "Running" while the run is queued, in
+progress or stopping. The row shows the task's title, its station and what the
+run does: `Queued. <Station> starts when a runner is free.`,
+`<Station> is working…` or `Stopping…`. Its page,
+`/w/<slug>/inbox/teams/<teamId>/runs/<runId>`, shows the run beside the
+inbox. Running work cannot be answered or resolved, and it leaves the inbox
+when the run ends. When the run asks the person something, its conversation
+shows under "Open".
 
 ### Notices
 
