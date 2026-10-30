@@ -9,7 +9,7 @@ Egress is the proxy between a sandbox and the network. It has two forms:
 
 | Form | Command | Serves |
 | --- | --- | --- |
-| Egress sidecar | `spotlight egress` | One run on a host. The host starts it next to the sandbox and destroys it with the sandbox. The sandbox can send traffic only through it. |
+| Egress sidecar | `spotlight egress` | One run on a host at a time. The host starts it next to the sandbox, starts it again with each run it delivers into the sandbox, and destroys it with the sandbox. The sandbox can send traffic only through it. |
 | Shared egress | `spotlight egress serve` | The runs of the push pools that name it in `provision.egress`. One long-lived process serves many runs. See [Shared egress](#shared-egress). |
 
 [The sandbox is the security boundary](/docs/security/the-sandbox-is-the-security-boundary)
@@ -25,7 +25,7 @@ where its section says otherwise.
 | Egress container | `spotlight-egress-<runner id>`, on the sandbox network with the alias `egress`, and on `SPOTLIGHT_SANDBOX_NETWORK` or the engine's default network. |
 | Egress image | `SPOTLIGHT_EGRESS_IMAGE`, default `ghcr.io/usespotlightai/spotlight-runner:<release>`, run with entrypoint `spotlight egress`. |
 | Port | `3128` |
-| Proxy address | `http://sandbox:<credential>@egress:3128`, in the sandbox's `HTTP_PROXY` and `HTTPS_PROXY`. The credential is random, for this run alone. |
+| Proxy address | `http://sandbox:<credential>@egress:3128`, in the sandbox's `HTTP_PROXY` and `HTTPS_PROXY`. The credential is random, for this sandbox alone. |
 | Extra hosts entries | `SPOTLIGHT_SANDBOX_HOSTS` |
 
 A client in the sandbox that ignores the proxy has no route out. See

@@ -80,6 +80,18 @@ Register each OAuth client with the callback
 start with `OAUTH_CLIENTS is not JSON: <error>` or
 `OAUTH_CLIENTS must map an integration name to { id, secret }, ...`.
 
+## Sandboxes
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `SPOTLIGHT_SANDBOX_GRACE` | `10m` | How long a sandbox with no run and no editor stays up before Spotlight drains it. |
+| `SPOTLIGHT_EDITOR_LIMIT` | `12h` | How long editors alone keep a sandbox up after the last run in it ended. |
+
+Each is a whole number above `0` followed by `ms`, `s`, `m` or `h`, such as
+`90s`, `10m` or `12h`. A value in another form fails validation with
+`<variable>: is a duration such as 90s, 10m or 12h`. See
+[Sandbox lifetime](/docs/reference/hosts/sandbox#sandbox-lifetime).
+
 ## Platform egress
 
 | Variable | Default | Description |

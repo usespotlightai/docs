@@ -97,8 +97,8 @@ To read the host's log on the machine itself, run `spotlight host logs`. Add
 
 4. Point `loki.write "default"` at your Loki.
 
-The host removes a sandbox and its egress when the run ends, and Docker removes
-their logs with them. A short `refresh_interval` finds a container before that
+The host removes a sandbox and its egress when Spotlight drains the sandbox,
+and Docker removes their logs with them. A short `refresh_interval` finds a container before that
 happens. Lines that a container writes after the agent last read it are lost.
 
 If the host runs with `DOCKER_HOST` or Podman, use that socket in place of

@@ -5,8 +5,8 @@ title: Install a host
 description: Install spotlight host on a Linux or macOS machine so it starts sandboxes for a pull pool's runs.
 ---
 
-A host claims work from one pull pool and starts a sandbox for each run it
-claims. Before you install one, have ready:
+A host claims work from one pull pool and starts the sandboxes its runs work
+in. Before you install one, have ready:
 
 - The pool's token. If you don't have one, [create a pull pool](/docs/hosts/create-a-pull-pool)
   first.
@@ -114,7 +114,9 @@ spotlight host config set capacity=8
 The command checks the new value before it saves it. Most settings, such as
 `capacity` and `image`, apply to the running host at once. Running sandboxes
 keep going. A few, such as `token` and `url`, need a restart: the host restarts
-when its running sandboxes finish. To restart at once and stop them, add
+when its running sandboxes finish. Spotlight drains each of them as soon as no
+run is in it, so a sandbox waiting for a task's next run stores its workspace
+and stops. To restart at once and stop them, add
 `--now`. `spotlight host config keys` lists every setting and when it applies.
 
 For a host installed as root, run each `spotlight host` command with `sudo`.
@@ -163,4 +165,4 @@ settings and the host's state too. `--purge` deletes them without the question.
   `spotlight host` command.
 - [Install script](/docs/reference/cli/install-script)
 - [Install a harness in your runner image](/docs/hosts/install-a-harness-in-your-runner-image)
-- [Why every run gets a fresh sandbox](/docs/hosts/why-every-run-gets-a-fresh-sandbox)
+- [Why a sandbox belongs to one task](/docs/hosts/why-a-sandbox-belongs-to-one-task)

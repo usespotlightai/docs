@@ -46,19 +46,22 @@ Every sandbox, and every command an agent runs, is on the team's hosts.
 A host is any computer running `spotlight host`. It joins a pool, a group of
 hosts that take a team's runs, either with the pool's token or, on a cloud
 platform, by proving its identity through a runner trust. The host requests
-work from Spotlight, and for each run it takes, it starts two containers on a
-private network of their own:
+work from Spotlight, and for each task it works on, it starts two containers
+(small, walled-off computers inside the host) on a private network of their
+own:
 
 - The sandbox, where the code is checked out and the agent does its work.
-- The run's egress sidecar, a gatekeeper container that is the sandbox's only
-  route to the network.
+- The egress sidecar, a gatekeeper container that is the sandbox's only route
+  to the network.
 
-When the run ends, both are deleted. [Why every run gets a fresh
-sandbox](/docs/hosts/why-every-run-gets-a-fresh-sandbox) explains that choice.
-A run that asks a person keeps its sandbox, and its place on the host, for a
-few minutes in case the answer comes quickly. After that it is suspended, and
-any of the team's hosts that can take the run picks it up again when the
-answer arrives.
+A task keeps its sandbox from one run to the next while something uses it: an
+agent at work, or a person who opened the task's files in VS Code. A run that
+asks a person a question leaves the sandbox up, so a quick answer finds
+everything in place. When nothing has used the sandbox for 10 minutes, the
+host deletes both containers. The task's files are saved first, and the
+task's next run, on any of the team's hosts that can take it, starts from
+them. [Why a sandbox belongs to one
+task](/docs/hosts/why-a-sandbox-belongs-to-one-task) explains that choice.
 
 The host is also where the team's decisions about its own machines live. It
 decides which container images it will run, and so which harnesses its runs
@@ -73,7 +76,8 @@ Spotlight never connects to a host. Every exchange starts with the host: it
 requests work, reports what it is doing, and requests again. Calls meant for the
 team's private network, such as a hook to an internal service, reach the host
 the same way: the host collects them ([Hooks and
-reactions](/docs/integrations/hooks)).
+reactions](/docs/integrations/hooks)). A person who opens a task's files in an editor
+reaches the sandbox through a connection the host opened to Spotlight.
 
 The reason is where hosts need to run. A computer that only makes outgoing
 connections works behind a home router or a company firewall with nothing
@@ -137,12 +141,16 @@ doesn't keep a team's code away from Spotlight:
 - The code passes through Spotlight on its way to and from GitHub, as above. A
   host also keeps a copy of each repository it has worked on, refreshed
   through Spotlight, and lends it to its sandboxes read-only.
-- When a run stops to wait for a person, and when it ends, the runner saves
-  the task's working files (its checked-out code and the agent's conversation)
-  to Spotlight's storage. When the run carries on after the answer, or a later
-  run of the task starts, it restores them on whichever host claims it ([How
+- When a run stops to wait for a person, when it ends, and when its sandbox
+  is deleted after changes, the runner saves the task's working files (its
+  checked-out code and the agent's conversation) to Spotlight's storage. A run
+  that starts in a new sandbox restores them on whichever host claims it ([How
   a conversation survives between
   runs](/docs/runs/how-a-conversation-survives-between-runs)).
+- When a person opens a task's files in VS Code or Cursor, the connection
+  passes through Spotlight on its way to the host
+  ([Open a task's workspace in VS
+  Code](/docs/tasks/open-a-workspace-in-vs-code)).
 - The record of what the agent said and did is sent to Spotlight as it
   happens, which is how the run page shows it live.
 

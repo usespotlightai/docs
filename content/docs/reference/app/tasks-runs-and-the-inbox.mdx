@@ -110,7 +110,7 @@ A move to another station:
 
 - raises the task's revision;
 - ends the task's run, for a person's move: a queued run is cancelled, a
-  claimed run is told to stop, and a waiting or suspended run is completed;
+  claimed run is told to stop, and a suspended run is completed;
 - finishes the task if the station is completed, and unfinishes it otherwise;
 - starts a run if the task is idle at a station with a harness.
 
@@ -125,7 +125,7 @@ When a happening finds a task, the line decides one of these outcomes:
 | --- | --- | --- |
 | nothing | The task is at the completed station, or none of the other outcomes applies. | None. |
 | moves | A reaction for the happening, from this station or from any, leads to another station, and the task has no current run. | The task moves there. |
-| deferred move | As for moves, but the task has a current run, queued, claimed, waiting or suspended, and the station is not the completed station. | A `message` note `This arrived while a run was in progress on the task. If the run does not pass the task on, the task moves to <Station> when the run ends.`, followed by the happening's message, or else its summary. The run gets the note, and keeps the task. A later `passed` note, or a later `asked` note other than an approval, drops deferred moves; a later `stays` outcome does not. |
+| deferred move | As for moves, but the task has a current run, queued, claimed or suspended, and the station is not the completed station. | A `message` note `This arrived while a run was in progress on the task. If the run does not pass the task on, the task moves to <Station> when the run ends.`, followed by the happening's message, or else its summary. The run gets the note, and keeps the task. A later `passed` note, or a later `asked` note other than an approval, drops deferred moves; a later `stays` outcome does not. |
 | interrupts | As for moves, but the task has a current run and the station is the completed station, and the task does not await a person's answer to a question (a pending approval does not count). | The run ends as for a person's move, and its later handover is ignored. The task is put to its assignee, or else the person who raised it, with an `asked` note in the world voice: `<What happened> while <Station> was working. Close the task, or reply to carry on.`, where `<What happened>` is the happening's text without its final full stop, and `its station` takes the place of `<Station>` when the station is not known. |
 | notes while waiting | As for interrupts, but the task already awaits a person's answer to a question. | A `message` note in the world voice, `<What happened> while <Station> was waiting for an answer. Close the task, or reply to carry on.`, added to the open conversation, with `its station` when the station is not known. The run keeps the task, and earlier deferred moves are cancelled. |
 | answers | No reaction leads to another station, the task awaits review, and the happening carries a message (`answers: true`). | An `answered` note; the run that asked carries on, or else a run starts at the same station. |
@@ -146,8 +146,7 @@ Neither shows in the app.
 | --- | --- | --- |
 | `queued` | Waiting for a runner. | no |
 | `claimed` | A runner has a 60-second lease on it, and the runner renews the lease. | no |
-| `waiting` | The run asked a person and waits for the answer. Its runner still has the lease on it and keeps the sandbox, for up to the host's `SPOTLIGHT_ANSWER_WAIT`. | no |
-| `suspended` | The run asked a person, and its runner removed the sandbox; no runner has a lease on it. An answer puts it back in the queue. | no |
+| `suspended` | The run asked a person and waits for the answer. No runner has a lease on it; the task's sandbox stays up for the idle grace. An answer puts it back in the queue. | no |
 | `completed` | Ended without a failure. A stopped run ends here. | yes |
 | `failed` | Ended with a failure code. A run that used all its attempts ends here. | yes |
 | `cancelled` | Ended while it was queued. | yes |
@@ -156,7 +155,7 @@ Neither shows in the app.
 On the Runs list and on a task's "Activity", a queued run reads "Queued", a
 cancelled run "Cancelled", a superseded run "Superseded", and a claimed run
 shows that it is in progress. A run reads "Waiting for you" while it is
-waiting or suspended, and while the
+suspended, and while the
 `asked` note it wrote has no later `answered` or `passed` note. On the Runs
 list, that label links to the run's inbox item. On a task's "Activity", such a
 run is led by a row that reads "Waiting for you", or "Answered" once a later
@@ -164,7 +163,7 @@ run is led by a row that reads "Waiting for you", or "Answered" once a later
 list's "Waiting for you" view shows only the runs that read "Waiting for you";
 with none, it reads `Nothing is waiting for you. Switch to All to see every run.`
 
-The Run page of a waiting or suspended run shows "Waiting for you" with "Answer
+The Run page of a suspended run shows "Waiting for you" with "Answer
 in the inbox", or "Open in the inbox" when the open question is an approval.
 An approval can also be decided on the Run page itself, on the same card as
 in the inbox: copy the call, edit a tool call's inputs, "Approve", or
@@ -176,25 +175,23 @@ why (optional)`. See [Approvals](#approvals).
 | From | To | When |
 | --- | --- | --- |
 | | `queued` | A task or chat is dispatched: it gets a new run. |
-| `queued` | `claimed` | A runner that meets the run's placement claims it, and no other run for the same task is claimed or waiting. |
+| `queued` | `claimed` | A runner that meets the run's placement claims it, and no other run of the same task or chat is claimed. When the task or chat has a ready sandbox with no run in it, only that sandbox's host claims the run, into that sandbox. See [Sandbox lifetime](/docs/reference/hosts/sandbox#sandbox-lifetime). |
 | `queued` | `failed` | The station enables what cannot be enabled: a catalog item that does not exist or that the plan does not include, or a harness profile the team does not have (`refused`). A push pool could not provision a runner (`unprovisioned`). |
 | `queued` | `cancelled` | The task moved to another station or was deleted. Or the run's replay or search stopped it, its replay reached its ceiling, or no runner claimed a search's run in time. |
-| `claimed` | `queued` | The lease expired, or the host stopped the sandbox at its run timeout (`timed-out`), no stop was requested, and the run has had fewer than 3 attempts. Or its `run.starting` hooks could not be called, and the run is requeued to wait. |
-| `claimed` | `waiting` | The turn ended cleanly with the task put to a person, and the runner reports the workspace stored for the turn. Only a task's run waits; a chat run never does. |
-| `waiting` | `claimed` | The person answers while the sandbox is kept, in the inbox, in the task's Slack thread or on the run's page. The answer goes to the same session, in the same attempt. A run asked to stop is not resumed. |
-| `waiting` | `suspended` | `SPOTLIGHT_ANSWER_WAIT` passes without an answer, at once when no host started the runner, or the lease expires. |
-| `claimed` | `queued` | An answer arrives while the runner suspends the run after its harness has closed. The run is queued as its next attempt. |
-| `suspended` | `queued` | The person answers. The run is queued as its next attempt, and restores the stored workspace wherever it is claimed. |
-| `waiting`, `suspended` | `completed` | The task is moved or deleted, or the run is stopped. |
+| `claimed` | `queued` | The lease expired, or the runner stopped the run at its run timeout (`timed-out`), no stop was requested, and the run has had fewer than 3 attempts. Or its `run.starting` hooks could not be called, and the run is requeued to wait. |
+| `claimed` | `suspended` | The turn ended cleanly with the task put to a person. The run gives up its lease and its place in the sandbox at once, and its journal reads `Waiting for a person`. Only a task's run is suspended; a chat run completes. |
+| `claimed` | `queued` | The turn ended with the task put to a person, and messages the run has not read came in during the turn. The run is queued at once as its next attempt, and its journal reads `Messages came in during the turn. The run starts again to read them.` |
+| `suspended` | `queued` | The person answers, in the inbox, in the task's Slack thread or on the run's page. The run is queued as its next attempt and resumes the same session: in the task's sandbox while it is up, else in a new sandbox that restores the stored workspace. |
+| `suspended` | `completed` | The task is moved or deleted, or the run is stopped. |
 | `claimed` | `completed` | The runner reports an outcome without a failure, or the run is stopped, or its lease expires after it was asked to stop. |
-| `claimed` | `failed` | The harness failed (`exited`), or the run failed before its harness started (`unprepared`). A hook on `run.starting` denied it (`refused`). Its hooks could not be called after the last requeue (`hooks-unanswered`). Its lease expired on the last attempt, and no stop was requested (`runner-lost`). Its host stopped it at its run timeout on the last attempt, and no stop was requested (`timed-out`). |
+| `claimed` | `failed` | The harness failed (`exited`), or the run failed before its harness started (`unprepared`). A hook on `run.starting` denied it (`refused`). Its hooks could not be called after the last requeue (`hooks-unanswered`). Its lease expired on the last attempt, and no stop was requested (`runner-lost`). Its runner stopped it at its run timeout on the last attempt, and no stop was requested (`timed-out`). |
 | `failed` | `superseded` | The run's task has moved on. |
 
 Messages sent to a run at the station where its task is idle, when that
 station has a harness, start a new run there that resumes the station's
 session. Messages sent to a run whose task has left its station fail with
 `409`, and messages from anyone but the task's assignee with `404`.
-Only a claimed, waiting or suspended run can be stopped. The web app offers Stop
+Only a claimed or suspended run can be stopped. The web app offers Stop
 only while a run is claimed. Attempts a run spent suspended do not count in
 the 3. Only the task's assignee may stop a run or say
 something to it. See [Steer or stop a run](/docs/runs/steer-or-stop-a-run).
@@ -243,7 +240,7 @@ Once the task has left the run's station, the composer is replaced by
 | `unprovisioned` | A push pool did not provision a runner for it. | no |
 | `hooks-unanswered` | Its `run.starting` hooks could not be called. | yes |
 | `runner-lost` | Its runner stopped renewing the lease. | yes |
-| `timed-out` | Its host stopped its sandbox for running past `SPOTLIGHT_RUN_TIMEOUT`. | yes |
+| `timed-out` | Its runner stopped it for running past the host's `SPOTLIGHT_RUN_TIMEOUT`. | yes |
 | `cancelled` | It ended while it was queued. | no |
 | `superseded` | Its task had moved on. | no |
 

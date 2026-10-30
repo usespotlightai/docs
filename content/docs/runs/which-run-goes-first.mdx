@@ -98,11 +98,19 @@ include the run's harness, and it must have room. How a run that was requeued
 or lost returns to the queue is in [Tasks, runs and the
 inbox](/docs/reference/app/tasks-runs-and-the-inbox).
 
+A run whose task or chat has a sandbox up, with no run in it, is not in the
+queue other hosts see. The host that has the sandbox takes it into that
+sandbox, ahead of its other work, so an answered question carries on where
+the work is ([Why a sandbox belongs to one
+task](/docs/hosts/why-a-sandbox-belongs-to-one-task#what-keeps-a-sandbox-up)
+explains the sandbox's lifetime).
+
 So a lower-priority run can start first if the only host with room is one the
 higher-priority run cannot use. Capacity sets the pace: each host runs as many
-sandboxes at once as it is configured for, and a pool can cap how many of its
+sandboxes at once as it is configured for, counting sandboxes that wait idle
+for their task's next run, and a pool can cap how many of its
 runs are running at once. A pool that is full is offered nothing until a run
-ends.
+ends or a sandbox goes.
 
 Push pools, which Spotlight calls to start a sandbox for each run, are served
 in the same priority order. A push pool that names no egress is not offered

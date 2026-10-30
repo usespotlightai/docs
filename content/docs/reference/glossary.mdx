@@ -366,8 +366,8 @@ event. See [`spotlight_hook`](/docs/reference/terraform/hook).
 
 ## Host
 
-A machine running `spotlight host`. It claims runs for a workspace and starts a
-fresh sandbox for each one. A host is accepted through a pull pool's token or a
+A machine running `spotlight host`. It claims runs for a workspace and starts
+the sandboxes they run in. A host is accepted through a pull pool's token or a
 runner trust. See [Host settings](/docs/reference/hosts/host-configuration).
 
 ## Human action
@@ -456,6 +456,10 @@ The time limit on a runner's [claim](#claim). A runner claims a queued run and
 gets a 60-second lease on it, which it renews while it works. When the lease expires, Spotlight
 requeues the run, or ends it after its last attempt. See
 [Run states](/docs/reference/app/tasks-runs-and-the-inbox#run-states).
+
+A [sandbox](#sandbox) is also held by leases: one for the run that works in it,
+and one for each editor connected to it. See
+[Sandbox lifetime](/docs/reference/hosts/sandbox#sandbox-lifetime).
 
 ## Line
 
@@ -596,7 +600,7 @@ stored. See [`spotlight_oidc_trust`](/docs/reference/terraform/oidc-trust).
 
 To move a task back to the backlog. A run of the task that works is stopped, a
 run that waits for an answer is ended, and a queued run is cancelled. For a run
-that waits for a person without a sandbox, see [Suspend](#suspend). See
+that waits for a person, see [Suspend](#suspend). See
 [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves).
 
 ## Placement
@@ -797,7 +801,7 @@ place of a rubric, or beside one. See
 
 ## Run
 
-One execution of a harness in a fresh sandbox, for a task at a station, for a
+One execution of a harness in a sandbox, for a task at a station, for a
 chat, or for a [replay](#replay). See [Runs](/docs/reference/app/tasks-runs-and-the-inbox#runs).
 
 ## Run ending
@@ -838,7 +842,9 @@ issuer, for a named subject, in place of a pool token. See
 
 ## Sandbox
 
-The container one run executes in. A host starts a fresh sandbox for each run.
+The container that runs execute in. A task or chat has one sandbox at a time,
+and its runs work in it one after another. A person can open it in an editor.
+Spotlight drains it when no run and no editor has used it for the idle grace.
 See [Inside a sandbox](/docs/reference/hosts/sandbox).
 
 ## Seal
@@ -976,11 +982,11 @@ reads. Only the task's assignee can steer a run. See
 
 ## Suspend
 
-To remove the sandbox of a run that waits for a person. A waiting run becomes
-`suspended` when no answer comes in time, when its lease expires, or at once
-when no host started its runner. No runner has a lease on a suspended run. An
-answer puts the run back in the queue. The runner that claims the run restores
-its workspace. See
+To end a run's lease while it waits for a person. A task's run that put the
+task to a person is `suspended` at once, and the task's sandbox stays up. No
+runner has a lease on a suspended run. An answer puts the run back in the
+queue. The run continues in the task's sandbox while it is up, else a new
+sandbox restores the workspace. See
 [Run states](/docs/reference/app/tasks-runs-and-the-inbox#run-states).
 
 ## Tally

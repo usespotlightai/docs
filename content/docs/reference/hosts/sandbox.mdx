@@ -2,11 +2,13 @@
 type: reference
 icon: BookText
 title: Inside a sandbox
-description: The runner image, the sandbox's files and environment, and the phases of a run in the order the runner takes them.
+description: The runner image, the sandbox's files and environment, how long a sandbox lives, editor connections, and the phases of a run in the order the runner takes them.
 ---
 
-A host starts one sandbox for each run or check, from a runner image, and
-destroys it when the run ends. [Why every run gets a fresh sandbox](/docs/hosts/why-every-run-gets-a-fresh-sandbox)
+A host starts a sandbox from a runner image. A task's or chat's sandbox serves
+the runs of that task or chat, one after another, until Spotlight drains it. A
+change stack check gets a sandbox of its own, destroyed when the check ends.
+[Why a sandbox belongs to one task](/docs/hosts/why-a-sandbox-belongs-to-one-task)
 gives the reasons.
 
 ## Runner image
@@ -49,10 +51,11 @@ what each harness installs.
 | `/workspace/.spotlight/skills` | Skills, for Cursor and Codex. |
 | `/workspace/.opencode/skills` | Skills, for OpenCode. OpenCode also reads `.claude/skills` and `.agents/skills`. |
 | `/workspace/.spotlight/outcome.json` | Read if the agent never runs `spotlight handover`. Removed at the start of each run. See [Agent commands](/docs/reference/cli/agent-commands#without-a-handover). |
-| `/run/spotlight/assignment.json` | The work the host assigned to the sandbox, mode `0400`. The runner deletes it after reading it. |
+| `/run/spotlight/assignment.json` | The work the host assigned to the sandbox, mode `0400`. The host copies in a new one for each run it delivers into a live sandbox. The runner deletes it after reading it. |
 | `/etc/spotlight/egress/authority.pem` | The run's egress certificate authority. On a runner of a push pool that names an egress, the authority of the runner's local proxy. |
 | `/etc/spotlight/egress/bundle.pem` | The image's system certificates with that authority added. |
 | `/spotlight/mirrors/<repository>.git` | The host's mirror of each repository, mounted read-only when the host has one. |
+| `/spotlight/editor-servers` | The host's volume `spotlight-editor-servers-<host id>-<workspace id>`, mounted into a task's or chat's sandbox once the host knows its workspace. Keeps the VS Code and Cursor server releases that editors bring, copied to and from `~/.vscode-server` and `~/.cursor-server` of the agent user when an editor connects. |
 
 At start the runner also appends the egress authority to each of these files
 that exists in the image: `/etc/ssl/certs/ca-certificates.crt`,
@@ -68,8 +71,9 @@ A host sets these on the sandbox:
 | --- | --- |
 | `SPOTLIGHT_URL` | `SPOTLIGHT_SANDBOX_URL` from the host configuration. |
 | `SPOTLIGHT_ASSIGNMENT_FILE` | `/run/spotlight/assignment.json` |
+| `SPOTLIGHT_RUN_TIMEOUT` | `SPOTLIGHT_RUN_TIMEOUT` from the host configuration, as a Go duration. |
 | `SPOTLIGHT_MIRRORS` | `/spotlight/mirrors`, when mirrors are mounted. |
-| `HTTP_PROXY`, `HTTPS_PROXY`, `http_proxy`, `https_proxy` | `http://sandbox:<credential>@egress:3128`, with a credential for this run alone. |
+| `HTTP_PROXY`, `HTTPS_PROXY`, `http_proxy`, `https_proxy` | `http://sandbox:<credential>@egress:3128`, with a credential for this sandbox alone. |
 | `NO_PROXY`, `no_proxy` | `localhost,127.0.0.1,::1` |
 | `SSL_CERT_FILE`, `REQUESTS_CA_BUNDLE`, `CURL_CA_BUNDLE`, `GIT_SSL_CAINFO` | `/etc/spotlight/egress/bundle.pem` |
 | `NODE_EXTRA_CA_CERTS` | `/etc/spotlight/egress/authority.pem` |
@@ -103,6 +107,80 @@ Git commits in a checkout use `user.name` `Spotlight` and `user.email`
 `noreply@usespotlight.ai`, unless `SPOTLIGHT_GIT_AUTHOR_NAME` and
 `SPOTLIGHT_GIT_AUTHOR_EMAIL` reach the runner.
 
+## Sandbox lifetime
+
+The sandbox of a task or chat is held by leases. Spotlight decides from them
+when the sandbox drains.
+
+| Lease | Held |
+| --- | --- |
+| Run | While a run of the task or chat is claimed in the sandbox. A run that is suspended, completes or fails gives it up. |
+| Editor | While an editor connection is open. Renewed every 30 seconds while the connection carried traffic in the last 30 minutes. Expires 2 minutes after the last renewal. |
+
+| State | Meaning |
+| --- | --- |
+| `starting` | Requested, or started by a host that has not reported it yet. |
+| `ready` | Reported by its host. Takes runs of its task or chat, one at a time. |
+| `draining` | Spotlight told the host to drain it. |
+| `gone` | Destroyed, or no longer reported by its host. |
+
+| Rule | Value |
+| --- | --- |
+| Idle grace | With no lease, the sandbox drains this long after its last lease ended. The control plane's `SPOTLIGHT_SANDBOX_GRACE`, default `10m`. See [Self-hosted settings](/docs/reference/self-hosted-settings#sandboxes). |
+| Editor limit | With only editor leases, the sandbox drains this long after its last run lease ended, or after it started when no run held it. `SPOTLIGHT_EDITOR_LIMIT`, default `12h`. |
+| Checked | Every 30 seconds. |
+| Lost | A sandbox that its host stops reporting, or whose host sends no heartbeat for 90 seconds, is `gone`. A sandbox that starts and is not reported within 60 seconds is `gone`. |
+| One per task or chat | At most one sandbox of a task or chat is `starting` or `ready`. |
+
+A queued run whose task or chat has a `ready` sandbox with no run in it is
+claimed only by that sandbox's host, into that sandbox, and before the host's
+other work. A run that the sandbox's image cannot run drains the sandbox, and
+starts in a new one.
+
+To drain a sandbox, the host sends it `SIGTERM`. The runner stores the
+workspace when it changed since it was last restored or stored, then exits.
+The host stops the sandbox with a 30-second grace and destroys it with its
+egress and network. A runner that gets `SIGTERM` during a turn stores the
+workspace before it exits, and does not report the turn; the run's lease
+expires and the run is tried again.
+
+A sandbox takes one place in the host's `SPOTLIGHT_CAPACITY`, and counts
+toward its pool's [`maxRuns`](/docs/reference/terraform/runner-pool), for as
+long as it lives, with or without a run in it.
+
+Before the host delivers a run into a live sandbox, it restarts the sandbox's
+egress with the run's egress token, and copies the run's assignment into the
+sandbox. A run delivered into a live sandbox uses the image the sandbox
+started from.
+
+## Editor connections
+
+A person opens a sandbox over SSH with
+[`spotlight ssh proxy`](/docs/reference/cli/spotlight-command#spotlight-ssh-proxy).
+Spotlight starts the sandbox of the task or chat when none is up, waits up to
+10 minutes for it to be `ready`, and joins the connection to a stream that the
+sandbox's host opens to Spotlight. The host runs `spotlight runner ssh` in the
+sandbox for each connection.
+
+| Who may connect | Rule |
+| --- | --- |
+| A task's sandbox | A member of the task's workspace. |
+| A chat's sandbox | The person who started the chat. |
+
+The person signs in with the browser session, from the same origin only, or
+with the login from `spotlight login`. A workspace token cannot connect.
+
+| Item | Value |
+| --- | --- |
+| User | The agent user, `agent` in Spotlight's runner image. |
+| Working directory | `/workspace` |
+| Environment | The sandbox's environment, without the variables that start with `SPOTLIGHT_`, with the agent user's `HOME`, `USER`, `LOGNAME` and `SHELL`. The egress proxy variables are kept. |
+| Host key | One for each sandbox. |
+| Supported | Commands, shells with a terminal, environment variables, window size changes, signals, SFTP, and forwarding to `localhost` in the sandbox. |
+| Waits for | The runner to restore the workspace, at most 10 minutes. |
+
+Processes started from an editor connection keep running between runs.
+
 ## Run phases
 
 The runner takes these phases in order. A failure in a phase marked "fails the
@@ -112,7 +190,7 @@ harness starts has the failure code `unprepared`; from the harness start on,
 
 | Phase | What happens | Time limit | On failure |
 | --- | --- | --- | --- |
-| Restore | The newest workspace archive of the run's task is fetched and unpacked into `/workspace`, whichever station left it. A chat's run restores its chat's archive only when it carries on a conversation. A [replay run](/docs/reference/app/replays#replay-runs) restores exactly the archive the run it replays restored, or none. | 30 minutes to fetch | Starts with an empty workspace. A replay run fails instead: `The runner couldn't prepare the run. Error: the archive the replay starts from, <id>, is no longer stored`, or `The runner couldn't prepare the run. Error: restore the archive the replay starts from: <error>`. |
+| Restore | In a new sandbox, the newest workspace archive of the run's task is fetched and unpacked into `/workspace`, whichever station left it. A sandbox of a task or chat restores it once, when it starts, and each later run keeps the workspace as it is. A chat's run restores its chat's archive only when it carries on a conversation. A [replay run](/docs/reference/app/replays#replay-runs) restores exactly the archive the run it replays restored, or none. | 30 minutes to fetch | Starts with an empty workspace. A replay run fails instead: `The runner couldn't prepare the run. Error: the archive the replay starts from, <id>, is no longer stored`, or `The runner couldn't prepare the run. Error: restore the archive the replay starts from: <error>`. |
 | Outcome | `.spotlight/outcome.json` from an earlier run is removed. | | Fails the run: `The runner couldn't prepare the run. Error: clear an earlier run's outcome: <error>`. |
 | Checkout | Each repository is cloned into `/workspace/<repository>`, from the host's mirror when there is one, or fetched when the checkout already exists. The run's branch or ref is checked out; a ref the checkout already has is not fetched again. A replay run checks out the commit the run it replays started from, and may only fetch: a push fails with `this run may only fetch`. A branch the checkout already has is fast-forwarded to what was pushed to it, unless it has also moved in the workspace or uncommitted changes block it. Runs as root. | 10 minutes for all checkouts | Fails the run: `The runner couldn't prepare the run. Error: prepare: <error>`, or `The runner couldn't prepare the run. Error: prepare: preparing <path> did not finish within 10m0s`. |
 | Starting point | A task's run records the archive it restored and the commit each checkout is at. See [Starting point](/docs/reference/app/tasks-runs-and-the-inbox#starting-point). | | Recorded under `start`. The run continues. |
@@ -124,15 +202,21 @@ harness starts has the failure code `unprepared`; from the harness start on,
 | Setup | Each repository's `setup` runs in its checkout as `agent`, with `/bin/sh -c`. | 15 minutes per checkout | Recorded. The run continues. |
 | Egress check | A runner given `SPOTLIGHT_EGRESS_URL` tries a direct connection to the Spotlight address, and records `egress.checked`. See [Enforcement](/docs/reference/hosts/egress#enforcement). | 3 seconds | |
 | Harness start | The harness starts in `/workspace` as `agent`, over the Agent Client Protocol. The previous session is resumed, or a new session opens. A session the harness no longer has opens a new one. The harness command's session options, such as OpenCode's `effort`, are then set on the session. | | Fails the run: `The runner couldn't start the agent. Error: start agent: <error>`, `The runner couldn't start the agent. Error: resume the session: <error>`, `The runner couldn't start the agent. Error: open a session: <error>` or `The runner couldn't start the agent. Error: set the harness's <option> to <value>: <error>`. A session option marked optional that the harness refuses is logged, and the run continues without it. |
-| Prompt | The [briefing](#briefing) is sent. Each message a person sends during the turn cancels the turn and is sent next. When a turn ends, messages waiting are sent as the next prompt. With none, the run completes, or waits for a person's answer with the harness kept open. | | See below. |
+| Prompt | The [briefing](#briefing) is sent. Each message a person sends during the turn cancels the turn and is sent next. When a turn ends, messages waiting are sent as the next prompt. With none, the run completes, or, when it put the task to a person, is suspended. A message that came in during a turn that put the task to a person starts the run again at once. | | See below. |
 | Change stacks | For a station with `diffs: true`, each checkout's changes are sent for a change stack. A replay run sends them when its turn ends, before it completes. | | Skipped for that checkout. |
-| Archive | The workspace is packed and stored at the end of every turn. A replay run stores none. | 2 GiB packed, 8 GiB unpacked; 30 minutes to upload | Skipped. |
+| Archive | The workspace is packed and stored at the end of every turn, unless nothing changed since it was last restored or stored. A replay run stores none. | 2 GiB packed, 8 GiB unpacked; 30 minutes to upload | Skipped. |
 | Completion | The exit code, the handover and the session id are reported. | | |
 
-The host stops the whole sandbox, in any phase, once it has run for
-`SPOTLIGHT_RUN_TIMEOUT` (default `6h`), and reports the run `timed-out`. A
-task's run is tried again, 3 attempts in all; see
+The runner stops a run, in any phase, once it has run for
+`SPOTLIGHT_RUN_TIMEOUT` (default `6h`), and reports it `timed-out` with
+`Run stopped at the host's time limit. Time limit: <timeout>`. The sandbox
+stays up. For a change stack check, the host stops the whole sandbox at that
+time. A task's run is tried again, 3 attempts in all; see
 [Failure codes](/docs/reference/app/tasks-runs-and-the-inbox#failure-codes).
+
+After a run completes, and before the host delivers the next run, the runner
+stops every process of the agent user, apart from those started from an
+editor connection.
 
 A turn that ends with `end_turn`, `max_tokens` or `cancelled` finishes the
 prompt phase with exit code `0`. Any other stop reason gives `1`. A harness
@@ -141,7 +225,7 @@ that fails mid-turn gives `-1`. A person stopping the run ends it as stopped.
 When a [harness profile](/docs/reference/terraform/harness-profile) asks before a kind of
 action, the harness's permission request goes to Spotlight, which allows it,
 rejects it, or puts it to a person. A request put to a person cancels the turn,
-and the run waits for the answer. Requests of other kinds, such as ACP's
+and the run is suspended until the answer. Requests of other kinds, such as ACP's
 `fetch`, are allowed.
 
 | Profile kind | Harness permission kinds |
@@ -182,11 +266,11 @@ These phases record their output on the run under a step name:
 
 | Step | Messages |
 | --- | --- |
-| `restore` | `Restored the workspace the last run left (<size>)`, `Started afresh: <error>`, `Restored the workspace the replayed run started from (<size>)` |
+| `restore` | `Restored the workspace the last run left (<size>)`, `Kept the workspace this sandbox restored or the last run left in it`, `Started afresh: <error>`, `Restored the workspace the replayed run started from (<size>)` |
 | `start` | `Where the run started was not recorded: <error>` |
 | `prepare` | `reusing <path>`, `cloning <path> from the host's mirror`, `cloning <path>`, `caught <path> up with what was pushed to <branch>`, `left <path> as the last run left it: <branch> has moved on both here and on the remote`, `left <path> behind the remote's <branch>: uncommitted changes here block the fast-forward`, and git's output |
 | `setup` | The command's output, and `Setup failed for <path>. Error: <error>` on failure. |
-| `archive` | `Captured the workspace for the next run (<size>)`, `Coalesced: nothing changed since the workspace was restored`, `Skipped: <error>` |
+| `archive` | `Captured the workspace for the next run (<size>)`, `Coalesced: nothing changed since the workspace was last restored or archived`, `Skipped: <error>` |
 
 A run that fails before its harness starts records a `failed` event with the
 failure message. See
