@@ -55,14 +55,32 @@ spotlight ssh setup
 ```
 
 The command writes `~/.ssh/spotlight/config` and adds a line to the top of
-`~/.ssh/config` that includes it. Nothing else in `~/.ssh/config` changes. It
-ends with `Open a task in VS Code from Spotlight, or run: ssh task-<id>.<workspace>.spotlight`.
-If it says `There is no login for <address>`, do the previous step again.
+`~/.ssh/config` that includes it. Nothing else in `~/.ssh/config` changes.
+
+If it asks `Set remote.SSH.connectTimeout to 600 in <path>? (y/N)`, answer
+`y`. A stopped sandbox can take minutes to start, and the editor stops a
+slower connection. The command changes only that setting.
+
+It shows a list of checks, then
+`Open a task in VS Code or Cursor from Spotlight, or run: ssh task-<id>.<workspace>.spotlight`.
+If a check says `There is no login for <address>`, do the previous step again.
+If you have logins for more than one address, add `--url <address>`.
 
 </Step>
 <Step>
 
 In VS Code or Cursor, install the **Remote - SSH** extension.
+
+</Step>
+<Step>
+
+If `spotlight ssh setup` did not set the connect timeout, open the editor's
+user settings as JSON (**Preferences: Open User Settings (JSON)** in the
+command palette) and add:
+
+```json
+"remote.SSH.connectTimeout": 600
+```
 
 </Step>
 </Steps>
@@ -97,7 +115,8 @@ and opens the folder `/workspace`, with each repository checked out in it.
 
 If no sandbox is up for the task, Spotlight starts one and restores the
 workspace the task's last run left. The editor waits until the sandbox is
-ready. This can take a few minutes.
+ready. This can take a few minutes. The editor's log shows
+`Starting the sandbox. This can take some minutes.` while it waits.
 
 </Step>
 </Steps>
@@ -133,11 +152,12 @@ lifetime](/docs/reference/hosts/sandbox#sandbox-lifetime).
 
 ## If the connection fails
 
-The editor shows the error that `spotlight ssh proxy` prints. The most common
-ones:
+The editor shows the error that `ssh` or `spotlight ssh proxy` prints. The
+most common ones:
 
 | Message | Do this |
 | --- | --- |
+| `Connection timed out during banner exchange` | The editor stopped before the sandbox was ready. Set `"remote.SSH.connectTimeout": 600` in the editor's settings, or run `spotlight ssh setup --editor-timeout`, then reconnect. |
 | `Sorry, you are not signed in to <address>. Run: spotlight login` | Run `spotlight login`. |
 | `Sorry, your login for <address> expired. Run: spotlight login` | Run `spotlight login`. |
 | `Sorry, there is no task <id> in workspace <workspace> that you may open` | Check that you are a member of the workspace, and, for a chat, that you started it. |
