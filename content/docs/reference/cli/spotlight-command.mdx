@@ -40,7 +40,7 @@ spotlight replay <subcommand>
 spotlight login [--url <address>] [--no-browser]
 spotlight logout [--url <address>]
 spotlight token [--url <address>]
-spotlight ssh setup [--url <address>] [--print]
+spotlight ssh setup [--url <address>] [--editor-timeout | --no-editor-timeout] [--print]
 spotlight ssh proxy [--url <address>] <task-or-chat>.<workspace>.spotlight
 spotlight version
 spotlight help [--all] [<command>...]
@@ -654,13 +654,16 @@ chat-<chat id>.<workspace>.spotlight
 not matter, and a trailing `.` is ignored. Any other name fails with
 `"<name>" is not a Spotlight sandbox. Use task-<id>.<workspace>.spotlight or chat-<id>.<workspace>.spotlight`.
 
-Both commands take the address from `--url`, else `SPOTLIGHT_URL`, else
-`https://app.usespotlight.ai`, and check it as `spotlight login` does.
+Both commands take the address from `--url`, else `SPOTLIGHT_URL`, else the
+address of the one login in the [credentials file](#credentials-file), else
+`https://app.usespotlight.ai`, and check it as `spotlight login` does. With
+more than one login and no `--url` or `SPOTLIGHT_URL`, they fail with
+`there are logins for <address>, <address>. Say which one with --url, or set SPOTLIGHT_URL`.
 
 ## spotlight ssh setup
 
 ```text
-spotlight ssh setup [--url <address>] [--print]
+spotlight ssh setup [--url <address>] [--editor-timeout | --no-editor-timeout] [--print]
 ```
 
 Configures `ssh` to reach Spotlight sandboxes at
@@ -669,7 +672,11 @@ Configures `ssh` to reach Spotlight sandboxes at
 | Flag | Description |
 | --- | --- |
 | `--url` | The Spotlight address. |
+| `--editor-timeout` | Sets `remote.SSH.connectTimeout` to `600` in the VS Code and Cursor settings. Does not ask. |
+| `--no-editor-timeout` | Does not change the VS Code and Cursor settings. Does not ask. |
 | `--print` | Shows the configuration. Writes nothing. |
+
+`--editor-timeout` and `--no-editor-timeout` together fail with the usage line.
 
 It writes `~/.ssh/spotlight/config` with mode `0600`, in its directory with
 mode `0700`:
@@ -693,17 +700,78 @@ not change, and a symbolic link is written through. Each file is written in
 one rename. When a file is current, it is not written again. Run the command
 again after you move the `spotlight` binary.
 
-| Message | When |
+### Editor settings
+
+The command looks for the user settings of VS Code and Cursor:
+
+| System | VS Code | Cursor |
+| --- | --- | --- |
+| macOS | `~/Library/Application Support/Code/User/settings.json` | `~/Library/Application Support/Cursor/User/settings.json` |
+| Linux | `$XDG_CONFIG_HOME/Code/User/settings.json`, else `~/.config/Code/User/settings.json` | `$XDG_CONFIG_HOME/Cursor/User/settings.json`, else `~/.config/Cursor/User/settings.json` |
+| Windows | `%APPDATA%\Code\User\settings.json` | `%APPDATA%\Cursor\User\settings.json` |
+
+An editor counts as found when its `User` folder exists. For each editor found
+whose `remote.SSH.connectTimeout` is missing, is not a number, or is less than
+`600`, the command:
+
+| Condition | Result |
+| --- | --- |
+| `--editor-timeout` | Sets it to `600`. |
+| `--no-editor-timeout` | Changes nothing, and shows the line to add. |
+| No flag, and a terminal | Asks `<editor> … Set remote.SSH.connectTimeout to 600 in <path>? (y/N)`. Only `y` or `yes` sets it. |
+| No flag, and no terminal | Changes nothing, and shows the line to add. |
+
+The settings file can hold comments and trailing commas. The command changes
+only the value of `remote.SSH.connectTimeout`, or adds that one line before
+the closing `}`, with the indent of the first setting. Comments, other
+settings and the file's mode do not change, and a symbolic link is written
+through. If there is no settings file, it writes one with only this setting.
+
+### Output
+
+The command prints the address, the binary and the hosts, then one line for
+each check, then the next step:
+
+```text
+Spotlight SSH
+  Address  https://app.usespotlight.ai
+  Binary   /usr/local/bin/spotlight
+  Hosts    *.spotlight
+
+Checks
+  ✓ ~/.ssh/spotlight/config is current.
+  ✓ ~/.ssh/config includes ~/.ssh/spotlight/config.
+  ✓ Logged in to https://app.usespotlight.ai as you@example.com.
+  ✓ VS Code waits 600 seconds for a connection.
+  ! Cursor uses its default connect timeout. A stopped sandbox can take minutes to start, so the first connection can fail.
+      add "remote.SSH.connectTimeout": 600 to ~/Library/Application Support/Cursor/User/settings.json, or run: spotlight ssh setup --editor-timeout
+
+Next
+  Open a task in VS Code or Cursor from Spotlight, or run: ssh task-<id>.<workspace>.spotlight
+```
+
+`✓` is a check that passed, `!` one that needs an action, and `✗` one that
+failed. The line below a check is the action. On a terminal, the marks are in
+colour and the headings are bold, unless `NO_COLOR` is set.
+
+| Check | When |
 | --- | --- |
 | `Wrote ~/.ssh/spotlight/config.` | The file was written. |
 | `~/.ssh/spotlight/config is current.` | The file had this content. |
-| `Added "Include ~/.ssh/spotlight/config" to the top of ~/.ssh/config.` | The line was added. |
+| `Added Include ~/.ssh/spotlight/config to the top of ~/.ssh/config.` | The line was added. |
 | `~/.ssh/config includes ~/.ssh/spotlight/config.` | The line was there. |
-| `There is no login for <address>. Run: spotlight login` | The [credentials file](#credentials-file) has no login for the address. With an address other than `https://app.usespotlight.ai`, the command reads `spotlight login --url <address>`. |
-| `Open a task in VS Code from Spotlight, or run: ssh task-<id>.<workspace>.spotlight` | Last. |
+| `Logged in to <address> as <email>.` | The [credentials file](#credentials-file) has a login for the address. |
+| `There is no login for <address>.` | The credentials file has no login for the address. The action is `spotlight login`, with `--url <address>` for an address other than `https://app.usespotlight.ai`. |
+| `<editor> waits <seconds> seconds for a connection.` | The editor's `remote.SSH.connectTimeout` is `600` or more. With `!`, it is less. |
+| `<editor> uses its default connect timeout.` | The editor's settings do not set `remote.SSH.connectTimeout`. |
+| `Set remote.SSH.connectTimeout to 600 in <path>.` | The setting was written. |
+| `Sorry, <path> cannot be read: <error>.` | The settings file is not a JSON object, or cannot be read. Nothing is written. |
+| `Sorry, <path> cannot be changed: <error>.` | The settings file could not be written. |
 
 With `--print`, it prints the file under `# ~/.ssh/spotlight/config`, then
-`# Add to the top of ~/.ssh/config` and the `Include` line.
+`# Add to the top of ~/.ssh/config` and the `Include` line, then
+`# Add to the VS Code or Cursor settings` and
+`"remote.SSH.connectTimeout": 600`.
 
 | Error | Cause |
 | --- | --- |
@@ -716,7 +784,7 @@ Each error is printed after `spotlight ssh setup: ` on standard error.
 
 | Code | Meaning |
 | --- | --- |
-| `0` | The configuration is in place, or was printed. |
+| `0` | The configuration is in place, or was printed. A check can still show `!` or `✗`. |
 | `1` | An error. |
 
 ## spotlight ssh proxy
@@ -735,7 +803,11 @@ it as the `ProxyCommand` that `spotlight ssh setup` writes.
 It uses the login for the address in the [credentials file](#credentials-file),
 and opens a WebSocket to `/api/sandboxes/connect` at that address. If the
 sandbox of the task or chat is not running, Spotlight starts it, and the
-command waits until it is ready, for at most 10 minutes. Who may connect is in
+command waits until it is ready, for at most 10 minutes. When the sandbox does
+not answer in 10 seconds, the command writes
+`Starting the sandbox. This can take some minutes.` on standard error.
+Standard output carries only the SSH connection. Who may
+connect is in
 [Editor connections](/docs/reference/hosts/sandbox#editor-connections).
 
 | Error | Cause |
