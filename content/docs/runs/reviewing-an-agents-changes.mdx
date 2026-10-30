@@ -76,10 +76,10 @@ given one chance to be redrafted.
 These checks are not run inside the run's sandbox. Each one is its own piece of
 work that a runner claims, like a run, starting from a clean checkout that the
 repository's `setup` command makes ready, so that a check does not depend on the
-run's session still being alive or on the run's warm checkout. A check that
-needed the original sandbox could not outlive it, and in Spotlight no sandbox
-outlives its run (see [Why every run gets a fresh
-sandbox](/docs/hosts/why-every-run-gets-a-fresh-sandbox)). Each check
+run's session still being alive or on the task's sandbox. A check that
+needed the task's sandbox could not outlive it, and a task's sandbox goes once
+nothing uses it (see [Why a sandbox belongs to one
+task](/docs/hosts/why-a-sandbox-belongs-to-one-task)). Each check
 therefore starts cold, and `setup` is there to cover that. The `check` and
 `setup` fields are in the [`spotlight_line`](/docs/reference/terraform/line#station-fields)
 reference.

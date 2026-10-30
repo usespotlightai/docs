@@ -19,8 +19,8 @@ See [Runs](/docs/reference/app/tasks-runs-and-the-inbox#runs).
 | Lease renewal by the host while a sandbox starts | every 20 seconds |
 | Attempts when the runner is lost | 3 in all |
 | Attempts while hooks go unanswered | 6 in all, 5 seconds to 2 minutes apart |
-| Run wall clock on a host | `SPOTLIGHT_RUN_TIMEOUT`, default 6 hours; the run fails `timed-out` and is tried again, 3 attempts in all, counted with lost runners |
-| Stop grace after the wall clock | 30 seconds |
+| Run wall clock on a host | `SPOTLIGHT_RUN_TIMEOUT`, default 6 hours, for each run; the run fails `timed-out` and is tried again, 3 attempts in all, counted with lost runners |
+| Stop grace for a sandbox the host stops | 30 seconds |
 | Messages a person sends, checked for | every 2 seconds |
 
 ## Hosts
@@ -63,6 +63,12 @@ See [Inside a sandbox](/docs/reference/hosts/sandbox#run-phases).
 | Checkouts | 10 minutes for all |
 | `setup` per checkout | 15 minutes |
 | Change stack check | 5 minutes a step, 60 minutes in all; see [Checks](/docs/reference/app/change-stacks-and-decisions#checks) |
+| Idle grace of a task's or chat's sandbox | `SPOTLIGHT_SANDBOX_GRACE`, default 10 minutes; see [Sandbox lifetime](/docs/reference/hosts/sandbox#sandbox-lifetime) |
+| A sandbox kept up by editors alone | `SPOTLIGHT_EDITOR_LIMIT`, default 12 hours after its last run |
+| Editor lease | Renewed every 30 seconds while the connection carried traffic in the last 30 minutes; expires 2 minutes after the last renewal |
+| Wait for a sandbox to start for an editor | 10 minutes |
+| Sandbox not reported by its host after it starts | 60 seconds, then gone |
+| Sandbox checks for draining | every 30 seconds |
 
 ## Egress
 

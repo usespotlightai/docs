@@ -5,14 +5,15 @@ title: How a conversation survives between runs
 description: Why Spotlight keeps a task's whole workspace between runs and stations, why the workspace is always /workspace, and why the work survives losing a conversation.
 ---
 
-Every run gets a fresh sandbox, and the sandbox is destroyed when the run ends
-or is suspended to wait for a person
-(see [Why every run gets a fresh
-sandbox](/docs/hosts/why-every-run-gets-a-fresh-sandbox)). Yet an agent
+A task's runs share a sandbox while it is up, and the sandbox is destroyed
+once nothing has used it for a while
+(see [Why a sandbox belongs to one
+task](/docs/hosts/why-a-sandbox-belongs-to-one-task)). Yet an agent
 that asked a person a question can pick up its conversation once the answer
-arrives, with its reasoning, its edits and its half-finished plan intact. It
-does so in a different container, and possibly on a different machine. The
-mechanism behind that starts with where a harness keeps a conversation.
+arrives, with its reasoning, its edits and its half-finished plan intact, even
+days later. By then it may be in a different container, and possibly on a
+different machine. The mechanism behind that starts with where a harness keeps
+a conversation.
 
 ## Where a harness keeps a conversation
 
@@ -35,18 +36,19 @@ workspace itself, under `.spotlight/state`, so a run's workspace contains both t
 checkout the agent worked in and the harness's record of the conversation.
 
 When an agent asks a person something, or needs a tool call approved, its run
-pauses instead of ending. Before it waits, the runner packs the workspace into
-an archive and stores it. The host then keeps the sandbox for a few minutes, so
-an answer that comes quickly reaches the agent in the same session. If no
-answer comes in that time, the sandbox is removed and the run is
-suspended. The archive belongs to the task (or to a chat, for the agent's planning
-chats). When the answer arrives, the same run carries on as its next attempt:
-any runner that meets the run's placement restores the archive into a fresh
-sandbox before the harness starts, and tells the harness to resume the
-conversation it left.
+is suspended: it gives up its place in the sandbox, and the sandbox stays with
+the task. At the end of the turn, the runner packs the workspace into an
+archive and stores it. The archive belongs to the task (or to a chat, for the
+agent's planning chats). When the answer arrives, the same run carries on as
+its next attempt, and the harness resumes the conversation it left. If the
+task's sandbox is still up, the run goes back into it, and the workspace is
+already there. If the sandbox has gone, any runner that meets the run's
+placement restores the archive into a new sandbox before the harness starts.
 
-The runner also archives the workspace when a run ends, so every later run of
-the task starts from it.
+The runner also stores the workspace at the end of every other turn, and when
+a sandbox is drained after edits a person made in it. Every later run of the
+task starts from the newest archive, unless it runs in the task's live
+sandbox.
 
 The archive contains the whole workspace, checkout included, and the two belong
 together. A conversation refers to files: what the agent read, what it changed,
@@ -99,7 +101,7 @@ covers that.
 
 The checkout is just as portable, since a run's clone does not depend on the
 host's git mirror once it is made (see [Fresh, not
-cold](/docs/hosts/why-every-run-gets-a-fresh-sandbox#fresh-not-cold)).
+cold](/docs/hosts/why-a-sandbox-belongs-to-one-task#fresh-not-cold)).
 
 ## Resume on any host
 
@@ -111,8 +113,8 @@ able to take it, restores the workspace and carries on.
 The alternative would be to send every follow-up run back to the machine that
 started the conversation. That would make an answered question wait for one
 particular machine, and it would lose the conversation whenever that machine
-was replaced. Spotlight keeps the machine only for the few minutes a quick
-answer takes, and past that relies on the archive, which avoids both.
+was replaced. Spotlight prefers the machine only while the task's sandbox is
+still up on it, and past that relies on the archive, which avoids both.
 
 ## When a session is lost
 
@@ -160,8 +162,8 @@ An archive also leaves things out when something else can put them back. When a
 repository has a setup command, the archive skips the files the repository
 ignores, such as installed dependencies and build output, since the image and
 the setup command lay them down again in the next sandbox. That keeps archives
-small and restores quick, at the price of rebuilding those files in every run,
-since the setup command runs every time. Build output kept outside the
+small and restores quick, at the price of rebuilding those files in every new
+sandbox. The setup command runs in every run in any case. Build output kept outside the
 checkout, where restoring the checkout does not touch it, survives a restore;
 [Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image) covers building such an
 image.

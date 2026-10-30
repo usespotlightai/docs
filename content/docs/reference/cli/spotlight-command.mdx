@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: The spotlight command
-description: The subcommands of the spotlight binary, what each reads, prints and exits with, the service units spotlight host init writes, and the login file spotlight login keeps.
+description: The subcommands of the spotlight binary, what each reads, prints and exits with, the service units spotlight host init writes, the login file spotlight login keeps, and the SSH configuration spotlight ssh setup writes.
 ---
 
 `spotlight` is one binary. A host runs `spotlight host`. Each sandbox runs
@@ -13,7 +13,9 @@ A person or a CI job runs [`spotlight replay check`](/docs/reference/cli/replay-
 from anywhere to check the station changes in a Terraform plan. A person runs [`spotlight login`](#spotlight-login)
 so that `spotlight replay` and the Terraform provider act as them.
 [`spotlight token`](#spotlight-token) prints a token for Terraform's `http`
-backend.
+backend. A person runs [`spotlight ssh setup`](#spotlight-ssh-setup) once so
+that `ssh`, VS Code and Cursor reach the sandbox of a task or chat through
+[`spotlight ssh proxy`](#spotlight-ssh-proxy).
 
 ## Synopsis
 
@@ -31,12 +33,15 @@ spotlight host uninstall
 spotlight host update [release]
 spotlight runner
 spotlight runner harnesses <json>
+spotlight runner ssh
 spotlight egress
 spotlight egress serve
 spotlight replay <subcommand>
 spotlight login [--url <address>] [--no-browser]
 spotlight logout [--url <address>]
 spotlight token [--url <address>]
+spotlight ssh setup [--url <address>] [--print]
+spotlight ssh proxy [--url <address>] <task-or-chat>.<workspace>.spotlight
 spotlight version
 spotlight help [--all] [<command>...]
 ```
@@ -47,7 +52,7 @@ The [agent commands](/docs/reference/cli/agent-commands) work inside a run.
 
 | Invocation | Output | Exit code |
 | --- | --- | --- |
-| `spotlight`, `spotlight help`, `-h` or `--help` | The commands, by group, on standard output. Inside a run, the agent commands. Outside one, the commands for hosts, replays and the login. | `0` |
+| `spotlight`, `spotlight help`, `-h` or `--help` | The commands, by group, on standard output. Inside a run, the agent commands. Outside one, the commands for hosts, replays, the login and editors. | `0` |
 | `spotlight help --all` | Every command, by group. | `0` |
 | `spotlight <command> --help`, `-h`, or `spotlight help <command>` | The command's usage, flags, environment, examples, exit codes and docs link. | `0` |
 | `spotlight replay` | The help for `spotlight replay`. | `0` |
@@ -66,8 +71,12 @@ A usage error prints the command's usage line, then
 spotlight host
 ```
 
-Serves a pull pool or a runner trust. The host claims work, starts a fresh
-sandbox and egress for each run or check, and destroys both when it ends.
+Serves a pull pool or a runner trust. The host claims work and starts a
+sandbox and egress for it. A task's or chat's sandbox takes the later runs of
+its task or chat until Spotlight drains it; a check's sandbox ends with the
+check. The host then destroys the sandbox and its egress. The host also keeps
+one connection open to Spotlight that editors reach sandboxes through. See
+[Sandbox lifetime](/docs/reference/hosts/sandbox#sandbox-lifetime).
 An unknown subcommand fails as described in [Help](#help).
 
 The host writes its process id to `host.lock` in the state directory while it
@@ -76,7 +85,7 @@ holds the lock. The other `spotlight host` commands find it there.
 | Signal | Action |
 | --- | --- |
 | `SIGHUP` | Reloads the settings. See [spotlight host reload](#spotlight-host-reload). Settings with a problem are logged as `could not reload the settings, so the host keeps the ones it has`. |
-| `SIGUSR1` | Stops claiming, lets the running sandboxes finish, then starts again in the same process. |
+| `SIGUSR1` | Stops claiming, lets the running sandboxes finish, then starts again in the same process. See [restart](#spotlight-host-start-stop-and-restart). |
 | `SIGINT`, `SIGTERM` | Stops the running sandboxes and exits `0`. |
 
 | Reads | Reference |
@@ -98,9 +107,16 @@ ends with `To set up this machine as a host, run: spotlight host init`.
 | `the container runtime is not answering yet` | The engine did not respond. The host retries. |
 | `could not report to the control plane, still trying` | Spotlight did not respond. The host retries. |
 | `destroyed a sandbox left behind` | A sandbox from an earlier host process was removed at start. |
-| `started a sandbox` | A run or check began. |
+| `started a sandbox` | A run or check began in a new sandbox. |
+| `started a sandbox with no run; it restores its workspace and waits for runs` | An editor asked for the sandbox of a task or chat that had none. |
+| `delivered the next run into the sandbox` | A run of the sandbox's task or chat began in the live sandbox. |
+| `the control plane drains the sandbox` | Spotlight drained the sandbox. It is stopped with a 30-second grace, then destroyed. |
+| `the sandbox stops, because a run could not be delivered into it` | The host could not deliver a run into the live sandbox. The sandbox is stopped. |
 | `the sandbox finished` | The sandbox exited. |
-| `the sandbox ran past its time` | `SPOTLIGHT_RUN_TIMEOUT` passed. The sandbox is stopped with a 30-second grace, and the run is reported `timed-out`: `Its sandbox ran past the host's limit of <timeout> and was stopped.` |
+| `the sandbox ran past its time` | A check's sandbox ran past `SPOTLIGHT_RUN_TIMEOUT`. It is stopped with a 30-second grace. |
+| `opened the tunnel for editors` | The host's connection for editors is open. |
+| `the tunnel to the control plane closed; editors cannot reach sandboxes until it opens again` | The connection for editors closed. The host opens it again. |
+| `an editor connected to the sandbox`, `an editor left the sandbox` | An editor connection began or ended. |
 | `could not start a sandbox; claiming from this image pauses` | Claims for that image pause, longer after each failure in a row, up to about 30 seconds. |
 | `failed the work: its egress sidecar did not start` | Egress did not start. The run fails, or the check is skipped. |
 | `the host is stopping, so the work is left to be claimed again` | The host stopped before the sandbox started. |
@@ -302,7 +318,12 @@ spotlight host restart [--now]
 
 `restart` without `--now` sends `SIGUSR1` to the running host. The host stops
 claiming, lets its running sandboxes finish, and starts again in the same
-process with the settings it reads then. When no host runs, `restart` starts
+process with the settings it reads then. While it has sandboxes, it keeps
+sending heartbeats and tells Spotlight that it stops. Spotlight then drains
+each of its sandboxes once no run is in it: a run in progress finishes, and an
+idle sandbox stores its workspace and stops. The host delivers no more runs
+into them. The task's next run starts in a new sandbox, on this host after the
+restart or on another. When no host runs, `restart` starts
 the service. When the settings do not pass the host's checks, `restart` sends
 nothing and fails with `nothing restarted, because the host would not start: <problems>`.
 
@@ -388,15 +409,25 @@ code `3` as after any other.
 spotlight runner
 ```
 
-The runner image's entrypoint. It does the one run or check its sandbox was
-started for, then exits. It takes no arguments other than `harnesses`.
-Any other argument fails with `usage: spotlight runner [harnesses <json>]`.
+The runner image's entrypoint. In the sandbox of a task or chat, it restores
+the workspace once, then does each run the host delivers, one after another.
+On `SIGUSR1` it reads the next assignment. On `SIGTERM` between runs it stores
+the workspace if it changed, then exits. For a check, or a run a push pool
+provisioned, it does that one piece of work, then exits. It takes no arguments
+other than `harnesses` and `ssh`. Any other argument fails with
+`usage: spotlight runner [harnesses <json>]`.
+
+`spotlight runner ssh` answers one SSH connection on standard input and
+output, as the agent user, in the workspace. The host runs it in the sandbox
+for each editor connection. See [Editor
+connections](/docs/reference/hosts/sandbox#editor-connections).
 
 | Variable | Default | Description |
 | --- | --- | --- |
 | `SPOTLIGHT_URL` | required | The Spotlight address. |
 | `SPOTLIGHT_ASSIGNMENT_FILE` | none | The file with the work a host assigned to the sandbox. The host sets it. |
 | `SPOTLIGHT_RUN_TOKEN` | none | The one-run credential a push pool's provider passes. |
+| `SPOTLIGHT_RUN_TIMEOUT` | none | A Go duration. The runner stops a run that works longer, and reports it `timed-out`. `0` or none is no limit. The host sets it. |
 | `SPOTLIGHT_WORKSPACE` | `/workspace` | The workspace directory. |
 | `SPOTLIGHT_AGENT_USER` | none | The user the harness runs as. Spotlight's runner image sets `agent`. When set, the runner must run as root. |
 | `SPOTLIGHT_GIT_AUTHOR_NAME` | `Spotlight` | `user.name` in each checkout. |
@@ -423,6 +454,7 @@ The runner reads the `SPOTLIGHT_EGRESS_` variables only with
 | `SPOTLIGHT_EGRESS_TRAFFIC: "<value>" is not all or bound` | A value that is not `all` or `bound`. |
 | `SPOTLIGHT_EGRESS_URL "<value>" is not an address such as https://egress.example.com` | Not an `http` or `https` URL with a host. |
 | `could not open the local proxy, so the work fails` | The runner's local proxy did not open. The run fails before the agent starts. See [The runner's local proxy](/docs/reference/hosts/egress#the-runners-local-proxy). |
+| `SPOTLIGHT_RUN_TIMEOUT: "<x>" is not a duration such as 6h, or 0 for no limit` | A run timeout that is not a duration, or is negative. |
 | `could not check, because the local proxy did not open` | The runner's local proxy did not open. The change stack check fails. |
 | `could not trust the authority of the local proxy, so TLS through it can fail` | A warning. The authority of the local proxy could not be added to the image's bundles. |
 
@@ -433,7 +465,7 @@ The runner logs JSON lines to standard output. See
 
 | Code | Meaning |
 | --- | --- |
-| `0` | The run or check ended, whatever its outcome, or nothing was reserved in time. |
+| `0` | The run or check ended, whatever its outcome, the sandbox drained, or nothing was reserved in time. |
 | `1` | The runner could not start, or Spotlight did not accept it. |
 
 ## spotlight runner harnesses
@@ -601,6 +633,139 @@ first of these that is set:
 Each error is printed after `spotlight token: ` on standard error. The exit
 codes are those of `spotlight login`.
 
+## spotlight ssh
+
+```text
+spotlight ssh <command> [flags]
+```
+
+Opens the workspace of a task or chat in VS Code, Cursor or `ssh`. With no
+command, it fails with `spotlight ssh: say which command`; with an unknown one,
+`spotlight ssh: no command "ssh <command>"`. Both exit `1`.
+
+A sandbox is named by an alias:
+
+```text
+task-<task id>.<workspace>.spotlight
+chat-<chat id>.<workspace>.spotlight
+```
+
+`<workspace>` is the workspace's slug, as in the app's addresses. Case does
+not matter, and a trailing `.` is ignored. Any other name fails with
+`"<name>" is not a Spotlight sandbox. Use task-<id>.<workspace>.spotlight or chat-<id>.<workspace>.spotlight`.
+
+Both commands take the address from `--url`, else `SPOTLIGHT_URL`, else
+`https://app.usespotlight.ai`, and check it as `spotlight login` does.
+
+## spotlight ssh setup
+
+```text
+spotlight ssh setup [--url <address>] [--print]
+```
+
+Configures `ssh` to reach Spotlight sandboxes at
+`<task-or-chat>.<workspace>.spotlight`.
+
+| Flag | Description |
+| --- | --- |
+| `--url` | The Spotlight address. |
+| `--print` | Shows the configuration. Writes nothing. |
+
+It writes `~/.ssh/spotlight/config` with mode `0600`, in its directory with
+mode `0700`:
+
+```text
+# Written by spotlight ssh setup. Run it again to change this file.
+Host *.spotlight
+  ProxyCommand <path of spotlight> ssh proxy --url <address> %h
+  User spotlight
+  StrictHostKeyChecking no
+  UserKnownHostsFile /dev/null
+  LogLevel ERROR
+  ServerAliveInterval 30
+  ServerAliveCountMax 6
+```
+
+It then adds `Include ~/.ssh/spotlight/config` to the top of `~/.ssh/config`,
+creating the file with mode `0600` if there is none. An `Include` of the file
+below a `Host` or `Match` line is moved to the top. Other lines, and the file's mode, do
+not change, and a symbolic link is written through. Each file is written in
+one rename. When a file is current, it is not written again. Run the command
+again after you move the `spotlight` binary.
+
+| Message | When |
+| --- | --- |
+| `Wrote ~/.ssh/spotlight/config.` | The file was written. |
+| `~/.ssh/spotlight/config is current.` | The file had this content. |
+| `Added "Include ~/.ssh/spotlight/config" to the top of ~/.ssh/config.` | The line was added. |
+| `~/.ssh/config includes ~/.ssh/spotlight/config.` | The line was there. |
+| `There is no login for <address>. Run: spotlight login` | The [credentials file](#credentials-file) has no login for the address. With an address other than `https://app.usespotlight.ai`, the command reads `spotlight login --url <address>`. |
+| `Open a task in VS Code from Spotlight, or run: ssh task-<id>.<workspace>.spotlight` | Last. |
+
+With `--print`, it prints the file under `# ~/.ssh/spotlight/config`, then
+`# Add to the top of ~/.ssh/config` and the `Include` line.
+
+| Error | Cause |
+| --- | --- |
+| `HOME is not set. Set it to the home folder that keeps ~/.ssh` | No home folder. |
+| `could not find the path of this spotlight binary: <error>` | The binary's path could not be read. |
+| `could not read ~/.ssh/config: <error>` | `~/.ssh/config` exists and cannot be read. |
+| `could not write <path>: <error>` | A file could not be written. |
+
+Each error is printed after `spotlight ssh setup: ` on standard error.
+
+| Code | Meaning |
+| --- | --- |
+| `0` | The configuration is in place, or was printed. |
+| `1` | An error. |
+
+## spotlight ssh proxy
+
+```text
+spotlight ssh proxy [--url <address>] <task-or-chat>.<workspace>.spotlight
+```
+
+Connects standard input and output to the SSH server of a sandbox. `ssh` runs
+it as the `ProxyCommand` that `spotlight ssh setup` writes.
+
+| Flag | Description |
+| --- | --- |
+| `--url` | The Spotlight address. |
+
+It uses the login for the address in the [credentials file](#credentials-file),
+and opens a WebSocket to `/api/sandboxes/connect` at that address. If the
+sandbox of the task or chat is not running, Spotlight starts it, and the
+command waits until it is ready, for at most 10 minutes. Who may connect is in
+[Editor connections](/docs/reference/hosts/sandbox#editor-connections).
+
+| Error | Cause |
+| --- | --- |
+| `Sorry, you are not signed in to <address>. Run: spotlight login` | No login for the address. |
+| `Sorry, your login for <address> expired. Run: spotlight login` | Spotlight answered `401`. |
+| `Sorry, Spotlight at <address> cannot be reached: <error>` | The connection failed, or Spotlight did not answer within 1 minute. |
+| `Sorry, Spotlight at <address> did not find one task or chat in <alias>` | Spotlight answered `400`. |
+| `Sorry, Spotlight at <address> refused the connection: <reason>` | Spotlight answered `403`. |
+| `Sorry, there is no <task or chat> <id> in workspace <workspace> that you may open` | Spotlight answered `404`: no such task or chat in the workspace, or you may not open it. |
+| `Sorry, the sandbox could not be opened. Please try again` | Spotlight answered `503`. |
+| `Sorry, Spotlight at <address> answered <status>: <reason>` | Any other answer. |
+| `Sorry, the sandbox did not start in 10 minutes. Please try again` | No host started the sandbox in time. |
+| `The sandbox stopped. Connect again to start it` | The sandbox drained or was lost. |
+| `Sorry, the host of the sandbox is not connected to Spotlight. Please try again` | The sandbox's host has no open connection for editors. |
+| `Spotlight at <address> restarted. Connect again` | Spotlight restarted. |
+| `Sorry, the connection to the sandbox failed. Please try again` | The connection to the host failed. |
+| `Sorry, the connection to Spotlight at <address> broke: <error>` | The connection closed without a reason. |
+| `Sorry, Spotlight at <address> closed the connection: <error>` | Any other close. |
+
+With an address other than `https://app.usespotlight.ai`, the login commands
+read `spotlight login --url <address>`. Each error is printed as one line after
+`spotlight ssh proxy: ` on standard error.
+
+| Code | Meaning |
+| --- | --- |
+| `0` | The connection closed normally. |
+| `1` | Spotlight refused the connection, or it closed with an error. |
+| `130` | Stopped on `SIGINT` or `SIGTERM`. |
+
 ## Credentials file
 
 `spotlight login` writes `credentials.json` in the first of these directories
@@ -633,6 +798,7 @@ The file is written in one rename. Other fields in the file are kept.
 | [`spotlight replay check`](/docs/reference/cli/replay-command#environment) | Neither `SPOTLIGHT_API_TOKEN` nor `SPOTLIGHT_OIDC_TRUST` is set. |
 | [The Terraform provider](/docs/reference/terraform/terraform-provider#credentials) | No token and no trust is set. |
 | [`spotlight token`](#spotlight-token) | Neither `SPOTLIGHT_API_TOKEN` nor `SPOTLIGHT_OIDC_TRUST` is set. |
+| [`spotlight ssh proxy`](#spotlight-ssh-proxy) | Always. |
 
 Each takes the entry for the address of its `SPOTLIGHT_URL` or `url`.
 

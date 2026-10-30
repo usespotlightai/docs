@@ -44,7 +44,6 @@ going. A setting that applies at a restart waits until the host restarts.
 | `image` | `SPOTLIGHT_RUNNER_IMAGE` | live |
 | `registry-config` | `SPOTLIGHT_REGISTRY_CONFIG` | at a restart |
 | `run-timeout` | `SPOTLIGHT_RUN_TIMEOUT` | live |
-| `answer-wait` | `SPOTLIGHT_ANSWER_WAIT` | live |
 | `sandbox-url` | `SPOTLIGHT_SANDBOX_URL` | live |
 | `sandbox-env` | `SPOTLIGHT_SANDBOX_ENV` | live |
 | `sandbox-pass` | `SPOTLIGHT_SANDBOX_PASS` | live |
@@ -87,11 +86,10 @@ Exactly one of `SPOTLIGHT_POOL_TOKEN`, or `SPOTLIGHT_TRUST` with
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `SPOTLIGHT_CAPACITY` | `1` | Sandboxes the host runs at once. At least `1`. |
-| `SPOTLIGHT_ANSWER_WAIT` | `5m` | A Go duration. How long a sandbox whose run asked a person stays up for the answer, still using its place in `SPOTLIGHT_CAPACITY`, before the run is suspended. `0` suspends it at once. Counts as part of `SPOTLIGHT_RUN_TIMEOUT`. |
+| `SPOTLIGHT_CAPACITY` | `1` | Sandboxes the host runs at once. At least `1`. A sandbox takes its place for as long as it lives, with or without a run in it. See [Sandbox lifetime](/docs/reference/hosts/sandbox#sandbox-lifetime). |
 | `SPOTLIGHT_RUNNER_IMAGE` | `ghcr.io/usespotlightai/spotlight-runner:<release>`, or `:latest` for a binary built without a release | Comma-separated images the host serves. Each entry is an exact image reference, or a prefix ending in `*` such as `ghcr.io/acme/*`. The first exact entry is the default image, used by every line that names none. If no entry is exact, the built-in default is added. |
 | `SPOTLIGHT_REGISTRY_CONFIG` | `$DOCKER_CONFIG/config.json`, else `~/.docker/config.json` | A Docker config file whose `auths` the host pulls with. Read on every pull. See [registry credentials](#registry-credentials). |
-| `SPOTLIGHT_RUN_TIMEOUT` | `6h` | A Go duration. A sandbox running longer is stopped and destroyed, and its run reported `timed-out`. |
+| `SPOTLIGHT_RUN_TIMEOUT` | `6h` | A Go duration. Applies to each run on its own: a run that works longer is stopped and reported `timed-out`, and its sandbox stays up. A change stack check's sandbox running longer is stopped and destroyed. A reload applies it to the sandboxes started after it. |
 | `SPOTLIGHT_SANDBOX_ENV` | `sandbox.env` beside the config file | A file of variables every sandbox gets. A missing default file is ignored; a missing named file is an error. |
 | `SPOTLIGHT_SANDBOX_PASS` | none | Comma-separated names of the host's own variables to pass into every sandbox. |
 | `SPOTLIGHT_SANDBOX_URL` | `SPOTLIGHT_URL` | The Spotlight address as sandboxes and egress reach it. |
@@ -107,8 +105,8 @@ With `DOCKER_HOST` unset, the host tries these sockets in order:
 
 The sandbox environment, from `SPOTLIGHT_SANDBOX_ENV` and
 `SPOTLIGHT_SANDBOX_PASS`, may not set `SPOTLIGHT_URL`, `SPOTLIGHT_POOL_TOKEN`,
-`SPOTLIGHT_TRUST`, `SPOTLIGHT_OIDC_TOKEN_FILE`, `SPOTLIGHT_ASSIGNMENT_FILE` or
-`SPOTLIGHT_ANSWER_WAIT`, and may
+`SPOTLIGHT_TRUST`, `SPOTLIGHT_OIDC_TOKEN_FILE`, `SPOTLIGHT_ASSIGNMENT_FILE`,
+`SPOTLIGHT_RUN_TOKEN` or `SPOTLIGHT_RUN_TIMEOUT`, and may
 not carry the pool token in any variable. The same applies to the egress
 environment.
 
@@ -218,6 +216,15 @@ The state directory contains:
 | `<state>/host.lock` | A lock the host keeps while it runs, holding its process id. A second host on the same directory does not start. |
 | `<state>/mirrors/<workspace>/<repo>.git` | Bare mirrors of the repositories the host has checked out. Mounted read-only into sandboxes. Needs `git` on the host. |
 
+The host also keeps a container volume,
+`spotlight-editor-servers-<host id>-<workspace id>`, outside the state
+directory, one for each workspace it serves. It holds the VS Code and Cursor server releases
+that editors brought into the host's sandboxes, so that the next editor of the
+same release on this host finds its server in place. It is mounted at
+`/spotlight/editor-servers` into every sandbox of a task or chat of that
+workspace, once the host knows its workspace. Sandboxes of other workspaces
+never mount it.
+
 A host id serves one pool or trust at a time. Spotlight rejects a host id that
 is in use by another pool or trust with `409` `host-in-use`.
 
@@ -236,7 +243,6 @@ variable. Messages include:
 | `SPOTLIGHT_OIDC_TOKEN_FILE names the workload token file, and is required with SPOTLIGHT_TRUST` | Trust without a token file. |
 | `SPOTLIGHT_CAPACITY: "<x>" is not a count of at least 1` | Bad capacity. |
 | `SPOTLIGHT_RUN_TIMEOUT: "<x>" is not a duration such as 6h` | Bad timeout. |
-| `SPOTLIGHT_ANSWER_WAIT: "<x>" is not a duration such as 5m, or 0 to suspend at once` | Bad answer wait. |
 | `SPOTLIGHT_RUNNER_IMAGE: "<x>" is not an image reference such as ghcr.io/acme/runner:main` | Bad image entry. |
 | `SPOTLIGHT_EGRESS_ALLOW: "*" allows everything; leave the list empty for that` | `SPOTLIGHT_EGRESS_ALLOW=*`. |
 | `SPOTLIGHT_EGRESS_CA_BUNDLE: <error>` | The host cannot read the CA bundle file. |

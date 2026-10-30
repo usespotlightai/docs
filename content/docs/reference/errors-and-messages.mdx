@@ -111,7 +111,10 @@ Each follows `The sandbox's egress didn't start. Error: `.
 | `the container runtime is not answering yet` | The container engine did not respond. The host retries. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host) |
 | `could not report to the control plane, still trying` | Spotlight did not respond. The host retries. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host) |
 | `destroyed a sandbox left behind` | A sandbox from an earlier host process was removed at start. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host) |
-| `the sandbox ran past its time` | `SPOTLIGHT_RUN_TIMEOUT` passed. The sandbox is stopped with a 30-second grace, and the run is reported `timed-out`. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-used-all-its-attempts) |
+| `the sandbox ran past its time` | A change stack check's sandbox ran past `SPOTLIGHT_RUN_TIMEOUT`. It is stopped with a 30-second grace. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host) |
+| `the control plane drains the sandbox` | Spotlight drained an idle sandbox. It is stopped with a 30-second grace, then destroyed. | [Sandbox lifetime](/docs/reference/hosts/sandbox#sandbox-lifetime) |
+| `the tunnel to the control plane closed; editors cannot reach sandboxes until it opens again` | The host's connection for editors closed. The host opens it again. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host) |
+| `the run ran past its time` | The runner stopped a run at `SPOTLIGHT_RUN_TIMEOUT`, and reported it `timed-out` with `Run stopped at the host's time limit. Time limit: <timeout>`. The sandbox stays up. Logged by the runner. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-used-all-its-attempts) |
 | `could not start a sandbox; claiming from this image pauses` | A sandbox did not start. Claims for that image pause, longer after each failure in a row. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host) |
 | `failed the work: its egress sidecar did not start` | Egress did not start. The run fails, or the check is skipped. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host) |
 | `the host is stopping, so the work is left to be claimed again` | The host stopped before the sandbox started. | [spotlight host](/docs/reference/cli/spotlight-command#spotlight-host) |
@@ -173,6 +176,7 @@ environment, are prefixed `egress: `.
 | `SPOTLIGHT_EGRESS_URL "<value>" is not an address such as https://egress.example.com` | Not an `http` or `https` URL with a host. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
 | `could not open the local proxy, so the work fails` | The runner's local proxy did not open. The run fails before the agent starts. | [The runner's local proxy](/docs/reference/hosts/egress#the-runners-local-proxy) |
 | `could not trust the authority of the local proxy, so TLS through it can fail` | A warning. The authority of the local proxy could not be added to the image's bundles. | [The runner's local proxy](/docs/reference/hosts/egress#the-runners-local-proxy) |
+| `SPOTLIGHT_RUN_TIMEOUT: "<x>" is not a duration such as 6h, or 0 for no limit` | The run timeout the runner got is not a duration, or is negative. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
 | `Change stacks are not set up on this deployment.` | A station with `diffs: true` on a deployment without models set up. The runner logs the error, and the checkout gets no change stack. | [Change stacks and decisions](/docs/reference/app/change-stacks-and-decisions) |
 
 ### Egress log
@@ -425,6 +429,23 @@ error.
 | `HOME is not set. Set SPOTLIGHT_CONFIG_DIR to keep logins` | There is no place for the credentials file. | [Credentials file](/docs/reference/cli/spotlight-command#credentials-file) |
 | `stopped. No login was kept` | `Ctrl-C` or `SIGTERM` while the command waited. | [spotlight login](/docs/reference/cli/spotlight-command#spotlight-login) |
 | `Spotlight did not end the session: <error>. The token stays valid until it expires.` | `spotlight logout` could not end the session. The login is still removed from the file. | [spotlight logout](/docs/reference/cli/spotlight-command#spotlight-logout) |
+
+### spotlight ssh
+
+Each is printed after `spotlight ssh setup: ` or `spotlight ssh proxy: ` on
+standard error. An editor that connects through `spotlight ssh proxy` shows
+the same line.
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `"<name>" is not a Spotlight sandbox. Use task-<id>.<workspace>.spotlight or chat-<id>.<workspace>.spotlight` | The host name is not a sandbox alias. | [spotlight ssh](/docs/reference/cli/spotlight-command#spotlight-ssh) |
+| `Sorry, you are not signed in to <address>. Run: spotlight login` | No login for the address. | [spotlight ssh proxy](/docs/reference/cli/spotlight-command#spotlight-ssh-proxy) |
+| `Sorry, your login for <address> expired. Run: spotlight login` | The login is no longer valid. | [spotlight ssh proxy](/docs/reference/cli/spotlight-command#spotlight-ssh-proxy) |
+| `Sorry, there is no <task or chat> <id> in workspace <workspace> that you may open` | No such task or chat in the workspace, or you may not open it. | [Editor connections](/docs/reference/hosts/sandbox#editor-connections) |
+| `Sorry, the sandbox did not start in 10 minutes. Please try again` | No host started the sandbox in time. | [Open a task's workspace in VS Code](/docs/tasks/open-a-workspace-in-vs-code#if-the-connection-fails) |
+| `The sandbox stopped. Connect again to start it` | The sandbox drained or was lost. | [Sandbox lifetime](/docs/reference/hosts/sandbox#sandbox-lifetime) |
+| `Sorry, the host of the sandbox is not connected to Spotlight. Please try again` | The sandbox's host has no open connection for editors. | [spotlight ssh proxy](/docs/reference/cli/spotlight-command#spotlight-ssh-proxy) |
+| `HOME is not set. Set it to the home folder that keeps ~/.ssh` | `spotlight ssh setup` found no home folder. | [spotlight ssh setup](/docs/reference/cli/spotlight-command#spotlight-ssh-setup) |
 
 ### The /device page
 

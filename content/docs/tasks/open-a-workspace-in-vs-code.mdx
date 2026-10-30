@@ -1,0 +1,153 @@
+---
+type: how-to
+icon: SquarePen
+title: Open a task's workspace in VS Code
+description: Set up your computer once, then open the workspace of a task or a planning chat in VS Code or Cursor, to read and change what the agent works on.
+---
+
+A task's workspace is the folder the agent works in: the checked-out code and
+the agent's working files. It lives in the task's sandbox, a container on one
+of your team's hosts. You can open it in VS Code or Cursor over SSH, edit
+files and use a terminal there, while the agent works or after it stops.
+
+You need:
+
+- To be a member of the task's workspace. For a planning chat, you must be the
+  person who started the chat.
+- A host of a pull pool or a runner trust that can take the task's runs. See
+  [Install a host](/docs/hosts/run-a-host).
+- VS Code or Cursor on your computer, with the **Remote - SSH** extension.
+
+## Set up your computer once
+
+<Steps>
+<Step>
+
+Install the `spotlight` command:
+
+```bash
+curl -fsSL https://app.usespotlight.ai/api/install.sh | sh
+```
+
+On a self-hosted Spotlight, use your deployment's address in place of
+`https://app.usespotlight.ai` in this step, and add `--url <address>` to the
+commands in the next two steps.
+
+</Step>
+<Step>
+
+Log in:
+
+```bash
+spotlight login
+```
+
+Approve the login in the browser. See [Log in from the command
+line](/docs/administration/log-in-from-the-command-line).
+
+</Step>
+<Step>
+
+Configure SSH:
+
+```bash
+spotlight ssh setup
+```
+
+The command writes `~/.ssh/spotlight/config` and adds a line to the top of
+`~/.ssh/config` that includes it. Nothing else in `~/.ssh/config` changes. It
+ends with `Open a task in VS Code from Spotlight, or run: ssh task-<id>.<workspace>.spotlight`.
+If it says `There is no login for <address>`, do the previous step again.
+
+</Step>
+<Step>
+
+In VS Code or Cursor, install the **Remote - SSH** extension.
+
+</Step>
+</Steps>
+
+If you move the `spotlight` binary, run `spotlight ssh setup` again.
+
+## Open the workspace
+
+<Steps>
+<Step>
+
+Open the task, the run or the planning chat in Spotlight.
+
+</Step>
+<Step>
+
+On a task, select **Open in VS Code** under **Properties**, below **View
+traces**. To use Cursor, point at the row, select **…** at its end, and select
+**Open in Cursor**.
+
+On a run or a planning chat, select **Open in VS Code** at the top of the page.
+To use Cursor, open the menu beside the button and select **Open in Cursor**.
+
+Spotlight remembers the editor you choose in this browser. The row on the task
+and the button on runs and chats then show that editor.
+
+</Step>
+<Step>
+
+Let the browser open the editor. The editor connects to the task's sandbox
+and opens the folder `/workspace`, with each repository checked out in it.
+
+If no sandbox is up for the task, Spotlight starts one and restores the
+workspace the task's last run left. The editor waits until the sandbox is
+ready. This can take a few minutes.
+
+</Step>
+</Steps>
+
+If the editor does not open within about two seconds, Spotlight shows **Set up
+this computer once**, which reads "If VS Code did not open, this computer
+needs…", with the setup steps. Do the steps, then open the workspace again.
+
+## Work in the workspace
+
+You and the agent see the same files. You can edit them and run commands in
+the editor's terminal, while the agent works or while it waits for an answer. The agent sees your changes in its next step,
+and you see its changes as it makes them. Changes that neither of you commits
+stay in the workspace, and the task's next run starts from them.
+
+Commands in the editor's terminal run as the agent's user, in the sandbox.
+They reach the network through the sandbox's egress, like the agent's
+commands. See [Limit where sandboxes can
+connect](/docs/security/limit-where-sandboxes-connect).
+
+Between runs, Spotlight stops the processes the agent left running. Processes
+you started from the editor keep running.
+
+## Close the workspace
+
+Close the editor window. When no run and no editor uses the sandbox, it stays
+up for 10 minutes, then Spotlight stores the workspace with your changes and
+removes the sandbox. An open editor keeps the sandbox up for at most 12 hours
+after the task's last run ended. Then the editor loses its connection, and
+the next time you open the workspace, Spotlight starts a new sandbox. A
+self-hosted Spotlight can change both times; see [Sandbox
+lifetime](/docs/reference/hosts/sandbox#sandbox-lifetime).
+
+## If the connection fails
+
+The editor shows the error that `spotlight ssh proxy` prints. The most common
+ones:
+
+| Message | Do this |
+| --- | --- |
+| `Sorry, you are not signed in to <address>. Run: spotlight login` | Run `spotlight login`. |
+| `Sorry, your login for <address> expired. Run: spotlight login` | Run `spotlight login`. |
+| `Sorry, there is no task <id> in workspace <workspace> that you may open` | Check that you are a member of the workspace, and, for a chat, that you started it. |
+| `Sorry, the sandbox did not start in 10 minutes. Please try again` | Check that a host that can take the task's runs is online, on the **Runners** page under **Settings**. |
+| `The sandbox stopped. Connect again to start it` | Reconnect. |
+
+Every message is in [The spotlight
+command](/docs/reference/cli/spotlight-command#spotlight-ssh-proxy).
+
+## Related
+
+- [Why a sandbox belongs to one task](/docs/hosts/why-a-sandbox-belongs-to-one-task)
+- [Inside a sandbox](/docs/reference/hosts/sandbox)

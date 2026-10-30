@@ -1,0 +1,209 @@
+---
+type: concept
+icon: Lightbulb
+title: Why a sandbox belongs to one task
+description: Why each task or chat works in a sandbox of its own that its runs share, what keeps a sandbox up and what ends it, and how mirrors and workspace archives keep a new sandbox from starting cold.
+---
+
+Every run in Spotlight happens in a sandbox: a container that a host starts
+from the runner image. A sandbox belongs to one task, or to one planning chat.
+The runs of that task work in it one after another, and nothing of any other
+task is ever in it. The sandbox stays up while a run works in it or a person
+has it open in an editor. When nothing has used it for a while, Spotlight
+stores its workspace and the host destroys it. The task's next run then starts
+a new sandbox and restores the workspace there.
+
+## What a long-lived runner leaves behind
+
+The simpler design is a runner that stays up and claims one piece of work after
+another. It is what you get if you point an agent at a checkout on a machine
+and let it run, and it is fast, because everything is already there.
+
+The problem is everything that is already there. An agent working a task
+writes files, installs packages, changes git configuration and leaves its
+harness's state on disk. It also needs credentials to do its work. On a
+long-lived runner all of that is still on the machine when the next task
+arrives, and the next agent can read it, trip over it, or build on it by
+accident. Two tasks that have nothing to do with each other end up sharing a
+filesystem, processes and keys.
+
+Spotlight's sandboxes remove exactly this: leftover files, harness state and
+credentials passing from one task to another. Two tasks share no writable
+filesystem, no process and no credential.
+
+Within one task the line is drawn differently, on purpose. A task carries its
+workspace from run to run and from station to station, with the checkout as the
+last agent left it and the harness's record of the conversation
+([How a conversation survives between
+runs](/docs/runs/how-a-conversation-survives-between-runs) explains why). The
+next run of a task needs that workspace in any case. Keeping the container that
+holds it gives the next run nothing it would not have restored, and saves the
+time a restore takes.
+
+What a run must not pass to the next run of its task is still cleared between
+them, as described in [Between runs](#between-runs).
+
+A second reason comes from where agents used to run. An agent on someone's
+working laptop is out of sight of the outside world, but it is not contained:
+you cannot firewall a developer's machine the way you can firewall a container
+that has one route out. That containment is the subject of [The sandbox is the
+security boundary](/docs/security/the-sandbox-is-the-security-boundary).
+
+## Hosts: set up once, trusted once
+
+Sandboxes need something long-lived to start them. In Spotlight that is a
+host: any machine with Docker or Podman running `spotlight host`. A host is set
+up once and trusted once. It keeps a pull pool's token, or claims through a
+runner trust with its platform's workload identity, and from then on it starts
+sandboxes. The machine taking part in the work is permanent; the sandbox doing
+the work is not.
+
+This follows the design that CI systems converged on for the same problem.
+GitLab Runner's Docker executor, Buildkite and GitHub's just-in-time runners
+all separate a long-lived agent that is trusted from short-lived environments
+that do the work. Spotlight's host is that long-lived agent, and the sandbox is
+the short-lived environment.
+
+Two properties of the host follow from the pattern.
+
+The host only makes outbound connections. It requests work from the control
+plane; nothing connects in to it. A person who opens a task's workspace in an
+editor reaches the sandbox through a connection the host opened to Spotlight.
+That is why a host works behind NAT and on a home network, and why putting a
+machine to work needs no inbound firewall rule.
+
+The host never hands a sandbox its own credential. When it claims a run, the
+control plane gives it a credential for that one run, and that is what the
+sandbox receives ([Pools, trusts and
+tokens](/docs/administration/pools-trusts-and-tokens) follows that
+credential further). The pool token or workload identity that lets the host
+claim work stays with the host. A sandbox that is compromised can, at worst,
+act as the run in it, and only while that run lasts.
+
+In Spotlight's configuration the pool or trust is the resource, and a host is
+live state: it appears on the Runners page while it sends heartbeats and leaves
+the page when it stops. Setting a host up is covered in [Install a
+host](/docs/hosts/run-a-host).
+
+## What keeps a sandbox up
+
+Spotlight decides when a sandbox goes, from what is using it. Each user holds
+a lease on the sandbox:
+
+- A run holds one while it works. A run that asks a person a question gives its
+  lease up at once, and the sandbox stays with the task.
+- A person's editor holds one while it is connected. See [Open a task's
+  workspace in VS Code](/docs/tasks/open-a-workspace-in-vs-code).
+
+When the last lease ends, the sandbox is idle. After an idle grace, 10 minutes
+by default, Spotlight drains it. An editor alone keeps a sandbox up for at most
+12 hours after the last run in it ended. Both times are settings of the
+control plane; see [Sandbox lifetime](/docs/reference/hosts/sandbox#sandbox-lifetime).
+
+The grace is there for answers. Most questions an agent asks are answered
+within minutes. When the answer comes while the task's sandbox is still up,
+the run carries on in that sandbox, with nothing to restore. Spotlight offers
+the run to the host that has the sandbox before any other, so the answer does
+not wait behind other work.
+
+The run itself never decides when its sandbox goes. A run ends when its work
+does; whether the sandbox stays depends only on whether something else still
+uses it. That is what lets a person open a workspace at any time: while the
+agent works, after it asked a question, or days later, when Spotlight starts a
+new sandbox from the stored workspace.
+
+The cost is room on the host. A sandbox takes one of the host's places in
+`SPOTLIGHT_CAPACITY`, and counts against its pool's limit on runs, for as long
+as it is up, idle or not. A host with one place that keeps an idle sandbox
+takes no other work until the grace ends.
+
+## Between runs
+
+A sandbox serves the runs of its task one after another, never two at once.
+The host delivers the next run into the running container. Before it does:
+
+- The runner stops every process the agent left running, apart from those of
+  a person's editor.
+- The host restarts the sandbox's egress with the next run's credential. The
+  run that ended loses its access with its credential.
+
+The harness does not stay running between runs. It starts again for each run,
+with that run's credentials, and resumes the conversation from the files in the
+workspace. A harness kept running would keep the earlier run's credentials in
+its environment. Each run also clears what it should not inherit, such as the
+skills and harness files an earlier station was given; [Inside a
+sandbox](/docs/reference/hosts/sandbox#run-phases) lists each phase.
+
+## When a sandbox goes
+
+When Spotlight drains a sandbox, the runner stores the workspace if it changed
+since it was last stored, for example by edits a person made in an editor.
+The host then stops the sandbox, and destroys it with its egress container and
+its network. The task's next run starts a new sandbox, on any host that can
+take it, and restores the stored workspace there.
+
+A host that stops to update or restart keeps reporting while it has
+sandboxes, and tells Spotlight that it stops. Spotlight then drains each of
+its sandboxes as soon as no run is in it, so a run in progress finishes first.
+
+A sandbox can also end without a drain. When a host stops reporting it, or the
+host itself is silent for 90 seconds, Spotlight counts the sandbox as gone, and
+the task's next run starts in a new one. When a host starts, before it claims
+anything, it looks for containers and networks labelled with its own id and
+destroys them. A crash leaves a sandbox behind for as long as the host is down.
+
+## Containers now
+
+Spotlight's sandboxes are containers. The host is built so that a different
+kind of sandbox runtime, such as a virtual machine, can be added later.
+Containers came first because virtual machines on macOS are slow, and a Mac
+runs at most two of them at a time. For a system that starts a sandbox for
+every task, start-up time and density matter.
+
+## Fresh, not cold
+
+A new sandbox has an obvious cost. A run that has to clone a large repository,
+pull an image and install dependencies before the agent can read a line of
+code spends most of its time getting ready. Spotlight's answer is that a new
+sandbox should be fresh without being cold, and it has three pieces.
+
+A host keeps a bare mirror of each repository it has checked out and mounts it
+read-only into the sandboxes it starts. A run's clone borrows objects from the
+mirror and then dissociates from it, so the clone is fast and does not depend on
+the mirror afterwards. Because the clone lets go of the mirror, a stored
+workspace can restore on any host, including one that has never seen the
+mirror.
+
+Workspace archives carry a task's work from one sandbox to the next. At the end
+of each turn, and when its sandbox drains, the runner packs the task's
+workspace (its checkout and the harness's conversation) and stores it. A new
+sandbox restores the newest archive of its task before its first run starts.
+[How a conversation survives between
+runs](/docs/runs/how-a-conversation-survives-between-runs) explains why the
+whole workspace moves with the conversation.
+
+Then there is the runner image. A team can build its own image from Spotlight's,
+with its toolchain and dependencies baked in, and even with a checkout already
+in place, so that the run only fetches and switches branch. [Run a line in your
+own runner image](/docs/hosts/run-a-line-in-your-own-image) covers building
+one.
+
+## Start-up time
+
+A new sandbox is slower than a live one. The container has to start, its egress
+has to start beside it, the workspace has to be restored, and the checkout has
+to be prepared. A repository's setup command runs in every run, in a new
+sandbox or a live one.
+
+Spotlight pulls the run's image before it starts a sandbox, unless the image is
+named by digest or was built on the host and never pushed. When nothing has
+changed, that pull is one manifest request. When a tag has been pushed again,
+the next new sandbox gets the new image with no host restart, and each run
+records the digest it ran on. A run delivered into a live sandbox uses the
+image the sandbox started from.
+
+Against a run of several minutes, start-up is usually the smaller part. What a
+long-lived runner saves in start-up time it gives back as a class of problem
+that is hard to see: a run that passed because of a file another task left, or
+one that failed because of it. With a sandbox per task, a run's result depends
+only on what it was given and on what earlier runs of the same task did.
