@@ -11,7 +11,7 @@ hooks and chats.
 
 | Kind | Endpoint | Terraform | Address |
 | --- | --- | --- | --- |
-| `team` | `/api/resources/workspaces/{workspaceId}/teams` | `spotlight_team` | `<key>` |
+| `team` | `/api/v1/resources/workspaces/{workspaceId}/teams` | `spotlight_team` | `<key>` |
 
 See [Resource API](/docs/reference/api/resource-api) for the operations, headers
 and errors every kind shares.
@@ -42,7 +42,7 @@ resource "spotlight_team" "core" {
 | update | Needs `configure`. Changes `name` only. |
 | delete | Needs `configure`. Fails with `409` `in-use` while the team has any line, skill, harness profile, integration or hook. |
 | list | Every team of the workspace. |
-| import | `GET /api/resources/workspaces/{workspaceId}/teams/import?address=<key>` |
+| import | `GET /api/v1/resources/workspaces/{workspaceId}/teams/import?address=<key>` |
 
 An `in-use` error names what is left, as in
 `Team core is not empty. It still has: line delivery`. See

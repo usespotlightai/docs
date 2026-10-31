@@ -6,7 +6,7 @@ description: The HTTP API that creates, reads, changes and deletes a workspace's
 ---
 
 Configuration is written through the resource API, under
-`https://app.usespotlight.ai/api/resources`, or under `/api/resources` on your
+`https://app.usespotlight.ai/api/v1/resources`, or under `/api/v1/resources` on your
 deployment's address on a [self-hosted Spotlight](/docs/reference/glossary#spotlight-address). The
 [Terraform provider](/docs/reference/terraform/terraform-provider) calls the same
 endpoints. The web app shows configuration read-only.
@@ -45,12 +45,12 @@ path, from the [endpoint catalogue](#endpoint-catalogue). `<holder>` is
 
 | Operation | Method and path | Success | Required header |
 | --- | --- | --- | --- |
-| create | `POST /api/resources/<holder>/<plural>` | `201` | `Idempotency-Key` |
-| read | `GET /api/resources/<plural>/{id}` | `200` | |
-| update | `PUT /api/resources/<plural>/{id}` | `200` | `If-Match` |
-| delete | `DELETE /api/resources/<plural>/{id}` | `204` | `If-Match` |
-| import | `GET /api/resources/workspaces/{workspaceId}/<plural>/import?address=<address>` | `200` | |
-| list | `GET /api/resources/workspaces/{workspaceId}/<plural>` | `200` | |
+| create | `POST /api/v1/resources/<holder>/<plural>` | `201` | `Idempotency-Key` |
+| read | `GET /api/v1/resources/<plural>/{id}` | `200` | |
+| update | `PUT /api/v1/resources/<plural>/{id}` | `200` | `If-Match` |
+| delete | `DELETE /api/v1/resources/<plural>/{id}` | `204` | `If-Match` |
+| import | `GET /api/v1/resources/workspaces/{workspaceId}/<plural>/import?address=<address>` | `200` | |
+| list | `GET /api/v1/resources/workspaces/{workspaceId}/<plural>` | `200` | |
 
 - A read returns every field, with defaults filled in. Create and update
   return exactly what a read would.
@@ -155,11 +155,12 @@ Paths use the API's camelCase field names.
 ## API version
 
 The version served is `2026-09-23`. Within a version, fields and operations are
-only added, never removed, renamed or given a new meaning.
+only added, never removed, renamed or given a new meaning. The path names the
+major version, `v1`. A change that is not additive gets a new path.
 
 ## Endpoint catalogue
 
-All paths are under `/api/resources`.
+All paths are under `/api/v1/resources`.
 
 | Kind | Scope | Create | Read, update, delete | Import and list |
 | --- | --- | --- | --- | --- |
@@ -213,8 +214,8 @@ Each kind's fields are on its own page:
 
 | Method and path | Returns |
 | --- | --- |
-| `GET /api/resources/workspaces/{id}/export` | `{ "files": [{ "path", "content" }] }`: the whole workspace as a Terraform module. |
-| `GET /api/resources/{collection}/{id}/hcl` | `{ "hcl", "files": [{ "path", "content" }] }`: one resource as HCL. |
+| `GET /api/v1/resources/workspaces/{id}/export` | `{ "files": [{ "path", "content" }] }`: the whole workspace as a Terraform module. |
+| `GET /api/v1/resources/{collection}/{id}/hcl` | `{ "hcl", "files": [{ "path", "content" }] }`: one resource as HCL. |
 
 Both need only permission to read.
 
@@ -273,6 +274,6 @@ anyone else the workspace is `404`.
 
 ## Expression checks
 
-`POST /api/expressions/check` and `GET /api/expressions/positions` take the
+`POST /api/v1/expressions/check` and `GET /api/v1/expressions/positions` take the
 same credentials and return the same problems as the resource API. See
 [Check API](/docs/reference/api/expressions#check-api).
