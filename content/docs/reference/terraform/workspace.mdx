@@ -11,7 +11,7 @@ connection, secrets, runners and workspace tokens.
 
 | Kind | Endpoint | Terraform | Address |
 | --- | --- | --- | --- |
-| `workspace` | `/api/resources/workspaces` | `spotlight_workspace` | `<slug>` |
+| `workspace` | `/api/v1/resources/workspaces` | `spotlight_workspace` | `<slug>` |
 
 See [Resource API](/docs/reference/api/resource-api) for the operations, headers
 and errors every kind shares.
@@ -45,7 +45,7 @@ resource "spotlight_workspace" "acme" {
 | update | Needs `configure`. Changes `name` only. |
 | delete | Needs `administer`. Fails with `409` `in-use` while the workspace has any team, workspace token, OIDC trust, secret, runner pool, runner trust or workspace runners. |
 | list | Every workspace the caller may read. A workspace token reads only its own. |
-| import | `GET /api/resources/workspaces/import?address=<slug>` |
+| import | `GET /api/v1/resources/workspaces/import?address=<slug>` |
 
 An `in-use` error names what is left, as in
 `Workspace acme is not empty. It still has: team core`.

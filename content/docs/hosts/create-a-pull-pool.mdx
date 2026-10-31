@@ -90,7 +90,7 @@ developer console. Paste this, with the key you want for the pool:
 ```js
 const slug = location.pathname.split('/')[2];
 const workspace = await (await fetch(`/api/workspaces/${slug}`)).json();
-const created = await fetch(`/api/resources/workspaces/${workspace.id}/runner-pools`, {
+const created = await fetch(`/api/v1/resources/workspaces/${workspace.id}/runner-pools`, {
   method: 'POST',
   headers: { 'content-type': 'application/json', 'idempotency-key': crypto.randomUUID() },
   body: JSON.stringify({ key: 'build-machines' }),
@@ -145,11 +145,11 @@ yourself. In the developer console:
 ```js
 const slug = location.pathname.split('/')[2];
 const workspace = await (await fetch(`/api/workspaces/${slug}`)).json();
-const { items } = await (await fetch(`/api/resources/workspaces/${workspace.id}/runner-pools`)).json();
+const { items } = await (await fetch(`/api/v1/resources/workspaces/${workspace.id}/runner-pools`)).json();
 const pool = items.find((each) => each.key === 'build-machines');
-const read = await fetch(`/api/resources/runner-pools/${pool.id}`);
+const read = await fetch(`/api/v1/resources/runner-pools/${pool.id}`);
 const token = crypto.randomUUID().replaceAll('-', '') + crypto.randomUUID().replaceAll('-', '');
-const updated = await fetch(`/api/resources/runner-pools/${pool.id}`, {
+const updated = await fetch(`/api/v1/resources/runner-pools/${pool.id}`, {
   method: 'PUT',
   headers: { 'content-type': 'application/json', 'if-match': read.headers.get('etag') },
   body: JSON.stringify({

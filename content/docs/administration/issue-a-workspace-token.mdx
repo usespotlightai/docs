@@ -99,7 +99,7 @@ Enter:
 ```js
 const slug = location.pathname.split('/')[2];
 const workspace = await (await fetch(`/api/workspaces/${slug}`)).json();
-const issued = await fetch(`/api/resources/workspaces/${workspace.id}/tokens`, {
+const issued = await fetch(`/api/v1/resources/workspaces/${workspace.id}/tokens`, {
   method: 'POST',
   headers: { 'content-type': 'application/json', 'idempotency-key': crypto.randomUUID() },
   body: JSON.stringify({
@@ -159,7 +159,7 @@ list the workspace's tokens and find the one to revoke by its name:
 ```js
 const slug = location.pathname.split('/')[2];
 const workspace = await (await fetch(`/api/workspaces/${slug}`)).json();
-const { items } = await (await fetch(`/api/resources/workspaces/${workspace.id}/tokens`)).json();
+const { items } = await (await fetch(`/api/v1/resources/workspaces/${workspace.id}/tokens`)).json();
 console.table(items.map(({ id, name, version, expiresAt }) => ({ id, name, version, expiresAt })));
 ```
 
@@ -170,7 +170,7 @@ Revoke it by its `id`, sending its `version` as `If-Match`:
 
 ```js
 const token = items.find((each) => each.name === 'terraform');
-const revoked = await fetch(`/api/resources/tokens/${token.id}`, {
+const revoked = await fetch(`/api/v1/resources/tokens/${token.id}`, {
   method: 'DELETE',
   headers: { 'if-match': `"${token.version}"` },
 });

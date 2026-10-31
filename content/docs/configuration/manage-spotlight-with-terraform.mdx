@@ -35,7 +35,7 @@ folder:
 
 ```bash
 export SPOTLIGHT_API_TOKEN=<workspace token>
-api=https://app.usespotlight.ai/api/resources/workspaces
+api=https://app.usespotlight.ai/api/v1/resources/workspaces
 id=$(curl -fsS -H "Authorization: Bearer $SPOTLIGHT_API_TOKEN" "$api/import?address=<slug>" | jq -r .id)
 curl -fsS -H "Authorization: Bearer $SPOTLIGHT_API_TOKEN" "$api/$id/export" \
   | jq -c '.files[]' | while read -r file; do
