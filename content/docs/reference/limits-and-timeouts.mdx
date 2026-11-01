@@ -259,6 +259,30 @@ configuration, together with the limits of each area below.
 | File an integration fetches | 25 MB |
 | JWKS of a webhook's JWT check | 1 MiB, read within 15 seconds |
 
+Polls, schedules, actions, webhook event lookups and file fetches, tool calls
+and hook requests that Spotlight sends also count toward a limit for each
+workspace. See
+[Rate limit](/docs/reference/self-hosted-settings#rate-limit).
+
+| Item | Value |
+| --- | --- |
+| Requests each workspace sends to other services | 50 each second, and 50 at once, set by [`SPOTLIGHT_OUTBOUND_RATE_LIMIT`](/docs/reference/self-hosted-settings#calls-out-of-spotlight) |
+| Wait for a free request when over the limit | 5 seconds |
+
+### Actions sent from the network
+
+See [Sent from the network](/docs/reference/terraform/integration#sent-from-the-network).
+A host's egress sends these, so the limits above other than the rate limit do
+not apply.
+
+| Item | Value |
+| --- | --- |
+| Time from queueing to response | `timeoutSeconds`, default 30, 1 to 60 |
+| Tries | 1 |
+| Redirects followed | 0 |
+| Response body read | 256 KiB |
+| Egress getting the action's secrets | 10 seconds |
+
 ## API specs
 
 See [API specs](/docs/reference/terraform/integration#api-specs).
