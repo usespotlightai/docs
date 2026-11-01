@@ -2,15 +2,15 @@
 type: how-to
 icon: SquarePen
 title: Open tasks from Slack and post questions back
-description: Create a Slack integration so a mention of your Slack app opens a task, and the task's questions are posted back to Slack.
+description: Add the Slack module so a mention of your Slack app opens a task, and the task's questions are posted back to Slack.
 ---
 
 The tasks open on the team's delivery line, and a reply in a question's Slack
 thread answers it. You need:
 
 - A Slack app you can configure, installed in your Slack workspace.
-- Terraform set up with the Spotlight provider, using a token that has the
-  `configure` and `secrets` scopes. See
+- Terraform 1.11 or later, set up with the Spotlight provider, using a token
+  that has the `configure` and `secrets` scopes. See
   [Manage Spotlight with Terraform](/docs/configuration/manage-spotlight-with-terraform).
 - A team with a line whose role is `delivery` and a station keyed `triage`,
   as the built-in Delivery line has.
@@ -24,8 +24,8 @@ In the Slack app's settings:
 <Steps>
 <Step>
 
-Give the app's bot the scopes `app_mentions:read`, `chat:write` and
-`channels:history`, and reinstall the app.
+Give the app's bot the scopes `app_mentions:read`, `chat:write`,
+`channels:history` and `reactions:write`, and reinstall the app.
 
 </Step>
 <Step>
@@ -41,178 +41,66 @@ to.
 </Step>
 </Steps>
 
-## Keep the two values as secrets
+## Add the Slack module
 
-Keep the signing secret without bindings: the integration uses it to check
-that deliveries come from Slack. Bind the bot token to `slack.com`, in the
-`authorization` header.
+The [Slack module](https://registry.terraform.io/modules/usespotlightai/slack/spotlight)
+keeps the signing secret and the bot token as workspace secrets, and creates
+the Slack integration on the team. A task opened from Slack posts its
+questions to the channel it was opened from. `routes` names the channel for
+questions from a line's other tasks, by the line's key (`delivery` is the
+built-in Delivery line's key): replace `<channel id>` with the channel you
+noted.
 
 ```hcl
 variable "slack_signing_secret" {
   type      = string
   sensitive = true
+  ephemeral = true
 }
 
 variable "slack_bot_token" {
   type      = string
   sensitive = true
+  ephemeral = true
 }
 
-data "spotlight_workspace" "acme" {
-  slug = "acme"
-}
+module "slack" {
+  source  = "usespotlightai/slack/spotlight"
+  version = "~> 0.1"
 
-resource "spotlight_secret" "slack_signing_secret" {
-  workspace_id     = data.spotlight_workspace.acme.id
-  name             = "SLACK_SIGNING_SECRET"
-  value_wo         = var.slack_signing_secret
-  value_wo_version = 1
-}
+  workspace = "acme"
+  team      = "core"
 
-resource "spotlight_secret" "slack_bot_token" {
-  workspace_id = data.spotlight_workspace.acme.id
-  name         = "SLACK_BOT_TOKEN"
-  bindings = [
-    { host = "slack.com", location = "header", name = "authorization", prefix = "Bearer " },
-  ]
-  value_wo         = var.slack_bot_token
-  value_wo_version = 1
-}
-```
+  signing_secret = var.slack_signing_secret
+  bot_token      = var.slack_bot_token
 
-## Create the integration
-
-A task opened from Slack posts its questions to the channel it was opened
-from. `routes` names the channel for questions from a line's other tasks, by
-the line's key (`delivery` is the built-in Delivery line's key): replace
-`<channel id>` with the channel you noted.
-
-```hcl
-data "spotlight_team" "core" {
-  workspace_id = data.spotlight_workspace.acme.id
-  key          = "core"
-}
-
-resource "spotlight_integration" "slack" {
-  team_id = data.spotlight_team.core.id
-  definition = {
-    integration = "slack"
-    name        = "Slack"
-
-    webhook = {
-      verify = {
-        hmac = {
-          algorithm = "sha256"
-          secret    = "secret.${spotlight_secret.slack_signing_secret.name}"
-          header    = "x-slack-signature"
-          prefix    = "v0="
-          signed    = "$${{ \"v0:\" + headers[\"x-slack-request-timestamp\"] + \":\" + raw }}"
-          freshness = {
-            at     = "$${{ headers[\"x-slack-request-timestamp\"] }}"
-            within = "300s"
-          }
-        }
-      }
-      respond = {
-        when = "$${{ body.type == \"url_verification\" }}"
-        body = "$${{ body.challenge }}"
-      }
-      ignoreWhen = "$${{ body.event.bot_id != \"\" }}"
-      events = [
-        {
-          when = "$${{ body.event.type == \"app_mention\" }}"
-          raise = {
-            happening = "slack.app_mention"
-            label     = "Mentioned"
-            summary   = "Mentioned Spotlight in Slack."
-            opens = {
-              lineRole = "delivery"
-              station  = "triage"
-              title    = "$${{ body.event.text }}"
-            }
-            marks = [
-              { kind = "slack.thread", value = "$${{ body.event.channel + \":\" + (has(body.event.thread_ts) ? body.event.thread_ts : body.event.ts) }}" },
-              { kind = "slack.channel", find = false, value = "$${{ body.event.channel }}" },
-            ]
-          }
-        },
-        {
-          when = "$${{ body.event.type == \"message\" && body.event.thread_ts != \"\" }}"
-          raise = {
-            happening = "slack.message.replied"
-            label     = "Replied"
-            summary   = "Replied in a Slack thread."
-            answers   = true
-            message   = "$${{ body.event.text }}"
-            marks = [
-              { kind = "slack.thread", value = "$${{ body.event.channel + \":\" + body.event.thread_ts }}" },
-            ]
-          }
-        },
-      ]
-    }
-
-    actions = {
-      post-message = {
-        request = {
-          method = "POST"
-          url    = "https://slack.com/api/chat.postMessage"
-          auth   = { secrets = ["secret.${spotlight_secret.slack_bot_token.name}"] }
-          body   = "$${{ {\"channel\": target.channel, \"text\": ask.body} }}"
-          expect = { success = "$${{ response.ok }}" }
-          capture = {
-            thread = "$${{ target.channel + \":\" + response.ts }}"
-          }
-        }
-      }
-    }
-
-    on = {
-      "task.asked" = {
-        action = "post-message"
-        to = {
-          channel = "$${{ task.marks[\"slack.channel\"] }}"
-          thread  = "$${{ task.marks[\"slack.thread\"] }}"
-        }
-        routes = {
-          delivery = "<channel id>"
-        }
-        mark = [
-          { kind = "slack.thread", value = "$${{ capture.thread }}" },
-        ]
-      }
-    }
+  routes = {
+    delivery = "<channel id>"
   }
 }
+
+output "slack_webhook_url" {
+  value = module.slack.webhook_url
+}
 ```
 
-`lineRole` names the line's role, and `station` the key of the station new
-tasks start at. The keys under `routes` are line keys. Change any of them that differ on
-your team, and if your team's key is not `core`, change it in
-`spotlight_team`. Run
-`terraform apply`. If the plan fails at an expression,
-[Expressions](/docs/reference/api/expressions) lists what each one can read.
+Change `workspace` to the part after `/w/` in the workspace's address, and
+`team` to your team's key. If new tasks should open on another line or at
+another station, set `line_role` and `station`. To react with another emoji,
+set `acknowledge` to its name, or to `null` for no reaction. On a
+[self-hosted Spotlight](/docs/reference/glossary#spotlight-address), set
+`spotlight_url` to your deployment's address. Run `terraform apply`.
 
 ## Point Slack at the team
-
-Slack sends events to the team's webhook address:
-
-```text
-https://app.usespotlight.ai/api/webhooks/w/<workspace slug>/t/<team key>/slack
-```
-
-On a [self-hosted Spotlight](/docs/reference/glossary#spotlight-address), the address starts with your deployment's address instead.
-`<workspace slug>` is the part after `/w/` in the workspace's address, and
-`<team key>` is the key of the team that owns the integration (`core` in the
-example above).
 
 In the Slack app's event subscription settings:
 
 <Steps>
 <Step>
 
-Turn events on and give the address as the request URL. Slack sends a
-challenge, Spotlight responds to it, and Slack marks the address verified.
+Turn events on and give the `slack_webhook_url` output as the request URL.
+Slack sends a challenge, Spotlight responds to it, and Slack marks the
+address verified.
 
 </Step>
 <Step>
@@ -230,14 +118,17 @@ Save, and reinstall the app if Slack asks.
 ## Check it
 
 Mention the app in a channel it has joined. A task opens at **Triage** on the
-delivery line, titled with the message. When the task asks a question, the
-question appears in the channel, and a reply in its thread answers it and
-resumes the work.
+delivery line, titled with the message, and the app reacts to the mention
+with the `eyes` emoji. When the task asks a question, the question appears in
+the channel, and a reply in its thread answers it and resumes the work.
 
 ## Related
 
+- The [module's README](https://github.com/usespotlightai/terraform-spotlight-slack):
+  every input, the `post-message` tool for hooks and stations, and how to keep
+  the secrets yourself.
 - [`spotlight_integration`](/docs/reference/terraform/integration): every field of a
-  definition.
+  definition, to write your own.
 - [How outside events reach a task](/docs/getting-started/how-outside-events-reach-a-task),
   on marks and happenings.
 - [Asking a person](/docs/inbox/asking-a-person)
