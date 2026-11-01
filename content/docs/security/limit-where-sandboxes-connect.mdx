@@ -7,7 +7,8 @@ description: Set a host's egress allow-list so agents reach only the hosts you n
 
 By default a sandbox reaches any public host and no private address. To narrow
 that, you need a shell on the host machine. The allow-list you set there
-applies to every sandbox the host starts and to the hooks it sends; Spotlight
+applies to every sandbox the host starts and to the hooks and integration
+actions it sends; Spotlight
 itself and the storage it hands runs stay reachable.
 
 ## List the hosts
@@ -20,6 +21,7 @@ Collect the hosts your runs need:
 - The package registries your `setup` commands and agents install from, such as
   `registry.npmjs.org` or `proxy.golang.org`.
 - The hosts of the tools and MCP servers your stations use, and of the hooks
+  and [integration actions](/docs/reference/terraform/integration#sent-from-the-network)
   the host sends.
 - `docs.usespotlight.ai`, where agents read how to set up and change Spotlight
   when a task or a chat asks about it.
@@ -61,7 +63,8 @@ cloud metadata address, are always blocked;
 ## Trust an internal certificate authority
 
 If egress injects a secret into requests for a host whose certificate comes from an
-internal CA, or the host sends a hook to one, give egress the CA. Save the certificates
+internal CA, or the host sends a hook or an integration action to one, give
+egress the CA. Save the certificates
 as a PEM file, then give egress its path:
 
 ```bash

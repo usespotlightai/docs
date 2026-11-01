@@ -215,12 +215,57 @@ inject and logs `the control plane sent egress no secrets to inject`. If it cann
 Spotlight within 1 minute, it logs
 `gave up fetching the run's secrets; the sandbox goes out with no injected secrets`.
 
-## Hook calls
+## Calls sent from the network
 
-A [hook](/docs/reference/terraform/hook) that runs on a host is sent from a one-off
-egress container, `spotlight-egress-call-<id>`, under the same allow-list and
-address rules. Only `http` and `https` are sent, and redirects are not
-followed.
+A [hook](/docs/reference/terraform/hook) request or an
+[integration action](/docs/reference/terraform/integration#sent-from-the-network)
+whose `from` is `network` waits until a host that reports to the workspace
+claims it. The host sends it from a one-off egress container,
+`spotlight-egress-call-<id>`, under the same [allow-list](#allowed-hosts) and
+[address rules](#blocked-addresses).
+
+| Property | Value |
+| --- | --- |
+| Schemes | `http` and `https` |
+| Redirects | Not followed |
+| Tries | One |
+| Response body | The first 256 KiB |
+| Upstream trust | The egress image's system certificates, plus `SPOTLIGHT_EGRESS_CA_BUNDLE` |
+
+### Secrets of an action
+
+The request of an integration action carries `spotlight-egress:<NAME>` in
+place of each secret it names, and the claim carries a one-time token. Egress
+makes a key for the call, and gives the token and the key's public half to
+Spotlight at `POST /api/hosts/calls/<id>/secrets`, with no other credential.
+Spotlight answers once, while the host that claimed the call has it.
+
+| Secret source | How egress gets the value |
+| --- | --- |
+| Stored by Spotlight | Sealed to the key egress makes for the call (X25519, HKDF-SHA256, AES-256-GCM, bound to the call and the secret). |
+| AWS Secrets Manager | Read by egress with the host's AWS identity, from the default credential chain and `SPOTLIGHT_EGRESS_ENV`. Only a secret that `SPOTLIGHT_EGRESS_SECRET_ALLOW` allows. |
+
+Egress injects each secret only on the request to the host the secret is bound
+to, and only if the host's allow-list allows that host.
+`SPOTLIGHT_EGRESS_SECRET_ALLOW` limits only which secrets in AWS Secrets
+Manager egress reads, not where they go. If egress cannot inject a secret that
+the call names, it sends nothing, and the call's response is
+`Egress couldn't inject secret <NAME>, so it didn't send the call.`
+Egress refuses a `Host` header that differs from the host of the URL.
+
+Egress asks the bound host for an uncompressed response. It replaces each
+secret's value with its stand-in in every response header and in the body,
+whatever its content type. A response with a `Content-Encoding` other than
+`identity` loses its body, with
+`The response was compressed, so egress couldn't redact it.`
+Egress clears the values when it has sent the call.
+
+The host gives the call only the time that is left until it expires.
+
+Egress tries for up to 10 seconds to get the secrets. When Spotlight refuses
+them, or does not answer in that time, egress does not send the call, and the
+call's response is
+`Egress couldn't redeem the call's secrets, so it didn't send the call. Error: <reason>`.
 
 ## Shared egress
 
