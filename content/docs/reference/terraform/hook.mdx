@@ -117,7 +117,7 @@ second, the reason is `names <tool>, which acts as the person who started a task
 | `url` | string | required | Where the request goes. May contain expressions. `https` unless `from` is `network`. |
 | `headers` | map of name to string | `{}` | Extra headers. May contain expressions. May not be `authorization`, `content-type`, `host`, or start with `webhook-` or `spotlight-`. |
 | `body` | string, number, boolean, array or object | none | The JSON body. Strings may contain expressions. Without it, the event, task and run, as below. |
-| `from` | string | `spotlight` | `spotlight` or `network`. `spotlight`: Spotlight sends it, to a host that the deployment allows, as in [Calls out of Spotlight](/docs/reference/self-hosted-settings#calls-out-of-spotlight). The host is checked when the hook is written, and the address when the request is sent. `network`: one of the workspace's hosts sends it. |
+| `from` | string | `spotlight` | `spotlight` or `network`. `spotlight`: Spotlight sends it, to a host that the deployment and the workspace allow, as in [Calls out of Spotlight](/docs/reference/self-hosted-settings#calls-out-of-spotlight) and [Workspace lists](/docs/reference/self-hosted-settings#workspace-lists). The host is checked when the hook is written, and the host and the address when the request is sent. `network`: one of the workspace's hosts sends it. |
 
 Every request is a `POST`. Without `body`, the body is:
 
@@ -227,7 +227,7 @@ with the same key adds the note once. A missing, expired or unknown token gets
 | `throttled` | Responded `408`, `425` or `429`, or the workspace sent more requests to other services than its [rate limit](/docs/reference/self-hosted-settings#rate-limit) allows. | yes |
 | `server-error` | Responded `5xx`. | yes |
 | `tool-failed` | The called tool failed. | yes |
-| `errored` | Anything else went wrong while the step ran. | yes |
+| `errored` | Anything else went wrong while the step ran, such as `Spotlight could not read the workspace's allowed hosts: <error>`. | yes |
 | `rejected` | Responded with any other status that is not `2xx`. | no |
 | `not-allowed` | The request was not `https`, went to a host that is not allowed, could not be signed, or the tool is not offered, needs approval, or acts as the person who started a task. | no |
 | `unwritable` | An expression in the step could not be evaluated. | no |
