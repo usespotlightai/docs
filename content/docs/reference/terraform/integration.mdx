@@ -496,6 +496,11 @@ A request is also blocked with `Outbound call to <url> blocked. URL is not valid
 `Outbound call to <host> blocked. redirected more than 5 times`, or
 `Outbound call to <host> blocked. is where an https request was redirected to over plain http, which Spotlight does not follow`.
 
+A request waits up to 5 seconds when the workspace is over its
+[rate limit](/docs/reference/self-hosted-settings#rate-limit). If no request
+becomes free in that time, the request is not sent, and fails with
+`calling a service: this workspace sends more than <limit> requests each second to other services`.
+
 ## Tools
 
 | Field | Type | Default | Description |
@@ -664,6 +669,9 @@ parameter or body a tool cannot send is left out.
 Every request, written or generated, follows at most 5 redirects. Each goes only to a host that the
 deployment allows and never from `https` to `http`, and
 credentials are not sent to a host other than the request's own.
+A generated tool's call over the workspace's
+[rate limit](/docs/reference/self-hosted-settings#rate-limit) fails as in
+[Requests](#requests).
 
 An operation that gets no tool gives a warning at `openapi` or `graphql`, as
 `skips <operation>. <reason>`:
@@ -844,6 +852,10 @@ A result marked `isError` fails the call with
 `using <tool>: the MCP server answered with an error: <text>`, cut at 500
 characters. An answer over 4 MB fails the call with
 `it is larger than the 4 MB Spotlight reads from a tool`.
+A call over the workspace's
+[rate limit](/docs/reference/self-hosted-settings#rate-limit) waits up to 5
+seconds for a free request. If none becomes free, the call is not sent, and
+fails with `calling a service: this workspace sends more than <limit> requests each second to other services`.
 
 ## On
 
