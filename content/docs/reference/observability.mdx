@@ -134,6 +134,7 @@ delivery has the ids of that work, when known: `workspaceId`, `teamId`,
 | `Outbound call` | `debug` | Spotlight gets an answer from a call it makes with `fetch`. `outbound` has `host`, `method`, `status` and `durationMs`. |
 | `Outbound call refused` | `warn` | Such a call gets a 429 or a status of 500 or more. |
 | `Outbound call failed` | `warn` | Such a call gets no answer. |
+| `Limiting outbound calls on this instance alone, without Redis` | `warn` | Redis fails or does not answer within 2 seconds while Spotlight counts a workspace's requests toward its [rate limit](/docs/reference/self-hosted-settings#rate-limit). Each server then counts on its own. At most once a minute on each server. |
 | `Reading a delivery` | `warn` | Reading a webhook delivery fails and Spotlight tries again. |
 | `Gave up reading a delivery` | `error` | Reading a webhook delivery fails for the last time. |
 | `Delivering a domain event` | `error` | A subscriber fails on an event and Spotlight tries again. |

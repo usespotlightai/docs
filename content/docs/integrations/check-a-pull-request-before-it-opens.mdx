@@ -58,8 +58,9 @@ To limit the hook to some repositories or lines, add `repositories` or `lines`
 to `match`. Without `body`, the request carries the hook's key, the event, the
 task and the run.
 
-Spotlight sends the request from its own servers, and the apply rejects the
-hook if the deployment does not allow outbound calls to your endpoint's host.
+Spotlight sends the request from its own servers. On a self-hosted Spotlight
+with an [outbound allow-list](/docs/reference/self-hosted-settings#allowed-hosts), the apply rejects the hook if
+the list does not include your endpoint's host.
 To send it from inside your network instead, set `from = "network"` on the
 request, and a host of the workspace sends it.
 

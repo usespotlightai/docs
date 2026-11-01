@@ -25,8 +25,10 @@ You need:
 - Terraform 1.11 or later, with the provider set up using a token that has the
   `runners` scope. See
   [Manage Spotlight with Terraform](/docs/configuration/manage-spotlight-with-terraform).
-- An HTTPS endpoint on a host that Spotlight's deployment allows outbound calls
-  to.
+- An HTTPS endpoint that Spotlight can call. On a self-hosted Spotlight with an
+  [outbound allow-list](/docs/reference/self-hosted-settings#allowed-hosts),
+  the list includes the endpoint's host. An endpoint at a private address must
+  be on the list.
 - A platform that can start a container which reaches your Spotlight address
   over HTTPS.
 - An API key for each harness your lines use.
@@ -195,7 +197,7 @@ the cause:
 | --- | --- |
 | `http-error: Provision URL answered <status>. Response: <body>` | Your endpoint answered with that status. Check its signature verification and its logs. |
 | `unreachable` | Spotlight could not call the endpoint. Check the URL and that it answers within 10 seconds. |
-| `not-allowed` | Spotlight's deployment does not allow outbound calls to the endpoint's host, or the URL is not `https`. With `Egress URL must be https.`, give the egress an `https` URL. |
+| `not-allowed` | Spotlight blocked the call to the endpoint's host, or the URL is not `https`. On a self-hosted Spotlight, check that the [outbound allow-list](/docs/reference/self-hosted-settings#allowed-hosts) includes the host. With `Egress URL must be https.`, give the egress an `https` URL. |
 | `expired` | The endpoint accepted, but no runner claimed the work in time. Check that the container started and can reach `spotlightUrl`, or the egress when the call names one. |
 | `unusable` | Spotlight cannot open the pool's provision secret: set the secret again with a new `secret_version`. Or the pool's `provision.egress` names an egress that does not exist: correct it. |
 | `harness-missing` | The image does not have the station's harness installed. Install it as in [Install a harness in your runner image](/docs/hosts/install-a-harness-in-your-runner-image). |

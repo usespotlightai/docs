@@ -38,7 +38,7 @@ resource "spotlight_oidc_trust" "github_main" {
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `key` | string | required | Lowercase words joined by dashes, at most 64 characters. Immutable: an update that changes it is rejected; Terraform replaces the resource. |
-| `issuer` | string | required | The issuer the workload's token must name in `iss`. `https`, or `http` only for `localhost`, `127.0.0.1` or `[::1]`. No query, fragment or credentials. At most 255 characters. |
+| `issuer` | string | required | The issuer the workload's token must name in `iss`. `https`, or `http` only for `localhost`, `127.0.0.1` or `[::1]`. No query, fragment or credentials. At most 255 characters. A `localhost` or `127.0.0.1` issuer needs `SPOTLIGHT_OUTBOUND_ALLOW_LOOPBACK` set to `true` and the issuer's host in `SPOTLIGHT_OUTBOUND_ALLOWED_HOSTS`. |
 | `audience` | string | `spotlight` | A value the token's `aud` must contain. One word, at most 255 characters. |
 | `subject` | string | required | A pattern the token's `sub` must match. See [patterns](#patterns). |
 | `claims` | map of name to string | `{}` | Further claims the token must carry, each matching its pattern. At most 16. See [patterns](#patterns). |
@@ -144,7 +144,10 @@ Needs no credentials. Takes an optional `Spotlight-Client` header.
 The workload's token is verified against the keys the issuer publishes at
 `<issuer>/.well-known/openid-configuration`. It must be signed with `RS256`,
 `RS384`, `RS512`, `ES256`, `ES384` or `PS256`, carry `sub` and `exp`, and be
-current within 30 seconds. A [runner trust](/docs/reference/terraform/runner-trust#authentication)
+current within 30 seconds. Spotlight reads the discovery document and the
+keys under the same rules as its other outbound calls, so the deployment must
+allow the issuer's host and the host of its `jwks_uri`. See
+[Calls out of Spotlight](/docs/reference/self-hosted-settings#calls-out-of-spotlight). A [runner trust](/docs/reference/terraform/runner-trust#authentication)
 verifies a host's token the same way.
 
 A `200` response:

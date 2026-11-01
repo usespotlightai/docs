@@ -13,7 +13,9 @@ service account token, where it would otherwise present a pool token. You need:
   scope.
 - The platform's OIDC issuer URL, over https. Spotlight finds the issuer's
   signing keys through OIDC discovery, so the issuer must be reachable from
-  Spotlight.
+  Spotlight. On a self-hosted Spotlight with an
+  [outbound allow-list](/docs/reference/self-hosted-settings#allowed-hosts),
+  the list includes the issuer's host and the host of its keys.
 - The exact subject of the workload's tokens. For a Kubernetes service account
   it has the form `system:serviceaccount:<namespace>:<service account>`.
 - A container engine the host can reach, as for any host.
