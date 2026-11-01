@@ -87,8 +87,8 @@ start with `OAUTH_CLIENTS is not JSON: <error>` or
 `SPOTLIGHT_OUTBOUND_ALLOWED_HOSTS` and the [blocked addresses](#blocked-addresses)
 apply to each call that Spotlight makes for a workspace's configuration:
 
-- Integration requests: actions, polls, schedules, tools, file fetches and
-  event lookups.
+- Integration requests: actions that Spotlight sends, with `from` set to
+  `spotlight`, polls, schedules, tools, file fetches and event lookups.
 - Hook requests that Spotlight sends, with `from = "spotlight"`.
 - Remote MCP servers.
 - OAuth discovery, token exchange and client registration.
@@ -97,8 +97,10 @@ apply to each call that Spotlight makes for a workspace's configuration:
 - The provision calls of push pools.
 - OIDC discovery and the JWKS of the issuer of an OIDC trust or a runner trust.
 
-They do not apply to the calls Spotlight makes for itself, such as to GitHub,
-the catalog and model providers. The time and size limits of these calls are in
+They do not apply to hook requests and integration actions whose `from` is
+`network`, which a host of the workspace sends through its egress, or to the
+calls Spotlight makes for itself, such as to GitHub, the catalog and model
+providers. The time and size limits of these calls are in
 [Limits and timeouts](/docs/reference/limits-and-timeouts#outbound-calls).
 
 ### Allowed hosts
@@ -119,6 +121,56 @@ An entry that is not a host or a pattern stops Spotlight at start with one of:
 | `"*" permits every host. Leave the list empty to permit every public host.` | The entry is `*`. |
 | `"<entry>" is not a pattern such as *.example.com.` | The entry starts with `*.`, and the rest has a `*` or has no `.`, as in `*.com`. |
 | `"<entry>" is not a host such as api.example.com or a pattern such as *.example.com.` | The entry has a `*`, `/`, `:` or space. |
+
+### Workspace lists
+
+A workspace can have its own list of hosts,
+[`outboundHosts`](/docs/reference/terraform/workspace#outbound-hosts), with the
+same entries as `SPOTLIGHT_OUTBOUND_ALLOWED_HOSTS`. For the calls below,
+Spotlight calls a host only if both lists allow it:
+
+| `SPOTLIGHT_OUTBOUND_ALLOWED_HOSTS` | Workspace's `outboundHosts` | Hosts Spotlight calls for the workspace |
+| --- | --- | --- |
+| empty | empty | Any public host. |
+| empty | a list | The hosts the workspace's list allows. |
+| a list | empty | The hosts the deployment's list allows. |
+| a list | a list | The hosts both lists allow. |
+
+The workspace's list applies to each call that Spotlight makes for the
+workspace's configuration, as in [Calls the settings apply to](#calls-the-settings-apply-to):
+
+- Integration requests: actions that Spotlight sends, polls, schedules and
+  the tools written in a definition.
+- Tools generated from an API spec, and the tool calls of an MCP server.
+- The event lookups and file fetches of a webhook delivery, and the JWKS of a
+  webhook's JWT check.
+- OAuth discovery, client registration, token exchange and token refresh, both
+  the refresh when a call gets `401` and the refresh before a token expires.
+- API spec fetches, and the listing of an MCP server's tools.
+- Hook requests that Spotlight sends, with `from = "spotlight"`. Spotlight
+  checks the host when the request is sent, and when the hook is written if its
+  `url` has no expression. A hook definition whose `url` names a host that
+  either list does not allow is rejected with
+  `sends to <host>, which is not an allowed outbound host`.
+- The provision calls of push pools. A blocked call fails with `not-allowed`
+  and `This workspace’s outbound allow-list doesn’t include <host>.`
+- OIDC discovery and the JWKS of the issuer, when a workload exchanges a token
+  through an OIDC trust or a runner trust admits a runner.
+
+It does not apply to hook requests and integration actions whose `from` is
+`network`, which a host of the workspace sends through its egress, or to the
+calls Spotlight makes for itself. For those, the host's
+[egress allow-list](/docs/reference/hosts/egress#allowed-hosts) decides.
+
+A call to a host that the workspace's list does not allow is blocked with
+`Outbound call to <host> blocked. Host is not on the workspace's allowed list.`
+The workspace's list does not change the
+[blocked addresses](#blocked-addresses). Spotlight calls a private or loopback
+address only for a host that `SPOTLIGHT_OUTBOUND_ALLOWED_HOSTS` names.
+
+Each control plane server keeps a workspace's list for up to 30 seconds after it
+reads it, so a change can take up to 30 seconds to apply to calls. The check of
+a hook definition reads the list when the hook is written.
 
 ### Blocked addresses
 
@@ -147,7 +199,9 @@ The hosted service uses the default, `50`.
 
 The limit counts:
 
-- Integration polls, schedules and actions.
+- Integration polls, schedules and actions. This includes actions whose
+  `from` is `network`, each counted once before Spotlight queues it for a
+  host.
 - The event lookups and file fetches of a webhook delivery.
 - Tool calls: tools written in the definition, tools generated from an API
   spec, and the tools of an MCP server. This includes a hook step with `call`.

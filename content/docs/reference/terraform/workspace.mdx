@@ -27,6 +27,8 @@ import {
 resource "spotlight_workspace" "acme" {
   name = "Acme"
   slug = "acme"
+
+  outbound_hosts = ["api.example.com", "*.acme.io"]
 }
 ```
 
@@ -36,13 +38,14 @@ resource "spotlight_workspace" "acme" {
 | --- | --- | --- | --- |
 | `name` | string | required | What the workspace is called. 1 to 100 characters. |
 | `slug` | string | required | The workspace's address in URLs, as in `/w/acme`. Lowercase letters and digits, with single dashes between them, at most 48 characters, written exactly as it is kept. Immutable: an update that changes it is rejected; Terraform replaces the resource. |
+| `outboundHosts` | array of strings | `[]` | The hosts that Spotlight may call for the workspace's configuration. Empty adds no limit to the deployment's list. See [Outbound hosts](#outbound-hosts). In Terraform, `outbound_hosts`. |
 
 ## Rules
 
 | Operation | Rule |
 | --- | --- |
 | create | Needs `create-workspaces`: any signed-in person, never a workspace token. The creator becomes the workspace's owner. |
-| update | Needs `configure`. Changes `name` only. |
+| update | Needs `configure`. Changes `name` and `outboundHosts`. An update that changes neither keeps the version. |
 | delete | Needs `administer`. Fails with `409` `in-use` while the workspace has any team, workspace token, OIDC trust, secret, runner pool, runner trust or workspace runners. |
 | list | Every workspace the caller may read. A workspace token reads only its own. |
 | import | `GET /api/v1/resources/workspaces/import?address=<slug>` |
@@ -53,6 +56,34 @@ A deleted workspace grants nothing to anyone. See
 [Roles and permissions](/docs/reference/roles-and-permissions) for who has
 each permission.
 
+## Outbound hosts
+
+An entry is a host, such as `api.example.com`, or a pattern, such as
+`*.example.com`. A pattern allows each subdomain of the domain:
+`*.example.com` allows `api.example.com`, not `example.com`. An entry has no
+scheme, port or path. Spotlight keeps each entry once, in lowercase, without a
+dot at the end, and keeps and returns the entries sorted.
+
+When the list is not empty, Spotlight calls for this workspace only the hosts
+that the list allows and the deployment allows. The calls it applies to, and how
+it combines with the deployment's list, are in
+[Workspace lists](/docs/reference/self-hosted-settings#workspace-lists).
+A change can take up to 30 seconds to apply to calls.
+
+An entry that is not a host or a pattern is rejected with `422` `invalid`, with
+an error at `outboundHosts[<index>]`:
+
+| Message | Cause |
+| --- | --- |
+| `is empty. Write a host such as api.example.com` | The entry is empty or only spaces. |
+| `permits every host. Leave the list empty to permit every public host` | The entry is `*`. |
+| `is not a pattern such as *.example.com` | The entry starts with `*.`, and the rest has a `*` or has no `.`, as in `*.com`. |
+| `is not a host such as api.example.com or a pattern such as *.example.com` | The entry has a `*`, `/`, `:` or space. |
+| `has a character a host name cannot have. Write an internationalised host in its xn-- form` | The entry has a character other than a letter `a` to `z`, a digit, `.`, `-`, `_` or `*`. |
+
+A value that is not a list is rejected with an error at `outboundHosts`:
+`lists the hosts the workspace may call, as in ["api.example.com", "*.example.com"]`.
+
 ## In Terraform
 
 - `spotlight_workspace` cannot be created by Terraform. The create is forbidden
@@ -60,6 +91,8 @@ each permission.
   Destroying it deletes the workspace, under the rules above.
 - The data source `spotlight_workspace` reads a workspace without managing it.
   See [Provider](/docs/reference/terraform/terraform-provider#data-sources).
+- The Terraform export writes `outbound_hosts` only when the list is not
+  empty.
 
 ## A workspace created in the web app
 

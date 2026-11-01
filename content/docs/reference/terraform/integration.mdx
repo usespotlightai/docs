@@ -449,8 +449,13 @@ A poll whose request fails raises nothing.
 
 ## Actions
 
-Each entry of `actions` is `{ "request": <request> }`. Action names are
-lowercase words joined by dashes, at most 64 characters.
+Action names are lowercase words joined by dashes, at most 64 characters.
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `request` | object | required | The request. See [Requests](#requests). |
+| `from` | string | `spotlight` | `spotlight` or `network`. `spotlight`: Spotlight sends the request from its own servers. `network`: one of the workspace's hosts sends it. See [Sent from the network](#sent-from-the-network). |
+| `timeoutSeconds` | integer | `30` | 1 to 60. How long Spotlight waits for a host to send the request and return the response. Only when `from` is `network`. |
 
 ### Requests
 
@@ -484,11 +489,15 @@ before it is sent.
 
 `auth` accepts no other way, and is rejected with `authenticates a request by its oauth2 connection, or by the secrets that Spotlight injects for the hosts they are bound to`. See [Bindings](/docs/reference/terraform/secret#bindings).
 
-Every request goes only to hosts that the deployment allows, at addresses that
+Every request that Spotlight sends goes only to hosts that the deployment allows, at addresses that
 Spotlight calls. See [Calls out of Spotlight](/docs/reference/self-hosted-settings#calls-out-of-spotlight). When the deployment sets
 [`SPOTLIGHT_OUTBOUND_ALLOWED_HOSTS`](/docs/reference/self-hosted-settings#allowed-hosts),
 a request to a host that the list does not name is blocked with
 `Outbound call to <host> blocked. Host is not on the allowed list.`
+When the workspace has [`outboundHosts`](/docs/reference/terraform/workspace#outbound-hosts),
+a request to a host that the workspace's list does not allow is blocked with
+`Outbound call to <host> blocked. Host is not on the workspace's allowed list.`
+See [Workspace lists](/docs/reference/self-hosted-settings#workspace-lists).
 A request to a [blocked address](/docs/reference/self-hosted-settings#blocked-addresses)
 is blocked with a message that starts with `Outbound call to <host> blocked. The address`
 or `Outbound call to <host> blocked. The host resolves to`.
@@ -500,6 +509,76 @@ A request waits up to 5 seconds when the workspace is over its
 [rate limit](/docs/reference/self-hosted-settings#rate-limit). If no request
 becomes free in that time, the request is not sent, and fails with
 `calling a service: this workspace sends more than <limit> requests each second to other services`.
+
+### Sent from the network
+
+An action whose `from` is `network` is not sent by Spotlight. Spotlight queues it,
+and any host that reports to the workspace may claim it. That host sends it
+from a one-off egress container. See
+[Calls sent from the network](/docs/reference/hosts/egress#calls-sent-from-the-network).
+The requests of `poll`, `lookup` and `attachments` are always sent by Spotlight.
+Hooks have the same choice; see [`from`](/docs/reference/terraform/hook#steps).
+
+| Rule | Value |
+| --- | --- |
+| Hosts | The hosts that the host's egress allow-list allows, at the addresses that egress opens. `SPOTLIGHT_OUTBOUND_ALLOWED_HOSTS`, Spotlight's blocked addresses and the workspace's `outboundHosts` do not apply. |
+| Rate limit | Counts once toward the workspace's [rate limit](/docs/reference/self-hosted-settings#rate-limit), before Spotlight queues the action. |
+| Schemes | `http` and `https`. With `auth.secrets`, `https` only. |
+| Headers | No `host` header. A definition that sets one is rejected. Egress sends the request with the host of `url`. |
+| `auth` | `secrets` only. `oauth2` is rejected. |
+| Tries | One. The request is sent once. |
+| Time | `timeoutSeconds`, from the moment Spotlight queues the action until a host returns the response. The host that claims it gets the time that is left. |
+| Redirects | Not followed. A redirect response is the response. |
+| Response body | The first 256 KiB. |
+
+A definition is rejected with:
+
+| Path | Message | Cause |
+| --- | --- | --- |
+| `actions.<name>.request.auth` | `cannot use an OAuth connection. An action sent from the network authenticates only with auth.secrets` | `from` is `network`, and `auth` has `oauth2`. |
+| `actions.<name>.request.url` | `is an http address. Egress injects secrets only into https requests. Please use an https address` | `from` is `network`, `auth` has `secrets`, and `url` starts with `http:`. |
+| `actions.<name>.timeoutSeconds` | `is how long Spotlight waits for a host to send the action. Only an action sent from the network has it. Please set from: network, or remove timeoutSeconds` | `timeoutSeconds` is set, and `from` is `spotlight`. |
+| `actions.<name>.timeoutSeconds` | `is 1 to 60 seconds` | `timeoutSeconds` below 1 or above 60. |
+| `actions.<name>.request.headers.<header>` | `is a Host header. Egress sends an action from the network to the host its URL names. Please remove the Host header` | `from` is `network`, and `headers` has `Host`. |
+
+Spotlight reads the response as it reads the response of a request it sends:
+`expect` decides success, and `capture` reads from it.
+
+Spotlight never sends a secret's value with the action. In the request that
+the host claims, each secret of `auth.secrets` is a stand-in,
+`spotlight-egress:<NAME>`, with the binding's prefix, in the header or query
+parameter that its binding names for the request's host. The claim carries a
+one-time token:
+
+| Step | What happens |
+| --- | --- |
+| Key | The egress that sends the action makes a key for this action alone. |
+| Redeem | Egress gives the token and its public key to Spotlight, once. Spotlight accepts it only while the host that claimed the action has it, before `timeoutSeconds` ends. |
+| Seal | Spotlight seals the value of each secret that it stores to that key, bound to the action and the secret. For a secret in AWS Secrets Manager, Spotlight gives egress the reference, and egress reads the value with the host's AWS identity, only if the host's `SPOTLIGHT_EGRESS_SECRET_ALLOW` names it. That setting limits only which secrets egress reads; the host's egress allow-list limits where they go. |
+| Inject | Egress replaces each stand-in with the secret's value, only on the request to a host that the secret is bound to. It asks that host for an uncompressed response. |
+| Redact | Egress replaces the secret's value with its stand-in in every response header and in the body, whatever its content type, before it returns the response. A compressed body is dropped. |
+
+If egress cannot inject a secret that the action names, it sends nothing.
+This happens when Spotlight denies egress the secret, when the host's egress
+allow-list does not allow the secret's bound host, or when the secret is in AWS
+Secrets Manager and `SPOTLIGHT_EGRESS_SECRET_ALLOW` does not name it. When
+Spotlight queues the action, a secret that does not
+exist fails it with `Secret <NAME> not found. Please create it first.`, and a
+secret that is not bound to the request's host fails it with
+`Secret <NAME> is not bound to <origin>.`
+
+An action sent from the network fails with:
+
+| Message | Cause |
+| --- | --- |
+| `sending a request to <host> from the workspace’s network: no host of the workspace sent it within <n> seconds` | No host claimed the action, sent it and returned the response within `timeoutSeconds`. |
+| `sending a request to <host> from the workspace’s network: the action sets a Host header, so Spotlight didn’t queue it` | A `Host` header came from a template. Spotlight did not queue the action. |
+| `sending a request to <host> from the workspace’s network: The call's Host header names another host than its URL, so egress didn't send the call. Host: <host>` | Egress refused a `Host` header that names another host than `url`. |
+| `sending a request to <host> from the workspace’s network: <error>` | The host got no response. `<error>` is the host's reason, such as `The host's allow-list doesn't allow <host>.` |
+| `sending a request to <host> from the workspace’s network: Egress couldn't redeem the call's secrets, so it didn't send the call. Error: <reason>` | Egress could not get the action's secrets from Spotlight, so it did not send the request. |
+| `sending a request to <host> from the workspace’s network: Egress couldn't inject secret <NAME>, so it didn't send the call.` | Egress could not inject a secret that the action names, so it did not send the request. |
+| `sending a request to <host> from the workspace’s network: The response was compressed, so egress couldn't redact it.` | The response had a `Content-Encoding` other than `identity`. Egress dropped the body. |
+| `sending a request to <host> from the workspace’s network: a host claimed it but didn’t answer within <n> seconds` | A host claimed the action, and did not return the response before `timeoutSeconds` ended. |
 
 ## Tools
 
