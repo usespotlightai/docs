@@ -76,7 +76,7 @@ signing, with `provision.secret` as the secret.
 | Timeout | 10 seconds. |
 | Redirects | Not followed. |
 | Accepted | Any `2xx` response. |
-| Hosts | Only hosts on the deployment's outbound allow-list. |
+| Hosts | Hosts that the deployment allows, at addresses that Spotlight calls. See [Calls out of Spotlight](/docs/reference/self-hosted-settings#calls-out-of-spotlight). |
 
 ## Egress
 
@@ -102,7 +102,7 @@ the last pool fails, the work's provisioning fails:
 | `unreachable` | The call could not be made. | yes |
 | `http-error` | The response was not `2xx`. | yes |
 | `expired` | The pool accepted the work, but no runner claimed it by `claimBy`. | yes |
-| `not-allowed` | The URL's host is not allowed, or the URL is not `https` where `https` is required. The egress URL is not `https` where `https` is required: `Egress URL must be https. Runners send their proxy credential to it.` | no |
+| `not-allowed` | The URL's host is not allowed: `This deployment’s outbound allow-list doesn’t include <host>.` The host is at a [blocked address](/docs/reference/self-hosted-settings#blocked-addresses): `<host>: The address is ...` or `<host>: The host resolves to <address>, ...`, with the reason the [blocked-address messages](/docs/reference/errors-and-messages#tool-calls-and-integration-requests) give. The URL is not `https` where `https` is required. The egress URL is not `https` where `https` is required: `Egress URL must be https. Runners send their proxy credential to it.` | no |
 | `unusable` | The pool's provision secret cannot be opened. The pool names the platform egress and the deployment has none, or names an egress that does not exist in its workspace. The work needs egress, and the pool no longer names one: `The pool names no egress now. A run that uses secrets or the Spotlight API needs one.` | no |
 | `harness-missing` | The runner the pool started does not have the work's harness installed. | no |
 

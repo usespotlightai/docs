@@ -245,8 +245,8 @@ endpoint or the callback URL changes or the client secret expires, and is then
 registered again. A client without a secret sends no `client_secret` on token
 requests.
 
-The registration endpoint must be on the deployment's outbound allow-list, as
-the token endpoint must.
+The deployment must allow calls to the registration endpoint, as to the token
+endpoint. See [Calls out of Spotlight](/docs/reference/self-hosted-settings#calls-out-of-spotlight).
 
 ### Discovery
 
@@ -276,8 +276,8 @@ URL it was read for (RFC 8414), when its `code_challenge_methods_supported`
 does not list `S256`, or when the protected resource metadata names a
 `resource` that is neither `mcp.url` nor on its origin above its path. Then the
 integration does not connect, and beginning a connection answers `404`. Every
-request goes only to hosts on the deployment's outbound allow-list, and each
-waits at most 15 seconds. What was found is cached for 10 minutes on each control
+request goes only to hosts that the deployment allows, and each waits at most
+15 seconds. What was found is cached for 10 minutes on each control
 plane server.
 
 The client a connection uses is bound to the authorization server it was made
@@ -484,9 +484,14 @@ before it is sent.
 
 `auth` accepts no other way, and is rejected with `authenticates a request by its oauth2 connection, or by the secrets that Spotlight injects for the hosts they are bound to`. See [Bindings](/docs/reference/terraform/secret#bindings).
 
-Every request goes only to hosts on the deployment's outbound allow-list,
-[`SPOTLIGHT_OUTBOUND_ALLOWED_HOSTS`](/docs/reference/self-hosted-settings#calls-out-of-spotlight). A
-request to another host is blocked with `Outbound call to <host> blocked. Host is not on the allowed list.`
+Every request goes only to hosts that the deployment allows, at addresses that
+Spotlight calls. See [Calls out of Spotlight](/docs/reference/self-hosted-settings#calls-out-of-spotlight). When the deployment sets
+[`SPOTLIGHT_OUTBOUND_ALLOWED_HOSTS`](/docs/reference/self-hosted-settings#allowed-hosts),
+a request to a host that the list does not name is blocked with
+`Outbound call to <host> blocked. Host is not on the allowed list.`
+A request to a [blocked address](/docs/reference/self-hosted-settings#blocked-addresses)
+is blocked with a message that starts with `Outbound call to <host> blocked. The address`
+or `Outbound call to <host> blocked. The host resolves to`.
 A request is also blocked with `Outbound call to <url> blocked. URL is not valid.`,
 `Outbound call to <host> blocked. redirected more than 5 times`, or
 `Outbound call to <host> blocked. is where an https request was redirected to over plain http, which Spotlight does not follow`.
@@ -656,8 +661,8 @@ Spotlight sends the `accept`, `content-type` and `authorization` headers
 itself, so header parameters by those names are not inputs. An optional
 parameter or body a tool cannot send is left out.
 
-Every request, written or generated, follows at most 5 redirects. Each goes only to a host on the
-deployment's outbound allow-list and never from `https` to `http`, and
+Every request, written or generated, follows at most 5 redirects. Each goes only to a host that the
+deployment allows and never from `https` to `http`, and
 credentials are not sent to a host other than the request's own.
 
 An operation that gets no tool gives a warning at `openapi` or `graphql`, as
@@ -695,9 +700,10 @@ own host: the host of `baseUrl` for `openapi`, and of `url` for `graphql`.
 Without `baseUrl`, an OpenAPI spec is fetched without `auth`. With
 `auth.oauth2`, the fetch carries the team's connection, even for a `requester`
 integration. The
-fetch and every redirect go only to hosts on the deployment's outbound
-allow-list. See [Limits and timeouts](/docs/reference/limits-and-timeouts#api-specs)
-for the size and time Spotlight allows.
+fetch and every redirect go only to hosts that the deployment allows, as in
+[Calls out of Spotlight](/docs/reference/self-hosted-settings#calls-out-of-spotlight).
+[Limits and timeouts](/docs/reference/limits-and-timeouts#api-specs) gives the
+size and time Spotlight allows.
 
 A spec that cannot be read does not make the definition fail.
 `spec.problem` says why, and the same reason is a warning at
@@ -710,6 +716,7 @@ Problems include:
 | `could not be read: <host> answered <status>` | The fetch did not succeed. |
 | `could not be read: <host>: <code>` | The host could not be reached, as in `ECONNREFUSED` or `ENOTFOUND`. |
 | `could not be read: Outbound call to <host> blocked. Host is not on the allowed list.` | The fetch, or a redirect, went to a host not on the allow-list. |
+| `could not be read: Outbound call to <host> blocked. The address is ...` or `could not be read: Outbound call to <host> blocked. The host resolves to <address>, ...` | The fetch, or a redirect, went to a [blocked address](/docs/reference/self-hosted-settings#blocked-addresses). |
 | `could not be read: Outbound call to <host> blocked. redirected more than 5 times` | Too many redirects. |
 | `could not be read: Outbound call to <host> blocked. is where an https request was redirected to over plain http, which Spotlight does not follow` | A redirect from `https` to `http`. |
 | `is larger than the 64 MB Spotlight reads` | The spec is too large. |
@@ -811,6 +818,7 @@ Problems a failed listing gives in `spec.problem` include:
 | `could not be read: <host> answered: <error>` | The server answered with an MCP error. |
 | `could not be read: <host>: <code>` | The server could not be reached. |
 | `could not be read: Outbound call to <host> blocked. Host is not on the allowed list.` | The server, or a redirect, is on a host not on the allow-list. |
+| `could not be read: Outbound call to <host> blocked. The address is ...` or `could not be read: Outbound call to <host> blocked. The host resolves to <address>, ...` | The server, or a redirect, is at a [blocked address](/docs/reference/self-hosted-settings#blocked-addresses). |
 | `could not be read: Outbound call to <host> blocked. redirected more than 5 times` | Too many redirects. |
 | `could not be read: Outbound call to <host> blocked. is where an https request was redirected to over plain http, which Spotlight does not follow` | A redirect from `https` to `http`. |
 | `could not be read: <host> answered without a status` | The server's answer failed without an HTTP status. |

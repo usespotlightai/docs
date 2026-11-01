@@ -13,9 +13,9 @@ lists every operation an API has and what each one takes. You need:
   [Manage Spotlight with Terraform](/docs/configuration/manage-spotlight-with-terraform).
 - An OpenAPI 3.0 or 3.1 spec, in JSON or YAML, or a GraphQL endpoint.
   Spotlight does not read Swagger 2; convert it to OpenAPI 3 first.
-- A Spotlight deployment that allows outbound calls to the host the spec
-  is read from and to the API's own host, since Spotlight reads the spec
-  and calls the API from its own servers.
+- On a self-hosted Spotlight with an [outbound allow-list](/docs/reference/self-hosted-settings#allowed-hosts), the
+  list includes the host the spec is read from and the API's own host.
+  Spotlight reads the spec and calls the API from its own servers.
 - If the API needs credentials: a key stored as a secret, as in
   [Add a tool from an HTTP API](/docs/integrations/add-a-tool-from-an-http-api#store-the-api-key-as-a-secret),
   or an OAuth connection, as in

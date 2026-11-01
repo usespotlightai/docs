@@ -117,7 +117,7 @@ second, the reason is `names <tool>, which acts as the person who started a task
 | `url` | string | required | Where the request goes. May contain expressions. `https` unless `from` is `network`. |
 | `headers` | map of name to string | `{}` | Extra headers. May contain expressions. May not be `authorization`, `content-type`, `host`, or start with `webhook-` or `spotlight-`. |
 | `body` | string, number, boolean, array or object | none | The JSON body. Strings may contain expressions. Without it, the event, task and run, as below. |
-| `from` | string | `spotlight` | `spotlight` or `network`. `spotlight`: Spotlight sends it, to a host on the deployment's outbound allow-list, checked when the hook is written. `network`: one of the workspace's hosts sends it. |
+| `from` | string | `spotlight` | `spotlight` or `network`. `spotlight`: Spotlight sends it, to a host that the deployment allows, as in [Calls out of Spotlight](/docs/reference/self-hosted-settings#calls-out-of-spotlight). The host is checked when the hook is written, and the address when the request is sent. `network`: one of the workspace's hosts sends it. |
 
 Every request is a `POST`. Without `body`, the body is:
 
@@ -222,7 +222,7 @@ with the same key adds the note once. A missing, expired or unknown token gets
 
 | Code | Cause | Retried |
 | --- | --- | --- |
-| `unreachable` | Nothing responded, the request got no response within the time left, or no host of the workspace claimed a `network` request in time. | yes |
+| `unreachable` | Nothing responded, the request got no response within the time left, the request went to a [blocked address](/docs/reference/self-hosted-settings#blocked-addresses), or no host of the workspace claimed a `network` request in time. | yes |
 | `timeout` | The hook's time ran out before the step began, or a called tool did not finish within it. | yes |
 | `throttled` | Responded `408`, `425` or `429`. | yes |
 | `server-error` | Responded `5xx`. | yes |

@@ -65,7 +65,8 @@ every secret has to be set again and every integration connected again.
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `SPOTLIGHT_OUTBOUND_ALLOWED_HOSTS` | empty | Comma-separated hosts Spotlight may call for integrations and their tools, OAuth token exchanges, hooks it sends itself, and push pools' provision calls. An entry allows the host and its subdomains, compared without regard to case. Empty allows none. |
+| `SPOTLIGHT_OUTBOUND_ALLOWED_HOSTS` | empty | The hosts that Spotlight may call for a workspace's configuration, separated by commas. Empty allows every public host. See [Allowed hosts](#allowed-hosts). |
+| `SPOTLIGHT_OUTBOUND_ALLOW_LOOPBACK` | `false` | With `true`, Spotlight may call a loopback address for a host that `SPOTLIGHT_OUTBOUND_ALLOWED_HOSTS` names. For tests and local development. |
 | `OAUTH_CLIENTS` | `{}` | The deployment's OAuth clients, as JSON mapping an integration's name to `{ "id", "secret" }`, with `issuer`, the authorization server, for an MCP server it discovers. Example: `{"slack":{"id":"...","secret":"..."}}`. |
 | `HOOK_SIGNING_KEY` | none | A P-256 private key, in PEM, that signs [hook OIDC tokens](/docs/reference/terraform/hook#oidc) with ES256. `\n` in the value is read as a line break. Without it, a hook with `oidc` is rejected. |
 | `SPOTLIGHT_MCP_RELIST_SECONDS` | `600` | How often the tools of an integration's MCP server are listed again. |
@@ -79,6 +80,63 @@ Register each OAuth client with the callback
 `OAUTH_CLIENTS` that is not JSON, or not of this shape, stops Spotlight at
 start with `OAUTH_CLIENTS is not JSON: <error>` or
 `OAUTH_CLIENTS must map an integration name to { id, secret }, ...`.
+
+### Calls the settings apply to
+
+`SPOTLIGHT_OUTBOUND_ALLOWED_HOSTS` and the [blocked addresses](#blocked-addresses)
+apply to each call that Spotlight makes for a workspace's configuration:
+
+- Integration requests: actions, polls, schedules, tools, file fetches and
+  event lookups.
+- Hook requests that Spotlight sends, with `from = "spotlight"`.
+- Remote MCP servers.
+- OAuth discovery, token exchange and client registration.
+- API spec fetches.
+- The JWKS of a webhook's JWT check.
+- The provision calls of push pools.
+- OIDC discovery and the JWKS of the issuer of an OIDC trust or a runner trust.
+
+They do not apply to the calls Spotlight makes for itself, such as to GitHub,
+the catalog and model providers. The time and size limits of these calls are in
+[Limits and timeouts](/docs/reference/limits-and-timeouts#outbound-calls).
+
+### Allowed hosts
+
+| `SPOTLIGHT_OUTBOUND_ALLOWED_HOSTS` | Hosts Spotlight calls |
+| --- | --- |
+| empty | Any public host. |
+| a list | Each exact host listed, and the subdomains of each `*.<domain>` entry. `*.example.com` allows `api.example.com`, not `example.com`. |
+
+An entry is a host, such as `api.example.com`, or a pattern, such as
+`*.example.com`. An entry has no scheme, port or path. Host names are compared
+without regard to case, and without the port.
+
+An entry that is not a host or a pattern stops Spotlight at start with one of:
+
+| Message | Cause |
+| --- | --- |
+| `"*" permits every host. Leave the list empty to permit every public host.` | The entry is `*`. |
+| `"<entry>" is not a pattern such as *.example.com.` | The entry starts with `*.`, and the rest has a `*` or has no `.`, as in `*.com`. |
+| `"<entry>" is not a host such as api.example.com or a pattern such as *.example.com.` | The entry has a `*`, `/`, `:` or space. |
+
+### Blocked addresses
+
+Spotlight checks each address that a host resolves to, each time it opens a
+connection. This includes the connection for each redirect. If one of the
+addresses is blocked, Spotlight does not call the host. If a URL names an IP
+address, Spotlight checks that address.
+
+| Address | Blocked |
+| --- | --- |
+| Link-local (including `169.254.169.254`), multicast, unspecified, `0.0.0.0/8` | Always. |
+| Loopback: `127.0.0.0/8`, `::1` | Unless `SPOTLIGHT_OUTBOUND_ALLOW_LOOPBACK` is `true` and `SPOTLIGHT_OUTBOUND_ALLOWED_HOSTS` names the host. |
+| Private: `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `100.64.0.0/10`, `fc00::/7`, `64:ff9b::/96`, `2002::/16` | Unless `SPOTLIGHT_OUTBOUND_ALLOWED_HOSTS` names the host. An empty list names no host. |
+| Any other | Never. |
+
+[Errors and messages](/docs/reference/errors-and-messages#tool-calls-and-integration-requests)
+lists the messages of a blocked call. These settings do not apply to the
+connections out of a sandbox. A host has its own allow-list for them; see
+[Limit where sandboxes can connect](/docs/security/limit-where-sandboxes-connect).
 
 ## Sandboxes
 
