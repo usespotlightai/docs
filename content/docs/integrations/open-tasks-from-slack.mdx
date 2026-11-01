@@ -52,6 +52,15 @@ built-in Delivery line's key): replace `<channel id>` with the channel you
 noted.
 
 ```hcl
+terraform {
+  required_providers {
+    spotlight = {
+      source  = "usespotlightai/spotlight"
+      version = "0.1.0-rc.4"
+    }
+  }
+}
+
 variable "slack_signing_secret" {
   type      = string
   sensitive = true
@@ -66,7 +75,7 @@ variable "slack_bot_token" {
 
 module "slack" {
   source  = "usespotlightai/slack/spotlight"
-  version = "~> 0.1"
+  version = "0.1.0-rc.1"
 
   workspace = "acme"
   team      = "core"
@@ -83,6 +92,11 @@ output "slack_webhook_url" {
   value = module.slack.webhook_url
 }
 ```
+
+The module and the provider are release candidates, and Terraform selects a
+release candidate only for an exact version. Keep both versions exact. If your
+configuration already has a `required_providers` block, set the provider's
+`version` there.
 
 Change `workspace` to the part after `/w/` in the workspace's address, and
 `team` to your team's key. If new tasks should open on another line or at
