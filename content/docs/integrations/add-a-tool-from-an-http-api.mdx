@@ -2,7 +2,7 @@
 type: how-to
 icon: SquarePen
 title: Add a tool from an HTTP API
-description: Create an integration that turns a request to an HTTP API into a tool, and enable that tool at a station.
+description: Create an integration that turns a request to an HTTP API into a tool, sent from Spotlight or from a host in your own network, and enable that tool at a station.
 ---
 
 The agent gets a command that calls the API, and Spotlight keeps the API key,
@@ -171,6 +171,69 @@ inferred. See
 
 If a person should agree before each call, see
 [Require approval before a tool runs](/docs/integrations/require-approval-before-a-tool-runs).
+
+## Call an API in your own network
+
+If the API is reachable only from inside your network, let a host in that
+network send the request. You need:
+
+- A host in that network that reports to the workspace. See
+  [Run a host on your own machine](/docs/hosts/run-a-host).
+- The secret bound to the host that the action calls, over `https`, as in
+  [Store the API key as a secret](#store-the-api-key-as-a-secret). The action
+  authenticates only with `auth.secrets`.
+
+On the host, add the API's host to the egress allow-list. Egress connects to a
+private address only for a host that the list names. The command replaces the
+list, so keep the entries it has:
+
+```bash
+spotlight host config set egress-allow=api.anthropic.com,api.acme.internal
+```
+
+If the secret is kept in AWS Secrets Manager, let egress read it:
+
+```bash
+spotlight host config set egress-secret-allow=acme/api-key
+```
+
+Set `from` on the action, and optionally `timeoutSeconds`, 1 to 60, default
+30:
+
+```hcl
+    actions = {
+      comment = {
+        from           = "network"
+        timeoutSeconds = 20
+        request = {
+          method = "POST"
+          url    = "https://api.acme.internal/comments"
+          body = {
+            issue = "$${{ inputs.issue }}"
+            text  = "$${{ inputs.body }}"
+          }
+          auth = { secrets = ["secret.${spotlight_secret.acme_api_key.name}"] }
+        }
+      }
+    }
+```
+
+Run `terraform apply`, then call the tool from a run. The host logs
+`recorded the response of a call` with the status. If the call fails:
+
+- With `no host of the workspace sent it within <n> seconds`, run
+  `spotlight host status` on the host to check that it is running and reports
+  to the workspace.
+- With `The host's allow-list doesn't allow <host>.`, add the host to
+  `egress-allow`.
+- With `Egress couldn't redeem the call's secrets`, check the host's log for the
+  reason.
+- With `Egress couldn't inject secret <NAME>`, check that `egress-allow`
+  allows the secret's bound host, and for a secret in AWS Secrets Manager, that
+  `egress-secret-allow` names it.
+
+For every rule and message, see
+[Sent from the network](/docs/reference/terraform/integration#sent-from-the-network).
 
 ## Related
 
