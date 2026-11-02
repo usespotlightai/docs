@@ -751,3 +751,31 @@ shows the message from the table above beneath its fields.
 | `This invitation is revoked.` | The invite link of a revoked invite. | [Join a workspace from an invitation](/docs/getting-started/join-a-workspace-from-an-invitation#if-the-page-says-something-else) |
 | `This invitation has expired. Please request a new one.` | The invite link of an expired invite. | [Join a workspace from an invitation](/docs/getting-started/join-a-workspace-from-an-invitation#if-the-page-says-something-else) |
 | `Invitation link doesn't work` | A link that matches no invite, or a link of an invite resent since. | [Join a workspace from an invitation](/docs/getting-started/join-a-workspace-from-an-invitation#if-the-page-says-something-else) |
+
+### Emails page and verifying an email
+
+The Emails page shows these in the "Add an email" dialog or beside an address.
+The page a verification link opens shows them under "Email not verified".
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `<email> is your sign-in email. It is not an additional email.` | `422`. Adding the sign-in email. | [Add another email to your account](/docs/administration/add-another-email-to-your-account#add-an-email) |
+| `You have 10 additional emails, the most allowed. Please remove one first.` | `422`. Adding an eleventh address. | [Remove an email](/docs/administration/add-another-email-to-your-account#remove-an-email) |
+| `A verification link was sent to <email> less than a minute ago. Please wait, then try again.` | `409`. Sending a link to an address less than a minute after the last one. | [Send a new link](/docs/administration/add-another-email-to-your-account#send-a-new-link) |
+| `Spotlight sent 10 verification links for your account in the last hour, the most allowed. Please wait, then try again.` | `409`. Adding an address or sending a link after 10 links for the account in the last hour, counting addresses since removed. | [Send a new link](/docs/administration/add-another-email-to-your-account#send-a-new-link) |
+| `<email> was just added. Please reload and try again.` | `409`. The same address was being added at the same moment. | [Add another email to your account](/docs/administration/add-another-email-to-your-account#add-an-email) |
+| `<email> is already verified.` | `409`. Sending a link to a verified address. | [Add another email to your account](/docs/administration/add-another-email-to-your-account) |
+| `The verification link for <email> has expired. Please send a new one from your settings.` | `409`. Opening a link more than 24 hours after it was sent. | [Send a new link](/docs/administration/add-another-email-to-your-account#send-a-new-link) |
+| `<email> was added by another account. Please sign in as that account to verify it.` | `403`. Opening a link while signed in as another account. | [If the address is not verified](/docs/administration/add-another-email-to-your-account#if-the-address-is-not-verified) |
+| `<email> belongs to another Spotlight account.` | `409`. Opening a link for an address that another account signs in with or has verified. | [If the address is not verified](/docs/administration/add-another-email-to-your-account#if-the-address-is-not-verified) |
+| `Sorry, the email couldn't be verified.` | A link that matches no address, or a link sent again since. | [Send a new link](/docs/administration/add-another-email-to-your-account#send-a-new-link) |
+
+## Slack
+
+### Replies to a mention
+
+The Slack app replies with these in the mention's thread, and starts no chat.
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `Sorry, no member of this Spotlight workspace uses the email of your account. Add that email in Spotlight under Settings › Emails, or join the workspace with it. Then try again.` | The email of the Slack account is not the sign-in email or a verified email of a member of the workspace. The reply is the same when Slack gives no email for the account. | [Ask Spotlight in Slack](/docs/integrations/ask-spotlight-in-slack#check-it), [Add another email to your account](/docs/administration/add-another-email-to-your-account) |

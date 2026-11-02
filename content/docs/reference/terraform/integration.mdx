@@ -413,7 +413,7 @@ Mark:
 | `station` | string | none | The key of the station to open at. Without it, or with a key the line does not have, the line's first `work` station. |
 | `title` | string | required | An expression. The task's title. No task opens when it is empty. |
 | `description` | string | none | An expression. The task's description. |
-| `assignBy.email` | string | none | An expression. The email of the person to assign. |
+| `assignBy.email` | string | none | An expression. The email of the person to assign: a member's sign-in email or an email they [verified](/docs/administration/add-another-email-to-your-account). With no such member, the task opens with no assignee. |
 
 A task opens only on a line of the team whose role is `lineRole`, and only when
 the raise carries at least one mark.
@@ -422,7 +422,7 @@ To start a chat with the team's agent:
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `chat.by.email` | string | required | An expression. The email of the member who starts the chat. |
+| `chat.by.email` | string | required | An expression. The email of the member who starts the chat: their sign-in email or an email they [verified](/docs/administration/add-another-email-to-your-account). |
 | `chat.harness` | string | none | The harness that answers, as in `codex`. Without it, Spotlight's default harness. |
 
 A happening with `opens.chat` reaches a chat only when no task has its marks.

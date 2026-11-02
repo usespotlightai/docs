@@ -12,8 +12,10 @@ accept or dismiss with a reply. You need:
 - Terraform 1.11 or later, set up with the Spotlight provider, using a token
   that has the `configure` and `secrets` scopes. See
   [Manage Spotlight with Terraform](/docs/configuration/manage-spotlight-with-terraform).
-- A Spotlight account for each person who mentions the app, with the same
-  email as their Slack account, on the team that holds the integration.
+- A Spotlight account for each person who mentions the app, on the team that
+  holds the integration. The email of their Slack account is their sign-in
+  email or an email they verified. See
+  [Add another email to your account](/docs/administration/add-another-email-to-your-account).
 - On a self-hosted Spotlight with an [outbound allow-list](/docs/reference/self-hosted-settings#allowed-hosts), the
   list includes `slack.com`. Spotlight calls Slack's API from its own servers.
 
@@ -148,9 +150,11 @@ links to the new task. When the task asks a question, the question appears in
 the channel in a new thread, and a reply in that thread answers it and resumes
 the work.
 
-If the app replies that no member uses your email, check that your Spotlight
-account has the email of your Slack account, and that the bot has the
-`users:read` and `users:read.email` scopes.
+If the app replies that no member uses your email, check that the email of
+your Slack account is your Spotlight sign-in email or a verified email under
+**Settings** › **Emails**. If it is neither,
+[add it to your account](/docs/administration/add-another-email-to-your-account).
+Also check that the bot has the `users:read` and `users:read.email` scopes.
 
 If the app replies that the team's lines run in different images, the agent
 cannot read all their repositories in one chat. Give the team's lines one

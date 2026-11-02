@@ -1,0 +1,80 @@
+---
+type: how-to
+icon: SquarePen
+title: Add another email to your account
+description: Verify more email addresses for your Spotlight account, so that Spotlight knows you by them in Slack and in tasks an integration assigns.
+---
+
+Spotlight knows you by the email you sign in with and by each additional email
+you verify. A mention of Spotlight in Slack is yours when your Slack account
+uses one of these addresses. A task that an integration assigns with
+[`assignBy.email`](/docs/reference/terraform/integration) goes to you when the
+email is one of them. You need to be able to read mail sent to the address you
+add.
+
+## Add an email
+
+<Steps>
+<Step>
+
+Open the workspace menu at the top of the sidebar and choose **Settings**, then
+**Emails** under **Account**.
+
+</Step>
+<Step>
+
+Under **Additional emails**, click **Add email**.
+
+</Step>
+<Step>
+
+Enter the address under **Email** and click **Send verification link**. The
+address shows "Not verified", and Spotlight sends a message with the subject
+"Verify your email for Spotlight" to it.
+
+</Step>
+<Step>
+
+Open the link in the message while you are signed in to Spotlight as the same
+account. If you are signed out, the page asks you to sign in first. The page
+shows **Email verified**, and the address on the Emails page shows "Verified".
+
+</Step>
+</Steps>
+
+The link works for 24 hours. You can have up to 10 additional emails. Your
+sign-in email cannot be one of them.
+
+## Send a new link
+
+If the link expired or did not arrive, open the address's actions menu on the
+Emails page and choose **Resend verification link**. The new link replaces the
+earlier one. Spotlight sends a link to an address at most once a minute, and
+at most 10 links for your account in an hour. Links to addresses you removed
+are in that count.
+
+## Remove an email
+
+Open the address's actions menu on the Emails page and choose
+**Remove email**. Spotlight then stops matching that address to you. A Slack
+mention from an account with that address is refused, and a task assigned by
+that address opens with no assignee.
+
+## If the address is not verified
+
+- If the page says the address belongs to another Spotlight account, another
+  account signs in with it or has verified it. An address can belong to one
+  account only. Remove it there first, or sign in as that account.
+- If the page says another account added the address, you opened the link
+  while signed in as a different account. Sign in as the account that added it,
+  then open the link again.
+- If the page says the link has expired, send a new link.
+
+[Errors and messages](/docs/reference/errors-and-messages#emails-page-and-verifying-an-email)
+lists every message.
+
+## Related
+
+- [Ask Spotlight in Slack](/docs/integrations/ask-spotlight-in-slack)
+- [Web app: Emails page](/docs/reference/app/web-app#workspace-pages)
+- [Web app: the page the link opens](/docs/reference/app/web-app#pages-outside-a-workspace)
