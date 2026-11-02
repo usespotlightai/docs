@@ -53,17 +53,17 @@ no inputs. The task must have a pull request.
 It answers with the `pullRequest` address, the `commit` it read, and `failed`,
 one entry for each failed check:
 
-| Field | Description |
-| --- | --- |
-| `name` | The name of the check, as in `web / build`. |
-| `conclusion` | `failure`, `timed_out` or `startup_failure`. |
-| `url` | The check on GitHub. |
-| `step` | The step that failed, for a GitHub Actions job. |
-| `summary` | The title and summary the check reported, as for a CodeQL alert. |
-| `log` | The last 200 lines of the log, for a GitHub Actions job. |
+| Field | Description | `null` when |
+| --- | --- | --- |
+| `name` | The name of the check, as in `web / build`. | never |
+| `conclusion` | `failure`, `timed_out` or `startup_failure`. | never |
+| `url` | The check on GitHub. | GitHub gives no address. |
+| `step` | The name of the step that failed. | The check is not one of the first five GitHub Actions jobs, no step failed, or GitHub does not give the job. |
+| `summary` | The title and summary the check reported, as for a CodeQL alert. | The check reported neither. GitHub Actions jobs usually report neither. |
+| `log` | The last 200 lines of the job's log. | The check is not one of the first five GitHub Actions jobs, or GitHub does not give the log. |
 
-Spotlight reads `step` and `log` for the first five GitHub Actions jobs. They
-are `null` for other checks, and where GitHub does not give the log.
+GitHub gives the step and the log only if the App has **Actions: read**; see
+[Connect GitHub](/docs/integrations/connect-github#let-the-app-read-failed-checks).
 
 ### review-comment
 
