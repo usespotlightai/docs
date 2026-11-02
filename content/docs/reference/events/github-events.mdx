@@ -29,6 +29,12 @@ A happening that answers carries the words of the comment or review as a
 message, with the file and lines it is about where there are any. Those words
 can answer a task that awaits review; see [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves).
 
+`github.checks.failed` carries the names of the failed checks of the suite as a
+message, as in `Failed: web / build, gitleaks.` It has no message if GitHub does
+not give the names. The [`checks`](/docs/reference/built-ins/built-in-tools-and-skills#checks)
+tool lists the failed checks, and gives the failed step and the log of GitHub
+Actions jobs, within the limits on that page.
+
 Each happening also has a label and a line of text written to the task's
 notes when the delivery carries no words:
 
@@ -109,7 +115,7 @@ A line's review policy (`reviews`) decides which pull requests it takes. See
 
 ## Built-in tools
 
-The `pull-request`, `review-comment` and `review` tools are described in
+The `pull-request`, `checks`, `review-comment` and `review` tools are described in
 [Built-in tools and skills](/docs/reference/built-ins/built-in-tools-and-skills).
 
 ## Installation callback

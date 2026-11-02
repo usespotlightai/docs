@@ -80,6 +80,18 @@ fails: the setup pull request lists the variables for you to add. See
 On a self-hosted Spotlight, give your GitHub App this permission under
 **Permissions & events**, then accept the new permission on each installation.
 
+## Let the App read failed checks
+
+The App receives failed check suites, and the [`checks`](/docs/reference/built-ins/built-in-tools-and-skills#checks)
+tool reads them, with the repository permission **Checks: read**. With the
+permission **Actions: read** too, the tool also gives the failed step and the
+log of each GitHub Actions job. Without it, `step` and `log` are `null`.
+
+On a self-hosted Spotlight, give your GitHub App these permissions under
+**Permissions & events**, and select the **Check suite** event under
+**Subscribe to events**. Without the event, Spotlight receives no failed check
+suites. Then accept the new permissions on each installation.
+
 ## Related
 
 - [Point a line at your repositories](/docs/lines/point-a-line-at-your-repositories)
