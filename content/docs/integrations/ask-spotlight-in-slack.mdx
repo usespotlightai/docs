@@ -1,19 +1,19 @@
 ---
 type: how-to
 icon: SquarePen
-title: Open tasks from Slack and post questions back
-description: Add the Slack module so a mention of your Slack app opens a task, and the task's questions are posted back to Slack.
+title: Ask Spotlight in Slack
+description: Add the Slack module so a mention of your Slack app starts a chat with the team's agent, and tasks' questions are posted back to Slack.
 ---
 
-The tasks open on the team's delivery line, and a reply in a question's Slack
-thread answers it. You need:
+The agent answers in the mention's thread and can propose tasks, which you
+accept or dismiss with a reply. You need:
 
 - A Slack app you can configure, installed in your Slack workspace.
 - Terraform 1.11 or later, set up with the Spotlight provider, using a token
   that has the `configure` and `secrets` scopes. See
   [Manage Spotlight with Terraform](/docs/configuration/manage-spotlight-with-terraform).
-- A team with a line whose role is `delivery` and a station keyed `triage`,
-  as the built-in Delivery line has.
+- A Spotlight account for each person who mentions the app, with the same
+  email as their Slack account, on the team that holds the integration.
 - On a self-hosted Spotlight with an [outbound allow-list](/docs/reference/self-hosted-settings#allowed-hosts), the
   list includes `slack.com`. Spotlight calls Slack's API from its own servers.
 
@@ -25,7 +25,8 @@ In the Slack app's settings:
 <Step>
 
 Give the app's bot the scopes `app_mentions:read`, `chat:write`,
-`channels:history` and `reactions:write`, and reinstall the app.
+`channels:history`, `reactions:write`, `users:read` and `users:read.email`,
+and reinstall the app.
 
 </Step>
 <Step>
@@ -45,11 +46,11 @@ to.
 
 The [Slack module](https://registry.terraform.io/modules/usespotlightai/slack/spotlight)
 keeps the signing secret and the bot token as workspace secrets, and creates
-the Slack integration on the team. A task opened from Slack posts its
-questions to the channel it was opened from. `routes` names the channel for
-questions from a line's other tasks, by the line's key (`delivery` is the
-built-in Delivery line's key): replace `<channel id>` with the channel you
-noted.
+the Slack integration on the team. A task created from a Slack chat posts its
+questions to the channel of that chat, each in a new thread. `routes` names
+the channel for questions from a line's other tasks, by the line's key
+(`delivery` is the built-in Delivery line's key): replace `<channel id>` with
+the channel you noted.
 
 ```hcl
 terraform {
@@ -75,7 +76,7 @@ variable "slack_bot_token" {
 
 module "slack" {
   source  = "usespotlightai/slack/spotlight"
-  version = "0.1.0-rc.2"
+  version = "0.1.0-rc.3"
 
   workspace = "acme"
   team      = "core"
@@ -99,10 +100,10 @@ configuration already has a `required_providers` block, set the provider's
 `version` there.
 
 Change `workspace` to the part after `/w/` in the workspace's address, and
-`team` to your team's key. If new tasks should open on another line or at
-another station, set `line_role` and `station`. To react with another emoji,
-set `acknowledge` to its name, or to `null` for no reaction. On a
-[self-hosted Spotlight](/docs/reference/glossary#spotlight-address), set
+`team` to your team's key. The agent reads the repositories of the team's
+lines. To answer with another harness, set `harness`, as in `codex`. To react
+with another emoji, set `acknowledge` to its name, or to `null` for no
+reaction. On a [self-hosted Spotlight](/docs/reference/glossary#spotlight-address), set
 `spotlight_url` to your deployment's address. Run `terraform apply`.
 
 ## Point Slack at the team
@@ -131,10 +132,26 @@ Save, and reinstall the app if Slack asks.
 
 ## Check it
 
-Mention the app in a channel it has joined. A task opens at **Triage** on the
-delivery line, titled with the message, and the app reacts to the mention
-with the `eyes` emoji. When the task asks a question, the question appears in
-the channel, and a reply in its thread answers it and resumes the work.
+Mention the app in a channel it has joined, with a question about your code.
+The app reacts to the mention with the `eyes` emoji, and the agent's answer
+appears in the thread, with a link to the chat in Spotlight. The chat also
+shows on your **Agent** page. To ask more, mention the app again in the same
+thread. Only the person who started the chat can talk to it.
+
+Ask for a change. When the agent proposes a task, its answer lists the open
+proposals, each with a number that it keeps. Reply with a mention and
+`accept` to create the task, or `dismiss` to remove the proposal. When more
+than one proposal is open, add its number, as in `accept 2`. The thread then links to the new task. When the task asks a
+question, the question appears in the channel in a new thread, and a reply in
+that thread answers it and resumes the work.
+
+If the app replies that no member uses your email, check that your Spotlight
+account has the email of your Slack account, and that the bot has the
+`users:read` and `users:read.email` scopes.
+
+If the app replies that the team's lines run in different images, the agent
+cannot read all their repositories in one chat. Give the team's lines one
+image. See [Repository fields](/docs/reference/terraform/line#repository-fields).
 
 ## Related
 

@@ -387,8 +387,8 @@ its `when` is true.
 | `label` | string | none | What a person picking a happening reads. Without it, the happening's name. |
 | `summary` | string | none | How the happening reads in a note on the task. Without it, the happening's name. |
 | `answers` | boolean | `false` | Whether the happening carries a message to the task. |
-| `message` | string | none | An expression. The message carried. |
-| `opens` | object | none | Opens a task when no task is found. See below. |
+| `message` | string | none | An expression. The message carried. For `opens.chat`, the message to the chat. |
+| `opens` | object | none | Opens a task, or starts a chat, when no task is found. See below. |
 | `branch` | string | none | An expression. A branch name that finds a task. |
 | `marks` | array of objects | `[]` | Marks that find a task, or are kept on the task this opens. |
 | `attachments` | object | none | Files attached to the task. See below. |
@@ -403,9 +403,9 @@ Mark:
 | --- | --- | --- | --- |
 | `kind` | string | required | The mark kind, integration name first. |
 | `value` | string | required | An expression. The mark's value. A mark whose value is empty is not kept. |
-| `find` | boolean | `true` | `true`: the mark finds the task the happening is about. `false`: the task this opens keeps it, and it never finds a task. |
+| `find` | boolean | `true` | `true`: the mark finds the task or chat the happening is about. `false`: the task or chat this opens keeps it, and it never finds one. |
 
-`opens`:
+`opens` either opens a task on a line or starts a chat. To open a task:
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -417,6 +417,25 @@ Mark:
 
 A task opens only on a line of the team whose role is `lineRole`, and only when
 the raise carries at least one mark.
+
+To start a chat with the team's agent:
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `chat.by.email` | string | required | An expression. The email of the member who starts the chat. |
+| `chat.harness` | string | none | The harness that answers, as in `codex`. Without it, Spotlight's default harness. |
+
+A happening with `opens.chat` reaches a chat only when no task has its marks.
+When a chat has one of its finding marks, its `message` is added to that chat,
+and only the member who started the chat can add to it. A message that is
+`accept` or `dismiss`, with an optional number, decides on the chat's open
+proposals. Proposals are numbered from 1 in the order the agent made them, and
+keep their number. Without a number, the decision is on the only open
+proposal. Otherwise a new chat starts on the integration's team, with the
+repositories of the team's lines, and keeps every mark of the raise. A chat
+starts only for a member of the team, with a message or an attachment, on a
+harness Spotlight knows, and only when the team's lines run in one image. When it cannot start or continue, the integration's `chat.refused`
+binding is told why.
 
 `attachments`:
 
@@ -938,22 +957,25 @@ fails with `calling a service: this workspace sends more than <limit> requests e
 
 ## On
 
-`on` maps a task event to a binding. The events are:
+`on` maps a task or chat event to a binding. The events are:
 
 | Event | Happens when |
 | --- | --- |
 | `task.opened` | A task is opened by a happening from outside Spotlight. |
 | `task.pull-request-opened` | A task's pull request is opened. |
 | `task.asked` | A task asks a person. |
+| `chat.started` | A chat with marks starts. `reply.body` is `""`. |
+| `chat.replied` | A chat with marks has something to say: the last words of a run with its open proposals, a run that could not finish, a proposal that became a task, or a dismissed proposal. |
+| `chat.refused` | A happening with `opens.chat` could not start or continue a chat. `reply.body` says why. |
 
 Binding:
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `action` | string | required | The action to run. It must be defined in `actions`. |
-| `to` | map of name to string | `{}` | Values the action reads in `target`. Can read `task` and `ask`. Each value is an expression. |
-| `routes` | map of name to string | `{}` | Keyed by line key. When `to` gives no `channel`, the value for the task's line is used as `target.channel`. |
-| `mark` | array of objects | `[]` | Marks kept on the task after the action succeeds. Can read `response` and `capture`. `find` is not read here. |
+| `to` | map of name to string | `{}` | Values the action reads in `target`. Can read `task` and `ask` for a task event, `chat` and `reply` for a chat event. Each value is an expression. |
+| `routes` | map of name to string | `{}` | Keyed by line key. When `to` gives no `channel`, the value for the task's line is used as `target.channel`. Not read for a chat event. |
+| `mark` | array of objects | `[]` | Marks kept on the task after the action succeeds. Can read `response` and `capture`. `find` is not read here, and a chat event keeps no mark. |
 
 A binding runs only when `target` contains a `channel` or a `thread`. Otherwise
 nothing is sent.

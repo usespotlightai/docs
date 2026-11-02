@@ -71,7 +71,7 @@ a check names a real index, as in `integration.webhook.events[0].when`.
 | `webhook.events.*.lookup.request.url`, `.query.*`, `.headers.*`, `.body` | | `body`, `headers`, `raw`, `item` |
 | `webhook.events.*.lookup.request.expect.success` | bool | the above, `response`, `status` |
 | `webhook.events.*.lookup.request.capture.*`, `webhook.events.*.lookup.capture.*` | | the above, `response`, `status` |
-| `webhook.events.*.raise.message`, `.opens.title`, `.opens.description`, `.opens.assignBy.email`, `.branch`, `.marks.*.value` | | `body`, `headers`, `raw`, `item`, captures |
+| `webhook.events.*.raise.message`, `.opens.title`, `.opens.description`, `.opens.assignBy.email`, `.opens.chat.by.email`, `.branch`, `.marks.*.value` | | `body`, `headers`, `raw`, `item`, captures |
 | `webhook.events.*.raise.attachments.each` | list | `body`, `headers`, `raw`, `item`, captures |
 | `webhook.events.*.raise.attachments.name`, `.type`, `.size`, and `.fetch` request fields | | the above, `file` |
 | `poll.request.url`, `.query.*`, `.headers.*`, `.body` | | `cursor`, `connection` |
@@ -79,14 +79,14 @@ a check names a real index, as in `integration.webhook.events[0].when`.
 | `poll.request.capture.*` | | `cursor`, `connection`, `response`, `status` |
 | `poll.cursor` | | `body`, `cursor` |
 | `poll.events.*` | as for `webhook.events.*` | `body`, `cursor`, and as for `webhook.events.*` |
-| `actions.*.request.url`, `.query.*`, `.headers.*`, `.body` | | `task`, `ask`, `target`, `connection`, `inputs` |
+| `actions.*.request.url`, `.query.*`, `.headers.*`, `.body` | | `task`, `ask`, `chat`, `reply`, `target`, `connection`, `inputs` |
 | `actions.*.request.expect.success` | bool | the above, `response`, `status` |
 | `actions.*.request.capture.*` | | the above, `response`, `status` |
 | `tools.*.inputs.*.default` | | `task` |
-| `tools.*.output` | | `task`, `ask`, `target`, `connection`, `response`, `status`, `capture`, `inputs` |
+| `tools.*.output` | | `task`, `ask`, `chat`, `reply`, `target`, `connection`, `response`, `status`, `capture`, `inputs` |
 | `connection.oauth2.identity` | | `response` |
-| `on.*.to.*` | | `task`, `ask` |
-| `on.*.mark.*.value` | | `task`, `ask`, `target`, `connection`, `response`, `capture` |
+| `on.*.to.*` | | `task`, `ask`, `chat`, `reply` |
+| `on.*.mark.*.value` | | `task`, `ask`, `chat`, `reply`, `target`, `connection`, `response`, `capture` |
 
 `item` is seen only when the event has `forEach`. Captures are the names in
 the event's `lookup.capture`, each seen by its own name. `inputs` is seen by an
@@ -98,7 +98,8 @@ What an action has at run time depends on what runs it:
 | Run by | Has |
 | --- | --- |
 | a tool | `task`, `inputs`, `connection` |
-| an `on` binding | `task`, `ask`, `target`, `connection` |
+| an `on` binding for a task event | `task`, `ask`, `target`, `connection` |
+| an `on` binding for a chat event | `chat`, `reply`, `target`, `connection` |
 | a `schedule` | `connection` |
 
 ## Integration values
@@ -134,6 +135,19 @@ What an action has at run time depends on what runs it:
 | `ask.body` | string | What the task asks, when it waits on a person; otherwise `""`. When it waits on an approval, ends with a link to decide it. |
 | `ask.link` | dyn | The address of the conversation in the inbox, or null. |
 | `ask.station` | string | The name of the task's station. |
+
+`chat`:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `chat.marks` | map of string | The chat's marks, by kind, as in `chat.marks["slack.channel"]`. For `chat.refused`, the marks of the happening. |
+
+`reply`:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `reply.body` | string | What Spotlight says to the chat. |
+| `reply.link` | dyn | The address of the task the reply is about, else of the chat, in Spotlight; null for `chat.refused`. |
 
 ## Hook positions
 
