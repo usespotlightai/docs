@@ -496,13 +496,14 @@ which reads the uploaded files in `uploaded`.
 | `complete` | object | none | The request sent once, after the last file. Reads `uploaded`. |
 
 Each entry of `uploaded` has the file's `id`, `name`, `type` and `size`, and
-`prepared`. `uploaded` is empty when the question has no files, when `each`
-lists none, and for a chat event.
+`prepared`. `uploaded` is empty when the question has no files, and when
+`each` lists none.
 
 When `prepare`, `send` or `complete` fails, Spotlight still sends `request`,
 with `uploaded` empty, and the binding fails with the error of the upload.
-When `request` fails with files in `uploaded`, Spotlight sends it once more
-with `uploaded` empty. A file that `each` lists more than once is sent once.
+When the service answers `request` with a failure while `uploaded` has files,
+Spotlight sends it once more with `uploaded` empty. A request that gets no
+answer is not sent again. A file that `each` lists more than once is sent once.
 `send` goes without `connection`.
 
 ```hcl
@@ -544,6 +545,7 @@ A definition is rejected with:
 | `actions.<name>.uploads` | `sends files that Spotlight keeps. An action sent from the network cannot read them. Please remove from: network, or remove uploads` | `from` is `network`. |
 | `tools.<name>.action` | `names the action <action>, which uploads files. Only an event in on sends files. Please name an action without uploads` | A tool names an action with `uploads`. |
 | `schedule.action` | `names the action <action>, which uploads files. Only an event in on sends files. Please name an action without uploads` | The schedule names an action with `uploads`. |
+| `on.<event>.<n>.action` | `names the action <action>, which uploads files. A chat event has no files. Please name an action without uploads` | A binding of a `chat.` event names an action with `uploads`. |
 
 ### Requests
 
