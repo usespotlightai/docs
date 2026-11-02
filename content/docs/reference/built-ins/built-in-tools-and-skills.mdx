@@ -101,6 +101,13 @@ the `line` and `station` keys it was given, and what happens `next`. See
 | `station` | string | yes | no | The key of the station on that line to start it at. |
 | `title` | string | yes | no | What the task is, in a line. |
 | `description` | string | no | yes | What whoever works it needs to know, as Markdown. |
+| `attach` | list of text | no | no | A file attached to the chat that the task needs, by its path, as in `.spotlight/attachments/<id>/<name>`, or by its id. Give `--attach` once for each file. |
+
+Each file in `attach` must be attached to a message in the chat, or the tool
+proposes nothing. The proposal keeps its own copy of each file, and the task
+gets its own copy when the person accepts the proposal. The task's runs then
+find the files in the workspace, as described under
+[Attachments](/docs/reference/app/tasks-runs-and-the-inbox#attachments).
 
 ### setup-pull-request
 
