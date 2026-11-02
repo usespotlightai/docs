@@ -127,6 +127,7 @@ when the sandbox drains.
 | Rule | Value |
 | --- | --- |
 | Idle grace | With no lease, the sandbox drains this long after its last lease ended. The control plane's `SPOTLIGHT_SANDBOX_GRACE`, default `10m`. See [Self-hosted settings](/docs/reference/self-hosted-settings#sandboxes). |
+| Replay | A replay's sandbox drains when its run ends. It gets no idle grace, because no later run or editor uses it. |
 | Editor limit | With only editor leases, the sandbox drains this long after its last run lease ended, or after it started when no run held it. `SPOTLIGHT_EDITOR_LIMIT`, default `12h`. |
 | Checked | Every 30 seconds. |
 | Lost | A sandbox that its host stops reporting, or whose host sends no heartbeat for 90 seconds, is `gone`. A sandbox that starts and is not reported within 60 seconds is `gone`. |
@@ -136,6 +137,10 @@ A queued run whose task or chat has a `ready` sandbox with no run in it is
 claimed only by that sandbox's host, into that sandbox, and before the host's
 other work. A run that the sandbox's image cannot run drains the sandbox, and
 starts in a new one.
+
+A sandbox that an editor requested starts before the queued runs of other
+tasks and chats, because a person waits for it. When a run of its own task or
+chat is queued, that run is claimed first and starts in the requested sandbox.
 
 To drain a sandbox, the host sends it `SIGTERM`. The runner stores the
 workspace when it changed since it was last restored or stored, then exits.
