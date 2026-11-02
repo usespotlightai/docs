@@ -101,8 +101,8 @@ While the task has a current run, an event that would move it to Completed, such
 a merged pull request, goes differently. The work it was about is done, so
 it stops the run at once, keeps the task at its station, and asks the task's
 assignee whether to close the task or carry on. If the task is already waiting
-on a person's answer to a question the run asked, it asks nothing new: it adds
-a note to the open question and leaves the paused run as it is.
+on a person's answer to a question the run asked, the task moves to
+Completed, the open question closes, and the paused run ends.
 
 A few cases go differently:
 
@@ -113,8 +113,9 @@ A few cases go differently:
 - If the task is waiting for someone's answer and the event is a reply, such
   as a reply in the task's Slack thread, the reply answers the question, even
   when the line has no rule for it, and the agent carries on as if it had been
-  answered in the inbox. A rule that moves the task elsewhere comes first, and
-  while the task has a current run that move waits like any other.
+  answered in the inbox. A rule that moves the task elsewhere comes first.
+  While the task has a current run that move waits like any other, except a
+  move to Completed, which finishes the task at once.
 - Otherwise, if the line has no rule for the event, or the task is already
   completed, nothing happens.
 
