@@ -961,14 +961,19 @@ fails with `calling a service: this workspace sends more than <limit> requests e
 
 ## On
 
-`on` maps a task or chat event to a binding. The events are:
+`on` maps a task or chat event to a list of bindings. Spotlight runs the
+bindings of an event in their order. A binding that fails does not stop the
+next one. The events are:
 
 | Event | Happens when |
 | --- | --- |
 | `task.opened` | A task is opened by a happening from outside Spotlight. |
 | `task.pull-request-opened` | A task's pull request is opened. |
 | `task.asked` | A task asks a person. |
+| `task.finished` | A task reaches the end of its line, or a person moves it to a completed station. |
+| `task.failed` | A run of a task fails. The task stays open, and the event can happen again for the same task. |
 | `chat.started` | A chat with marks starts. `reply.body` is `""`. |
+| `chat.dispatched` | A run is queued for a chat with marks, for its first message or for the messages that came after the last run. `reply.body` is `""`. |
 | `chat.replied` | A chat with marks has something to say: the last words of a run with its open proposals, a run that could not finish, a proposal that became a task, or a dismissed proposal. |
 | `chat.refused` | A happening with `opens.chat` could not start or continue a chat, or could not reopen a task. `reply.body` says why. |
 | `chat.acknowledged` | A happening with `opens.chat` reopened a finished task that has its marks. `reply.body` is `""`. |
@@ -980,10 +985,33 @@ Binding:
 | `action` | string | required | The action to run. It must be defined in `actions`. |
 | `to` | map of name to string | `{}` | Values the action reads in `target`. Can read `task` and `ask` for a task event, `chat` and `reply` for a chat event. Each value is an expression. |
 | `routes` | map of name to string | `{}` | Keyed by line key. When `to` gives no `channel`, the value for the task's line is used as `target.channel`. Not read for a chat event. |
-| `mark` | array of objects | `[]` | Marks kept on the task after the action succeeds. Can read `response` and `capture`. `find` is not read here, and a chat event keeps no mark. |
+| `mark` | array of objects | `[]` | Marks kept on the task after the action succeeds. Can read `response` and `capture`. `find` is not read here, and a chat event keeps no mark. A later binding of the same event does not see these marks. |
 
 A binding runs only when `target` contains a `channel` or a `thread`. Otherwise
 nothing is sent.
+
+```hcl
+on = {
+  "task.finished" = [
+    {
+      action = "react"
+      to = {
+        channel = "$${{ task.marks[\"slack.channel\"] }}"
+        message = "$${{ task.marks[\"slack.message\"] }}"
+        emoji   = "$${{ \"white_check_mark\" }}"
+      }
+    },
+    {
+      action = "post-notice"
+      to = {
+        channel = "$${{ task.marks[\"slack.channel\"] }}"
+        thread  = "$${{ task.marks[\"slack.thread_ts\"] }}"
+        text    = "$${{ \"The task “\" + task.title + \"” is complete.\" }}"
+      }
+    },
+  ]
+}
+```
 
 ## Secrets in expressions
 
