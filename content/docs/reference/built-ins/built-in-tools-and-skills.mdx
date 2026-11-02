@@ -14,6 +14,7 @@ Spotlight has tools and skills of its own. An agent calls a tool with
 | Tool | Enabled for | Also enables the skill |
 | --- | --- | --- |
 | `pull-request` | Runs at a station that lists it in `tools`. | `spotlight-pull-request` |
+| `checks` | Runs at a station that lists it in `tools`. | none |
 | `review-comment` | Runs at a station that lists it in `tools`. | `spotlight-review` |
 | `review` | Runs at a station that lists it in `tools`. | `spotlight-review` |
 | `propose-task` | Every chat run. A station cannot enable it. | none |
@@ -43,6 +44,26 @@ on this change: the pull request stays in its repository.
 
 The `pull-request.opening` [hook](/docs/integrations/hooks) runs before a pull
 request is opened. It does not run before a change to the title and body.
+
+### checks
+
+Lists the failed checks on the latest commit of the task's pull request. It has
+no inputs. The task must have a pull request.
+
+It answers with the `pullRequest` address, the `commit` it read, and `failed`,
+one entry for each failed check:
+
+| Field | Description |
+| --- | --- |
+| `name` | The name of the check, as in `web / build`. |
+| `conclusion` | `failure`, `timed_out` or `startup_failure`. |
+| `url` | The check on GitHub. |
+| `step` | The step that failed, for a GitHub Actions job. |
+| `summary` | The title and summary the check reported, as for a CodeQL alert. |
+| `log` | The last 200 lines of the log, for a GitHub Actions job. |
+
+Spotlight reads `step` and `log` for the first five GitHub Actions jobs. They
+are `null` for other checks, and where GitHub does not give the log.
 
 ### review-comment
 
