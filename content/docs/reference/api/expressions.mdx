@@ -48,6 +48,17 @@ there:
 has(body.data.assignee) ? body.data.assignee.email : ""
 ```
 
+`has()` takes only a field of a value. For a field of a function's result, use
+`in`, as in `"message" in parseJson(body.payload)`.
+
+## Functions
+
+Besides the standard CEL functions, every expression can call:
+
+| Function | Returns | Description |
+| --- | --- | --- |
+| `parseJson(string)` | dyn | Reads a JSON text as a value, as in `parseJson(body.payload).type`. Fails when the text is not JSON. |
+
 No expression may read a secret. An expression containing `secret.` or
 `secret[` is rejected.
 
@@ -85,8 +96,8 @@ a check names a real index, as in `integration.webhook.events[0].when`.
 | `tools.*.inputs.*.default` | | `task` |
 | `tools.*.output` | | `task`, `ask`, `chat`, `reply`, `target`, `connection`, `response`, `status`, `capture`, `inputs` |
 | `connection.oauth2.identity` | | `response` |
-| `on.*.to.*` | | `task`, `ask`, `chat`, `reply` |
-| `on.*.mark.*.value` | | `task`, `ask`, `chat`, `reply`, `target`, `connection`, `response`, `capture` |
+| `on.*.*.to.*` | | `task`, `ask`, `chat`, `reply` |
+| `on.*.*.mark.*.value` | | `task`, `ask`, `chat`, `reply`, `target`, `connection`, `response`, `capture` |
 
 `item` is seen only when the event has `forEach`. Captures are the names in
 the event's `lookup.capture`, each seen by its own name. `inputs` is seen by an
@@ -123,10 +134,13 @@ What an action has at run time depends on what runs it:
 
 | Field | Type | Description |
 | --- | --- | --- |
+| `task.title` | string | The task's title. |
+| `task.url` | dyn | The task's address in Spotlight; null when a tool runs the action. |
+| `task.pullRequest` | dyn | The task's pull request address, or null. |
 | `task.line` | string | The key of the task's line. |
 | `task.station` | string | The name of the task's station. |
 | `task.stationKey` | string | The key of the task's station. |
-| `task.marks` | map of string | The task's marks, by kind, as in `task.marks["slack.thread"]`. |
+| `task.marks` | map of string | The task's marks, by kind, as in `task.marks["slack.thread"]`. For a task created from a chat, also the chat's marks that do not find it. |
 
 `ask`:
 
@@ -148,6 +162,7 @@ What an action has at run time depends on what runs it:
 | --- | --- | --- |
 | `reply.body` | string | What Spotlight says to the chat. |
 | `reply.link` | dyn | The address of the task the reply is about, else of the chat, in Spotlight; null for `chat.refused`. |
+| `reply.proposals` | list | The chat's open proposals, listed in `reply.body`, for the last words of a run; otherwise empty. Each has `number`, `title`, and `line` and `station`, which can be null. |
 
 ## Hook positions
 
