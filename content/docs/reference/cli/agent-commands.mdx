@@ -10,7 +10,7 @@ a server the runner starts on the loopback interface for that run. They work
 only inside a Spotlight run.
 
 ```text
-spotlight handover --next <where> [--note <text>]
+spotlight handover --next <where> [--note <text>] [--attach <file>]...
 spotlight reply --to <handle> [--body <text>] [--resolve]
 spotlight trace --task <id> [--out <path>]
 spotlight history --station <key> [--line <key>] [--fingerprint <fp>] [--outcome <word>] [--since <date>] [--last <n>] [--out <dir>]
@@ -94,7 +94,7 @@ When the word is an enabled tool, the line that follows names the call, as
 ## spotlight handover
 
 ```text
-spotlight handover --next <where> [--note <text>]
+spotlight handover --next <where> [--note <text>] [--attach <file>]...
 ```
 
 Says where the task goes when the run ends. The run carries on until the
@@ -104,12 +104,20 @@ agent's turn ends.
 | --- | --- | --- |
 | `--next` | yes | Where the task goes. Matched without regard to case. |
 | `--note` | no | What the next station or person needs to know. Omitted, `-` or `/dev/stdin`: read from standard input to end of file, with surrounding whitespace trimmed. |
+| `--attach` | no | A file to attach to the note, such as a screenshot. Repeat for more than one. At most 10 files, each at most 25 MB. |
 
 `--next` takes one of the values the run is offered: the keys of the stations
 a run at the current station may pass to, in line order, then `review`, then
 `done` where the current station ends the line. When each is offered, and what
 it does to the task, is in
 [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover).
+
+Each attached file goes on the note that the handover writes: the note to the
+next station, to the person, or that closes the task. The runner uploads the
+files when the command runs, so the command fails if a file cannot be
+uploaded. The file name is the name of the file on disk, and the content type
+comes from its extension, or from its first bytes when the extension is not
+known. A replay or a search run takes the files but does not attach them.
 
 Running `handover` again replaces the earlier choice. The last accepted one
 counts.
@@ -126,10 +134,13 @@ counts.
 | `"<next>" is not one of: <options>` | `--next` names nothing on offer. The options are listed. |
 | `unreadable handover` | The request body was not JSON. |
 | `read the note: <error>` | Standard input could not be read. |
+| `attach <file>: <error>` | The file is missing, is not a regular file, is larger than 25 MB, could not be read, or could not be uploaded. |
+| `attach at most 10 files` | More than 10 `--attach` flags. |
 
 ```bash
 spotlight handover --next code-review --note "Added retries to the webhook client."
 spotlight handover --next review < question.md
+spotlight handover --next review --note "Added the theme selector." --attach light.png --attach open.png
 ```
 
 ### Without a handover
@@ -141,7 +152,8 @@ If the agent never runs `handover`, the runner reads
 { "next": "code-review", "note": "Added retries to the webhook client." }
 ```
 
-The file is ignored when it is missing, is not JSON, or has an empty `next`.
+The file is ignored when it is missing, is not JSON, or has an empty `next`. Only `next` and `note`
+are read from it, so it cannot attach files.
 A file an earlier run left is removed when a run starts.
 With neither a handover nor the file, the task goes to a person. See
 [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover).
