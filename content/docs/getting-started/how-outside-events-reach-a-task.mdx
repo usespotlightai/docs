@@ -41,7 +41,7 @@ says how to recognise them.
 ## Finding the task
 
 A task keeps a record of the things outside Spotlight that belong to it, such
-as the pull request it opened or the Slack thread it started in. Spotlight
+as the pull request it opened or the Slack thread of its question. Spotlight
 calls each of these a mark. When the task in the example opened its pull
 request, Spotlight noted that pull request on the task. The comment names the
 same pull request, so Spotlight finds the task by it. Only one task can have a
@@ -51,17 +51,24 @@ Events about a branch need no mark. Spotlight names the branch it works a task
 on after the task, so a failed check on that branch finds the task directly.
 
 Some things an event carries are too broad to find a task by. A Slack message
-names its channel, but a team opens many tasks from one channel. An integration
+names its channel, but many tasks and chats start in one channel. An integration
 can still keep the channel on the task, for example to know where to post a
 question, without ever using it to find one.
 
 ## When no task is found
 
 If no task has what the event is about, the integration may open a new one.
-A Slack message that mentions Spotlight is the usual case. Each line has a
-role, a word for the kind of work it takes, such as `delivery`. The integration
-names a role, and the task opens on the team's line with that role. Otherwise
-the event is ignored.
+Each line has a role, a word for the kind of work it takes, such as
+`delivery`. The integration names a role, and the task opens on the team's
+line with that role.
+
+An integration can start a chat with the team's agent in place of a task. A
+Slack message that mentions Spotlight is the usual case: the agent answers in
+the message's thread, and a task opens only when a person accepts one that the
+agent proposes. A later mention in the same thread finds the chat by its mark,
+as an event finds a task.
+
+If the integration names neither a role nor a chat, the event is ignored.
 
 Requests to review a pull request go instead to a line with a review policy,
 such as Review, and the policy decides whether to take them; see [Have Spotlight review pull
@@ -120,5 +127,5 @@ off more hooks; Spotlight stops such loops, with the limits given in the
 [`spotlight_hook`](/docs/reference/terraform/hook) reference.
 
 [GitHub events](/docs/reference/events/github-events) lists every GitHub
-happening and mark, and [Open tasks from Slack and post questions
-back](/docs/integrations/open-tasks-from-slack) sets up the Slack case.
+happening and mark, and [Ask Spotlight in
+Slack](/docs/integrations/ask-spotlight-in-slack) sets up the Slack case.
