@@ -17,7 +17,8 @@ accept or dismiss with a reply. You need:
   email or an email they verified. See
   [Add another email to your account](/docs/administration/add-another-email-to-your-account).
 - On a self-hosted Spotlight with an [outbound allow-list](/docs/reference/self-hosted-settings#allowed-hosts), the
-  list includes `slack.com`. Spotlight calls Slack's API from its own servers.
+  list includes `slack.com` and `files.slack.com`. Spotlight calls Slack's API
+  and downloads Slack files from its own servers.
 
 ## Prepare the Slack app
 
@@ -27,8 +28,8 @@ In the Slack app's settings:
 <Step>
 
 Give the app's bot the scopes `app_mentions:read`, `chat:write`,
-`channels:history`, `reactions:write`, `users:read` and `users:read.email`,
-and reinstall the app.
+`channels:history`, `files:read`, `reactions:write`, `users:read` and
+`users:read.email`, and reinstall the app.
 
 </Step>
 <Step>
@@ -137,8 +138,9 @@ Save, and reinstall the app if Slack asks.
 Mention the app in a channel it has joined, with a question about your code.
 The app reacts to the mention with the `eyes` emoji, and the agent's answer
 appears in the thread, with a link to the chat in Spotlight. The chat also
-shows on your **Agent** page. To ask more, mention the app again in the same
-thread. Only the person who started the chat can talk to it. When another
+shows on your **Agent** page. Files attached to the mention, such as
+screenshots, go to the agent with it. To ask more, mention the app again in
+the same thread. Only the person who started the chat can talk to it. When another
 person mentions the app in that thread, the app replies that only the person
 who started the chat can talk to it, and the chat does not change.
 
