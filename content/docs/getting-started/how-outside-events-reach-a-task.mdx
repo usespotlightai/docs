@@ -116,6 +116,14 @@ A few cases go differently:
   answered in the inbox. A rule that moves the task elsewhere comes first.
   While the task has a current run that move waits like any other, except a
   move to Completed, which finishes the task at once.
+- If the task is finished at a station other than Completed and the event is a
+  mention, such as `@Spotlight` in the task's Slack thread, the mention reopens
+  the task. The task goes to the station that the line's rule for the mention
+  names. Without a rule, it stays at the station where it finished. The mention
+  is added to its notes from the person who wrote it, and a new run starts if
+  the station has an agent. If the task is at Completed, or the person is not a
+  member of the workspace, the task does not change, and Spotlight replies in
+  the thread to say why.
 - Otherwise, if the line has no rule for the event, or the task is already
   completed, nothing happens.
 
