@@ -485,8 +485,9 @@ Action names are lowercase words joined by dashes, at most 64 characters.
 
 `uploads` sends files of the task's question before the action's request.
 For each file, Spotlight sends `prepare`, then sends the file's bytes with
-`send`. After the last file, it sends `complete`. Then it sends `request`,
-which reads the uploaded files in `uploaded`.
+`send`. After the last file, it sends `complete`. Then it sends `ready` for
+each file until the file is ready or `attempts` is reached. Then it sends
+`request`, which reads the uploaded files in `uploaded`.
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -494,16 +495,18 @@ which reads the uploaded files in `uploaded`.
 | `prepare` | object | required | The request sent first for each file. See [Requests](#requests). Reads `file`. Its `capture` is `prepared`. |
 | `send` | object | required | The request that sends the file. Reads `connection`, `file` and `prepared`. Has no `body`: the body is the file's bytes, with `content-type` set to the file's type unless a header sets it. |
 | `complete` | object | none | The request sent once, after the last file. Reads `uploaded`. |
+| `ready` | object | none | The request that checks that the service can show a file. See [Ready](#ready). |
 
 Each entry of `uploaded` has the file's `id`, `name`, `type` and `size`, and
 `prepared`. `uploaded` is empty when the question has no files, and when
 `each` lists none.
 
-When `prepare`, `send` or `complete` fails, Spotlight still sends `request`,
-with `uploaded` empty, and the binding fails with the error of the upload.
-When the service answers `request` with a failure while `uploaded` has files,
-Spotlight sends it once more with `uploaded` empty. A request that gets no
-answer is not sent again. A file that `each` lists more than once is sent once.
+When `prepare`, `send` or `complete` fails, or a file is not ready, Spotlight
+still sends `request`, with `uploaded` empty, and the binding fails with the
+error of the upload. When the service answers `request` with a failure while
+`uploaded` has files, Spotlight sends it once more with `uploaded` empty. A
+request that gets no answer is not sent again. A file that `each` lists more
+than once is sent once.
 
 ```hcl
 post-question = {
@@ -526,6 +529,13 @@ post-question = {
       auth   = { secrets = ["secret.SLACK_BOT_TOKEN"] }
       body   = "$${{ {\"files\": uploaded.map(each, {\"id\": each.prepared.id, \"title\": each.name})} }}"
     }
+    ready = {
+      method = "GET"
+      url    = "https://slack.com/api/files.info"
+      query  = { file = "$${{ prepared.id }}" }
+      auth   = { secrets = ["secret.SLACK_BOT_TOKEN"] }
+      expect = { success = "$${{ response.ok && has(response.file.mimetype) && response.file.mimetype != \"\" }}" }
+    }
   }
   request = {
     method = "POST"
@@ -545,6 +555,26 @@ A definition is rejected with:
 | `tools.<name>.action` | `names the action <action>, which uploads files. Only an event in on sends files. Please name an action without uploads` | A tool names an action with `uploads`. |
 | `schedule.action` | `names the action <action>, which uploads files. Only an event in on sends files. Please name an action without uploads` | The schedule names an action with `uploads`. |
 | `on.<event>.<n>.action` | `names the action <action>, which uploads files. A chat event has no files. Please name an action without uploads` | A binding of a `chat.` event names an action with `uploads`. |
+
+#### Ready
+
+Some services process a file after the upload, and refuse a message that
+shows the file before that ends. Slack is one of them. `ready` is a request,
+as in [Requests](#requests), sent for each file after `complete`. It reads
+`connection`, `file` and `prepared`. The file is ready when the request
+succeeds, as its `expect` decides. Until then, Spotlight sends it again
+every second. When the service answers `401` or `403`, Spotlight stops at
+once, because that answer does not change.
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `attempts` | integer | `10` | 1 to 30. How many times Spotlight sends `ready` for a file. |
+
+A definition is rejected with:
+
+| Path | Message | Cause |
+| --- | --- | --- |
+| `actions.<name>.uploads.ready.attempts` | `is 1 to 30 attempts` | `attempts` is less than 1 or more than 30. |
 
 ### Requests
 
