@@ -54,14 +54,46 @@ parts:
 
 | Part | Taken from |
 | --- | --- |
-| Type | The task title. A title that starts with a Conventional Commits type, as in `fix: …` or `fix(SPO-12): …`, gives that type. Otherwise the first word gives it: `fix` for "Fix", "Resolve" or "Repair"; `refactor` for "Rename", "Extract" or "Move"; `test` for "Tests" or "Add tests"; `docs` for "Document"; `chore` for "Bump" or "Upgrade". Any other title gives `feat`. |
+| Type | The task title. See [Branch types](#branch-types). |
 | Slug | The words of the title, without the type prefix, in lowercase and joined with `-`. Letters with accents lose the accent. Other characters are removed. The slug is cut at a word to at most 40 characters. A title with no letters or digits gives `task`. |
 | Short id | The first 8 characters of the task id. |
 
-The name does not change when the title changes. Two tasks in a workspace
-never have the same branch name. A
+The name does not change when the title changes. A workspace keeps each
+branch name for one task only. If a new task gets a name that another task in
+the workspace has, Spotlight does not create the new task. This needs the same
+type, slug and first 8 characters of the id, so it is very rare. Add the task
+again: it gets a new id, so its name is different. A
 [GitHub event](/docs/reference/events/github-events#how-a-happening-finds-its-task)
 on that branch finds the task.
+
+#### Branch types
+
+A title that starts with a Conventional Commits prefix gives its type from that
+prefix. The prefix is a word, then an optional scope in brackets, then an
+optional `!`, then `:`, as in `fix: …`, `fix(SPO-12): …` or `feat!: …`. The
+match ignores case.
+
+| Prefix word | Type |
+| --- | --- |
+| `feat`, `feature` | `feat` |
+| `fix`, `bugfix`, `hotfix` | `fix` |
+| `refactor`, `perf` | `refactor` |
+| `test`, `tests` | `test` |
+| `docs` | `docs` |
+| `chore`, `build`, `ci`, `style`, `deps`, `revert` | `chore` |
+
+Any other title, or a prefix word not in the table, gives its type from its
+start. The match ignores case and takes whole words only, so "Fixing" does not
+give `fix`.
+
+| Title starts with | Type |
+| --- | --- |
+| Fix, Fixes, Fixed, Hotfix, Patch, Resolve, Correct, Repair | `fix` |
+| Refactor, Restructure, Rename, Extract, Simplify, Split, Inline, Tidy, Clean up, Move | `refactor` |
+| Test, Tests, or Add, Write or Cover, then optional "more", "unit" or "e2e", then "test" or "tests" | `test` |
+| Doc, Docs, Document | `docs` |
+| Revert, Bump, Chore, Upgrade, Update dependencies, Update deps, Update lock | `chore` |
+| Anything else | `feat` |
 
 ### Notes
 
