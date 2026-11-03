@@ -76,7 +76,7 @@ A happening names what it concerns: a branch, marks, or both.
 
 | Concern | Taken from | Finds |
 | --- | --- | --- |
-| Branch `spotlight/<taskId>` | The pull request's head branch, or the check suite's head branch. | The task with that id. |
+| Branch | The pull request's head branch, or the check suite's head branch. | The task whose [branch](/docs/reference/app/tasks-runs-and-the-inbox#task-branches) has that name. |
 | `git.pull-request` mark | The pull request's URL. | The task that opened the pull request. |
 
 Every happening except `opened`, `mentioned` and `labelled` that names a pull
@@ -84,7 +84,7 @@ request is
 also sent a second time, concerning the `github.review` mark of that pull
 request. The task that has that mark receives it.
 
-A branch outside `spotlight/` finds no task by its name. A delivery that names
+A branch that is not a task's branch finds no task by its name. A delivery that names
 neither a branch nor a pull request is rejected.
 
 ## Review tasks
