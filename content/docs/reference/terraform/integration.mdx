@@ -492,7 +492,7 @@ which reads the uploaded files in `uploaded`.
 | --- | --- | --- | --- |
 | `each` | string | required | An expression that returns a list of entries of `ask.attachments`. Later requests see each entry as `file`. An entry that is not a file of the question is skipped. |
 | `prepare` | object | required | The request sent first for each file. See [Requests](#requests). Reads `file`. Its `capture` is `prepared`. |
-| `send` | object | required | The request that sends the file. Reads `file` and `prepared`. Has no `body`: the body is the file's bytes, with `content-type` set to the file's type unless a header sets it. |
+| `send` | object | required | The request that sends the file. Reads `connection`, `file` and `prepared`. Has no `body`: the body is the file's bytes, with `content-type` set to the file's type unless a header sets it. |
 | `complete` | object | none | The request sent once, after the last file. Reads `uploaded`. |
 
 Each entry of `uploaded` has the file's `id`, `name`, `type` and `size`, and
@@ -504,7 +504,6 @@ with `uploaded` empty, and the binding fails with the error of the upload.
 When the service answers `request` with a failure while `uploaded` has files,
 Spotlight sends it once more with `uploaded` empty. A request that gets no
 answer is not sent again. A file that `each` lists more than once is sent once.
-`send` goes without `connection`.
 
 ```hcl
 post-question = {
