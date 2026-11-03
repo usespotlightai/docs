@@ -93,6 +93,13 @@ a check names a real index, as in `integration.webhook.events[0].when`.
 | `actions.*.request.url`, `.query.*`, `.headers.*`, `.body` | | `task`, `ask`, `chat`, `reply`, `target`, `connection`, `inputs` |
 | `actions.*.request.expect.success` | bool | the above, `response`, `status` |
 | `actions.*.request.capture.*` | | the above, `response`, `status` |
+| `actions.*.uploads.each` | list | `task`, `ask`, `chat`, `reply`, `target` |
+| `actions.*.uploads.prepare.url`, `.query.*`, `.headers.*`, `.body` | | the above, `connection`, `file` |
+| `actions.*.uploads.prepare.expect.success`, `.capture.*` | | the above, `response`, `status` |
+| `actions.*.uploads.send.url`, `.query.*`, `.headers.*` | | `task`, `ask`, `chat`, `reply`, `target`, `connection`, `file`, `prepared` |
+| `actions.*.uploads.send.expect.success`, `.capture.*` | | the above, `response`, `status` |
+| `actions.*.uploads.complete.url`, `.query.*`, `.headers.*`, `.body` | | `task`, `ask`, `chat`, `reply`, `target`, `connection`, `uploaded` |
+| `actions.*.uploads.complete.expect.success`, `.capture.*` | | the above, `response`, `status` |
 | `tools.*.inputs.*.default` | | `task` |
 | `tools.*.output` | | `task`, `ask`, `chat`, `reply`, `target`, `connection`, `response`, `status`, `capture`, `inputs` |
 | `connection.oauth2.identity` | | `response` |
@@ -126,7 +133,9 @@ What an action has at run time depends on what runs it:
 | `status` | dyn | The response's HTTP status. |
 | `capture` | map | The request's `capture` values, by name. |
 | `item` | dyn | The current entry of `forEach`. |
-| `file` | dyn | The current entry of `attachments.each`. |
+| `file` | dyn | The current entry of `attachments.each`, or of `uploads.each`. |
+| `prepared` | map | The `capture` values of `uploads.prepare` for the current file, by name. |
+| `uploaded` | list | The files that `uploads` sent. Each has `id`, `name`, `type`, `size` and `prepared`. Empty for an action without `uploads`. |
 | `inputs` | map | The tool's inputs, by name. |
 | `target` | map of string | The values of the binding's `to`, and `channel` from `routes`. |
 
@@ -149,6 +158,7 @@ What an action has at run time depends on what runs it:
 | `ask.body` | string | What the task asks, when it waits on a person; otherwise `""`. When it waits on an approval, ends with a link to decide it. |
 | `ask.link` | dyn | The address of the conversation in the inbox, or null. |
 | `ask.station` | string | The name of the task's station. |
+| `ask.attachments` | list | The files of the question, as a handover's screenshots. Each has `id`, `name`, `type` and `size`. Empty when the task does not wait on a person. |
 
 `chat`:
 
