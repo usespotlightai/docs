@@ -30,6 +30,7 @@ resource "spotlight_oidc_trust" "github_main" {
   }
   scopes           = ["configure", "secrets"]
   lifetime_minutes = 15
+  description      = "Applies the platform from the main branch"
 }
 ```
 
@@ -44,6 +45,7 @@ resource "spotlight_oidc_trust" "github_main" {
 | `claims` | map of name to string | `{}` | Further claims the token must carry, each matching its pattern. At most 16. See [patterns](#patterns). |
 | `scopes` | array of strings | required | The scopes of every token the trust issues, as for a [workspace token](/docs/reference/api/workspace-token#scopes). |
 | `lifetimeMinutes` | integer | `15` | 1 to 60. How many minutes an issued token stays valid. |
+| `description` | string | `""` | Why the trust exists. Trimmed, at most 1000 characters. The trust list in the web app shows it; the web app has no field to write it. |
 | `createdBy` | string | read-only | The person who created the trust, or who issued the token that created it. |
 
 ## Patterns
