@@ -265,15 +265,20 @@ URL is not `https`.
 
 ## Models
 
-Change stacks, decisions, memories and judges use models through OpenRouter.
+Change stacks, decisions, memories and judges use a model through the OpenAI Chat Completions API. The endpoint must support JSON schema output (`response_format` of type `json_schema`). OpenAI, Gemini, OpenRouter, vLLM, Ollama and LiteLLM serve this API.
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `OPENROUTER_API_KEY` | none | Without it, no decision is generated, no memory is drafted, no run is judged, and a change stack fails with `Change stacks are not set up on this deployment.`. |
-| `CHANGE_STACK_MODEL` | `google/gemini-3.8-flash` | Generates [change stacks](/docs/reference/app/change-stacks-and-decisions). |
-| `DECISIONS_MODEL` | `google/gemini-3.8-flash` | Generates [decisions](/docs/reference/app/change-stacks-and-decisions#decisions). |
-| `MEMORIES_MODEL` | `google/gemini-3.8-flash` | Drafts [memories](/docs/reference/glossary#memory). |
-| `JUDGE_MODEL` | `google/gemini-3.8-flash` | The [judge](/docs/improvement/set-a-stations-judge-and-alerts). |
+| `LLM_BASE_URL` | none | The API base URL, such as `https://api.openai.com/v1` or `http://localhost:11434/v1`. Without it, no decision is generated, no memory is drafted, no run is judged, and a change stack fails with `Change stacks are not set up on this deployment.`. |
+| `LLM_API_KEY` | none | Sent as a bearer token. A local server can work without it. |
+| `LLM_MODEL` | none | The model for all four functions, as the endpoint names it. |
+| `LLM_SUPPORTS_REASONING_EFFORT` | `false` | Set it to `true` to send `reasoning_effort` with change stack requests. A model that does not accept the field refuses the request. |
+| `CHANGE_STACK_MODEL` | `LLM_MODEL` | Generates [change stacks](/docs/reference/app/change-stacks-and-decisions) and grades answers to their questions. |
+| `DECISIONS_MODEL` | `LLM_MODEL` | Generates [decisions](/docs/reference/app/change-stacks-and-decisions#decisions). |
+| `MEMORIES_MODEL` | `LLM_MODEL` | Drafts [memories](/docs/reference/glossary#memory). |
+| `JUDGE_MODEL` | `LLM_MODEL` | The [judge](/docs/improvement/set-a-stations-judge-and-alerts). |
+
+The control plane does not start when `LLM_BASE_URL` is set without any model, or a model is set without `LLM_BASE_URL`. A function without its own model and without `LLM_MODEL` does not run, as when `LLM_BASE_URL` is not set. The API does not report a price, so Spotlight records the tokens of these calls but no cost.
 
 ## Error reporting
 
