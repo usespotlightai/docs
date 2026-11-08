@@ -255,8 +255,9 @@ Its table adds the p90 of each on hover, "Tasks" with its change, "Runs",
 | First reviews | First reviews by a person in the period. Reviews by bots are not counted. | PR to review: from the pull request opening to its first review. |
 | PRs merged | Pull requests merged in the period. | Review to merge: from the first review, or from the opening where no person reviewed it, to the merge. |
 
-Times show as p50 and p90. A task tracks one pull request at a time. A task
-that opens another pull request is tracked on the new one.
+Times show as p50 and p90. A task with pull requests in several repositories
+is tracked on all of them together: open while one is open, merged when all
+merged, else closed. Its opening is the first opening.
 
 ### What the agents ship
 
@@ -905,7 +906,7 @@ Claude Code names `mcp__acp__Read`, `mcp__acp__Write`, `mcp__acp__Edit`,
 | Failing runs | Runs that failed where the run's last call to the server failed or never finished. |
 | Dismissed | Runs in which a person dismissed an approval of one of its tools. |
 
-Refused calls are left out of every column. With no server called, the card reads `No run called an MCP server in this period.`
+Refused calls are left out of every column. With no server called, the card reads `No MCP servers called`.
 
 A call is refused when the harness asked permission for it and Spotlight's
 answer was anything but allow: a rejection, the call being put to a person, or

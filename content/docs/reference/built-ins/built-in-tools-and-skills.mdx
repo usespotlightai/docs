@@ -26,15 +26,19 @@ under [spotlight tools call](/docs/reference/cli/agent-commands#spotlight-tools-
 
 ### pull-request
 
-Opens a pull request for the [task's branch](/docs/reference/app/tasks-runs-and-the-inbox#task-branches), into the
-repository's default branch (`main` if GitHub names none). It answers with
-`{"url": "<address>"}`. The task then has the `git.pull-request`
-[mark](/docs/reference/events/github-events#marks).
+Opens a pull request for the [task's branch](/docs/reference/app/tasks-runs-and-the-inbox#task-branches) in one
+repository, into the repository's default branch (`main` if GitHub names none).
+It answers with `{"url": "<address>"}`. The task then has a `git.pull-request`
+[mark](/docs/reference/events/github-events#marks) with that address.
 
-If the task already has a pull request, the call opens no other. It changes the
-title and body of that pull request to the ones given, and answers with its
-address. Without `body`, the body stays as it is. `repository` has no effect
-on this change: the pull request stays in its repository.
+A task has one pull request in each repository. When a run changes files in
+two repositories, the agent calls `pull-request` once for each, and names each
+repository with `repository`.
+
+If the task already has a pull request in that repository, the call opens no
+other. It changes the title and body of that pull request to the ones given,
+and answers with its address. Without `repository`, the call changes the task's
+first pull request. Without `body`, the body stays as it is.
 
 | Input | Type | Required | Stdin | Description |
 | --- | --- | --- | --- | --- |
@@ -47,11 +51,12 @@ request is opened. It does not run before a change to the title and body.
 
 ### checks
 
-Lists the failed checks on the latest commit of the task's pull request. It has
-no inputs. The task must have a pull request.
+Lists the failed checks on the latest commit of each pull request of the task.
+It has no inputs. The task must have a pull request.
 
-It answers with the `pullRequest` address, the `commit` it read, and `failed`,
-one entry for each failed check:
+It answers with `pullRequests`, one entry for each pull request, the first
+opened first. Each entry has the `pullRequest` address, the `commit` it read,
+and `failed`, one entry for each failed check:
 
 | Field | Description | `null` when |
 | --- | --- | --- |
@@ -61,6 +66,10 @@ one entry for each failed check:
 | `step` | The name of the step that failed. | The check is not one of the first five GitHub Actions jobs, no step failed, or GitHub does not give the job. |
 | `summary` | The title and summary the check reported, as for a CodeQL alert. | The check reported neither. GitHub Actions jobs usually report neither. |
 | `log` | The last 200 lines of the job's log. | The check is not one of the first five GitHub Actions jobs, or GitHub does not give the log. |
+
+When GitHub does not answer for one pull request, its entry has `error`, the
+reason, in place of `commit` and `failed`. When GitHub answers for none, the call
+fails.
 
 GitHub gives the step and the log only if the App has **Actions: read**; see
 [Connect GitHub](/docs/integrations/connect-github#let-the-app-read-failed-checks).

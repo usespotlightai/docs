@@ -58,6 +58,7 @@ Besides the standard CEL functions, every expression can call:
 | Function | Returns | Description |
 | --- | --- | --- |
 | `parseJson(string)` | dyn | Reads a JSON text as a value, as in `parseJson(body.payload).type`. Fails when the text is not JSON. |
+| `htmlUnescape(string)` | string | Decodes `&amp;`, `&lt;` and `&gt;` in a text, as in `htmlUnescape(body.event.text)`. It does not rewrite Slack tokens such as `<@U123>`. |
 
 No expression may read a secret. An expression containing `secret.` or
 `secret[` is rejected.
@@ -147,7 +148,8 @@ What an action has at run time depends on what runs it:
 | --- | --- | --- |
 | `task.title` | string | The task's title. |
 | `task.url` | dyn | The task's address in Spotlight. |
-| `task.pullRequest` | dyn | The task's pull request address, or null. |
+| `task.pullRequest` | dyn | The address of the task's first pull request, or null. |
+| `task.pullRequests` | list of string | The addresses of the task's pull requests, one for each repository, the first opened first. Empty without one. |
 | `task.line` | string | The key of the task's line. |
 | `task.station` | string | The name of the task's station. |
 | `task.stationKey` | string | The key of the task's station. |
@@ -201,7 +203,8 @@ A hook's `match` is compiled into conditions of the same kind as `when`.
 | `task.stationKey` | string | The key of the task's station. |
 | `task.marks` | map of string | The task's marks, by kind. |
 | `task.repositories` | list of string | The line's repositories, as `owner/name`. |
-| `task.pullRequest` | dyn | The task's pull request address, or null. |
+| `task.pullRequest` | dyn | The address of the task's first pull request, or null. |
+| `task.pullRequests` | list of string | The addresses of the task's pull requests, one for each repository, the first opened first. Empty without one. |
 | `run.id` | string | The run's id. Only on events that happen in a run. |
 | `vars` | map of string | The hook's `vars`. |
 | `hook.key` | string | The hook's key. |
