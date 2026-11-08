@@ -360,6 +360,35 @@ task's conversation with it.
 The keys need only `s3:PutObject`, `s3:GetObject` and `s3:DeleteObject`, on
 `arn:aws:s3:::<bucket>/pending/*` and `arn:aws:s3:::<bucket>/workspaces/*`.
 
+## Notifications
+
+Spotlight tells a person about each new item in their inbox. An open Spotlight
+tab gets the item through the server. A browser that is closed gets it through
+Web Push, which needs a VAPID key pair. Generate one with
+`npx web-push generate-vapid-keys`.
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `VAPID_PUBLIC_KEY` | none | The public key of the pair, base64url. |
+| `VAPID_PRIVATE_KEY` | none | The private key of the pair, base64url. |
+| `VAPID_SUBJECT` | none | A `mailto:` or `https:` address where push services can reach the operator. |
+
+Set all three, or none. Without them, Spotlight sends no Web Push, and
+notifications show only while a Spotlight tab is open. Keep the same key pair:
+a new pair stops Web Push to every browser until each person turns
+notifications on again.
+
+Spotlight sends Web Push only to these push services, whatever
+`SPOTLIGHT_OUTBOUND_ALLOWED_HOSTS` says:
+
+- `fcm.googleapis.com` (Chrome and other Chromium browsers)
+- `updates.push.services.mozilla.com` (Firefox)
+- `web.push.apple.com` and `*.push.apple.com` (Safari)
+- `*.notify.windows.com` (Edge on Windows)
+
+With several control plane servers, set `REDIS_URL`, so that an open tab gets
+its items from whichever server holds its connection.
+
 ## Mail
 
 Spotlight sends [invites](/docs/reference/roles-and-permissions#invites) by
