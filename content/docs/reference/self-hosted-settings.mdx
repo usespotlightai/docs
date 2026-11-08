@@ -32,6 +32,7 @@ Neither `SPOTLIGHT_SECRETS_KEY` nor `SPOTLIGHT_SECRETS_KMS_KEY_ID` set gives
 | `LOG_LEVEL` | `debug` in `development`, else `info` | `fatal`, `error`, `warn`, `info`, `debug`, `trace` or `silent`. What Spotlight logs is in [Observability](/docs/reference/observability#logs). |
 | `SPOTLIGHT_RELEASE` | none | The release the [install script](/docs/reference/cli/install-script) installs, and the runner image tag it pulls, when it is a release, as in `v0.1.0`. Without it, or with any other value, `canary`, the latest staging build. |
 | `SPOTLIGHT_INSTALLER_DIR` | `/opt/spotlight/installer` | The directory that contains the `install.sh` served at `/api/install.sh`. |
+| `REDIS_URL` | none | A `redis://` or `rediss://` URL. Lets several control plane servers share live drafts, run streams, [notifications](#notifications), host tunnels, the leader lease and the [rate limit](#rate-limit). Set it when you run more than one server. |
 
 ## Addresses and sign-in
 
@@ -99,8 +100,8 @@ apply to each call that Spotlight makes for a workspace's configuration:
 
 They do not apply to hook requests and integration actions whose `from` is
 `network`, which a host of the workspace sends through its egress, or to the
-calls Spotlight makes for itself, such as to GitHub, the catalog and model
-providers. The time and size limits of these calls are in
+calls Spotlight makes for itself, such as to GitHub, the catalog, model
+providers and the [push services](#notifications). The time and size limits of these calls are in
 [Limits and timeouts](/docs/reference/limits-and-timeouts#outbound-calls).
 
 ### Allowed hosts
@@ -215,7 +216,7 @@ and client registration, API spec fetches, the JWKS of a webhook's JWT check,
 the provision calls of push pools, the OIDC discovery and JWKS of a trust, or
 the calls Spotlight makes for itself.
 
-When `REDIS_URL` is set, all control plane servers share the count of each
+When [`REDIS_URL`](#service) is set, all control plane servers share the count of each
 workspace through Redis. Without `REDIS_URL`, each server counts on its own.
 If Redis fails or does not answer within 2 seconds, each server counts on its
 own until Redis answers again. Spotlight logs
@@ -373,21 +374,26 @@ Web Push, which needs a VAPID key pair. Generate one with
 | `VAPID_PRIVATE_KEY` | none | The private key of the pair, base64url. |
 | `VAPID_SUBJECT` | none | A `mailto:` or `https:` address where push services can reach the operator. |
 
-Set all three, or none. Without them, Spotlight sends no Web Push, and
-notifications show only while a Spotlight tab is open. Keep the same key pair:
+Give all three or none. Some but not all gives
+`VAPID_PUBLIC_KEY: goes with VAPID_PRIVATE_KEY and VAPID_SUBJECT. Set all three to send Web Push, or none; generate a key pair with: npx web-push generate-vapid-keys`.
+Without them, Spotlight sends no Web Push, and notifications show only while a
+Spotlight tab is open. Keep the same key pair:
 a new pair stops Web Push to every browser until each person turns
 notifications on again.
 
 Spotlight sends Web Push only to these push services, whatever
-`SPOTLIGHT_OUTBOUND_ALLOWED_HOSTS` says:
+`SPOTLIGHT_OUTBOUND_ALLOWED_HOSTS` says. The list is fixed. A browser whose push
+service is not on it cannot turn on Web Push: Spotlight answers `422`, and the
+settings page says that it could not change the setting.
 
 - `fcm.googleapis.com` (Chrome and other Chromium browsers)
 - `updates.push.services.mozilla.com` (Firefox)
 - `web.push.apple.com` and `*.push.apple.com` (Safari)
 - `*.notify.windows.com` (Edge on Windows)
 
-With several control plane servers, set `REDIS_URL`, so that an open tab gets
-its items from whichever server holds its connection.
+With several control plane servers, set [`REDIS_URL`](#service). Without it, an
+open tab gets only the items that the server holding its connection announces,
+and misses the others.
 
 ## Mail
 
