@@ -158,6 +158,24 @@ egress with the run's egress token, and copies the run's assignment into the
 sandbox. A run delivered into a live sandbox uses the image the sandbox
 started from.
 
+## Warm sandboxes
+
+A line with `warmSandboxes` above 0 has that many warm sandboxes. A warm
+sandbox belongs to no task. Its repositories are cloned from the host's
+mirrors at each repository's default branch, and their `setup` runs in it.
+A task's first run then starts in it, and the sandbox becomes that task's
+sandbox.
+
+| Rule | Value |
+| --- | --- |
+| Kept | Every 30 seconds, Spotlight requests the missing warm sandboxes of each line and drains the extra ones. A warm sandbox whose line changed its repositories, setups, image or `runners` drains, and a new one replaces it. |
+| Placed | On a host that matches the line's `runners` and image and has a free place. The host starts it only when no run of the workspace waits for that host. |
+| Mirrors | The host mounts its mirror of each repository. A host with no mirror of a repository cannot warm the sandbox: the sandbox is `gone`, and the line gets no new warm sandbox for 15 minutes. |
+| Setup | A failed setup is not recorded, so the first run runs it again. |
+| First run | A queued first run of a task of the line, which restores no working copy, starts in a `ready` warm sandbox with no run in it. For 60 seconds after it is queued, other hosts leave such a run to the warm sandbox's host. Replays, searches and chats do not use warm sandboxes. |
+| Age | A warm sandbox that no run took drains this long after it started. The control plane's `SPOTLIGHT_WARM_SANDBOX_AGE`, default `24h`. A new one replaces it. |
+| Capacity | As for any sandbox: one place in the host's `SPOTLIGHT_CAPACITY` and its pool's `maxRuns`. |
+
 ## Editor connections
 
 A person opens a sandbox over SSH with
@@ -204,7 +222,7 @@ harness starts has the failure code `unprepared`; from the harness start on,
 | Memory | The memory folder from earlier runs is cleared, and every active memory that applies to the run is written under `.spotlight/memory`. | | Recorded. The run continues, with only a `README.md` in the folder saying the team's memory could not be read. |
 | Harness files | For a task's run, files a harness profile laid in an earlier run are removed from `.spotlight/state`, and the station's harness profile's files are written there. | | Fails the run. |
 | Ownership | `/workspace` is given to `agent`. Files `agent` already owns are left alone. | | Fails the run: `The runner couldn't prepare the run. Error: hand over workspace: <error>`. |
-| Setup | Each repository's `setup` runs in its checkout as `agent`, with `/bin/sh -c`. | 15 minutes per checkout | Recorded. The run continues. |
+| Setup | Each repository's `setup` runs in its checkout as `agent`, with `/bin/sh -c`. The setups of a run's repositories run at the same time, at most four at once. A setup is skipped when it is not needed: see [Setup](#setup). | 15 minutes per checkout | Recorded. The run continues, and the agent is told: see [Setup](#setup). |
 | Egress check | A runner given `SPOTLIGHT_EGRESS_URL` tries a direct connection to the Spotlight address, and records `egress.checked`. See [Enforcement](/docs/reference/hosts/egress#enforcement). | 3 seconds | |
 | Harness start | The harness starts in `/workspace` as `agent`, over the Agent Client Protocol. The previous session is resumed, or a new session opens. A session the harness no longer has opens a new one. The harness command's session options, such as OpenCode's `effort`, are then set on the session. | | Fails the run: `The runner couldn't start the agent. Error: start agent: <error>`, `The runner couldn't start the agent. Error: resume the session: <error>`, `The runner couldn't start the agent. Error: open a session: <error>` or `The runner couldn't start the agent. Error: set the harness's <option> to <value>: <error>`. A session option marked optional that the harness refuses is logged, and the run continues without it. |
 | Prompt | The [briefing](#briefing) is sent. Each message a person sends during the turn cancels the turn and is sent next. When a turn ends, messages waiting are sent as the next prompt. With none, the run completes, or, when it put the task to a person, is suspended. A message that came in during a turn that put the task to a person starts the run again at once. | | See below. |
@@ -242,6 +260,31 @@ and the run is suspended until the answer. Requests of other kinds, such as ACP'
 A change stack check runs in a sandbox of its own, in place of a run. See
 [Checks](/docs/reference/app/change-stacks-and-decisions#checks).
 
+## Setup
+
+After a setup succeeds, the sandbox records its command and the content of the
+repository's dependency files. The next run in the same sandbox skips that
+setup when both are the same. A new sandbox, a restored working copy and a
+replay run record nothing, so their setup runs. A skip looks only at the
+command and the dependency files, so keep `setup` to what installs
+dependencies: a build or code generation step in it is skipped with the install.
+
+The dependency files are the files with these names anywhere in the checkout
+that git tracks or does not ignore: `package.json`, `package-lock.json`,
+`npm-shrinkwrap.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `yarn.lock`,
+`bun.lock`, `bun.lockb`, `go.mod`, `go.sum`, `go.work`, `go.work.sum`,
+`Cargo.toml`, `Cargo.lock`, `pyproject.toml`, `poetry.lock`, `uv.lock`,
+`Pipfile`, `Pipfile.lock`, `requirements*.txt`, `Gemfile`, `Gemfile.lock`,
+`composer.json`, `composer.lock`, `mix.exs`, `mix.lock`, `.node-version`,
+`.nvmrc`, `.python-version`, `.ruby-version` and `.tool-versions`.
+
+A failed setup is recorded under the `setup` step, and nothing is recorded for
+the next run, so it runs that setup again. The agent's first message then
+starts with a note before the briefing. The note names each failed repository,
+its setup command, the error and the last 20 lines of output. It tells the agent
+to do the task as far as it can and to say in its handover which setups failed
+and why.
+
 ## Briefing
 
 The briefing is the first prompt a task's run sends its harness. It contains
@@ -274,7 +317,7 @@ These phases record their output on the run under a step name:
 | `restore` | `Restored the workspace the last run left (<size>)`, `Kept the workspace this sandbox restored or the last run left in it`, `Started afresh: <error>`, `Restored the workspace the replayed run started from (<size>)` |
 | `start` | `Where the run started was not recorded: <error>` |
 | `prepare` | `reusing <path>`, `cloning <path> from the host's mirror`, `cloning <path>`, `caught <path> up with what was pushed to <branch>`, `left <path> as the last run left it: <branch> has moved on both here and on the remote`, `left <path> behind the remote's <branch>: uncommitted changes here block the fast-forward`, and git's output |
-| `setup` | The command's output, and `Setup failed for <path>. Error: <error>` on failure. |
+| `setup` | The command's output, `Setup failed for <path>. Error: <error>` on failure, and `Skipped setup for <path>: the setup command and the dependency files did not change after the last setup in this sandbox.` |
 | `archive` | `Captured the workspace for the next run (<size>)`, `Coalesced: nothing changed since the workspace was last restored or archived`, `Skipped: <error>` |
 
 A run that fails before its harness starts records a `failed` event with the
