@@ -8,7 +8,6 @@ npm install
 npm run dev          # http://localhost:3000/docs
 npm run build        # static export in out/
 npx wrangler dev     # serve out/ through the Worker, on :8787
-npm run lint:prose   # house-style checks on every page
 npm run lint:links   # every internal link and anchor resolves
 ```
 
