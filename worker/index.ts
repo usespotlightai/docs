@@ -22,6 +22,8 @@ const MOVED: Readonly<Record<string, string>> = {
     '/docs/integrations/add-a-tool-from-an-http-api',
   '/docs/integrations/generate-tools-from-an-api-description':
     '/docs/integrations/generate-tools-from-an-api-spec',
+  '/docs/tasks/open-a-workspace-in-vs-code':
+    '/docs/tasks/open-a-working-copy-in-vs-code',
 };
 
 const PROXY_PREFIX = '/ingest';

@@ -1,18 +1,18 @@
 ---
 type: how-to
 icon: SquarePen
-title: Open a task's workspace in VS Code
-description: Set up your computer once, then open the workspace of a task or a planning chat in VS Code or Cursor, to read and change what the agent works on.
+title: Open a task's working copy in VS Code
+description: Set up your computer once, then open the working copy of a task or a planning chat in VS Code or Cursor, to read and change what the agent works on.
 ---
 
-A task's workspace is the folder the agent works in: the checked-out code and
+A task's working copy is the folder the agent works in: the checked-out code and
 the agent's working files. It lives in the task's sandbox, a container on one
 of your team's hosts. You can open it in VS Code or Cursor over SSH, edit
 files and use a terminal there, while the agent works or after it stops.
 
 You need:
 
-- To be a member of the task's workspace. For a planning chat, you must be the
+- To be a member of the workspace that has the task. For a planning chat, you must be the
   person who started the chat.
 - A host of a pull pool or a runner trust that can take the task's runs. See
   [Install a host](/docs/hosts/run-a-host).
@@ -87,7 +87,7 @@ command palette) and add:
 
 If you move the `spotlight` binary, run `spotlight ssh setup` again.
 
-## Open the workspace
+## Open the working copy
 
 <Steps>
 <Step>
@@ -114,7 +114,7 @@ Let the browser open the editor. The editor connects to the task's sandbox
 and opens the folder `/workspace`, with each repository checked out in it.
 
 If no sandbox is up for the task, Spotlight starts one and restores the
-workspace the task's last run left. The editor waits until the sandbox is
+working copy the task's last run left. The editor waits until the sandbox is
 ready. This can take a few minutes. The editor's log shows
 `Starting the sandbox. This can take some minutes.` while it waits.
 
@@ -123,14 +123,14 @@ ready. This can take a few minutes. The editor's log shows
 
 If the editor does not open within about two seconds, Spotlight shows **Set up
 this computer once**, which reads "If VS Code did not open, this computer
-needs…", with the setup steps. Do the steps, then open the workspace again.
+needs…", with the setup steps. Do the steps, then open the working copy again.
 
-## Work in the workspace
+## Work in the working copy
 
 You and the agent see the same files. You can edit them and run commands in
 the editor's terminal, while the agent works or while it waits for an answer. The agent sees your changes in its next step,
 and you see its changes as it makes them. Changes that neither of you commits
-stay in the workspace, and the task's next run starts from them.
+stay in the working copy, and the task's next run starts from them.
 
 Commands in the editor's terminal run as the agent's user, in the sandbox.
 They reach the network through the sandbox's egress, like the agent's
@@ -140,13 +140,13 @@ connect](/docs/security/limit-where-sandboxes-connect).
 Between runs, Spotlight stops the processes the agent left running. Processes
 you started from the editor keep running.
 
-## Close the workspace
+## Close the working copy
 
 Close the editor window. When no run and no editor uses the sandbox, it stays
-up for 10 minutes, then Spotlight stores the workspace with your changes and
+up for 10 minutes, then Spotlight stores the working copy with your changes and
 removes the sandbox. An open editor keeps the sandbox up for at most 12 hours
 after the task's last run ended. Then the editor loses its connection, and
-the next time you open the workspace, Spotlight starts a new sandbox. A
+the next time you open the working copy, Spotlight starts a new sandbox. A
 self-hosted Spotlight can change both times; see [Sandbox
 lifetime](/docs/reference/hosts/sandbox#sandbox-lifetime).
 

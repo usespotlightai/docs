@@ -292,7 +292,7 @@ The variables are in [Observability](/docs/reference/observability#spotlight).
 
 ## Storage
 
-Attachments and [workspace archives](/docs/runs/how-a-conversation-survives-between-runs)
+Attachments and [working copy archives](/docs/runs/how-a-conversation-survives-between-runs)
 are kept in one S3 bucket. Browsers and runners never get its keys: they
 upload and download through presigned URLs that last 15 minutes.
 
@@ -318,13 +318,13 @@ storage host runners reach: the host of `S3_RUNNER_ENDPOINT`, else of
 | --- | --- |
 | `pending/<workspace id>/<attachment id>` | A file a browser has uploaded but no task, answer or message has taken yet. |
 | `workspaces/<workspace id>/attachments/<attachment id>` | A file a task, answer or message has taken. |
-| `workspaces/<workspace id>/archives/<archive id>.tar.gz` | A [workspace archive](/docs/reference/limits-and-timeouts#workspace-archives). |
+| `workspaces/<workspace id>/archives/<archive id>.tar.gz` | A [working copy archive](/docs/reference/limits-and-timeouts#working-copy-archives). |
 
 A browser uploads to `pending/`. Once a task, answer or message that names the
 file is saved, Spotlight copies it under `workspaces/` and the pending copy is
 dropped. Spotlight never removes an attachment under `workspaces/`. It removes
 archives itself, on the schedule in
-[Limits and timeouts](/docs/reference/limits-and-timeouts#workspace-archives).
+[Limits and timeouts](/docs/reference/limits-and-timeouts#working-copy-archives).
 
 ### Bucket setup
 
