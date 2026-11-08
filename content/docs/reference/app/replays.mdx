@@ -153,7 +153,7 @@ a result.
 | `exited` | `the agent stopped with an error` | Failed |
 | `refused` | `the config is not allowed in a replay` | Failed |
 | none | | Failed |
-| `unprepared` | `the workspace setup failed before the agent started` | Unscored |
+| `unprepared` | `the working-copy setup failed before the agent started` | Unscored |
 | `unprovisioned` | `no runner was available` | Unscored |
 | `hooks-unanswered` | `hooks did not answer` | Unscored |
 | `runner-lost` | `Spotlight lost the runner` | Unscored |
@@ -176,7 +176,7 @@ suspended on the way, add to the replay's spend.
 | `no-checkout` | `the checkout is missing` |
 | `checkout-failed` | `the checkout failed` |
 | `setup-failed` | `the repository setup failed` |
-| `workspace-failed` | `the runner could not open a workspace` |
+| `working-copy-failed` | `the runner could not open a working copy` |
 | `out-of-time` | `the checks ran out of time` |
 | `no-image` | `the check image is missing` |
 | `provision-failed` | `no runner was available for the check` |
@@ -451,7 +451,7 @@ it never started:
 | `still-running` | `the run has not ended` |
 | `no-starting-point` | `the run recorded no starting point` |
 | `no-briefing` | `the task briefing was not kept` |
-| `archive-gone` | `the starting workspace is gone` |
+| `archive-gone` | `the starting working copy is gone` |
 | `attachments-gone` | `the briefing files are gone` |
 | `answer-gone` | `the answer is gone` |
 | `repository-gone` | `the repository is not on the line` |
@@ -467,10 +467,10 @@ the line as it is now. `cannot-start` means the candidate's station runs no
 harness a runner can start. `dispatch-failed` follows 10 failed attempts to
 queue the run.
 
-A workspace archive is kept for at least 30 days after the latest run that
+A working copy archive is kept for at least 30 days after the latest run that
 started from it, and while a run that started from it is in a replay set. Once
 the run's task is deleted, the replay set no longer keeps it. See
-[Workspace archives](/docs/reference/limits-and-timeouts#workspace-archives).
+[Working copy archives](/docs/reference/limits-and-timeouts#working-copy-archives).
 
 ## Spend and ceiling
 
@@ -501,7 +501,7 @@ run:
 | | Replay run |
 | --- | --- |
 | Task | Has no task. The task's state, notes, board and inbox do not change. |
-| Workspace | The exact archive the original run restored, or none if it restored none. A replay that cannot restore it fails. |
+| Working copy | The exact archive the original run restored, or none if it restored none. A replay that cannot restore it fails. |
 | Checkouts | Each repository at the commit the original run started from. |
 | Briefing | The task as briefed to the original run, with its notes, attachments and decisions then. The memories it was briefed with are looked up again when the replay run is queued: a memory deleted since is left out, and each one reads as it is now. `spotlight history` and `spotlight recall` read as of the original run's start. A [replay with the answer](#replay-with-the-answer) adds the answer. |
 | Agent commands | `spotlight trace`, `spotlight remember` and replies to a pull request's review comments are not allowed. |

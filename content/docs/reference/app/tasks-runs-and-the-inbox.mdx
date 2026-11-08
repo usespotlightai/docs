@@ -232,7 +232,7 @@ why (optional)`. See [Approvals](#approvals).
 | `claimed` | `queued` | The lease expired, or the runner stopped the run at its run timeout (`timed-out`), no stop was requested, and the run has had fewer than 3 attempts. Or its `run.starting` hooks could not be called, and the run is requeued to wait. |
 | `claimed` | `suspended` | The turn ended cleanly with the task put to a person. The run gives up its lease and its place in the sandbox at once, and its journal reads `Waiting for a person`. Only a task's run is suspended; a chat run completes. |
 | `claimed` | `queued` | The turn ended with the task put to a person, and messages the run has not read came in during the turn. The run is queued at once as its next attempt, and its journal reads `Messages came in during the turn. The run starts again to read them.` |
-| `suspended` | `queued` | The person answers, in the inbox, in the task's Slack thread or on the run's page. The run is queued as its next attempt and resumes the same session: in the task's sandbox while it is up, else in a new sandbox that restores the stored workspace. |
+| `suspended` | `queued` | The person answers, in the inbox, in the task's Slack thread or on the run's page. The run is queued as its next attempt and resumes the same session: in the task's sandbox while it is up, else in a new sandbox that restores the stored working copy. |
 | `suspended` | `completed` | The task is moved or deleted, or the run is stopped. |
 | `claimed` | `completed` | The runner reports an outcome without a failure, or the run is stopped, or its lease expires after it was asked to stop. |
 | `claimed` | `failed` | The harness failed (`exited`), or the run failed before its harness started (`unprepared`). A hook on `run.starting` denied it (`refused`). Its hooks could not be called after the last requeue (`hooks-unanswered`). Its lease expired on the last attempt, and no stop was requested (`runner-lost`). Its runner stopped it at its run timeout on the last attempt, and no stop was requested (`timed-out`). |
@@ -286,7 +286,7 @@ Once the task has left the run's station, the composer is replaced by
 | Code | Cause | Retried |
 | --- | --- | --- |
 | `exited` | The runner reported that the run failed once its harness had started, or the harness did not start. | no |
-| `unprepared` | The run failed before its harness started: its workspace, checkouts, attachments, skills or harness files could not be made ready, or its host could not start a sandbox with the line's image and its egress. | no |
+| `unprepared` | The run failed before its harness started: its working copy, checkouts, attachments, skills or harness files could not be made ready, or its host could not start a sandbox with the line's image and its egress. | no |
 | `refused` | The run could not be given what its station names, or a hook denied its start. | no |
 | `unprovisioned` | A push pool did not provision a runner for it. | no |
 | `hooks-unanswered` | Its `run.starting` hooks could not be called. | yes |
@@ -322,7 +322,7 @@ for more than one reason, the reasons are joined with `; `.
 | `The runner couldn't prepare the run. Error: prepare: git clone <path>: <error>: <output>` | A repository could not be cloned. Code `unprepared`. |
 | `The runner couldn't prepare the run. Error: prepare: preparing <path> did not finish within 10m0s` | The checkouts took longer than their time limit. Code `unprepared`. |
 | `The runner couldn't prepare the run. Error: clear an earlier run's outcome: <error>` | `.spotlight/outcome.json` from an earlier run could not be removed. Code `unprepared`. |
-| `The runner couldn't prepare the run. Error: fetch attachment <id>: <error>` | An attachment could not be written into the workspace. Code `unprepared`. |
+| `The runner couldn't prepare the run. Error: fetch attachment <id>: <error>` | An attachment could not be written into the working copy. Code `unprepared`. |
 | `The runner couldn't prepare the run. Error: hand over workspace: <error>` | `/workspace` could not be given to the agent user. Code `unprepared`. |
 | `The runner couldn't start the agent. Error: start agent: <error>` | The harness did not start. Code `exited`. |
 | `The runner couldn't start the agent. Error: resume the session: <error>` | The harness could not reopen the task's earlier conversation. Code `exited`. |
@@ -390,14 +390,14 @@ For example: `Effort high → xhigh`.
 ### Starting point
 
 Once its checkouts are ready, a task's run records where it started: the
-workspace archive it restored, if any, and the commit each repository's
+working copy archive it restored, if any, and the commit each repository's
 checkout is at. A later attempt of the same run does not replace what the
 first attempt recorded. If the starting point cannot be recorded, the run
 carries on and its `start` step reads
 `Where the run started was not recorded: <error>`. A run with no starting point
 cannot be [replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed).
 The archive is kept for 30 days after the run started; see
-[Workspace archives](/docs/reference/limits-and-timeouts#workspace-archives).
+[Working copy archives](/docs/reference/limits-and-timeouts#working-copy-archives).
 
 ### Spend
 
@@ -1302,5 +1302,5 @@ run at once.
 | --- | --- |
 | Largest file | 25 MiB |
 | Attached to | A task, an answer, a message to a run, a chat message. |
-| In the run | `.spotlight/attachments/<id>/<name>` in the run's workspace. |
+| In the run | `.spotlight/attachments/<id>/<name>` in the run's working copy. |
 | In the briefing | Listed under `Attached, in the workspace:`. |

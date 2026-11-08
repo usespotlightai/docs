@@ -42,7 +42,7 @@ what each harness installs.
 
 | Path | Contents |
 | --- | --- |
-| `/workspace` | The workspace. Every run and check uses the same path. |
+| `/workspace` | The run's [working copy](/docs/reference/glossary#working-copy). Every run and check uses the same path. |
 | `/workspace/<repository>` | Each checkout, named by the repository's name without its owner. `acme/api` is at `/workspace/api`. |
 | `/workspace/.spotlight/attachments/<attachment id>/<name>` | Each file attached to the task, or to a message during the run. |
 | `/workspace/.spotlight/memory` | Every active team [memory](/docs/reference/glossary#memory) that applies to the run's team, line, station and repositories, as Markdown files named by handle, such as `M-12.md`. A memory scoped to a repository is in `repositories/<owner>/<name>/`, or, when it is about paths, in `repositories/<owner>/<name>/<path>/` once for each path. Any other memory is in `team/`, `line/` or `station/`. Each file contains the handle and kind, the memory, where it applies, and its source: who approved it and from where; then the memory it replaced, if any, and the `spotlight trace` command for the task it came from, if any. Laid afresh each run; changing the files changes nothing the team remembers. When the team's memory cannot be read, the folder contains only `README.md`. A search's agent run gets no memory files. |
@@ -143,10 +143,10 @@ tasks and chats, because a person waits for it. When a run of its own task or
 chat is queued, that run is claimed first and starts in the requested sandbox.
 
 To drain a sandbox, the host sends it `SIGTERM`. The runner stores the
-workspace when it changed since it was last restored or stored, then exits.
+working copy when it changed since it was last restored or stored, then exits.
 The host stops the sandbox with a 30-second grace and destroys it with its
 egress and network. A runner that gets `SIGTERM` during a turn stores the
-workspace before it exits, and does not report the turn; the run's lease
+working copy before it exits, and does not report the turn; the run's lease
 expires and the run is tried again.
 
 A sandbox takes one place in the host's `SPOTLIGHT_CAPACITY`, and counts
@@ -169,7 +169,7 @@ sandbox for each connection.
 
 | Who may connect | Rule |
 | --- | --- |
-| A task's sandbox | A member of the task's workspace. |
+| A task's sandbox | A member of the workspace that has the task. |
 | A chat's sandbox | The person who started the chat. |
 
 The person signs in with the browser session, from the same origin only, or
@@ -182,7 +182,7 @@ with the login from `spotlight login`. A workspace token cannot connect.
 | Environment | The sandbox's environment, without the variables that start with `SPOTLIGHT_`, with the agent user's `HOME`, `USER`, `LOGNAME` and `SHELL`. The egress proxy variables are kept. |
 | Host key | One for each sandbox. |
 | Supported | Commands, shells with a terminal, environment variables, window size changes, signals, SFTP, and forwarding to `localhost` in the sandbox. |
-| Waits for | The runner to restore the workspace, at most 10 minutes. |
+| Waits for | The runner to restore the working copy, at most 10 minutes. |
 
 Processes started from an editor connection keep running between runs.
 
@@ -195,9 +195,9 @@ harness starts has the failure code `unprepared`; from the harness start on,
 
 | Phase | What happens | Time limit | On failure |
 | --- | --- | --- | --- |
-| Restore | In a new sandbox, the newest workspace archive of the run's task is fetched and unpacked into `/workspace`, whichever station left it. A sandbox of a task or chat restores it once, when it starts, and each later run keeps the workspace as it is. A chat's run restores its chat's archive only when it carries on a conversation. A [replay run](/docs/reference/app/replays#replay-runs) restores exactly the archive the run it replays restored, or none. | 30 minutes to fetch | Starts with an empty workspace. A replay run fails instead: `The runner couldn't prepare the run. Error: the archive the replay starts from, <id>, is no longer stored`, or `The runner couldn't prepare the run. Error: restore the archive the replay starts from: <error>`. |
+| Restore | In a new sandbox, the newest working copy archive of the run's task is fetched and unpacked into `/workspace`, whichever station left it. A sandbox of a task or chat restores it once, when it starts, and each later run keeps the working copy as it is. A chat's run restores its chat's archive only when it carries on a conversation. A [replay run](/docs/reference/app/replays#replay-runs) restores exactly the archive the run it replays restored, or none. | 30 minutes to fetch | Starts with an empty working copy. A replay run fails instead: `The runner couldn't prepare the run. Error: the archive the replay starts from, <id>, is no longer stored`, or `The runner couldn't prepare the run. Error: restore the archive the replay starts from: <error>`. |
 | Outcome | `.spotlight/outcome.json` from an earlier run is removed. | | Fails the run: `The runner couldn't prepare the run. Error: clear an earlier run's outcome: <error>`. |
-| Checkout | Each repository is cloned into `/workspace/<repository>`, from the host's mirror when there is one, or fetched when the checkout already exists. The run's branch or ref is checked out; a ref the checkout already has is not fetched again. A replay run checks out the commit the run it replays started from, and may only fetch: a push fails with `this run may only fetch`. A branch the checkout already has is fast-forwarded to what was pushed to it, unless it has also moved in the workspace or uncommitted changes block it. Runs as root. | 10 minutes for all checkouts | Fails the run: `The runner couldn't prepare the run. Error: prepare: <error>`, or `The runner couldn't prepare the run. Error: prepare: preparing <path> did not finish within 10m0s`. |
+| Checkout | Each repository is cloned into `/workspace/<repository>`, from the host's mirror when there is one, or fetched when the checkout already exists. The run's branch or ref is checked out; a ref the checkout already has is not fetched again. A replay run checks out the commit the run it replays started from, and may only fetch: a push fails with `this run may only fetch`. A branch the checkout already has is fast-forwarded to what was pushed to it, unless it has also moved in the working copy or uncommitted changes block it. Runs as root. | 10 minutes for all checkouts | Fails the run: `The runner couldn't prepare the run. Error: prepare: <error>`, or `The runner couldn't prepare the run. Error: prepare: preparing <path> did not finish within 10m0s`. |
 | Starting point | A task's run records the archive it restored and the commit each checkout is at. See [Starting point](/docs/reference/app/tasks-runs-and-the-inbox#starting-point). | | Recorded under `start`. The run continues. |
 | Attachments | Each attachment is written to `.spotlight/attachments/<id>/<name>`. | | Fails the run: `The runner couldn't prepare the run. Error: fetch attachment <id>: <error>`. |
 | Skills | For a task's run, skills from earlier runs are removed from every skill directory, and the station's skills are written. | | Fails the run. |
@@ -209,7 +209,7 @@ harness starts has the failure code `unprepared`; from the harness start on,
 | Harness start | The harness starts in `/workspace` as `agent`, over the Agent Client Protocol. The previous session is resumed, or a new session opens. A session the harness no longer has opens a new one. The harness command's session options, such as OpenCode's `effort`, are then set on the session. | | Fails the run: `The runner couldn't start the agent. Error: start agent: <error>`, `The runner couldn't start the agent. Error: resume the session: <error>`, `The runner couldn't start the agent. Error: open a session: <error>` or `The runner couldn't start the agent. Error: set the harness's <option> to <value>: <error>`. A session option marked optional that the harness refuses is logged, and the run continues without it. |
 | Prompt | The [briefing](#briefing) is sent. Each message a person sends during the turn cancels the turn and is sent next. When a turn ends, messages waiting are sent as the next prompt. With none, the run completes, or, when it put the task to a person, is suspended. A message that came in during a turn that put the task to a person starts the run again at once. | | See below. |
 | Change stacks | For a station with `diffs: true`, each checkout's changes are sent for a change stack. A replay run sends them when its turn ends, before it completes. | | Skipped for that checkout. |
-| Archive | The workspace is packed and stored at the end of every turn, unless nothing changed since it was last restored or stored. A replay run stores none. | 2 GiB packed, 8 GiB unpacked; 30 minutes to upload | Skipped. |
+| Archive | The working copy is packed and stored at the end of every turn, unless nothing changed since it was last restored or stored. A replay run stores none. | 2 GiB packed, 8 GiB unpacked; 30 minutes to upload | Skipped. |
 | Completion | The exit code, the handover and the session id are reported. | | |
 
 The runner stops a run, in any phase, once it has run for

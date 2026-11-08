@@ -321,7 +321,7 @@ claiming, lets its running sandboxes finish, and starts again in the same
 process with the settings it reads then. While it has sandboxes, it keeps
 sending heartbeats and tells Spotlight that it stops. Spotlight then drains
 each of its sandboxes once no run is in it: a run in progress finishes, and an
-idle sandbox stores its workspace and stops. The host delivers no more runs
+idle sandbox stores its working copy and stops. The host delivers no more runs
 into them. The task's next run starts in a new sandbox, on this host after the
 restart or on another. When no host runs, `restart` starts
 the service. When the settings do not pass the host's checks, `restart` sends
@@ -410,15 +410,15 @@ spotlight runner
 ```
 
 The runner image's entrypoint. In the sandbox of a task or chat, it restores
-the workspace once, then does each run the host delivers, one after another.
+the working copy once, then does each run the host delivers, one after another.
 On `SIGUSR1` it reads the next assignment. On `SIGTERM` between runs it stores
-the workspace if it changed, then exits. For a check, or a run a push pool
+the working copy if it changed, then exits. For a check, or a run a push pool
 provisioned, it does that one piece of work, then exits. It takes no arguments
 other than `harnesses` and `ssh`. Any other argument fails with
 `usage: spotlight runner [harnesses <json>]`.
 
 `spotlight runner ssh` answers one SSH connection on standard input and
-output, as the agent user, in the workspace. The host runs it in the sandbox
+output, as the agent user, in the working copy. The host runs it in the sandbox
 for each editor connection. See [Editor
 connections](/docs/reference/hosts/sandbox#editor-connections).
 
@@ -428,7 +428,7 @@ connections](/docs/reference/hosts/sandbox#editor-connections).
 | `SPOTLIGHT_ASSIGNMENT_FILE` | none | The file with the work a host assigned to the sandbox. The host sets it. |
 | `SPOTLIGHT_RUN_TOKEN` | none | The one-run credential a push pool's provider passes. |
 | `SPOTLIGHT_RUN_TIMEOUT` | none | A Go duration. The runner stops a run that works longer, and reports it `timed-out`. `0` or none is no limit. The host sets it. |
-| `SPOTLIGHT_WORKSPACE` | `/workspace` | The workspace directory. |
+| `SPOTLIGHT_WORKSPACE` | `/workspace` | The directory of the working copy. |
 | `SPOTLIGHT_AGENT_USER` | none | The user the harness runs as. Spotlight's runner image sets `agent`. When set, the runner must run as root. |
 | `SPOTLIGHT_GIT_AUTHOR_NAME` | `Spotlight` | `user.name` in each checkout. |
 | `SPOTLIGHT_GIT_AUTHOR_EMAIL` | `noreply@usespotlight.ai` | `user.email` in each checkout. |
@@ -639,7 +639,7 @@ codes are those of `spotlight login`.
 spotlight ssh <command> [flags]
 ```
 
-Opens the workspace of a task or chat in VS Code, Cursor or `ssh`. With no
+Opens the working copy of a task or chat in VS Code, Cursor or `ssh`. With no
 command, it fails with `spotlight ssh: say which command`; with an unknown one,
 `spotlight ssh: no command "ssh <command>"`. Both exit `1`.
 
