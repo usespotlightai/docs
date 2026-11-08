@@ -222,7 +222,7 @@ harness starts has the failure code `unprepared`; from the harness start on,
 | Memory | The memory folder from earlier runs is cleared, and every active memory that applies to the run is written under `.spotlight/memory`. | | Recorded. The run continues, with only a `README.md` in the folder saying the team's memory could not be read. |
 | Harness files | For a task's run, files a harness profile laid in an earlier run are removed from `.spotlight/state`, and the station's harness profile's files are written there. | | Fails the run. |
 | Ownership | `/workspace` is given to `agent`. Files `agent` already owns are left alone. | | Fails the run: `The runner couldn't prepare the run. Error: hand over workspace: <error>`. |
-| Setup | Each repository's `setup` runs in its checkout as `agent`, with `/bin/sh -c`. The setups of a run's repositories run at the same time. A setup is skipped when it is not needed: see [Setup](#setup). | 15 minutes per checkout | Recorded. The run continues, and the agent is told: see [Setup](#setup). |
+| Setup | Each repository's `setup` runs in its checkout as `agent`, with `/bin/sh -c`. The setups of a run's repositories run at the same time, at most four at once. A setup is skipped when it is not needed: see [Setup](#setup). | 15 minutes per checkout | Recorded. The run continues, and the agent is told: see [Setup](#setup). |
 | Egress check | A runner given `SPOTLIGHT_EGRESS_URL` tries a direct connection to the Spotlight address, and records `egress.checked`. See [Enforcement](/docs/reference/hosts/egress#enforcement). | 3 seconds | |
 | Harness start | The harness starts in `/workspace` as `agent`, over the Agent Client Protocol. The previous session is resumed, or a new session opens. A session the harness no longer has opens a new one. The harness command's session options, such as OpenCode's `effort`, are then set on the session. | | Fails the run: `The runner couldn't start the agent. Error: start agent: <error>`, `The runner couldn't start the agent. Error: resume the session: <error>`, `The runner couldn't start the agent. Error: open a session: <error>` or `The runner couldn't start the agent. Error: set the harness's <option> to <value>: <error>`. A session option marked optional that the harness refuses is logged, and the run continues without it. |
 | Prompt | The [briefing](#briefing) is sent. Each message a person sends during the turn cancels the turn and is sent next. When a turn ends, messages waiting are sent as the next prompt. With none, the run completes, or, when it put the task to a person, is suspended. A message that came in during a turn that put the task to a person starts the run again at once. | | See below. |
@@ -265,7 +265,9 @@ A change stack check runs in a sandbox of its own, in place of a run. See
 After a setup succeeds, the sandbox records its command and the content of the
 repository's dependency files. The next run in the same sandbox skips that
 setup when both are the same. A new sandbox, a restored working copy and a
-replay run record nothing, so their setup runs.
+replay run record nothing, so their setup runs. A skip looks only at the
+command and the dependency files, so keep `setup` to what installs
+dependencies: a build or code generation step in it is skipped with the install.
 
 The dependency files are the files with these names anywhere in the checkout
 that git tracks or does not ignore: `package.json`, `package-lock.json`,
