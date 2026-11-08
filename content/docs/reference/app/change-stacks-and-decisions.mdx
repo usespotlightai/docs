@@ -154,8 +154,9 @@ A push pool receives a check as provision work of kind `check`. See
 
 - The run's change stack page in the web app, reached from the task's
   "Changes" property. See [Web app](/docs/reference/app/web-app).
-- A comment on the task's pull request, kept up to date with the latest ready
-  stack, when the workspace is connected to GitHub.
+- A comment on each pull request of the task, kept up to date with the latest
+  ready stack of that pull request's repository, when the workspace is
+  connected to GitHub.
 
 ## Decisions
 
@@ -196,9 +197,15 @@ A generated decision that breaks these limits is dropped.
 | Status | Meaning |
 | --- | --- |
 | `proposed` | Generated, and open to disputes. Later runs may replace it. |
-| `merged` | The task's pull request merged. Nothing is generated for the task again. |
+| `merged` | A pull request of the task merged. Nothing is generated for the task again. |
 
-When the pull request is closed without merging, the decisions are discarded.
+A merge is recorded for each repository. A decision counts as merged in a
+repository once the task's pull request there merged and the decision covers
+files in it.
+
+When the task's first pull request is closed without merging, the decisions
+are discarded. A later pull request of the task, in another repository, that
+closes without merging keeps them.
 Merged decisions are listed by
 `GET /api/workspaces/{slug}/decisions`, filtered by `repository`, `path`,
 `since` and `until` (merge times).
@@ -211,8 +218,10 @@ its files in the change stack page. A reason is 1 to 1,000 characters.
 ### Where decisions are shown
 
 - The change stack page, beside the files each decision covers.
-- A comment on the task's pull request, when the workspace is connected to
-  GitHub. Spotlight deletes it when the task has no decisions.
+- A comment on each pull request of the task, with the decisions whose files
+  are in that pull request's repository, when the workspace is connected to
+  GitHub. Decisions on files in no such repository go on the first pull
+  request. Spotlight deletes the comment from a pull request with no decisions.
 - The briefing of each later run on the task, under `## Decisions on record`,
   with each dispute. A run at a station with `decisions: true` is also briefed
   under `## Say what you decide`. See
