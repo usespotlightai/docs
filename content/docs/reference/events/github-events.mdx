@@ -49,6 +49,11 @@ notes when the delivery carries no words:
 | `github.pull_request.labelled` | Labelled on a pull request | `Somebody labelled the pull request for Spotlight.` |
 | `github.checks.failed` | Checks failed | `The checks failed on the pull request.` |
 
+A task with pull requests in several repositories reacts to
+`github.pull_request.merged` and `github.pull_request.closed-unmerged` only when
+the last of them that is still open closes. An earlier close adds a note to the
+task, and the task stays where it is.
+
 An `installation` delivery with action `deleted` disconnects the workspace from
 GitHub.
 
