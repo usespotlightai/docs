@@ -67,6 +67,10 @@ and `failed`, one entry for each failed check:
 | `summary` | The title and summary the check reported, as for a CodeQL alert. | The check reported neither. GitHub Actions jobs usually report neither. |
 | `log` | The last 200 lines of the job's log. | The check is not one of the first five GitHub Actions jobs, or GitHub does not give the log. |
 
+When GitHub does not answer for one pull request, its entry has `error`, the
+reason, in place of `commit` and `failed`. When GitHub answers for none, the call
+fails.
+
 GitHub gives the step and the log only if the App has **Actions: read**; see
 [Connect GitHub](/docs/integrations/connect-github#let-the-app-read-failed-checks).
 
