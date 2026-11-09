@@ -209,8 +209,8 @@ Processes started from an editor connection keep running between runs.
 
 The runner takes these phases in order. A failure in a phase marked "fails the
 run" ends the run with that message and exit code `-1`. A failure before the
-harness starts has the failure code `unprepared`; from the harness start on,
-`exited`. See [Failure codes](/docs/reference/app/tasks-runs-and-the-inbox#failure-codes).
+harness has an open session has the failure code `unprepared`. A failure from
+then on, and a harness that does not start, has `exited`. See [Failure codes](/docs/reference/app/tasks-runs-and-the-inbox#failure-codes).
 
 | Phase | What happens | Time limit | On failure |
 | --- | --- | --- | --- |
@@ -321,7 +321,7 @@ These phases record their output on the run under a step name:
 | `setup` | The command's output, `Setup failed for <path>. Error: <error>` on failure, and `Skipped setup for <path>: the setup command and the dependency files did not change after the last setup in this sandbox.` |
 | `archive` | `Captured the workspace for the next run (<size>)`, `Coalesced: nothing changed since the workspace was last restored or archived`, `Skipped: <error>` |
 
-A run that fails before its harness starts records a `failed` event with the
+A run that fails before its harness has an open session records a `failed` event with the
 failure message. See
 [Troubleshoot a run](/docs/runs/troubleshoot-a-run).
 
