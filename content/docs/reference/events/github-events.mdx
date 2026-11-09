@@ -29,11 +29,21 @@ A happening that answers carries the words of the comment or review as a
 message, with the file and lines it is about where there are any. Those words
 can answer a task that awaits review; see [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves).
 
-`github.checks.failed` carries the names of the failed checks of the suite as a
-message, as in `Failed: web / build, gitleaks.` It has no message if GitHub does
-not give the names. The [`checks`](/docs/reference/built-ins/built-in-tools-and-skills#checks)
-tool lists the failed checks, and gives the failed step and the log of GitHub
-Actions jobs, within the limits on that page.
+`github.checks.failed` carries the failed checks of the suite as a message. The
+message starts with their names, as in `Failed: web / build, gitleaks.` For up to
+five checks that Spotlight knows more about, it then gives more:
+
+- For a GitHub Actions job: the step that failed and the last 40 lines of the
+  job's log, up to 4,000 characters. The log ends at the last `##[error]` line,
+  so the clean-up after the failed step is not in it.
+- For a check from another app: the start of its summary, up to 40 lines and
+  2,000 characters.
+
+Spotlight reads the logs of the first five failed Actions jobs. It has no
+message if GitHub does not give the names. If GitHub does not give a step or a
+log in time, the message has the names only. The
+[`checks`](/docs/reference/built-ins/built-in-tools-and-skills#checks) tool
+gives the same failed steps and longer logs, within the limits on that page.
 
 Each happening also has a label and a line of text written to the task's
 notes when the delivery carries no words:
