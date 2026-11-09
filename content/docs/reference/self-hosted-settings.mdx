@@ -307,7 +307,7 @@ upload and download through presigned URLs that last 15 minutes.
 | --- | --- | --- |
 | `S3_BUCKET` | required | The bucket's name. |
 | `S3_REGION` | `us-east-1` | The bucket's region. |
-| `S3_KEY_PREFIX` | none | A prefix for the keys that this instance writes, such as `previews/feat-x/`. The instance reads its own key first, then the key without the prefix, and deletes only keys under the prefix. Use it for a second instance that shares a bucket with a copy of the first instance's database. |
+| `S3_KEY_PREFIX` | none | A prefix for the keys that this instance writes, such as `previews/feat-x`. Spotlight adds the `/` after it. See [Objects](#objects). |
 | `S3_ENDPOINT` | AWS | The S3 endpoint Spotlight itself calls. Set for storage other than AWS S3. |
 | `S3_FORCE_PATH_STYLE` | `false` | `true` addresses the bucket by path, for `S3_ENDPOINT` and `S3_RUNNER_ENDPOINT`. |
 | `S3_PUBLIC_ENDPOINT` | `S3_ENDPOINT` | The endpoint in URLs presigned for browsers, such as a CDN. |
@@ -333,6 +333,14 @@ file is saved, Spotlight copies it under `workspaces/` and the pending copy is
 dropped. Spotlight never removes an attachment under `workspaces/`. It removes
 archives itself, on the schedule in
 [Limits and timeouts](/docs/reference/limits-and-timeouts#working-copy-archives).
+
+With `S3_KEY_PREFIX`, every key above starts with the prefix when Spotlight
+writes it, such as `previews/feat-x/pending/…`. To read an object, Spotlight
+tries the key with the prefix first, then the key without it. So an instance
+that runs on a copy of another instance's database finds the other instance's
+files, and never changes them: it deletes only keys under its prefix. A delete
+in that instance does not remove the other instance's object, but the copied
+database no longer refers to it.
 
 ### Bucket setup
 
@@ -362,6 +370,8 @@ task's conversation with it.
 
 The keys need only `s3:PutObject`, `s3:GetObject` and `s3:DeleteObject`, on
 `arn:aws:s3:::<bucket>/pending/*` and `arn:aws:s3:::<bucket>/workspaces/*`.
+With `S3_KEY_PREFIX`, they also need the same actions on
+`arn:aws:s3:::<bucket>/<prefix>/*`.
 
 ## Notifications
 
