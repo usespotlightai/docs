@@ -32,6 +32,7 @@ Neither `SPOTLIGHT_SECRETS_KEY` nor `SPOTLIGHT_SECRETS_KMS_KEY_ID` set gives
 | `LOG_LEVEL` | `debug` in `development`, else `info` | `fatal`, `error`, `warn`, `info`, `debug`, `trace` or `silent`. What Spotlight logs is in [Observability](/docs/reference/observability#logs). |
 | `SPOTLIGHT_RELEASE` | none | The release the [install script](/docs/reference/cli/install-script) installs, and the runner image tag it pulls, when it is a release, as in `v0.1.0`. Without it, or with any other value, `canary`, the latest staging build. |
 | `SPOTLIGHT_INSTALLER_DIR` | `/opt/spotlight/installer` | The directory that contains the `install.sh` served at `/api/install.sh`. |
+| `REDIS_URL` | none | A `redis://` or `rediss://` URL. Set it to run more than one control plane server: the servers then share live updates in the app, run streams, live drafts, host tunnels, the leader lease and the [rate limit](#rate-limit) through Redis. Without it, run one server. |
 | `REDIS_URL` | none | A `redis://` or `rediss://` URL. Lets several control plane servers share live drafts, run streams, [notifications](#notifications), host tunnels, the leader lease and the [rate limit](#rate-limit). Set it when you run more than one server. |
 
 ## Addresses and sign-in
