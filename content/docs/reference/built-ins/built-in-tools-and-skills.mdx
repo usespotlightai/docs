@@ -65,7 +65,7 @@ and `failed`, one entry for each failed check:
 | `url` | The check on GitHub. | GitHub gives no address. |
 | `step` | The name of the step that failed. | The check is not one of the first five GitHub Actions jobs, no step failed, or GitHub does not give the job. |
 | `summary` | The title and summary the check reported, as for a CodeQL alert. | The check reported neither. GitHub Actions jobs usually report neither. |
-| `log` | The last 200 lines of the job's log. | The check is not one of the first five GitHub Actions jobs, or GitHub does not give the log. |
+| `log` | The last 200 lines of the job's log, up to its last `##[error]` line, without terminal colour and control codes. | The check is not one of the first five GitHub Actions jobs, or GitHub does not give the log. |
 
 When GitHub does not answer for one pull request, its entry has `error`, the
 reason, in place of `commit` and `failed`. When GitHub answers for none, the call
