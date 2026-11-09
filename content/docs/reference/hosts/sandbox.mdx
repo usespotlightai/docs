@@ -209,8 +209,10 @@ Processes started from an editor connection keep running between runs.
 
 The runner takes these phases in order. A failure in a phase marked "fails the
 run" ends the run with that message and exit code `-1`. A failure before the
-harness has an open session has the failure code `unprepared`. A failure from
-then on, and a harness that does not start, has `exited`. See [Failure codes](/docs/reference/app/tasks-runs-and-the-inbox#failure-codes).
+harness start phase has the failure code `unprepared`. In the harness start
+phase, a harness that does not start (`start agent`) or refuses a session option
+has `exited`, and a harness that cannot resume or open a session has
+`unprepared`. A failure after the harness start phase has `exited`. See [Failure codes](/docs/reference/app/tasks-runs-and-the-inbox#failure-codes).
 
 | Phase | What happens | Time limit | On failure |
 | --- | --- | --- | --- |
@@ -225,7 +227,7 @@ then on, and a harness that does not start, has `exited`. See [Failure codes](/d
 | Ownership | `/workspace` is given to `agent`. Files `agent` already owns are left alone. | | Fails the run: `The runner couldn't prepare the run. Error: hand over workspace: <error>`. |
 | Setup | Each repository's `setup` runs in its checkout as `agent`, with `/bin/sh -c`. The setups of a run's repositories run at the same time, at most four at once. A setup is skipped when it is not needed: see [Setup](#setup). | 15 minutes per checkout | Recorded. The run continues, and the agent is told: see [Setup](#setup). |
 | Egress check | A runner given `SPOTLIGHT_EGRESS_URL` tries a direct connection to the Spotlight address, and records `egress.checked`. See [Enforcement](/docs/reference/hosts/egress#enforcement). | 3 seconds | |
-| Harness start | The harness starts in `/workspace` as `agent`, over the Agent Client Protocol. The previous session is resumed, or a new session opens. A session the harness no longer has opens a new one. The harness command's session options, such as OpenCode's `effort`, are then set on the session. | | Fails the run: `The runner couldn't start the agent. Error: start agent: <error>`, `The runner couldn't start the agent. Error: resume the session: <error>`, `The runner couldn't start the agent. Error: open a session: <error>` or `The runner couldn't start the agent. Error: set the harness's <option> to <value>: <error>`. A session option marked optional that the harness refuses is logged, and the run continues without it. |
+| Harness start | The harness starts in `/workspace` as `agent`, over the Agent Client Protocol. The previous session is resumed, or a new session opens. A session the harness no longer has opens a new one. The harness command's session options, such as OpenCode's `effort`, are then set on the session. | | Fails the run: `The runner couldn't start the agent. Error: start agent: <error>`, `The runner couldn't start the agent. Error: resume the session: <error>`, `The runner couldn't start the agent. Error: open a session: <error>` or `The runner couldn't start the agent. Error: set the harness's <option> to <value>: <error>`. The codes are `exited` for `start agent` and `set the harness's <option>`, and `unprepared` for `resume the session` and `open a session`. A session option marked optional that the harness refuses is logged, and the run continues without it. |
 | Prompt | The [briefing](#briefing) is sent. Each message a person sends during the turn cancels the turn and is sent next. When a turn ends, messages waiting are sent as the next prompt. With none, the run completes, or, when it put the task to a person, is suspended. A message that came in during a turn that put the task to a person starts the run again at once. | | See below. |
 | Change stacks | For a station with `diffs: true`, each checkout's changes are sent for a change stack. A replay run sends them when its turn ends, before it completes. | | Skipped for that checkout. |
 | Archive | The working copy is packed and stored at the end of every turn, unless nothing changed since it was last restored or stored. A replay run stores none. | 2 GiB packed, 8 GiB unpacked; 30 minutes to upload | Skipped. |
@@ -321,8 +323,8 @@ These phases record their output on the run under a step name:
 | `setup` | The command's output, `Setup failed for <path>. Error: <error>` on failure, and `Skipped setup for <path>: the setup command and the dependency files did not change after the last setup in this sandbox.` |
 | `archive` | `Captured the workspace for the next run (<size>)`, `Coalesced: nothing changed since the workspace was last restored or archived`, `Skipped: <error>` |
 
-A run that fails before its harness has an open session records a `failed` event with the
-failure message. See
+A run that fails in any phase up to and including the harness start records a
+`failed` event with the failure message. See
 [Troubleshoot a run](/docs/runs/troubleshoot-a-run).
 
 ## Host messages that fail a run

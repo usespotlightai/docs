@@ -283,7 +283,7 @@ why (optional)`. See [Approvals](#approvals).
 | `suspended` | `queued` | The person answers, in the inbox, in the task's Slack thread or on the run's page. The run is queued as its next attempt and resumes the same session: in the task's sandbox while it is up, else in a new sandbox that restores the stored working copy. |
 | `suspended` | `completed` | The task is moved or deleted, or the run is stopped. |
 | `claimed` | `completed` | The runner reports an outcome without a failure, or the run is stopped, or its lease expires after it was asked to stop. |
-| `claimed` | `failed` | The harness failed (`exited`), or the run failed before its harness had an open session (`unprepared`). A hook on `run.starting` denied it (`refused`). Its hooks could not be called after the last requeue (`hooks-unanswered`). Its lease expired on the last attempt, and no stop was requested (`runner-lost`). Its runner stopped it at its run timeout on the last attempt, and no stop was requested (`timed-out`). |
+| `claimed` | `failed` | The harness failed (`exited`), or the run failed before its harness could work (`unprepared`). A hook on `run.starting` denied it (`refused`). Its hooks could not be called after the last requeue (`hooks-unanswered`). Its lease expired on the last attempt, and no stop was requested (`runner-lost`). Its runner stopped it at its run timeout on the last attempt, and no stop was requested (`timed-out`). |
 | `failed` | `superseded` | The run's task has moved on. |
 
 Messages sent to a run at the station where its task is idle, when that
@@ -333,8 +333,8 @@ Once the task has left the run's station, the composer is replaced by
 
 | Code | Cause | Retried |
 | --- | --- | --- |
-| `exited` | The runner reported that the run failed once its harness had an open session, or the harness did not start. | no |
-| `unprepared` | The run failed before its harness had an open session: its working copy, checkouts, attachments, skills or harness files could not be made ready, its host could not start a sandbox with the line's image and its egress, or the harness started but could not resume or open a session. | no |
+| `exited` | The harness did not start (`start agent`), refused a session option, or failed once it had an open session. | no |
+| `unprepared` | The run failed before its harness could work: its working copy, checkouts, attachments, skills or harness files could not be made ready, its host could not start a sandbox with the line's image and its egress, or the harness started but could not resume or open a session. | no |
 | `refused` | The run could not be given what its station names, or a hook denied its start. | no |
 | `unprovisioned` | A push pool did not provision a runner for it. | no |
 | `hooks-unanswered` | Its `run.starting` hooks could not be called. | yes |
