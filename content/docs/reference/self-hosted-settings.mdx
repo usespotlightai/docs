@@ -307,6 +307,7 @@ upload and download through presigned URLs that last 15 minutes.
 | --- | --- | --- |
 | `S3_BUCKET` | required | The bucket's name. |
 | `S3_REGION` | `us-east-1` | The bucket's region. |
+| `S3_KEY_PREFIX` | none | A prefix for the keys that this instance writes, such as `previews/feat-x/`. The instance reads its own key first, then the key without the prefix, and deletes only keys under the prefix. Use it for a second instance that shares a bucket with a copy of the first instance's database. |
 | `S3_ENDPOINT` | AWS | The S3 endpoint Spotlight itself calls. Set for storage other than AWS S3. |
 | `S3_FORCE_PATH_STYLE` | `false` | `true` addresses the bucket by path, for `S3_ENDPOINT` and `S3_RUNNER_ENDPOINT`. |
 | `S3_PUBLIC_ENDPOINT` | `S3_ENDPOINT` | The endpoint in URLs presigned for browsers, such as a CDN. |
