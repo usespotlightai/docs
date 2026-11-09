@@ -149,6 +149,54 @@ deferred move instead of the ending above. So does a hook stopped for looping
 while the task has a current run: the run ends as for a person's move, and the `passed` note carries the hook's failure. See
 [Moves](#moves).
 
+### Turns without a handover
+
+These rules apply to a run of a task at a station. A chat, a replay and a
+search have no handover, and their runs end when the agent's turn ends.
+
+A turn has a handover when the agent ran `spotlight handover` or wrote
+`/workspace/.spotlight/outcome.json` during the run. When a turn ends without
+one, and no person has sent a message, the runner does this:
+
+| Situation | What the runner does |
+| --- | --- |
+| The harness reports background work, and some still runs | Waits for it. Claude Code's turns that start when background work ends, such as after a background command or a subagent, are part of the run. |
+| The agent hands over during the wait | Ends the run with that handover. |
+| A person sends a message during the wait | Sends the message to the agent as its next turn. That turn gets a wait and a reminder of its own. |
+| The agent asks for a permission that goes to a person during the wait | Ends the run, as for a permission asked during a turn. |
+| The agent stops during the wait | Ends the run as failed. |
+| The background work ends, or the harness reports none | Sends the agent one reminder. |
+| The wait reaches its limit | Sends the agent one reminder that names the background work that still runs. |
+| The turn after the reminder ends without a handover | Ends the run, which is handled as "No handover" above. |
+
+The wait limit is `SPOTLIGHT_BACKGROUND_WAIT`, default 30 minutes, counted
+from the end of the turn. The wait also ends when Claude Code reports no work
+and no background work, and sends nothing more for 5 seconds. Only Claude Code
+reports background work. With any other harness the runner sends the reminder
+at once.
+
+The reminder reads:
+
+```text
+Your turn ended without a handover. The run ends when your next turn ends. Hand over with `spotlight handover`. To ask a person, hand over to `review`.
+```
+
+When background work still runs at the wait limit, it reads:
+
+```text
+Your turn ended without a handover. These background tasks still run: <tasks>. The run ends when your next turn ends, and these tasks stop with it. Wait for them in this turn, stop them, or hand over with `spotlight handover`. To ask a person, hand over to `review`.
+```
+
+Background work stops with the sandbox: when the run ends, and when the runner
+stops and the run is tried again. The run's steps show the work that stopped,
+and the next run or attempt of the task starts with the line
+`These background tasks stopped when your last sandbox stopped: <tasks>. Run them again if you still need them.`
+
+A run's steps show the wait as "Waited for", the reminder as "Reminded the
+agent to hand over", background work that stopped as "Stopped", and each
+Claude Code subagent as one "Delegated" step with what the subagent was
+asked, what it did, and its answer.
+
 ## Moves
 
 | Mover | How | Placed | Effect |
