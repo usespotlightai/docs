@@ -52,8 +52,11 @@ works on the task, and it leaves nothing behind but its own result:
 - It cannot reply to a pull request's review comments, propose a memory or
   read a task's trace.
 - Its change stack is generated and checked, and never sent to GitHub.
-- It never asks a person. A replay that would put the task to a person, by
-  handing it over to one or asking permission, ends there and counts as asked.
+- It never asks a person. A replay that asks a person while it runs, such as
+  for permission, ends there and counts as asked. So does one that hands over
+  with a word that moves the task to no station. A replay that hands the task
+  over to `review` at its end is scored by its check and judge, as a run that
+  moves the task on is.
 - It is not counted among the station's outcomes or in the Insights figures
   of the team's runs, and no memories are drafted from it. Insights shows
   replays apart, under Candidates on its Stations tab.
@@ -92,8 +95,9 @@ Only some runs count against the candidate as failures:
 a run that failed with `exited`, with `timed-out` (it kept running past its
 host's time limit), with `refused` (Spotlight would not start it as configured,
 as for a missing harness profile or tools, MCP servers or secrets a replay is
-not given) or with no code; a run that asked a person; and a run that failed
-its check or judge. In
+not given) or with no code; a run that asked a person while it ran, or handed
+over with a word that moves the task to no station; and a run that failed its
+check or judge. In
 the docs' view, this keeps a failure to measure from reading as a failure of
 the candidate.
 

@@ -93,7 +93,9 @@ candidate, with a one-line reason. The config pull request and
 | `absent` | `Not replayed` | The task was not replayed on that side. |
 
 A repeat fails when the run failed with `exited`, `refused`, `timed-out` or no
-failure code, asked a person, or failed a check or the judge. A repeat is
+failure code, asked a person while it ran, handed over with a word that moves
+the task to no station, or failed a check or the judge. A run that hands the
+task over to `review` at its end is scored by its check and judge. A repeat is
 unscored when nothing could score it: it could not be replayed or started, its
 replay stopped or reached its ceiling first, its checks or judging could not
 give an answer, nothing scores the station, or it failed before the agent
