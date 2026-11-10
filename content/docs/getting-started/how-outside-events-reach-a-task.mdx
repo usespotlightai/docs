@@ -97,12 +97,10 @@ finishing, asking a person, failing or being stopped, the waiting move applies
 then. When several are waiting, the latest one applies, and a person moving
 the task first drops them.
 
-While the task has a current run, an event that would move it to Completed, such as
-a merged pull request, goes differently. The work it was about is done, so
-it stops the run at once, keeps the task at its station, and asks the task's
-assignee whether to close the task or carry on. If the task is already waiting
-on a person's answer to a question the run asked, the task moves to
-Completed, the open question closes, and the paused run ends.
+An event that moves the task to Completed, such as a merged pull request,
+does not wait. The work it was about is done, so the task moves to Completed
+at once and its run stops. A question or an approval that waits on a person
+closes.
 
 A few cases go differently:
 
