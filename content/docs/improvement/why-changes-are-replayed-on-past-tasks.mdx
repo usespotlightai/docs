@@ -150,11 +150,9 @@ different replays could not be read together. Pairs judged under different
 rubric versions are left out; in the docs' view, comparing them would mix two
 questions.
 
-The comparisons cost model calls. They count against the replay's ceiling,
-with room for two tries set aside before each is requested, and a pair that would
-pass the ceiling is not requested. They do not add to the replay's spend or
-its cost per run, since they measure the change, not what running the
-candidate costs; that reason is the docs' own.
+The comparisons do not count against the replay's ceiling, its spend or its
+cost per run. They measure the change, not what running the candidate costs;
+that reason is the docs' own.
 
 ## Every result comes with a range
 
@@ -267,12 +265,9 @@ below. That first search costs more for it. In the docs' view, a set is only
 worth reading once it has been calibrated, and a search has to replay the live
 config anyway. The health this measures decides from the next search on
 whether a search starts. A set of fewer than 5 runs is never calibrated, since
-it is too small to measure noise on. The second judgings cost model calls, so
-they count against the replay's ceiling and stop once it would be spent; the
-rest are not judged again. A second judging or check never changes a run's
-result. In the docs' view, it
-measures the judge and the check, not the run. The second judgings also do not
-add to what the check's runs cost.
+it is too small to measure noise on. A second judging or check never changes a
+run's result. In the docs' view, it measures the judge and the check, not the
+run.
 
 ## Why a set is replayed with the answer
 

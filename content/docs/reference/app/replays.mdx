@@ -278,12 +278,6 @@ with the same number, or else its first repeat, when all of these are true:
 - People accepted the original run's change: the first thing a person did on
   its task after it was closing the task.
 - Both replays are judged under the same rubric version.
-- The ceiling has room. Each pair is tried at most twice, and before each
-  request, Spotlight sets aside four times what judging the repeat's own
-  change cost, two passes for each of two attempts, on top of what the replay
-  has spent and what its pairs still being judged have set aside. When that
-  first judging cost nothing, nothing is set aside. A repeat that would pass
-  the ceiling is not requested.
 
 The judge is given the rubric, the claims or both of the replay's own
 candidate, the task's title and description, the two changes as hunks labelled
@@ -305,9 +299,6 @@ loss when more lost, and a tie otherwise. The replay's wins, losses and ties
 count tasks with at least one compared repeat. They never change a run's
 result, the replay's success, its gain or its regressions. The config pull
 request gives them for the searched and the held-out tasks.
-
-What side-by-side judging spends counts against the replay's ceiling, but does
-not add to its spend totals or its cost per run.
 
 ## Health
 
@@ -404,10 +395,8 @@ The calibration replays each run 3 times, or the search's repeats when more.
 Its ceiling comes out of the search's ceiling, which also keeps room for the
 [replay with the answer](#replay-with-the-answer) that follows it. Once it
 finishes, every change whose check passed or failed is checked a second time,
-and every change the judge gave a verdict on is judged a second time. Each
-change is weighed on its own, in order: it is judged again when what its first
-judging cost still fits under the ceiling, on top of what is spent and set
-aside so far. A second judging or check never changes a run's result. Its
+and every change the judge gave a verdict on is judged a second time. A second
+judging or check never changes a run's result. Its
 finishing then starts the replay with the answer.
 
 A search that calibrates the set starts before the set's health is measured,
@@ -482,18 +471,15 @@ the run's task is deleted, the replay set no longer keeps it. See
 
 ## Spend and ceiling
 
-A replay's spend is the cost of its runs, every repeat included, of generating
-their change stacks and of judging them, counted in the ceiling's currency. A
-generation or judging attempt that failed counts what it was billed. A cost in
-another currency is summed apart and does not count against the ceiling. A run
-whose cost was never reported counts at a fixed amount per run against the
-ceiling. Side-by-side judging counts against the ceiling, but does not add to
-the spend; see [Side by side](#side-by-side). Each replay has its own
-ceiling: a search divides its ceiling among its replays (see
+A replay's spend is the cost of its runs, every repeat included, and of
+generating their change stacks, counted in the ceiling's currency. A generation
+attempt that failed counts what it was billed. Judging costs nothing against
+the ceiling: the judge's model calls are not counted. A cost in another
+currency is summed apart and does not count against the ceiling. A run or a
+change stack generation call whose cost was never reported counts at a fixed
+amount each against the ceiling. Each replay has its own ceiling: a search divides its ceiling among its replays (see
 [Spend and ceiling](/docs/reference/app/searches#spend-and-ceiling)), and a
-replay check takes the line's `replay_check.ceiling`. The second judgings of a
-[calibration](#calibration) count against its ceiling, but not in its success
-or in what its runs cost.
+replay check takes the line's `replay_check.ceiling`.
 
 Once a replay's spend reaches its ceiling, it ends as `ceiling-reached`: nothing
 more of it starts, its runs not yet started are cancelled, and its runs already
