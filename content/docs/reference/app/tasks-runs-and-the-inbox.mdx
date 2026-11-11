@@ -814,10 +814,21 @@ A run's outcome:
 | Answered | Answered the conversation without a decision. |
 | Sent back | Sent a message to a run of the task while it had no current run, other than an answer to an open question that asks for no approval. |
 
-Only the Accepted action accepts a run, and only the Sent back action sends it back. Approving or
-dismissing an approval is never a human action: it does not decide whether a run was
-accepted or sent back. When two actions come at the same moment, the first of
+Approving or dismissing an approval is never a human action: it does not decide
+the run's [outcome](#run-outcome). When two actions come at the same moment, the first of
 Sent back, Accepted, Answered, Parked and Started counts.
+
+#### Run outcome
+
+Each run that ran has one outcome. The first rule that applies gives it:
+
+1. Failed: the run ended Failed.
+2. Sent back: its first human action was Sent back.
+3. Accepted: its first human action was Accepted.
+4. Other: the run ended Stopped, Exhausted or Superseded.
+5. Moved on: the run passed its task to another station, or its first human action was Started.
+6. Accepted: the pull request of the run's task merged.
+7. Other: none of the above, for example when nobody has answered yet.
 
 A tally counts:
 
@@ -827,8 +838,10 @@ A tally counts:
 | Failed | Runs that ended Failed. |
 | Stopped | Runs that ended Stopped. |
 | Checks passed, Checks failed | Runs whose check passed or failed. |
-| Accepted | Runs whose first human action was Accepted. |
-| Sent back | Runs whose first human action was Sent back. |
+| Accepted | Runs whose outcome is Accepted. |
+| Sent back | Runs whose outcome is Sent back. |
+| Moved on | Runs whose outcome is Moved on. |
+| Other outcome | Runs whose outcome is Other. Failed, Accepted, Sent back, Moved on and Other outcome add up to Runs. |
 | Passed on | Runs that passed their task to another station. |
 | Merged | Tasks the group's runs worked whose pull request merged. |
 | Cancelled | Runs that ended without running. |
@@ -1051,7 +1064,7 @@ known:
 
 | Measure | A run is measured when |
 | --- | --- |
-| `sent_back_rate`, `accepted_rate` | Its [first human action](#station-outcomes) is known. |
+| `sent_back_rate`, `accepted_rate` | Its [first human action](#station-outcomes) is known, or its [outcome](#run-outcome) is Accepted. |
 | `checks_failed_rate` | Its check passed or failed. |
 | `failed_rate` | It ended. |
 | `merged_rate` | Its task's pull request merged or closed unmerged. |
