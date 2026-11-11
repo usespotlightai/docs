@@ -780,7 +780,7 @@ are shown in these places:
 
 | Where | Shows |
 | --- | --- |
-| "Latest runs on this config", on the station's page | Tiles for "Runs", "Accepted", "Sent back", "Failed", "Cost" and "Median", over the live config: the newest config that ran, in its newest group and in earlier groups of it that only groups that never started separate from it. The newest group of another config that ran ends it and is not counted. "Accepted", "Sent back" and "Failed" add `of <n> runs` and a bar of that share. "Runs" draws the endings of the newest group with a recorded config as a strip, oldest first; "Cost" and "Median" draw that group's costs and durations run by run, when they vary. The tiles are not shown until a run has run a recorded config, or when the outcomes cannot be read. |
+| "Latest runs on this config", on the station's page | Tiles for "Runs", "Outcomes", "Cost" and "Median", over the live config: the newest config that ran, in its newest group and in earlier groups of it that only groups that never started separate from it. The newest group of another config that ran ends it and is not counted. "Outcomes" reads `<share> accepted`, with a bar of each [resolution](#run-resolution)'s share; hovering it shows each resolution as `<n> of <runs> runs`, with Failed as "Failed, no answer", and the merged tasks as `<n> tasks`. "Runs" draws the resolutions of the newest group with a recorded config as a strip, oldest first; "Cost" and "Median" draw that group's costs and durations run by run, when they vary. The tiles are not shown until a run has run a recorded config, or when the outcomes cannot be read. |
 | "Recent runs", on the station's page | The latest 8 runs of the newest group with a recorded config, whether its runs started or not, one row each. With none, "No runs on this config yet" and `Runs on earlier configs are under All runs.`, or, when the station has no runs, "No runs yet" and `Latest runs show here once tasks reach this station.` To a person who may not read the outcomes, `Only team members can see this station's runs`. "All runs" opens the Insights Traces tab at the station. |
 | "Config fingerprint", in the station's "Config" | The newest group with a recorded config, whether its runs started or not: `Live since <day>`, the day its first run ended, or "Live", with `Config <fingerprint>`, the first 8 characters. "View pull request" opens the config pull request a search opened for that config, when there is one, and "History" opens the station's view on Insights. Before any such group, "None yet" and `The first run of the station sets the first config fingerprint.`; when the outcomes cannot be read, "Unknown" and `Sorry, the station's runs couldn't be loaded.` |
 | "Runs by config", on the station's view on Insights | Every group, newest first. With no runs, "No runs yet" and `Runs show here by config once tasks reach this station.` To a person who may not read the outcomes, `Only team members can see this station's runs`. See [One station](/docs/reference/app/insights#one-station). |
@@ -815,16 +815,16 @@ A run's outcome:
 | Sent back | Sent a message to a run of the task while it had no current run, other than an answer to an open question that asks for no approval. |
 
 Approving or dismissing an approval is never a human action: it does not decide
-the run's [outcome](#run-outcome). When two actions come at the same moment, the first of
+the run's [resolution](#run-resolution). When two actions come at the same moment, the first of
 Sent back, Accepted, Answered, Parked and Started counts.
 
-#### Run outcome
+#### Run resolution
 
-Each run that ran has one outcome. The first rule that applies gives it:
+Each run that ran has one resolution. The first rule that applies gives it:
 
-1. Failed: the run ended Failed.
-2. Sent back: its first human action was Sent back.
-3. Accepted: its first human action was Accepted.
+1. Sent back: its first human action was Sent back.
+2. Accepted: its first human action was Accepted.
+3. Failed: the run ended Failed.
 4. Other: the run ended Stopped, Exhausted or Superseded.
 5. Moved on: the run passed its task to another station, or its first human action was Started.
 6. Accepted: the pull request of the run's task merged.
@@ -838,18 +838,16 @@ A tally counts:
 | Failed | Runs that ended Failed. |
 | Stopped | Runs that ended Stopped. |
 | Checks passed, Checks failed | Runs whose check passed or failed. |
-| Accepted | Runs whose outcome is Accepted. |
-| Sent back | Runs whose outcome is Sent back. |
-| Moved on | Runs whose outcome is Moved on. |
-| Other outcome | Runs whose outcome is Other. Failed, Accepted, Sent back, Moved on and Other outcome add up to Runs. |
+| Accepted | Runs whose resolution is Accepted. |
+| Sent back | Runs whose resolution is Sent back. |
+| Resolutions | Runs by resolution, each with its share of Runs and, on the Insights Stations tab, its change against the period before. The resolutions add up to Runs. |
 | Passed on | Runs that passed their task to another station. |
 | Merged | Tasks the group's runs worked whose pull request merged. |
 | Cancelled | Runs that ended without running. |
 | Cost | The runs' cost together, when all are in one currency. |
 | Median, p90 | The time the runs took. |
 
-"Latest runs on this config" shows "Runs", "Accepted", "Sent back", "Failed",
-"Cost" and "Median". "Runs by config" shows each group's shares, median, cost
+"Latest runs on this config" shows "Runs", "Outcomes", "Cost" and "Median". "Runs by config" shows each group's shares, median, cost
 and days. The other figures are returned only by
 `GET /api/teams/{teamId}/lines/{lineId}/stations/{stationId}/insights`; the
 Insights [Stations tab](/docs/reference/app/insights#runs-at-each-station)
@@ -1064,7 +1062,7 @@ known:
 
 | Measure | A run is measured when |
 | --- | --- |
-| `sent_back_rate`, `accepted_rate` | Its [first human action](#station-outcomes) is known, or its [outcome](#run-outcome) is Accepted. |
+| `sent_back_rate`, `accepted_rate` | Its [resolution](#run-resolution) is not Other. |
 | `checks_failed_rate` | Its check passed or failed. |
 | `failed_rate` | It ended. |
 | `merged_rate` | Its task's pull request merged or closed unmerged. |

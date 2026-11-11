@@ -70,8 +70,9 @@ Only task runs at a station are recorded; chat runs are not.
 | p50 | The median. With an even count, the mean of the two middle values, rounded to a whole number, with a half rounded up. |
 | p75, p90, p95 | The nearest-rank 75th, 90th and 95th percentiles. |
 | First human action | The first thing a person did with the task after the run: the action names the run, or else it follows the task's last run at that station. It is one of Started, Parked, Accepted, Answered and Sent back. Of actions at the same moment, the first of Sent back, Accepted, Answered, Parked and Started counts. Approving or dismissing an approval is never a first human action. |
-| Accepted | A run whose [outcome](/docs/reference/app/tasks-runs-and-the-inbox#run-outcome) is Accepted: a person accepted it, or the pull request of its task merged while the task stayed at the station. |
-| Sent back | A run whose [outcome](/docs/reference/app/tasks-runs-and-the-inbox#run-outcome) is Sent back. |
+| Resolution | What came of a run: Accepted, Sent back, Failed, Moved on or Other. See [Run resolution](/docs/reference/app/tasks-runs-and-the-inbox#run-resolution). |
+| Accepted | A run whose resolution is Accepted: a person accepted it, or the pull request of its task merged while the task stayed at the station. |
+| Sent back | A run whose resolution is Sent back. |
 | Human action | A person moving a task, answering, approving, dismissing or sending a run back. |
 | Activity | A person opening a task, acting on one, or starting an agent chat on the team. |
 
@@ -157,7 +158,7 @@ than all stations' together in the period:
 
 | Signal | Rate |
 | --- | --- |
-| Sent back | Runs whose outcome is Sent back, of runs. |
+| Sent back | Runs whose resolution is Sent back, of runs. |
 | Checks failed | Failed checks, of passed and failed checks. |
 | Run failures | Failed runs, of runs. |
 | Task failures per run | Task failures raised at the station, per run. |
@@ -212,7 +213,7 @@ harnesses report tokens.
 | --- | --- | --- |
 | Inbox asks per task | Times a station asked a person in the period, per task, with `<n> asks`. | bad |
 | Time to answer | The p50 time from an ask to its answer, with the p90 and `<n> unanswered`. | bad |
-| Sent-back rate | Runs whose first human action was Sent back, of runs, with `<n> runs sent back`. Its change is in points. | bad |
+| Sent-back rate | Runs whose resolution is Sent back, of runs, with `<n> runs sent back`. Its change is in points. | bad |
 | Dismissed approvals | Approvals a person dismissed in the period, tool approvals and harness permissions alike. It opens the Traces tab at the tasks with a dismissal, when there are at most 200. | bad |
 
 "Who is using Spotlight":
@@ -513,8 +514,8 @@ The Stations tab, `?tab=stations`, has the sections "Runs at each station",
 | --- | --- | --- |
 | Runs | Runs that ran, drawn day by day. The other figures count only these. | neither |
 | Failed | Runs that ended Failed, with `<share> of runs`, drawn day by day. | bad |
-| Accepted | Runs whose outcome is Accepted. Shown when above 0 in the period or the period before. | good |
-| Sent back | Runs whose outcome is Sent back. Shown in the same way. | bad |
+| Accepted | Runs whose resolution is Accepted. Shown when above 0 in the period or the period before. | good |
+| Sent back | Runs whose resolution is Sent back. Shown in the same way. | bad |
 | Merged | Tasks among the runs whose pull request merged, at any time. Shown in the same way. | good |
 | Cost | The runs' cost, when all are in one currency. | neither |
 | Median run | The median time the runs took, with the p90. | bad |
@@ -530,8 +531,8 @@ runs per day, failures in red, beside the change in its runs. Then:
 | Failed | Runs that ended Failed. |
 | Stopped | Runs a person stopped. |
 | Checks passed, Checks failed | Runs whose check passed or failed. |
-| Accepted | Runs whose outcome is Accepted. |
-| Sent back | Runs whose outcome is Sent back. |
+| Accepted | Runs whose resolution is Accepted. |
+| Sent back | Runs whose resolution is Sent back. |
 | Passed on | Runs that passed their task to another station. |
 | Merged | Tasks among the runs whose pull request merged, at any time. |
 | Cancelled | Runs cancelled before they ran. |
@@ -631,8 +632,8 @@ started, or ended where it never started:
 | Row | Counts |
 | --- | --- |
 | Runs | Runs that ran. The other rows count only these. |
-| Sent-back rate | Runs whose outcome is Sent back, of the runs whose first human action is known or whose outcome is Accepted. |
-| Accepted rate | Runs whose outcome is Accepted, of the runs whose first human action is known or whose outcome is Accepted. |
+| Sent-back rate | Runs whose resolution is Sent back, of the runs whose resolution is not Other. |
+| Accepted rate | Runs whose resolution is Accepted, of the runs whose resolution is not Other. |
 | Checks-failed rate | Failed checks, of passed and failed checks. |
 | Failed rate | Runs that ended Failed, of runs. |
 | Merged rate | Tasks whose pull request merged, of the tasks of the runs whose pull request merged or closed unmerged. |
@@ -673,8 +674,8 @@ applied.
 
 | Outcome | Of an agent config's runs |
 | --- | --- |
-| Accepted | Runs whose outcome is Accepted, of the runs whose first human action is known or whose outcome is Accepted. |
-| Sent back | Runs whose outcome is Sent back, of the runs whose first human action is known or whose outcome is Accepted. Lower is better. |
+| Accepted | Runs whose resolution is Accepted, of the runs whose resolution is not Other. |
+| Sent back | Runs whose resolution is Sent back, of the runs whose resolution is not Other. Lower is better. |
 | Passed on | Runs that passed their task to another station, of the runs with a first human action or that passed their task. |
 | Checks passed | Passed checks, of passed and failed checks. |
 | Merged | Tasks whose pull request merged, of the tasks of the runs whose pull request merged or closed unmerged. |
