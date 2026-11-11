@@ -1,0 +1,64 @@
+---
+type: how-to
+icon: SquarePen
+title: Keep warm sandboxes ready for a line
+description: Have hosts keep sandboxes with a line's repositories cloned and set up, so a task's first run starts with no setup.
+---
+
+Use this when a task's first run on a line waits long for `setup`, such as an
+install of the repository's dependencies. You need a line managed through
+Terraform or the resource API, with `setup` on its repositories, and a host
+that serves the line.
+
+## Ask for warm sandboxes on the line
+
+Set `warm_sandboxes` on the line to the number of sandboxes the hosts keep
+ready, from 1 to 5. The default, 0, keeps none:
+
+```hcl
+resource "spotlight_line" "core_delivery" {
+  team_id        = spotlight_team.core.id
+  key            = "delivery"
+  name           = "Delivery"
+  warm_sandboxes = 1
+
+  repository {
+    name  = "acme/web"
+    setup = "npm ci"
+  }
+
+  # stations as before
+}
+```
+
+In the resource API, the field is `warmSandboxes`. Each warm sandbox takes one
+place in a host's `SPOTLIGHT_CAPACITY` and counts toward its pool's `maxRuns`
+while it waits, so raise those first if the hosts are full.
+
+## Give the host a mirror of each repository
+
+A host clones a warm sandbox's repositories from its own mirrors. A host has a
+mirror of a repository after it ran a run of that repository. If the host has
+no mirror yet, run one task of the line on it first.
+
+A host that starts a warm sandbox with no mirror of one of its repositories
+cannot warm it. The sandbox is `gone`, and the line gets no new warm sandbox for
+15 minutes: see the Mirrors rule in
+[Warm sandboxes](/docs/reference/hosts/sandbox#warm-sandboxes).
+
+## Check that a first run uses it
+
+Start a new task on the line. In the run's journal, the `setup` step reads
+`Skipped setup for <path>: the setup command and the dependency files did not change after the last setup in this sandbox.`
+for each repository with a `setup`. If a dependency file changed on the default branch after
+the warm sandbox started, the setup runs in it, on top of what is already
+installed.
+
+To stop, set `warm_sandboxes = 0` or remove the attribute. Spotlight drains the
+line's warm sandboxes.
+
+## Related
+
+- [Warm sandboxes](/docs/reference/hosts/sandbox#warm-sandboxes), in the sandbox reference.
+- [Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image)
+- [Send a line's work to particular runners](/docs/hosts/place-work-on-particular-runners)

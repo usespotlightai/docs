@@ -155,8 +155,9 @@ If the agent never runs `handover`, the runner reads
 The file is ignored when it is missing, is not JSON, or has an empty `next`. Only `next` and `note`
 are read from it, so it cannot attach files.
 A file an earlier run left is removed when a run starts.
-With neither a handover nor the file, the task goes to a person. See
-[Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover).
+With neither a handover nor the file, the runner reminds the agent once, and
+then the task goes to a person. See
+[Turns without a handover](/docs/reference/app/tasks-runs-and-the-inbox#turns-without-a-handover).
 
 ## spotlight reply
 
@@ -164,8 +165,9 @@ With neither a handover nor the file, the task goes to a person. See
 spotlight reply --to <handle> [--body <text>] [--resolve]
 ```
 
-Replies to a review comment on the task's pull request. The run's briefing lists
-the open review comments and their handles, such as `c12`.
+Replies to a review comment, on the pull request where the comment was made.
+The run's briefing lists the open review comments and their handles, such as
+`c12`.
 
 | Flag | Required | Description |
 | --- | --- | --- |
@@ -743,6 +745,7 @@ for how an integration defines tools and their inputs.
 | --- | --- |
 | Text or a number | `--<input> <value>`. A number is written in decimal, so `0x10` is rejected. |
 | `boolean` | `--<input>`, present or absent, or `--<input>=false` |
+| A list of text | `--<input> <value>` once for each item, as in `--attach a.png --attach b.png`. One value may also be the whole list as JSON, as in `--labels '["bug", "ui"]'`. |
 | A list, an object or anything else | `--<input> '<JSON>'`, as in `--filter '{"team": "ENG"}'` |
 | Standard input | `--<input> <value>`, or `--<input> -`, or `--<input> /dev/stdin`, or omitted with standard input not a terminal. Empty standard input counts as not given. |
 

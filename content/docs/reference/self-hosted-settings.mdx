@@ -32,6 +32,8 @@ Neither `SPOTLIGHT_SECRETS_KEY` nor `SPOTLIGHT_SECRETS_KMS_KEY_ID` set gives
 | `LOG_LEVEL` | `debug` in `development`, else `info` | `fatal`, `error`, `warn`, `info`, `debug`, `trace` or `silent`. What Spotlight logs is in [Observability](/docs/reference/observability#logs). |
 | `SPOTLIGHT_RELEASE` | none | The release the [install script](/docs/reference/cli/install-script) installs, and the runner image tag it pulls, when it is a release, as in `v0.1.0`. Without it, or with any other value, `canary`, the latest staging build. |
 | `SPOTLIGHT_INSTALLER_DIR` | `/opt/spotlight/installer` | The directory that contains the `install.sh` served at `/api/install.sh`. |
+| `REDIS_URL` | none | A `redis://` or `rediss://` URL. Set it to run more than one control plane server: the servers then share live updates in the app, run streams, live drafts, host tunnels, the leader lease and the [rate limit](#rate-limit) through Redis. Without it, run one server. |
+| `REDIS_URL` | none | A `redis://` or `rediss://` URL. Lets several control plane servers share live drafts, run streams, [notifications](#notifications), host tunnels, the leader lease and the [rate limit](#rate-limit). Set it when you run more than one server. |
 
 ## Addresses and sign-in
 
@@ -99,8 +101,8 @@ apply to each call that Spotlight makes for a workspace's configuration:
 
 They do not apply to hook requests and integration actions whose `from` is
 `network`, which a host of the workspace sends through its egress, or to the
-calls Spotlight makes for itself, such as to GitHub, the catalog and model
-providers. The time and size limits of these calls are in
+calls Spotlight makes for itself, such as to GitHub, the catalog, model
+providers and the [push services](#notifications). The time and size limits of these calls are in
 [Limits and timeouts](/docs/reference/limits-and-timeouts#outbound-calls).
 
 ### Allowed hosts
@@ -215,7 +217,7 @@ and client registration, API spec fetches, the JWKS of a webhook's JWT check,
 the provision calls of push pools, the OIDC discovery and JWKS of a trust, or
 the calls Spotlight makes for itself.
 
-When `REDIS_URL` is set, all control plane servers share the count of each
+When [`REDIS_URL`](#service) is set, all control plane servers share the count of each
 workspace through Redis. Without `REDIS_URL`, each server counts on its own.
 If Redis fails or does not answer within 2 seconds, each server counts on its
 own until Redis answers again. Spotlight logs
@@ -245,6 +247,7 @@ A failed hook step is retried as in [Failures](/docs/reference/terraform/hook#fa
 | --- | --- | --- |
 | `SPOTLIGHT_SANDBOX_GRACE` | `10m` | How long a sandbox with no run and no editor stays up before Spotlight drains it. |
 | `SPOTLIGHT_EDITOR_LIMIT` | `12h` | How long editors alone keep a sandbox up after the last run in it ended. |
+| `SPOTLIGHT_WARM_SANDBOX_AGE` | `24h` | How long a [warm sandbox](/docs/reference/hosts/sandbox#warm-sandboxes) that no run took stays up before Spotlight drains it and starts a new one. |
 
 Each is a whole number above `0` followed by `ms`, `s`, `m` or `h`, such as
 `90s`, `10m` or `12h`. A value in another form fails validation with
@@ -265,15 +268,20 @@ URL is not `https`.
 
 ## Models
 
-Change stacks, decisions, memories and judges use models through OpenRouter.
+Change stacks, decisions, memories and judges use a model through the OpenAI Chat Completions API. The endpoint must support JSON schema output (`response_format` of type `json_schema`). OpenAI, Gemini, OpenRouter, vLLM, Ollama and LiteLLM serve this API.
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `OPENROUTER_API_KEY` | none | Without it, no decision is generated, no memory is drafted, no run is judged, and a change stack fails with `Change stacks are not set up on this deployment.`. |
-| `CHANGE_STACK_MODEL` | `google/gemini-3.8-flash` | Generates [change stacks](/docs/reference/app/change-stacks-and-decisions). |
-| `DECISIONS_MODEL` | `google/gemini-3.8-flash` | Generates [decisions](/docs/reference/app/change-stacks-and-decisions#decisions). |
-| `MEMORIES_MODEL` | `google/gemini-3.8-flash` | Drafts [memories](/docs/reference/glossary#memory). |
-| `JUDGE_MODEL` | `google/gemini-3.8-flash` | The [judge](/docs/improvement/set-a-stations-judge-and-alerts). |
+| `LLM_BASE_URL` | none | The API base URL, such as `https://api.openai.com/v1` or `http://localhost:11434/v1`. Without it, no decision is generated, no memory is drafted, no run is judged, and a change stack fails with `Change stacks are not set up on this deployment.`. |
+| `LLM_API_KEY` | none | Sent as a bearer token. A local server can work without it. |
+| `LLM_MODEL` | none | The model for all four functions, as the endpoint names it. |
+| `LLM_SUPPORTS_REASONING_EFFORT` | `false` | Set it to `true` to send `reasoning_effort` with change stack requests. A model that does not accept the field refuses the request. |
+| `CHANGE_STACK_MODEL` | `LLM_MODEL` | Generates [change stacks](/docs/reference/app/change-stacks-and-decisions) and grades answers to their questions. |
+| `DECISIONS_MODEL` | `LLM_MODEL` | Generates [decisions](/docs/reference/app/change-stacks-and-decisions#decisions). |
+| `MEMORIES_MODEL` | `LLM_MODEL` | Drafts [memories](/docs/reference/glossary#memory). |
+| `JUDGE_MODEL` | `LLM_MODEL` | The [judge](/docs/improvement/set-a-stations-judge-and-alerts). |
+
+The control plane does not start when `LLM_BASE_URL` is set without any model, or a model is set without `LLM_BASE_URL`. A function without its own model and without `LLM_MODEL` does not run, as when `LLM_BASE_URL` is not set. The API does not report a price, so Spotlight records the tokens of these calls but no cost.
 
 ## Error reporting
 
@@ -292,7 +300,7 @@ The variables are in [Observability](/docs/reference/observability#spotlight).
 
 ## Storage
 
-Attachments and [workspace archives](/docs/runs/how-a-conversation-survives-between-runs)
+Attachments and [working copy archives](/docs/runs/how-a-conversation-survives-between-runs)
 are kept in one S3 bucket. Browsers and runners never get its keys: they
 upload and download through presigned URLs that last 15 minutes.
 
@@ -300,6 +308,7 @@ upload and download through presigned URLs that last 15 minutes.
 | --- | --- | --- |
 | `S3_BUCKET` | required | The bucket's name. |
 | `S3_REGION` | `us-east-1` | The bucket's region. |
+| `S3_KEY_PREFIX` | none | A prefix for the keys that this instance writes, such as `previews/feat-x`. Spotlight adds the `/` after it. See [Objects](#objects). |
 | `S3_ENDPOINT` | AWS | The S3 endpoint Spotlight itself calls. Set for storage other than AWS S3. |
 | `S3_FORCE_PATH_STYLE` | `false` | `true` addresses the bucket by path, for `S3_ENDPOINT` and `S3_RUNNER_ENDPOINT`. |
 | `S3_PUBLIC_ENDPOINT` | `S3_ENDPOINT` | The endpoint in URLs presigned for browsers, such as a CDN. |
@@ -318,13 +327,21 @@ storage host runners reach: the host of `S3_RUNNER_ENDPOINT`, else of
 | --- | --- |
 | `pending/<workspace id>/<attachment id>` | A file a browser has uploaded but no task, answer or message has taken yet. |
 | `workspaces/<workspace id>/attachments/<attachment id>` | A file a task, answer or message has taken. |
-| `workspaces/<workspace id>/archives/<archive id>.tar.gz` | A [workspace archive](/docs/reference/limits-and-timeouts#workspace-archives). |
+| `workspaces/<workspace id>/archives/<archive id>.tar.gz` | A [working copy archive](/docs/reference/limits-and-timeouts#working-copy-archives). |
 
 A browser uploads to `pending/`. Once a task, answer or message that names the
 file is saved, Spotlight copies it under `workspaces/` and the pending copy is
 dropped. Spotlight never removes an attachment under `workspaces/`. It removes
 archives itself, on the schedule in
-[Limits and timeouts](/docs/reference/limits-and-timeouts#workspace-archives).
+[Limits and timeouts](/docs/reference/limits-and-timeouts#working-copy-archives).
+
+With `S3_KEY_PREFIX`, every key above starts with the prefix when Spotlight
+writes it, such as `previews/feat-x/pending/…`. To read an object, Spotlight
+tries the key with the prefix first, then the key without it. So an instance
+that runs on a copy of another instance's database finds the other instance's
+files, and never changes them: it deletes only keys under its prefix. A delete
+in that instance does not remove the other instance's object, but the copied
+database no longer refers to it.
 
 ### Bucket setup
 
@@ -354,6 +371,42 @@ task's conversation with it.
 
 The keys need only `s3:PutObject`, `s3:GetObject` and `s3:DeleteObject`, on
 `arn:aws:s3:::<bucket>/pending/*` and `arn:aws:s3:::<bucket>/workspaces/*`.
+With `S3_KEY_PREFIX`, they also need the same actions on
+`arn:aws:s3:::<bucket>/<prefix>/*`.
+
+## Notifications
+
+Spotlight tells a person about each new item in their inbox. An open Spotlight
+tab gets the item through the server. A browser that is closed gets it through
+Web Push, which needs a VAPID key pair. Generate one with
+`npx web-push generate-vapid-keys`.
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `VAPID_PUBLIC_KEY` | none | The public key of the pair, base64url. |
+| `VAPID_PRIVATE_KEY` | none | The private key of the pair, base64url. |
+| `VAPID_SUBJECT` | none | A `mailto:` or `https:` address where push services can reach the operator. |
+
+Give all three or none. Some but not all gives
+`VAPID_PUBLIC_KEY: goes with VAPID_PRIVATE_KEY and VAPID_SUBJECT. Set all three to send Web Push, or none; generate a key pair with: npx web-push generate-vapid-keys`.
+Without them, Spotlight sends no Web Push, and notifications show only while a
+Spotlight tab is open. Keep the same key pair:
+a new pair stops Web Push to every browser until each person turns
+notifications on again.
+
+Spotlight sends Web Push only to these push services, whatever
+`SPOTLIGHT_OUTBOUND_ALLOWED_HOSTS` says. The list is fixed. A browser whose push
+service is not on it cannot turn on Web Push: Spotlight answers `422`, and the
+settings page says that it could not change the setting.
+
+- `fcm.googleapis.com` (Chrome and other Chromium browsers)
+- `updates.push.services.mozilla.com` (Firefox)
+- `web.push.apple.com` and `*.push.apple.com` (Safari)
+- `*.notify.windows.com` (Edge on Windows)
+
+With several control plane servers, set [`REDIS_URL`](#service). Without it, an
+open tab gets only the items that the server holding its connection announces,
+and misses the others.
 
 ## Mail
 

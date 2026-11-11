@@ -6,7 +6,7 @@ description: Add the Slack module so a mention of your Slack app starts a chat w
 ---
 
 The agent answers in the mention's thread and can propose tasks, which you
-accept or dismiss with a reply. You need:
+accept or dismiss with a button. You need:
 
 - A Slack app you can configure, installed in your Slack workspace.
 - Terraform 1.11 or later, set up with the Spotlight provider, using a token
@@ -28,8 +28,14 @@ In the Slack app's settings:
 <Step>
 
 Give the app's bot the scopes `app_mentions:read`, `chat:write`,
-`channels:history`, `files:read`, `reactions:write`, `users:read` and
-`users:read.email`, and reinstall the app.
+`channels:history`, `files:read`, `files:write`, `reactions:write`,
+`users:read` and `users:read.email`, and reinstall the app.
+
+</Step>
+<Step>
+
+Turn on **Agents & AI Apps**. Slack then shows a status in the thread while
+the agent works.
 
 </Step>
 <Step>
@@ -104,9 +110,11 @@ configuration already has a `required_providers` block, set the provider's
 
 Change `workspace` to the part after `/w/` in the workspace's address, and
 `team` to your team's key. The agent reads the repositories of the team's
-lines. To answer with another harness, set `harness`, as in `codex`. To react
-with another emoji, set `acknowledge` to its name, or to `null` for no
-reaction. On a [self-hosted Spotlight](/docs/reference/glossary#spotlight-address), set
+lines. To answer with another harness, set `harness`, as in `codex`. To show
+another status while the agent works, set `status`, or set it to `null` for no
+status. To react with other emojis when a task is complete, when a run of it
+fails, or when a mention reopens it, set `finished_reaction`,
+`failed_reaction` and `acknowledge`, or set them to `null` for no reaction. On a [self-hosted Spotlight](/docs/reference/glossary#spotlight-address), set
 `spotlight_url` to your deployment's address. Run `terraform apply`.
 
 ## Point Slack at the team
@@ -131,13 +139,19 @@ Subscribe the bot to the `app_mention` and `message.channels` events.
 Save, and reinstall the app if Slack asks.
 
 </Step>
+<Step>
+
+In the interactivity settings, turn interactivity on and give the
+`slack_webhook_url` output as the request URL. The buttons need it.
+
+</Step>
 </Steps>
 
 ## Check it
 
 Mention the app in a channel it has joined, with a question about your code.
-The app reacts to the mention with the `eyes` emoji, and the agent's answer
-appears in the thread, with a link to the chat in Spotlight. The chat also
+While the agent works, the thread shows "is thinking…". The agent's answer
+then appears in the thread, with an **Open in Spotlight** button. The chat also
 shows on your **Agent** page. Files attached to the mention, such as
 screenshots, go to the agent with it. To ask more, mention the app again in
 the same thread. Only the person who started the chat can talk to it. When another
@@ -145,14 +159,29 @@ person mentions the app in that thread, the app replies that only the person
 who started the chat can talk to it, and the chat does not change.
 
 Ask for a change. When the agent proposes a task, its answer lists the open
-proposals, each with a number that it keeps. Reply with a mention and
-`accept` to create the task, or `dismiss` to remove the proposal. When more
-than one proposal is open, add its number, as in `accept 2`. The thread then
-links to the new task. When the task asks a question, the question appears in
-the channel in a new thread, and a reply in that thread answers it and resumes
-the work. On the task in Spotlight, the reply shows the avatar of the member
-who uses the email of your Slack account. A mention of the app at the start of
-the reply is removed.
+proposals, each with a number that it keeps and an **Accept** and a
+**Dismiss** button. Click **Accept** to create the task, or **Dismiss** to
+remove the proposal. You can also reply with a mention and `accept` or
+`dismiss`, and add the number when more than one proposal is open, as in
+`accept 2`. The thread then links to the new task. When the task asks a
+question, the question appears in the channel in a new thread and mentions
+you. The images of the question, such as screenshots of the change, show
+below it. The app waits up to 10 seconds until Slack has processed them, and
+posts the question without them when Slack has not. A reply in that thread
+answers it and resumes the work. On the task in Spotlight, the reply shows the
+avatar of the member who uses the email of your Slack account. A mention of the
+app at the start of the reply is removed.
+
+When a run of the task fails, the app reacts to the first message of that
+thread with `x`. When the task is complete, the app removes `x`, reacts with
+`white_check_mark` and says so in the thread, with the pull request. When the
+task asked no question, the reactions go on your first mention instead.
+
+After the task finishes, mention the app in that thread to ask for more. The
+mention reopens the task, the app reacts with the `eyes` emoji, removes
+`white_check_mark`, and the agent works on the task again. A task at Completed
+does not reopen. The app then replies that you must mention it in a new
+message.
 
 If the app replies that no member uses your email, check that the email of
 your Slack account is your Spotlight sign-in email or a verified email under

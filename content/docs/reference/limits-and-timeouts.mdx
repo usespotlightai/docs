@@ -20,6 +20,7 @@ See [Runs](/docs/reference/app/tasks-runs-and-the-inbox#runs).
 | Attempts when the runner is lost | 3 in all |
 | Attempts while hooks go unanswered | 6 in all, 5 seconds to 2 minutes apart |
 | Run wall clock on a host | `SPOTLIGHT_RUN_TIMEOUT`, default 6 hours, for each run; the run fails `timed-out` and is tried again, 3 attempts in all, counted with lost runners |
+| Wait for background work after a turn without a handover | `SPOTLIGHT_BACKGROUND_WAIT` in the sandbox, default 30 minutes, for each turn; `0` sends the reminder at once. See [Turns without a handover](/docs/reference/app/tasks-runs-and-the-inbox#turns-without-a-handover) |
 | Stop grace for a sandbox the host stops | 30 seconds |
 | Messages a person sends, checked for | every 2 seconds |
 
@@ -65,6 +66,7 @@ See [Inside a sandbox](/docs/reference/hosts/sandbox#run-phases).
 | Change stack check | 5 minutes a step, 60 minutes in all; see [Checks](/docs/reference/app/change-stacks-and-decisions#checks) |
 | Idle grace of a task's or chat's sandbox | `SPOTLIGHT_SANDBOX_GRACE`, default 10 minutes; see [Sandbox lifetime](/docs/reference/hosts/sandbox#sandbox-lifetime) |
 | A sandbox kept up by editors alone | `SPOTLIGHT_EDITOR_LIMIT`, default 12 hours after its last run |
+| A warm sandbox that no run took | `SPOTLIGHT_WARM_SANDBOX_AGE`, default 24 hours after it started; see [Warm sandboxes](/docs/reference/hosts/sandbox#warm-sandboxes) |
 | Editor lease | Renewed every 30 seconds while the connection carried traffic in the last 30 minutes; expires 2 minutes after the last renewal |
 | Wait for a sandbox to start for an editor | 10 minutes |
 | Sandbox not reported by its host after it starts | 60 seconds, then gone |
@@ -101,7 +103,7 @@ proxy of a push pool runner:
 | Upstream connection | 30 seconds |
 | Upstream TLS handshake | 15 seconds |
 
-## Workspace archives
+## Working copy archives
 
 See [Inside a sandbox](/docs/reference/hosts/sandbox#run-phases).
 
@@ -371,3 +373,5 @@ See [Resource API](/docs/reference/api/resource-api#headers).
 | Attachment size per file | 25 MiB; see [Attachments](/docs/reference/app/tasks-runs-and-the-inbox#attachments) |
 | Invite lifetime | 14 days from when it was last sent; see [Invites](/docs/reference/roles-and-permissions#invites) |
 | Addresses per invite request | 1 to 50; see [Invites](/docs/reference/roles-and-permissions#invites) |
+| Live update connection | The app's connection for live updates closes after 10 to 12 minutes, and the app connects again |
+| Delivered domain events | Deleted 7 days after they are recorded, once every subscriber has them; an event that a subscriber has not taken stays |

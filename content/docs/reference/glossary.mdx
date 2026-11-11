@@ -39,7 +39,7 @@ allows; a dismissal stays valid at the station that asked. See [Approvals](/docs
 ## Attachment
 
 A file of up to 25 MiB given with a task, an answer, a message to a run or a
-chat message. A run finds it in its workspace at
+chat message. A run finds it in its [working copy](#working-copy) at
 `.spotlight/attachments/<id>/<name>`. See
 [Attachments](/docs/reference/app/tasks-runs-and-the-inbox#attachments).
 
@@ -529,7 +529,7 @@ you can write a memory yourself, correct one (the correction replaces it) or
 retire one with a reason; retired memories stay readable under Retired. Each
 active memory has a handle, such as `M-12`, and runs are briefed with the ones
 that are most relevant to their work, whatever harness they run. Every memory
-that applies to a run is also laid out in its workspace under
+that applies to a run is also laid out in its working copy under
 `.spotlight/memory`, for the agent to search; it can also search with
 `spotlight recall`, and propose one itself with `spotlight remember`; that
 proposal waits in the inbox beside the run like a drafted one. "Memories" on
@@ -727,7 +727,7 @@ that Spotlight keeps for the station and replays together. Each work station
 has one set. Spotlight creates it when the station's first run ends and
 refreshes it from the station's newer runs. A refresh takes out runs older
 than 90 days, and tasks that a search's [reflection](#reflection) blamed on
-the task itself. While a run is in a set, Spotlight retains the workspace it
+the task itself. While a run is in a set, Spotlight retains the working copy it
 started from. See
 [The replay set Spotlight keeps](/docs/improvement/how-spotlight-improves-a-station#the-replay-set-spotlight-keeps)
 and [How Spotlight keeps the set](/docs/reference/app/replays#how-spotlight-keeps-the-set).
@@ -820,7 +820,7 @@ accept it. See [Credentials](/docs/reference/hosts/egress#credentials).
 
 ## Runner
 
-The `spotlight runner` process inside a sandbox. It prepares the workspace,
+The `spotlight runner` process inside a sandbox. It prepares the working copy,
 runs the harness for one run, and reports the run's steps and outcome to
 Spotlight. Every run gets a new runner. See
 [The spotlight command](/docs/reference/cli/spotlight-command#spotlight-runner).
@@ -956,13 +956,13 @@ See [What egress injects into requests](/docs/reference/hosts/egress#what-egress
 
 ## Starting point
 
-Where a task's run started: the workspace archive it restored, if any, and the
+Where a task's run started: the working copy archive it restored, if any, and the
 commit each repository was checked out at. A replay starts from it. See
 [Starting point](/docs/reference/app/tasks-runs-and-the-inbox#starting-point).
 
 ## Starting point hold
 
-A replay set's hold on the workspace archives that its runs started from.
+A replay set's hold on the working copy archives that its runs started from.
 While a run is in a set, Spotlight does not purge the archive that the run
 started from. See
 [How Spotlight keeps the set](/docs/reference/app/replays#how-spotlight-keeps-the-set).
@@ -986,7 +986,7 @@ To end a run's lease while it waits for a person. A task's run that put the
 task to a person is `suspended` at once, and the task's sandbox stays up. No
 runner has a lease on a suspended run. An answer puts the run back in the
 queue. The run continues in the task's sandbox while it is up, else a new
-sandbox restores the workspace. See
+sandbox restores the working copy. See
 [Run states](/docs/reference/app/tasks-runs-and-the-inbox#run-states).
 
 ## Tally
@@ -1049,11 +1049,26 @@ The author kind of a [note](#note): `station` for a station's run or for
 Spotlight itself, `person` for a person, or `world` for an outside service. See
 [Notes](/docs/reference/app/tasks-runs-and-the-inbox#notes).
 
+## Warm sandbox
+
+A sandbox that a host keeps ready for a line before any task needs it, with the
+line's repositories cloned and set up. A task's first run starts in it. See
+[Warm sandboxes](/docs/reference/hosts/sandbox#warm-sandboxes).
+
 ## Whole change
 
 The first step of a [check](#check): the run's diff applied in full and checked
 with the station's `check` command. When it fails, the layers are not checked.
 See [Checks](/docs/reference/app/change-stacks-and-decisions#checks).
+
+## Working copy
+
+The files a task's runs work in on a runner, in the folder `/workspace` of the
+sandbox: each repository's checkout, the files laid out for the run, and the
+harness's state. A task keeps one working copy from run to run and from station
+to station. The runner stores it as an archive, and a new sandbox restores the
+newest one. See
+[How a conversation survives between runs](/docs/runs/how-a-conversation-survives-between-runs).
 
 ## Workspace
 

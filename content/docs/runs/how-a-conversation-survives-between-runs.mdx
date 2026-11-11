@@ -2,7 +2,7 @@
 type: concept
 icon: Lightbulb
 title: How a conversation survives between runs
-description: Why Spotlight keeps a task's whole workspace between runs and stations, why the workspace is always /workspace, and why the work survives losing a conversation.
+description: Why Spotlight keeps a task's whole working copy between runs and stations, why the working copy is always at /workspace, and why the work survives losing a conversation.
 ---
 
 A task's runs share a sandbox while it is up, and the sandbox is destroyed
@@ -29,35 +29,37 @@ therefore tied to a path, whatever machine the path is on. Move the working
 directory and the harness's state together, to the same path on another machine,
 and the conversation moves with them. Nothing else needs to go.
 
-## Keep the workspace, and the conversation comes with it
+## Keep the working copy, and the conversation comes with it
 
-Spotlight builds on that. It points each harness's state directory into the
-workspace itself, under `.spotlight/state`, so a run's workspace contains both the
-checkout the agent worked in and the harness's record of the conversation.
+A run's working copy is the folder of files it works in on the runner: the
+checkout of each repository and everything written beside it. Spotlight points
+each harness's state directory into the working copy itself, under
+`.spotlight/state`, so a run's working copy contains both the checkout the agent
+worked in and the harness's record of the conversation.
 
 When an agent asks a person something, or needs a tool call approved, its run
 is suspended: it gives up its place in the sandbox, and the sandbox stays with
-the task. At the end of the turn, the runner packs the workspace into an
+the task. At the end of the turn, the runner packs the working copy into an
 archive and stores it. The archive belongs to the task (or to a chat, for the
 agent's planning chats). When the answer arrives, the same run carries on as
 its next attempt, and the harness resumes the conversation it left. If the
-task's sandbox is still up, the run goes back into it, and the workspace is
+task's sandbox is still up, the run goes back into it, and the working copy is
 already there. If the sandbox has gone, any runner that meets the run's
 placement restores the archive into a new sandbox before the harness starts.
 
-The runner also stores the workspace at the end of every other turn, and when
+The runner also stores the working copy at the end of every other turn, and when
 a sandbox is drained after edits a person made in it. Every later run of the
 task starts from the newest archive, unless it runs in the task's live
 sandbox.
 
-The archive contains the whole workspace, checkout included, and the two belong
+The archive contains the whole working copy, checkout included, and the two belong
 together. A conversation refers to files: what the agent read, what it changed,
 what it meant to run next. Restoring the conversation without the checkout it
 was about would hand the agent a memory of work that is no longer there.
 
-## One workspace for the task, one conversation for each station
+## One working copy for the task, one conversation for each station
 
-A task keeps one workspace for as long as it lives. When a station passes the
+A task keeps one working copy for as long as it lives. When a station passes the
 task on, the next station's run restores the same archive. Its agent finds the
 checkout as the last agent left it, with changes that were never committed and
 any files written beside the checkout.
@@ -66,25 +68,25 @@ The conversation does not cross stations. Each station has its own prompt, and
 may have its own harness and model, so the next station's agent opens a new
 conversation and learns what was done from the notes on the task. A run resumes
 a conversation only at the station that started it, while the task is still
-there. The earlier station's conversation files stay in the workspace, under
+there. The earlier station's conversation files stay in the working copy, under
 `.spotlight/state`, and nothing resumes them.
 
 The alternative is to give each station a fresh clone of the task's branch.
 Then only what an agent pushed reaches the next station, and work it left
-uncommitted is lost at every handover. Sharing the workspace has a cost of its
+uncommitted is lost at every handover. Sharing the working copy has a cost of its
 own: a station meant to judge the work independently, such as a review, sees
 whatever the earlier agent left lying there.
 
-A shared workspace could also hand a station things meant for another, so the
+A shared working copy could also hand a station things meant for another, so the
 runner clears them at the start of every run: the skills an earlier station was
 given, the files a harness profile laid, and an outcome file an earlier agent
 left. It also brings the checkout's branch up to date with what was pushed to
 it since, for example a fix a person committed on the pull request. If the
-branch has moved both in the workspace and on GitHub, or uncommitted changes
-block it, the runner leaves the workspace as it is and says so in the run's `prepare` step. [Inside a
+branch has moved both in the working copy and on GitHub, or uncommitted changes
+block it, the runner leaves the working copy as it is and says so in the run's `prepare` step. [Inside a
 sandbox](/docs/reference/hosts/sandbox#run-phases) lists each phase.
 
-## Why the workspace is always /workspace
+## Why the working copy is always at /workspace
 
 A conversation is filed under its working directory, so resuming needs the same
 directory every time. In Spotlight that directory is `/workspace`, for every run
@@ -108,7 +110,7 @@ cold](/docs/hosts/why-a-sandbox-belongs-to-one-task#fresh-not-cold)).
 Put together, this means a conversation does not belong to a host. The host
 that ran the first turn may be busy, stopped or gone by the time a person
 answers. The run's next attempt, or a later run, can go to any host that is
-able to take it, restores the workspace and carries on.
+able to take it, restores the working copy and carries on.
 
 The alternative would be to send every follow-up run back to the machine that
 started the conversation. That would make an answered question wait for one
@@ -156,7 +158,7 @@ started from is also retained for 30 days after that run started, and while the 
 replay set, so the run can be
 [replayed](/docs/improvement/why-changes-are-replayed-on-past-tasks). How long each
 kind of archive is retained, and how large one may be, is in [Limits and
-timeouts](/docs/reference/limits-and-timeouts#workspace-archives).
+timeouts](/docs/reference/limits-and-timeouts#working-copy-archives).
 
 An archive also leaves things out when something else can put them back. When a
 repository has a setup command, the archive skips the files the repository

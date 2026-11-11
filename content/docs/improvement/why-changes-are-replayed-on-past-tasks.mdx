@@ -25,7 +25,7 @@ For a comparison to mean anything, the only thing that differs between a
 replay and the run it repeats has to be the config. So a replay starts where
 the original run started, as closely as Spotlight can rebuild it:
 
-- the same workspace, restored from the exact archive the original restored,
+- the same working copy, restored from the exact archive the original restored,
   with each repository checked out at the commit the original started from;
 - the task as it was briefed to the original: its title, description, notes,
   attachments and decisions then, not as they read now;
@@ -52,8 +52,14 @@ works on the task, and it leaves nothing behind but its own result:
 - It cannot reply to a pull request's review comments, propose a memory or
   read a task's trace.
 - Its change stack is generated and checked, and never sent to GitHub.
-- It never asks a person. A replay that would put the task to a person, by
-  handing it over to one or asking permission, ends there and counts as asked.
+- It never asks a person. A replay that asks a person while it runs, such as
+  for permission, ends there and counts as asked. So does one that hands over
+  with a word that moves the task to no station. A replay that hands the task
+  over to `review`, or with no word, at its end is scored by its check and judge, as a run that
+  moves the task on is.
+- Its judge knows it is a replay. It grades the work the run produced, and
+  never counts against it a push, pull request, review comment or tool call
+  that the replay blocked.
 - It is not counted among the station's outcomes or in the Insights figures
   of the team's runs, and no memories are drafted from it. Insights shows
   replays apart, under Candidates on its Stations tab.
@@ -82,8 +88,9 @@ to run on; a check that could not run, or judging that could not finish, says
 nothing either way. Those runs are unscored and left out of the success rate,
 each with its reason. So are runs that could not be replayed or started, runs a
 replay's stop or ceiling cut short, exhausted runs with no failure
-code, and runs that failed for a reason outside the candidate: a workspace that
-could not be made ready before the agent began (`unprepared`), no runner
+code, and runs that failed for a reason outside the candidate: a working copy that
+could not be made ready, or a harness that could not open a session, before the
+agent began (`unprepared`), no runner
 provisioned (`unprovisioned`), hooks unanswered (`hooks-unanswered`), a lost
 runner (`runner-lost`), `cancelled` or `superseded`.
 
@@ -91,8 +98,9 @@ Only some runs count against the candidate as failures:
 a run that failed with `exited`, with `timed-out` (it kept running past its
 host's time limit), with `refused` (Spotlight would not start it as configured,
 as for a missing harness profile or tools, MCP servers or secrets a replay is
-not given) or with no code; a run that asked a person; and a run that failed
-its check or judge. In
+not given) or with no code; a run that asked a person while it ran, or handed
+over with a word that moves the task to no station; and a run that failed its
+check or judge. In
 the docs' view, this keeps a failure to measure from reading as a failure of
 the candidate.
 
@@ -142,11 +150,9 @@ different replays could not be read together. Pairs judged under different
 rubric versions are left out; in the docs' view, comparing them would mix two
 questions.
 
-The comparisons cost model calls. They count against the replay's ceiling,
-with room for two tries set aside before each is requested, and a pair that would
-pass the ceiling is not requested. They do not add to the replay's spend or
-its cost per run, since they measure the change, not what running the
-candidate costs; that reason is the docs' own.
+The comparisons do not count against the replay's ceiling, its spend or its
+cost per run. They measure the change, not what running the candidate costs;
+that reason is the docs' own.
 
 ## Every result comes with a range
 
@@ -259,12 +265,9 @@ below. That first search costs more for it. In the docs' view, a set is only
 worth reading once it has been calibrated, and a search has to replay the live
 config anyway. The health this measures decides from the next search on
 whether a search starts. A set of fewer than 5 runs is never calibrated, since
-it is too small to measure noise on. The second judgings cost model calls, so
-they count against the replay's ceiling and stop once it would be spent; the
-rest are not judged again. A second judging or check never changes a run's
-result. In the docs' view, it
-measures the judge and the check, not the run. The second judgings also do not
-add to what the check's runs cost.
+it is too small to measure noise on. A second judging or check never changes a
+run's result. In the docs' view, it measures the judge and the check, not the
+run.
 
 ## Why a set is replayed with the answer
 
@@ -318,7 +321,7 @@ should never delay work that people are waiting on now.
 ## What a replay can start from
 
 A run can be replayed only if Spotlight retained where it started. Each task run
-records the workspace archive it restored and the commit each repository
+records the working copy archive it restored and the commit each repository
 started from. Runs that ended before Spotlight began recording this cannot be
 replayed.
 

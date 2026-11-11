@@ -26,15 +26,19 @@ under [spotlight tools call](/docs/reference/cli/agent-commands#spotlight-tools-
 
 ### pull-request
 
-Opens a pull request for the task's branch, `spotlight/<taskId>`, into the
-repository's default branch (`main` if GitHub names none). It answers with
-`{"url": "<address>"}`. The task then has the `git.pull-request`
-[mark](/docs/reference/events/github-events#marks).
+Opens a pull request for the [task's branch](/docs/reference/app/tasks-runs-and-the-inbox#task-branches) in one
+repository, into the repository's default branch (`main` if GitHub names none).
+It answers with `{"url": "<address>"}`. The task then has a `git.pull-request`
+[mark](/docs/reference/events/github-events#marks) with that address.
 
-If the task already has a pull request, the call opens no other. It changes the
-title and body of that pull request to the ones given, and answers with its
-address. Without `body`, the body stays as it is. `repository` has no effect
-on this change: the pull request stays in its repository.
+A task has one pull request in each repository. When a run changes files in
+two repositories, the agent calls `pull-request` once for each, and names each
+repository with `repository`.
+
+If the task already has a pull request in that repository, the call opens no
+other. It changes the title and body of that pull request to the ones given,
+and answers with its address. Without `repository`, the call changes the task's
+first pull request. Without `body`, the body stays as it is.
 
 | Input | Type | Required | Stdin | Description |
 | --- | --- | --- | --- | --- |
@@ -47,11 +51,12 @@ request is opened. It does not run before a change to the title and body.
 
 ### checks
 
-Lists the failed checks on the latest commit of the task's pull request. It has
-no inputs. The task must have a pull request.
+Lists the failed checks on the latest commit of each pull request of the task.
+It has no inputs. The task must have a pull request.
 
-It answers with the `pullRequest` address, the `commit` it read, and `failed`,
-one entry for each failed check:
+It answers with `pullRequests`, one entry for each pull request, the first
+opened first. Each entry has the `pullRequest` address, the `commit` it read,
+and `failed`, one entry for each failed check:
 
 | Field | Description | `null` when |
 | --- | --- | --- |
@@ -60,7 +65,11 @@ one entry for each failed check:
 | `url` | The check on GitHub. | GitHub gives no address. |
 | `step` | The name of the step that failed. | The check is not one of the first five GitHub Actions jobs, no step failed, or GitHub does not give the job. |
 | `summary` | The title and summary the check reported, as for a CodeQL alert. | The check reported neither. GitHub Actions jobs usually report neither. |
-| `log` | The last 200 lines of the job's log. | The check is not one of the first five GitHub Actions jobs, or GitHub does not give the log. |
+| `log` | The last 200 lines of the job's log, up to its last `##[error]` line, without terminal colour and control codes. | The check is not one of the first five GitHub Actions jobs, or GitHub does not give the log. |
+
+When GitHub does not answer for one pull request, its entry has `error`, the
+reason, in place of `commit` and `failed`. When GitHub answers for none, the call
+fails.
 
 GitHub gives the step and the log only if the App has **Actions: read**; see
 [Connect GitHub](/docs/integrations/connect-github#let-the-app-read-failed-checks).
@@ -101,11 +110,21 @@ the `line` and `station` keys it was given, and what happens `next`. See
 | `station` | string | yes | no | The key of the station on that line to start it at. |
 | `title` | string | yes | no | What the task is, in a line. |
 | `description` | string | no | yes | What whoever works it needs to know, as Markdown. |
+| `attach` | list of text | no | no | A file attached to the chat that the task needs, by its path, as in `.spotlight/attachments/<id>/<name>`, or by its id. Give `--attach` once for each file. |
+
+Each file in `attach` must be attached to a message a person sent in the
+chat, or the tool proposes nothing. The proposal keeps its own copy of each file, and the task
+gets its own copy when the person accepts the proposal. The task's runs then
+find the files in the working copy, as described under
+[Attachments](/docs/reference/app/tasks-runs-and-the-inbox#attachments).
 
 ### setup-pull-request
 
 Opens the pull request with the team's configuration, from a branch the agent
 pushed to the setup chat's configuration repository, into its default branch.
+Give the branch a name of its own, as in `spotlight-configuration`. A branch
+with the name of a [task's branch](/docs/reference/app/tasks-runs-and-the-inbox#task-branches)
+sends that branch's GitHub events to the task.
 It answers with `{"url": "<address>"}`. The chat keeps the pull request, and
 the setup task's "Set up configuration as code" step is then done. A second
 call answers the pull request the chat already opened. See
@@ -113,7 +132,7 @@ call answers the pull request the chat already opened. See
 
 | Input | Type | Required | Stdin | Description |
 | --- | --- | --- | --- | --- |
-| `branch` | string | yes | no | The branch pushed, as in `spotlight-configuration`. A branch under `spotlight/` is rejected with `Branch <branch> is named like a task’s branch. Please name it outside spotlight/, as in spotlight-configuration.` |
+| `branch` | string | yes | no | The branch pushed, as in `spotlight-configuration`. |
 | `title` | string | yes | no | What it does. |
 | `body` | string | no | yes | The decisions and the plan, as Markdown. |
 

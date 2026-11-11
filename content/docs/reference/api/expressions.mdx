@@ -48,6 +48,18 @@ there:
 has(body.data.assignee) ? body.data.assignee.email : ""
 ```
 
+`has()` takes only a field of a value. For a field of a function's result, use
+`in`, as in `"message" in parseJson(body.payload)`.
+
+## Functions
+
+Besides the standard CEL functions, every expression can call:
+
+| Function | Returns | Description |
+| --- | --- | --- |
+| `parseJson(string)` | dyn | Reads a JSON text as a value, as in `parseJson(body.payload).type`. Fails when the text is not JSON. |
+| `htmlUnescape(string)` | string | Decodes `&amp;`, `&lt;` and `&gt;` in a text, as in `htmlUnescape(body.event.text)`. It does not rewrite Slack tokens such as `<@U123>`. |
+
 No expression may read a secret. An expression containing `secret.` or
 `secret[` is rejected.
 
@@ -82,11 +94,20 @@ a check names a real index, as in `integration.webhook.events[0].when`.
 | `actions.*.request.url`, `.query.*`, `.headers.*`, `.body` | | `task`, `ask`, `chat`, `reply`, `target`, `connection`, `inputs` |
 | `actions.*.request.expect.success` | bool | the above, `response`, `status` |
 | `actions.*.request.capture.*` | | the above, `response`, `status` |
+| `actions.*.uploads.each` | list | `task`, `ask`, `chat`, `reply`, `target` |
+| `actions.*.uploads.prepare.url`, `.query.*`, `.headers.*`, `.body` | | the above, `connection`, `file` |
+| `actions.*.uploads.prepare.expect.success`, `.capture.*` | | the above, `response`, `status` |
+| `actions.*.uploads.send.url`, `.query.*`, `.headers.*` | | `task`, `ask`, `chat`, `reply`, `target`, `connection`, `file`, `prepared` |
+| `actions.*.uploads.send.expect.success`, `.capture.*` | | the above, `response`, `status` |
+| `actions.*.uploads.complete.url`, `.query.*`, `.headers.*`, `.body` | | `task`, `ask`, `chat`, `reply`, `target`, `connection`, `uploaded` |
+| `actions.*.uploads.complete.expect.success`, `.capture.*` | | the above, `response`, `status` |
+| `actions.*.uploads.ready.url`, `.query.*`, `.headers.*`, `.body` | | `task`, `ask`, `chat`, `reply`, `target`, `connection`, `file`, `prepared` |
+| `actions.*.uploads.ready.expect.success`, `.capture.*` | | the above, `response`, `status` |
 | `tools.*.inputs.*.default` | | `task` |
 | `tools.*.output` | | `task`, `ask`, `chat`, `reply`, `target`, `connection`, `response`, `status`, `capture`, `inputs` |
 | `connection.oauth2.identity` | | `response` |
-| `on.*.to.*` | | `task`, `ask`, `chat`, `reply` |
-| `on.*.mark.*.value` | | `task`, `ask`, `chat`, `reply`, `target`, `connection`, `response`, `capture` |
+| `on.*.*.to.*` | | `task`, `ask`, `chat`, `reply` |
+| `on.*.*.mark.*.value` | | `task`, `ask`, `chat`, `reply`, `target`, `connection`, `response`, `capture` |
 
 `item` is seen only when the event has `forEach`. Captures are the names in
 the event's `lookup.capture`, each seen by its own name. `inputs` is seen by an
@@ -115,7 +136,9 @@ What an action has at run time depends on what runs it:
 | `status` | dyn | The response's HTTP status. |
 | `capture` | map | The request's `capture` values, by name. |
 | `item` | dyn | The current entry of `forEach`. |
-| `file` | dyn | The current entry of `attachments.each`. |
+| `file` | dyn | The current entry of `attachments.each`, or of `uploads.each`. |
+| `prepared` | map | The `capture` values of `uploads.prepare` for the current file, by name. |
+| `uploaded` | list | The files that `uploads` sent. Each has `id`, `name`, `type`, `size` and `prepared`. Empty for an action without `uploads`. |
 | `inputs` | map | The tool's inputs, by name. |
 | `target` | map of string | The values of the binding's `to`, and `channel` from `routes`. |
 
@@ -123,10 +146,14 @@ What an action has at run time depends on what runs it:
 
 | Field | Type | Description |
 | --- | --- | --- |
+| `task.title` | string | The task's title. |
+| `task.url` | dyn | The task's address in Spotlight. |
+| `task.pullRequest` | dyn | The address of the task's first pull request, or null. |
+| `task.pullRequests` | list of string | The addresses of the task's pull requests, one for each repository, the first opened first. Empty without one. |
 | `task.line` | string | The key of the task's line. |
 | `task.station` | string | The name of the task's station. |
 | `task.stationKey` | string | The key of the task's station. |
-| `task.marks` | map of string | The task's marks, by kind, as in `task.marks["slack.thread"]`. |
+| `task.marks` | map of string | The task's marks, by kind, as in `task.marks["slack.thread"]`. For a task created from a chat, also the chat's marks that do not find it. |
 
 `ask`:
 
@@ -135,6 +162,7 @@ What an action has at run time depends on what runs it:
 | `ask.body` | string | What the task asks, when it waits on a person; otherwise `""`. When it waits on an approval, ends with a link to decide it. |
 | `ask.link` | dyn | The address of the conversation in the inbox, or null. |
 | `ask.station` | string | The name of the task's station. |
+| `ask.attachments` | list | The files of the question, as a handover's screenshots. Each has `id`, `name`, `type` and `size`. Empty when the task does not wait on a person. |
 
 `chat`:
 
@@ -148,6 +176,7 @@ What an action has at run time depends on what runs it:
 | --- | --- | --- |
 | `reply.body` | string | What Spotlight says to the chat. |
 | `reply.link` | dyn | The address of the task the reply is about, else of the chat, in Spotlight; null for `chat.refused`. |
+| `reply.proposals` | list | The chat's open proposals, listed in `reply.body`, for the last words of a run; otherwise empty. Each has `number`, `title`, and `line` and `station`, which can be null. |
 
 ## Hook positions
 
@@ -174,7 +203,8 @@ A hook's `match` is compiled into conditions of the same kind as `when`.
 | `task.stationKey` | string | The key of the task's station. |
 | `task.marks` | map of string | The task's marks, by kind. |
 | `task.repositories` | list of string | The line's repositories, as `owner/name`. |
-| `task.pullRequest` | dyn | The task's pull request address, or null. |
+| `task.pullRequest` | dyn | The address of the task's first pull request, or null. |
+| `task.pullRequests` | list of string | The addresses of the task's pull requests, one for each repository, the first opened first. Empty without one. |
 | `run.id` | string | The run's id. Only on events that happen in a run. |
 | `vars` | map of string | The hook's `vars`. |
 | `hook.key` | string | The hook's key. |

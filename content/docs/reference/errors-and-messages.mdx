@@ -71,11 +71,11 @@ reason, the reasons are joined with `; `.
 | `The runner couldn't prepare the run. Error: prepare: git clone <path>: <error>: <output>` | A repository could not be cloned. Code `unprepared`. | [Run phases](/docs/reference/hosts/sandbox#run-phases), [Point a line at your repositories](/docs/lines/point-a-line-at-your-repositories) |
 | `The runner couldn't prepare the run. Error: prepare: preparing <path> did not finish within 10m0s` | The checkouts took longer than their time limit. Code `unprepared`. | [Run phases](/docs/reference/hosts/sandbox#run-phases), [Limits and timeouts](/docs/reference/limits-and-timeouts) |
 | `The runner couldn't prepare the run. Error: clear an earlier run's outcome: <error>` | `.spotlight/outcome.json` from an earlier run could not be removed. Code `unprepared`. | [Run phases](/docs/reference/hosts/sandbox#run-phases) |
-| `The runner couldn't prepare the run. Error: fetch attachment <id>: <error>` | An attachment could not be written into the workspace. Code `unprepared`. | [Run phases](/docs/reference/hosts/sandbox#run-phases) |
+| `The runner couldn't prepare the run. Error: fetch attachment <id>: <error>` | An attachment could not be written into the working copy. Code `unprepared`. | [Run phases](/docs/reference/hosts/sandbox#run-phases) |
 | `The runner couldn't prepare the run. Error: hand over workspace: <error>` | `/workspace` could not be given to the agent user. Code `unprepared`. | [Run phases](/docs/reference/hosts/sandbox#run-phases) |
 | `The runner couldn't start the agent. Error: start agent: <error>` | The harness did not start. Code `exited`. | [Run phases](/docs/reference/hosts/sandbox#run-phases) |
-| `The runner couldn't start the agent. Error: resume the session: <error>` | The harness could not reopen the task's earlier conversation. Code `exited`. | [Run phases](/docs/reference/hosts/sandbox#run-phases) |
-| `The runner couldn't start the agent. Error: open a session: <error>` | The harness could not open a new conversation. Code `exited`. | [Run phases](/docs/reference/hosts/sandbox#run-phases) |
+| `The runner couldn't start the agent. Error: resume the session: <error>` | The harness could not reopen the task's earlier conversation. Code `unprepared`. | [Run phases](/docs/reference/hosts/sandbox#run-phases) |
+| `The runner couldn't start the agent. Error: open a session: <error>` | The harness could not open a new conversation. Code `unprepared`. | [Run phases](/docs/reference/hosts/sandbox#run-phases) |
 | `harness_profile_unknown: Harness profile <profile> is not in this team. Station: <Station>` | The station's `profile` names no profile of the team. | [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-refused-to-start) |
 | `catalog_item_unknown: <reason>` | The station names a catalog item that does not exist. | [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-refused-to-start) |
 | `catalog_item_wrong_kind: <reason>` | The station names a catalog tool as a skill, or a skill as a tool. | [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-run-refused-to-start) |
@@ -98,9 +98,9 @@ Each follows `The sandbox's egress didn't start. Error: `.
 
 | Message | Cause | See |
 | --- | --- | --- |
-| `Started afresh: <error>` | The previous run's workspace could not be restored. The run starts with an empty workspace. | [Journal steps](/docs/reference/hosts/sandbox#journal-steps) |
+| `Started afresh: <error>` | The previous run's working copy could not be restored. The run starts with an empty working copy. | [Journal steps](/docs/reference/hosts/sandbox#journal-steps) |
 | `Setup failed for <path>. Error: <error>` | A repository's `setup` command failed. The run continues without it. | [Journal steps](/docs/reference/hosts/sandbox#journal-steps), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-agent-worked-without-the-repositorys-setup) |
-| `Skipped: <error>` | The workspace could not be archived for the next run. | [Journal steps](/docs/reference/hosts/sandbox#journal-steps) |
+| `Skipped: <error>` | The working copy could not be archived for the next run. | [Journal steps](/docs/reference/hosts/sandbox#journal-steps) |
 
 ## Host log and install script
 
@@ -466,7 +466,7 @@ the same line.
 | `Sorry, you are not signed in to <address>. Run: spotlight login` | No login for the address. | [spotlight ssh proxy](/docs/reference/cli/spotlight-command#spotlight-ssh-proxy) |
 | `Sorry, your login for <address> expired. Run: spotlight login` | The login is no longer valid. | [spotlight ssh proxy](/docs/reference/cli/spotlight-command#spotlight-ssh-proxy) |
 | `Sorry, there is no <task or chat> <id> in workspace <workspace> that you may open` | No such task or chat in the workspace, or you may not open it. | [Editor connections](/docs/reference/hosts/sandbox#editor-connections) |
-| `Sorry, the sandbox did not start in 10 minutes. Please try again` | No host started the sandbox in time. | [Open a task's workspace in VS Code](/docs/tasks/open-a-workspace-in-vs-code#if-the-connection-fails) |
+| `Sorry, the sandbox did not start in 10 minutes. Please try again` | No host started the sandbox in time. | [Open a task's working copy in VS Code](/docs/tasks/open-a-working-copy-in-vs-code#if-the-connection-fails) |
 | `The sandbox stopped. Connect again to start it` | The sandbox drained or was lost. | [Sandbox lifetime](/docs/reference/hosts/sandbox#sandbox-lifetime) |
 | `Sorry, the host of the sandbox is not connected to Spotlight. Please try again` | The sandbox's host has no open connection for editors. | [spotlight ssh proxy](/docs/reference/cli/spotlight-command#spotlight-ssh-proxy) |
 | `HOME is not set. Set it to the home folder that keeps ~/.ssh` | `spotlight ssh setup` found no home folder. | [spotlight ssh setup](/docs/reference/cli/spotlight-command#spotlight-ssh-setup) |
@@ -642,7 +642,7 @@ run: ` or `The run did not start: `, followed by one of these:
 | `the run has not ended` | `still-running`. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
 | `the run recorded no starting point` | `no-starting-point`. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
 | `the task briefing was not kept` | `no-briefing`. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
-| `the starting workspace is gone` | `archive-gone`. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
+| `the starting working copy is gone` | `archive-gone`. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
 | `the briefing files are gone` | `attachments-gone`. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
 | `the answer is gone` | `answer-gone`. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
 | `the repository is not on the line` | `repository-gone`. | [Why a run cannot be replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed) |
@@ -774,8 +774,10 @@ The page a verification link opens shows them under "Email not verified".
 
 ### Replies to a mention
 
-The Slack app replies with these in the mention's thread, and starts no chat.
+The Slack app replies with these in the mention's thread. The mention starts no
+chat and reopens no task.
 
 | Message | Cause | See |
 | --- | --- | --- |
 | `Sorry, no member of this Spotlight workspace uses the email of your account. Add that email in Spotlight under Settings › Emails, or join the workspace with it. Then try again.` | The email of the Slack account is not the sign-in email or a verified email of a member of the workspace. The reply is the same when Slack gives no email for the account. | [Ask Spotlight in Slack](/docs/integrations/ask-spotlight-in-slack#check-it), [Add another email to your account](/docs/administration/add-another-email-to-your-account) |
+| `This task is completed, so Spotlight cannot reopen it. To ask for more, mention Spotlight in a new message.` | The mention is in the thread of a task at the Completed station. | [How outside events reach a task](/docs/getting-started/how-outside-events-reach-a-task) |

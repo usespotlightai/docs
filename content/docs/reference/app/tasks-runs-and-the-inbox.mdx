@@ -23,7 +23,7 @@ inbox. The terms are defined in the [glossary](/docs/reference/glossary).
 | Pull request | The pull request the task opened, or the one it reviews. |
 | Marks | The handles the task is known by outside Spotlight. See [GitHub events](/docs/reference/events/github-events#marks). |
 | Revision | A counter. It goes up when the task moves to another station and when it is finished. |
-| Branch | `spotlight/<taskId>`. The branch a run pushes the task's work to. |
+| Branch | The branch a run pushes the task's work to. See [Task branches](#task-branches). |
 
 A task created on the board is placed at the back of the station it is created
 at. A task created at a station with a harness starts a run at once. A task
@@ -45,6 +45,55 @@ A task that is created, moved, answered or reached by a happening, and is then
 idle at a station with a harness, is assigned a new run at once. A finished
 task is unfinished again when it moves to a station other than
 completed, or when a person or a happening adds a note to it.
+
+### Task branches
+
+Each task gets a branch name when it is created, as in
+`feat/add-theme-selector-to-the-workspace-menu-b38c669e`. The name has three
+parts:
+
+| Part | Taken from |
+| --- | --- |
+| Type | The task title. See [Branch types](#branch-types). |
+| Slug | The words of the title, without the type prefix, in lowercase and joined with `-`. Letters with accents lose the accent. Other characters are removed. The slug is cut at a word to at most 40 characters. A title with no letters or digits gives `task`. |
+| Short id | The first 8 characters of the task id. |
+
+The name does not change when the title changes. A workspace keeps each
+branch name for one task only. If a new task gets a name that another task in
+the workspace has, Spotlight does not create the new task. This needs the same
+type, slug and first 8 characters of the id, so it is very rare. Add the task
+again: it gets a new id, so its name is different. A
+[GitHub event](/docs/reference/events/github-events#how-a-happening-finds-its-task)
+on that branch finds the task.
+
+#### Branch types
+
+A title that starts with a Conventional Commits prefix gives its type from that
+prefix. The prefix is a word, then an optional scope in brackets, then an
+optional `!`, then `:`, as in `fix: …`, `fix(SPO-12): …` or `feat!: …`. The
+match ignores case.
+
+| Prefix word | Type |
+| --- | --- |
+| `feat`, `feature` | `feat` |
+| `fix`, `bugfix`, `hotfix` | `fix` |
+| `refactor`, `perf` | `refactor` |
+| `test`, `tests` | `test` |
+| `docs` | `docs` |
+| `chore`, `build`, `ci`, `style`, `deps`, `revert` | `chore` |
+
+Any other title, or a prefix word not in the table, gives its type from its
+start. The match ignores case and takes whole words only, so "Fixing" does not
+give `fix`.
+
+| Title starts with | Type |
+| --- | --- |
+| Fix, Fixes, Fixed, Hotfix, Patch, Resolve, Correct, Repair | `fix` |
+| Refactor, Restructure, Rename, Extract, Simplify, Split, Inline, Tidy, Clean up, Move | `refactor` |
+| Test, Tests, or Add, Write or Cover, then optional "more", "unit" or "e2e", then "test" or "tests" | `test` |
+| Doc, Docs, Document | `docs` |
+| Revert, Bump, Chore, Upgrade, Update dependencies, Update deps, Update lock | `chore` |
+| Anything else | `feat` |
 
 ### Notes
 
@@ -101,6 +150,54 @@ ending other than a station key moves the task to the station of the latest
 deferred move instead of the ending above. So does a hook stopped for looping
 while the task has a current run: the run ends as for a person's move, and the `passed` note carries the hook's failure. See
 [Moves](#moves).
+
+### Turns without a handover
+
+These rules apply to a run of a task at a station. A chat, a replay and a
+search have no handover, and their runs end when the agent's turn ends.
+
+A turn has a handover when the agent ran `spotlight handover` or wrote
+`/workspace/.spotlight/outcome.json` during the run. When a turn ends without
+one, and no person has sent a message, the runner does this:
+
+| Situation | What the runner does |
+| --- | --- |
+| The harness reports background work, and some still runs | Waits for it. Claude Code's turns that start when background work ends, such as after a background command or a subagent, are part of the run. |
+| The agent hands over during the wait | Ends the run with that handover. |
+| A person sends a message during the wait | Sends the message to the agent as its next turn. That turn gets a wait and a reminder of its own. |
+| The agent asks for a permission that goes to a person during the wait | Ends the run, as for a permission asked during a turn. |
+| The agent stops during the wait | Ends the run as failed. |
+| The background work ends, or the harness reports none | Sends the agent one reminder. |
+| The wait reaches its limit | Sends the agent one reminder that names the background work that still runs. |
+| The turn after the reminder ends without a handover | Ends the run, which is handled as "No handover" above. |
+
+The wait limit is `SPOTLIGHT_BACKGROUND_WAIT`, default 30 minutes, counted
+from the end of the turn. The wait also ends when Claude Code reports no work
+and no background work, and sends nothing more for 5 seconds. Only Claude Code
+reports background work. With any other harness the runner sends the reminder
+at once.
+
+The reminder reads:
+
+```text
+Your turn ended without a handover. The run ends when your next turn ends. Hand over with `spotlight handover`. To ask a person, hand over to `review`.
+```
+
+When background work still runs at the wait limit, it reads:
+
+```text
+Your turn ended without a handover. These background tasks still run: <tasks>. The run ends when your next turn ends, and these tasks stop with it. Wait for them in this turn, stop them, or hand over with `spotlight handover`. To ask a person, hand over to `review`.
+```
+
+Background work stops with the sandbox: when the run ends, and when the runner
+stops and the run is tried again. The run's steps show the work that stopped,
+and the next run or attempt of the task starts with the line
+`These background tasks stopped when your last sandbox stopped: <tasks>. Run them again if you still need them.`
+
+A run's steps show the wait as "Waited for", the reminder as "Reminded the
+agent to hand over", background work that stopped as "Stopped", and each
+Claude Code subagent as one "Delegated" step with what the subagent was
+asked, what it did, and its answer.
 
 ## Moves
 
@@ -185,10 +282,10 @@ why (optional)`. See [Approvals](#approvals).
 | `claimed` | `queued` | The lease expired, or the runner stopped the run at its run timeout (`timed-out`), no stop was requested, and the run has had fewer than 3 attempts. Or its `run.starting` hooks could not be called, and the run is requeued to wait. |
 | `claimed` | `suspended` | The turn ended cleanly with the task put to a person. The run gives up its lease and its place in the sandbox at once, and its journal reads `Waiting for a person`. Only a task's run is suspended; a chat run completes. |
 | `claimed` | `queued` | The turn ended with the task put to a person, and messages the run has not read came in during the turn. The run is queued at once as its next attempt, and its journal reads `Messages came in during the turn. The run starts again to read them.` |
-| `suspended` | `queued` | The person answers, in the inbox, in the task's Slack thread or on the run's page. The run is queued as its next attempt and resumes the same session: in the task's sandbox while it is up, else in a new sandbox that restores the stored workspace. |
+| `suspended` | `queued` | The person answers, in the inbox, in the task's Slack thread or on the run's page. The run is queued as its next attempt and resumes the same session: in the task's sandbox while it is up, else in a new sandbox that restores the stored working copy. |
 | `suspended` | `completed` | The task is moved or deleted, or the run is stopped. |
 | `claimed` | `completed` | The runner reports an outcome without a failure, or the run is stopped, or its lease expires after it was asked to stop. |
-| `claimed` | `failed` | The harness failed (`exited`), or the run failed before its harness started (`unprepared`). A hook on `run.starting` denied it (`refused`). Its hooks could not be called after the last requeue (`hooks-unanswered`). Its lease expired on the last attempt, and no stop was requested (`runner-lost`). Its runner stopped it at its run timeout on the last attempt, and no stop was requested (`timed-out`). |
+| `claimed` | `failed` | The harness failed (`exited`), or the run failed before its harness could work (`unprepared`). A hook on `run.starting` denied it (`refused`). Its hooks could not be called after the last requeue (`hooks-unanswered`). Its lease expired on the last attempt, and no stop was requested (`runner-lost`). Its runner stopped it at its run timeout on the last attempt, and no stop was requested (`timed-out`). |
 | `failed` | `superseded` | The run's task has moved on. |
 
 Messages sent to a run at the station where its task is idle, when that
@@ -238,8 +335,8 @@ Once the task has left the run's station, the composer is replaced by
 
 | Code | Cause | Retried |
 | --- | --- | --- |
-| `exited` | The runner reported that the run failed once its harness had started, or the harness did not start. | no |
-| `unprepared` | The run failed before its harness started: its workspace, checkouts, attachments, skills or harness files could not be made ready, or its host could not start a sandbox with the line's image and its egress. | no |
+| `exited` | The harness did not start (`start agent`), refused a session option, or failed once it had an open session. | no |
+| `unprepared` | The run failed before its harness could work: its working copy, checkouts, attachments, skills or harness files could not be made ready, its host could not start a sandbox with the line's image and its egress, or the harness started but could not resume or open a session. | no |
 | `refused` | The run could not be given what its station names, or a hook denied its start. | no |
 | `unprovisioned` | A push pool did not provision a runner for it. | no |
 | `hooks-unanswered` | Its `run.starting` hooks could not be called. | yes |
@@ -275,11 +372,11 @@ for more than one reason, the reasons are joined with `; `.
 | `The runner couldn't prepare the run. Error: prepare: git clone <path>: <error>: <output>` | A repository could not be cloned. Code `unprepared`. |
 | `The runner couldn't prepare the run. Error: prepare: preparing <path> did not finish within 10m0s` | The checkouts took longer than their time limit. Code `unprepared`. |
 | `The runner couldn't prepare the run. Error: clear an earlier run's outcome: <error>` | `.spotlight/outcome.json` from an earlier run could not be removed. Code `unprepared`. |
-| `The runner couldn't prepare the run. Error: fetch attachment <id>: <error>` | An attachment could not be written into the workspace. Code `unprepared`. |
+| `The runner couldn't prepare the run. Error: fetch attachment <id>: <error>` | An attachment could not be written into the working copy. Code `unprepared`. |
 | `The runner couldn't prepare the run. Error: hand over workspace: <error>` | `/workspace` could not be given to the agent user. Code `unprepared`. |
 | `The runner couldn't start the agent. Error: start agent: <error>` | The harness did not start. Code `exited`. |
-| `The runner couldn't start the agent. Error: resume the session: <error>` | The harness could not reopen the task's earlier conversation. Code `exited`. |
-| `The runner couldn't start the agent. Error: open a session: <error>` | The harness could not open a new conversation. Code `exited`. |
+| `The runner couldn't start the agent. Error: resume the session: <error>` | The harness could not reopen the task's earlier conversation. Code `unprepared`. |
+| `The runner couldn't start the agent. Error: open a session: <error>` | The harness could not open a new conversation. Code `unprepared`. |
 | `harness_profile_unknown: Harness profile <profile> is not in this team. Station: <Station>` | The station's `profile` names no profile of the team. Code `refused`. |
 | `catalog_item_unknown: <reason>` | The station names a catalog item that does not exist. Code `refused`. |
 | `catalog_item_wrong_kind: <reason>` | The station names a catalog tool as a skill, or a skill as a tool. Code `refused`. |
@@ -343,14 +440,14 @@ For example: `Effort high → xhigh`.
 ### Starting point
 
 Once its checkouts are ready, a task's run records where it started: the
-workspace archive it restored, if any, and the commit each repository's
+working copy archive it restored, if any, and the commit each repository's
 checkout is at. A later attempt of the same run does not replace what the
 first attempt recorded. If the starting point cannot be recorded, the run
 carries on and its `start` step reads
 `Where the run started was not recorded: <error>`. A run with no starting point
 cannot be [replayed](/docs/reference/app/replays#why-a-run-cannot-be-replayed).
 The archive is kept for 30 days after the run started; see
-[Workspace archives](/docs/reference/limits-and-timeouts#workspace-archives).
+[Working copy archives](/docs/reference/limits-and-timeouts#working-copy-archives).
 
 ### Spend
 
@@ -708,7 +805,7 @@ A run's outcome:
 | Visit | 1, 2, … | The visit: 1 plus the number of the task's earlier runs at the station that completed or failed. |
 | Checks | Checks passed, Checks failed, Checks skipped | The station's check on the run's change. See [Checks](/docs/reference/app/change-stacks-and-decisions#checks). |
 | Human action | Started, Parked, Accepted, Answered, Sent back | The first human action: the first thing a person did with the task in answer to the run, or after it. See the table below. |
-| Pull request | PR open, Merged, PR closed | The state of the task's pull request. |
+| Pull request | PR open, Merged, PR closed | The state of the task's pull requests. With several: PR open while one is open, Merged when all merged, else PR closed. |
 | Duration, Cost | | How long the run took and what it cost, from its journal. |
 
 | Human action | The person |
@@ -1240,12 +1337,14 @@ naming a line and a station by key.
 Each proposal shows in the chat as a card titled by its state. "Task" shows
 the proposed title, linked to the task once it is created. "Station" reads
 `<Line> › <Station>`, or "Station deleted" once the station is gone. "Details"
-shows the description, when there is one. "Dismiss" and "Create task" act
+shows the description, when there is one. "Files" shows the files given with
+`attach`, when there are any. "Dismiss" and "Create task" act
 only on an open proposal, and "Create task" is off while the station is
 deleted. `Copy <title>` copies the title and the description.
 
-An accepted proposal creates the task at the proposed station. A task created
-at a station with a harness starts a run at once.
+An accepted proposal creates the task at the proposed station, with a copy of
+each file on the proposal. A task created at a station with a harness starts a
+run at once.
 
 ## Attachments
 
@@ -1253,5 +1352,5 @@ at a station with a harness starts a run at once.
 | --- | --- |
 | Largest file | 25 MiB |
 | Attached to | A task, an answer, a message to a run, a chat message. |
-| In the run | `.spotlight/attachments/<id>/<name>` in the run's workspace. |
+| In the run | `.spotlight/attachments/<id>/<name>` in the run's working copy. |
 | In the briefing | Listed under `Attached, in the workspace:`. |

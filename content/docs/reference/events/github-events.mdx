@@ -29,11 +29,21 @@ A happening that answers carries the words of the comment or review as a
 message, with the file and lines it is about where there are any. Those words
 can answer a task that awaits review; see [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves).
 
-`github.checks.failed` carries the names of the failed checks of the suite as a
-message, as in `Failed: web / build, gitleaks.` It has no message if GitHub does
-not give the names. The [`checks`](/docs/reference/built-ins/built-in-tools-and-skills#checks)
-tool lists the failed checks, and gives the failed step and the log of GitHub
-Actions jobs, within the limits on that page.
+`github.checks.failed` carries the failed checks of the suite as a message. The
+message starts with their names, as in `Failed: web / build, gitleaks.` For up to
+five checks that Spotlight knows more about, it then gives more:
+
+- For a GitHub Actions job: the step that failed and the last 40 lines of the
+  job's log, up to 4,000 characters. The log ends at the last `##[error]` line,
+  so the clean-up after the failed step is not in it.
+- For a check from another app: the start of its summary, up to 40 lines and
+  2,000 characters.
+
+Spotlight reads the logs of the first five failed Actions jobs. It has no
+message if GitHub does not give the names. If GitHub does not give a step or a
+log in time, the message has the names only. The
+[`checks`](/docs/reference/built-ins/built-in-tools-and-skills#checks) tool
+gives the same failed steps and longer logs, within the limits on that page.
 
 Each happening also has a label and a line of text written to the task's
 notes when the delivery carries no words:
@@ -48,6 +58,12 @@ notes when the delivery carries no words:
 | `github.pull_request.mentioned` | Mentioned on a pull request | `Somebody mentioned Spotlight on the pull request.` |
 | `github.pull_request.labelled` | Labelled on a pull request | `Somebody labelled the pull request for Spotlight.` |
 | `github.checks.failed` | Checks failed | `The checks failed on the pull request.` |
+
+A task with pull requests in several repositories reacts to
+`github.pull_request.merged` and `github.pull_request.closed-unmerged` only when
+the last of them that is still open closes. An earlier close adds a note to the
+task, and the task stays where it is. A pull request that is reopened counts as
+open again.
 
 An `installation` delivery with action `deleted` disconnects the workspace from
 GitHub.
@@ -76,7 +92,7 @@ A happening names what it concerns: a branch, marks, or both.
 
 | Concern | Taken from | Finds |
 | --- | --- | --- |
-| Branch `spotlight/<taskId>` | The pull request's head branch, or the check suite's head branch. | The task with that id. |
+| Branch | The pull request's head branch, or the check suite's head branch. | The task whose [branch](/docs/reference/app/tasks-runs-and-the-inbox#task-branches) has that name. |
 | `git.pull-request` mark | The pull request's URL. | The task that opened the pull request. |
 
 Every happening except `opened`, `mentioned` and `labelled` that names a pull
@@ -84,7 +100,7 @@ request is
 also sent a second time, concerning the `github.review` mark of that pull
 request. The task that has that mark receives it.
 
-A branch outside `spotlight/` finds no task by its name. A delivery that names
+A branch that is not a task's branch finds no task by its name. A delivery that names
 neither a branch nor a pull request is rejected.
 
 ## Review tasks
