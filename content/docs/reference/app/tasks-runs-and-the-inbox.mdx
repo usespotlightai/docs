@@ -107,7 +107,9 @@ trail, and a note's words never change.
 | `answered` | A person answers in the inbox or on the run's page, or a happening with a message answers the open conversation. |
 | `message` | A person sends a message to a running run, a happening arrives that leaves the task where it is, or a different failure arrives while the task awaits review. |
 
-Each note has a voice, `station`, `person` or `world` (a happening), and a
+Each note has a voice, `station`, `person` or `world` (a happening). A note in
+the world voice also keeps the integration it came from, such as `github` or
+`slack`, and the inbox shows that integration's logo beside it. Each note has a
 form: `words`, `setup`, `resolved`, `approval`, `failure` or `connection`.
 
 A conversation runs from an `asked` note to the next `passed` note. It is open
@@ -224,7 +226,7 @@ When a happening finds a task, the line decides one of these outcomes:
 | --- | --- | --- |
 | nothing | The task is at the completed station, or none of the other outcomes applies. | None. |
 | moves | A reaction for the happening, from this station or from any, leads to another station, and either the task has no current run or that station is the completed station. | The task moves there. A move to the completed station during a run ends the run as for a person's move, and the run's later handover is ignored. An open question or approval closes, and earlier deferred moves are dropped. |
-| deferred move | As for moves, but the task has a current run, queued, claimed or suspended, and the station is not the completed station. | A `message` note `This arrived while a run was in progress on the task. If the run does not pass the task on, the task moves to <Station> when the run ends.`, followed by the happening's message, or else its summary. The run gets the note, and keeps the task. A later `passed` note, or a later `asked` note other than an approval, drops deferred moves; a later `stays` outcome does not. |
+| deferred move | As for moves, but the task has a current run, queued, claimed or suspended, and the station is not the completed station. | A `message` note with the happening's message, or else its summary, and the station it moves to. While the move waits, the inbox shows `Arrived during a run. If the run does not pass the task on, the task moves to <Station> when the run ends.` under the note. The run gets the note with `This arrived while a run was in progress on the task. If the run does not pass the task on, the task moves to <Station> when the run ends.` before it, and keeps the task. A later `passed` note, or a later `asked` note other than an approval, drops deferred moves; a later `stays` outcome does not. |
 | answers | No reaction leads to another station, the task awaits review, and the happening carries a message (`answers: true`). | An `answered` note; the run that asked carries on, or else a run starts at the same station. |
 | stays | A reaction applies and leads to the task's current station, and the happening does not answer. | A `message` note. |
 
