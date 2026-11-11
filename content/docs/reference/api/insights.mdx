@@ -58,6 +58,7 @@ from now. `/traces` also takes:
 | `day` | That ended on this UTC day of the range, as `YYYY-MM-DD`. |
 | `pullRequestState` | Of tasks whose pull request is now `merged`, `closed` or `open`. |
 | `humanAction` | Whose first human action was `started`, `parked`, `accepted`, `answered` or `sent-back`. |
+| `resolution` | That ran and whose resolution is `accepted`, `sent-back`, `moved-on`, `failed` or `other`. |
 | `asked` | `true`: of tasks that asked a person in the inbox during the range. `false` narrows nothing. |
 | `week` | That ended in the week starting this UTC Monday, as `YYYY-MM-DD`. |
 | `skillEnabled` | Whose station config enabled this skill. |
@@ -209,7 +210,7 @@ On `/traces`, where `<filter>` names the parameter as `line`, `station`,
 | Cause | Message |
 | --- | --- |
 | `taskIds` names more than 200 tasks. | `Run filter takes at most 200 tasks.` |
-| `outcome`, `pullRequestState`, `humanAction` or `asked` names a value it does not take. | `Run filter <filter> must be one of <values>, not <value>.`, as in `Run filter human action must be one of started, parked, accepted, answered, sent-back, not approved.` |
+| `outcome`, `pullRequestState`, `humanAction`, `resolution` or `asked` names a value it does not take. | `Run filter <filter> must be one of <values>, not <value>.`, as in `Run filter human action must be one of started, parked, accepted, answered, sent-back, not approved.` |
 | A filter that takes one value is given more than once. | `Run filter takes one <filter>, not <count>.` |
 | `day` is not a day of the range written `YYYY-MM-DD`. | `Run filter day must be a date in the period, in the form YYYY-MM-DD, not <value>.` |
 | `week` is not a Monday written `YYYY-MM-DD`. | `Run filter week must be a Monday in the form YYYY-MM-DD, not <value>.` |
