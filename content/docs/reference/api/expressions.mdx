@@ -87,43 +87,57 @@ a check names a real index, as in `integration.webhook.events[0].when`.
 | `webhook.events.*.raise.attachments.each` | list | `body`, `headers`, `raw`, `item`, captures |
 | `webhook.events.*.raise.attachments.name`, `.type`, `.size`, and `.fetch` request fields | | the above, `file` |
 | `poll.request.url`, `.query.*`, `.headers.*`, `.body` | | `cursor`, `connection` |
-| `poll.request.expect.success` | bool | `cursor`, `connection`, `response`, `status` |
-| `poll.request.capture.*` | | `cursor`, `connection`, `response`, `status` |
+| `poll.request.expect.success` | bool | `cursor`, `connection`, `response`, `status`, `headers` |
+| `poll.request.capture.*` | | `cursor`, `connection`, `response`, `status`, `headers` |
 | `poll.cursor` | | `body`, `cursor` |
 | `poll.events.*` | as for `webhook.events.*` | `body`, `cursor`, and as for `webhook.events.*` |
-| `actions.*.request.url`, `.query.*`, `.headers.*`, `.body` | | `task`, `ask`, `chat`, `reply`, `request`, `notice`, `target`, `connection`, `inputs` |
-| `actions.*.request.expect.success` | bool | the above, `response`, `status` |
-| `actions.*.request.capture.*` | | the above, `response`, `status` |
-| `actions.*.uploads.each` | list | `task`, `ask`, `chat`, `reply`, `request`, `notice`, `target` |
+| `actions.*.request.url`, `.query.*`, `.headers.*`, `.body` | | `task`, `ask`, `chat`, `reply`, `request`, `notice`, `target`, `connection`, `uploaded`, `inputs` |
+| `actions.*.request.expect.success` | bool | the above, `response`, `status`, `headers` |
+| `actions.*.request.capture.*` | | the above, `response`, `status`, `headers` |
+| `actions.*.uploads.each` | list | `task`, `ask`, `target` |
 | `actions.*.uploads.prepare.url`, `.query.*`, `.headers.*`, `.body` | | the above, `connection`, `file` |
-| `actions.*.uploads.prepare.expect.success`, `.capture.*` | | the above, `response`, `status` |
-| `actions.*.uploads.send.url`, `.query.*`, `.headers.*` | | `task`, `ask`, `chat`, `reply`, `request`, `notice`, `target`, `connection`, `file`, `prepared` |
-| `actions.*.uploads.send.expect.success`, `.capture.*` | | the above, `response`, `status` |
-| `actions.*.uploads.complete.url`, `.query.*`, `.headers.*`, `.body` | | `task`, `ask`, `chat`, `reply`, `request`, `notice`, `target`, `connection`, `uploaded` |
-| `actions.*.uploads.complete.expect.success`, `.capture.*` | | the above, `response`, `status` |
-| `actions.*.uploads.ready.url`, `.query.*`, `.headers.*`, `.body` | | `task`, `ask`, `chat`, `reply`, `request`, `notice`, `target`, `connection`, `file`, `prepared` |
-| `actions.*.uploads.ready.expect.success`, `.capture.*` | | the above, `response`, `status` |
+| `actions.*.uploads.prepare.expect.success`, `.capture.*` | | the above, `response`, `status`, `headers` |
+| `actions.*.uploads.send.url`, `.query.*`, `.headers.*` | | `task`, `ask`, `target`, `connection`, `file`, `prepared` |
+| `actions.*.uploads.send.expect.success`, `.capture.*` | | the above, `response`, `status`, `headers` |
+| `actions.*.uploads.complete.url`, `.query.*`, `.headers.*`, `.body` | | `task`, `ask`, `target`, `connection`, `uploaded` |
+| `actions.*.uploads.complete.expect.success`, `.capture.*` | | the above, `response`, `status`, `headers` |
+| `actions.*.uploads.ready.url`, `.query.*`, `.headers.*`, `.body` | | `task`, `ask`, `target`, `connection`, `file`, `prepared` |
+| `actions.*.uploads.ready.expect.success`, `.capture.*` | | the above, `response`, `status`, `headers` |
 | `tools.*.inputs.*.default` | | `task` |
-| `tools.*.output` | | `task`, `ask`, `chat`, `reply`, `request`, `notice`, `target`, `connection`, `response`, `status`, `capture`, `inputs` |
+| `tools.*.output` | | `task`, `inputs`, `connection`, `response`, `status`, `capture` |
 | `connection.oauth2.identity` | | `response` |
 | `on.*.*.to.*` | | `task`, `ask`, `chat`, `reply`, `request`, `notice` |
-| `on.*.*.mark.*.value` | | `task`, `ask`, `chat`, `reply`, `request`, `notice`, `target`, `connection`, `response`, `capture` |
+| `on.*.*.mark.*.value` | | `task`, `ask`, `request`, `target`, `connection`, `uploaded`, `response`, `capture` |
 
 `item` is seen only when the event has `forEach`. Captures are the names in
 the event's `lookup.capture`, each seen by its own name. `inputs` is seen by an
-action only when a tool runs it. A capture named like a built-in name shadows
+action only when a tool calls it. A capture named like a built-in name shadows
 it, and is warned about.
 
-What an action has at run time depends on what runs it:
+What an action has at run time depends on what calls it:
 
-| Run by | Has |
+| Called by | Has |
 | --- | --- |
 | a tool | `task`, `inputs`, `connection` |
-| an `on` binding for a task event | `task`, `ask`, `target`, `connection` |
-| an `on` binding for a chat event | `chat`, `reply`, `target`, `connection` |
-| an `on` binding for an inbox request event | `task`, `request`, `target`, `connection` |
-| an `on` binding for a notice event | `notice`, `target`, `connection` |
+| an `on` binding for a task event | `task`, `ask`, `target`, `uploaded`, `connection` |
+| an `on` binding for a chat event | `chat`, `reply`, `target`, `uploaded`, `connection` |
+| an `on` binding for an inbox request event | `task`, `request`, `target`, `uploaded`, `connection` |
+| an `on` binding for a notice event | `notice`, `target`, `uploaded`, `connection` |
 | a `schedule` | `connection` |
+
+An expression in an action, a binding or a tool's `output` is checked against
+what calls it, as the table above lists:
+
+| Expression | Checked against |
+| --- | --- |
+| `on.*.*.to.*`, `on.*.*.mark.*.value` | what the binding's event has |
+| `actions.*.request` fields | what each binding, tool and `schedule` that names the action has. It must check for each of them |
+| `actions.*.uploads` fields | what a binding of a task event has. Only those bindings send files |
+| `tools.*.output` | what a tool has |
+
+An action that nothing names is checked against what any caller has. An
+expression that reads a variable its caller does not have gets a warning, as in `does not check: Unknown variable: task. A notice event has no such variable`
+for a binding of `notice.raised` that reads `task.title`.
 
 ## Integration values
 
@@ -150,7 +164,6 @@ What an action has at run time depends on what runs it:
 | --- | --- | --- |
 | `task.title` | string | The task's title. |
 | `task.url` | dyn | The task's address in Spotlight. |
-| `task.pullRequest` | dyn | The address of the task's first pull request, or null. |
 | `task.pullRequests` | list of string | The addresses of the task's pull requests, one for each repository, the first opened first. Empty without one. |
 | `task.line` | string | The key of the task's line. |
 | `task.station` | string | The name of the task's station. |
@@ -300,3 +313,4 @@ credential.
 | `returns` | string or null | `bool`, `list`, or null. |
 | `variables` | array | The variables the expression can read, each with `name`, `type` and nested `fields`. |
 | `addedVariables` | array | Variables that only some definitions add: `item`, `captures`, `inputs`. |
+| `calls` | array | What can call an expression at the position, each with `by` (`task`, `chat`, `inbox-request` or `notice` for a binding of that kind of event, `tool` or `schedule`) and the `variables` that this caller has. Empty where the variables do not depend on what calls the expression. |
