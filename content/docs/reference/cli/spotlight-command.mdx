@@ -5,7 +5,7 @@ title: The spotlight command
 description: The subcommands of the spotlight binary, what each reads, prints and exits with, the service units spotlight host init writes, the login file spotlight login keeps, and the SSH configuration spotlight ssh setup writes.
 ---
 
-`spotlight` is one binary. A host runs `spotlight host`. Each sandbox runs
+`spotlight` is one binary. A host runs `spotlight host serve`. Each sandbox runs
 `spotlight runner` and `spotlight egress` from the runner image. A shared
 egress for push pools runs `spotlight egress serve`. An agent runs
 the [agent commands](/docs/reference/cli/agent-commands) inside its sandbox.
@@ -20,7 +20,11 @@ that `ssh`, VS Code and Cursor reach the sandbox of a task or chat through
 ## Synopsis
 
 ```text
+spotlight
+spotlight status [--json]
+spotlight update [<release>]
 spotlight host
+spotlight host serve
 spotlight host init
 spotlight host config
 spotlight host status
@@ -30,7 +34,6 @@ spotlight host stop
 spotlight host restart
 spotlight host logs
 spotlight host uninstall
-spotlight host update [release]
 spotlight runner
 spotlight runner harnesses <json>
 spotlight runner ssh
@@ -52,7 +55,8 @@ The [agent commands](/docs/reference/cli/agent-commands) work inside a run.
 
 | Invocation | Output | Exit code |
 | --- | --- | --- |
-| `spotlight`, `spotlight help`, `-h` or `--help` | The commands, by group, on standard output. Inside a run, the agent commands. Outside one, the commands for hosts, replays, the login and editors. | `0` |
+| `spotlight help`, `-h` or `--help` | The commands, by group, on standard output. Inside a run, the agent commands. Outside one, the commands by goal: the login, editors, hosts and replays. | `0` |
+| `spotlight` | In a terminal outside a run, the [dashboard](#spotlight). In the terminal of a sandbox that an editor opened, a [note](#spotlight). Else the same as `spotlight help`. | `0` |
 | `spotlight help --all` | Every command, by group. | `0` |
 | `spotlight <command> --help`, `-h`, or `spotlight help <command>` | The command's usage, flags, environment, examples, exit codes and docs link. | `0` |
 | `spotlight replay` | The help for `spotlight replay`. | `0` |
@@ -65,10 +69,163 @@ standard error and exits `1`. A near command follows, as
 A usage error prints the command's usage line, then
 `Run spotlight <command> --help for flags and examples.`
 
+## spotlight
+
+```text
+spotlight
+```
+
+In a terminal outside a run, opens the dashboard for this computer. It
+refreshes every 5 seconds. It shows:
+
+| Line | Shows |
+| --- | --- |
+| `host` | The service and the sandboxes in use, then the [checks](#spotlight-host-status) and the live log. When the machine has no host settings and no service, one line: `○ not set up on this computer`. |
+| `account` | The [login](#spotlight-login) of the command line, by user and address, or `○ not logged in`. |
+| `editors` | What [`spotlight ssh setup`](#spotlight-ssh-setup) set up: `ssh`, and each editor it found, with `!` when its connect timeout is less than 600 seconds. Without the ssh configuration, `○ not set up for VS Code or Cursor`. |
+
+When the host is not set up, the header shows no host name, and the footer
+shows `i set up a host` in place of the settings and the log.
+
+When there is no login, no ssh configuration and no host, the dashboard asks
+`What do you want to do here?` in place of the three lines. `↑↓` chooses and
+Enter starts:
+
+| Choice | What it does |
+| --- | --- |
+| Open tasks in VS Code or Cursor | Logs in, then runs `spotlight ssh setup`, as `e` does |
+| Run agents on this computer | Runs `spotlight host init` |
+| Manage Spotlight with Terraform or replays | Logs in, as `a` does |
+
+The keys of each line, such as `a`, `e` and `i`, also work there.
+
+When the user is not root and `/etc/spotlight/host.env` exists, root has a host
+on this computer. The host line then shows
+`○ belongs to root · to manage it, run: sudo spotlight`, and `i` does nothing.
+Run as root, the dashboard shows only the host: the login and the editors
+belong to a person, so `a` and `e` do nothing. `:` finds an action or a setting by name, and `?`
+shows every key. Each action runs a `spotlight` command and shows it with the
+last line of its output. `spotlight host init` asks questions, so it runs in
+the whole terminal. When it ends, it prints `Press Enter to go back to spotlight.`,
+so its output stays to read. A command that failed shows
+`exited with code <code>`, and one stopped with `Ctrl-C` shows `stopped`. See
+[Manage the host in a terminal](/docs/hosts/run-a-host#manage-the-host-in-a-terminal).
+`q`, Esc or Ctrl+C closes the dashboard. The host keeps serving.
+When the help does not fit, the arrow keys, `j` and `k` scroll it.
+
+`u` asks, then runs [`spotlight update`](#spotlight-update). It does nothing
+when the host is not set up.
+
+`a` logs in on the dashboard when there is no login. It shows `Log in to Spotlight`
+and the address that [`spotlight login`](#spotlight-login) uses without
+`--url`. Change the address, or press Enter to keep it. An address without a
+scheme gets `https://`. Then the dashboard shows the login page and the code,
+and opens the page in the browser. `o` opens the page again, and Esc stops the
+login. After you approve the login, the dashboard shows
+`Logged in to <address> as <email>.` If the login fails, the dashboard shows
+the reason under the address. Correct the address and press Enter again. With one login, `a` asks,
+then runs `spotlight logout --url <address>`, and `:` `log in` logs in to another address. With more than one, `a` lists
+them, to choose the one to end.
+
+`e` sets up ssh for VS Code and Cursor. When there is no login for the address,
+it logs in first, as `a` does. When an editor's connect timeout is less than
+600 seconds, it asks `Let <editor> wait up to 10 minutes to connect?`. `y` runs
+`spotlight ssh setup --url <address> --editor-timeout`, `n` runs it with
+`--no-editor-timeout`, and Esc stops. With ready editors, it runs it with
+`--no-editor-timeout` at once. With more than one login, `e` lists them, to choose the address
+for ssh. The footer shows `e` when ssh is not set up, or when an editor's
+connect timeout is too short.
+
+When standard input or standard output is not a terminal, `spotlight` prints
+the [help](#help).
+
+When `SPOTLIGHT_EDITOR_SESSION` is set, as in the terminal of a sandbox that
+VS Code or Cursor opened, `spotlight` prints this note and exits `0`:
+
+```text
+This terminal is in the sandbox of a Spotlight task.
+Run spotlight login, spotlight ssh setup and the host commands on your own computer.
+Agent commands work only in a run. To see them: spotlight help --all
+```
+
+## spotlight status
+
+```text
+spotlight status [--json]
+```
+
+Prints what is set up on this computer, as the [dashboard](#spotlight) shows
+it: the logins, the ssh configuration and each editor's connect timeout, and
+the host. Each line has a mark: `✓` set up, `!` needs an action, `✗` the host
+has a failed check, `○` not set up. The line below a mark is the command to
+run. Run as root, it shows only the host.
+
+```text
+This computer
+  ✓ Logged in to https://app.usespotlight.ai as you@example.com.
+  ✓ ssh reaches Spotlight sandboxes.
+  ✓ VS Code waits 600 seconds for a connection.
+  ○ This computer has no host.
+      to run agents here: spotlight host init
+```
+
+| Host line | When |
+| --- | --- |
+| `The host is <service>. <n> of <capacity> sandboxes run.` | The host has settings or a service. The service is as in [`spotlight host status`](#spotlight-host-status). `for its checks: spotlight host status` follows. |
+| `The host on this computer belongs to root.` | The user is not root, and `/etc/spotlight/host.env` exists. `to manage it: sudo spotlight` follows. |
+| `This computer has no host.` | Neither. |
+
+With `--json`, it prints one object:
+
+| Field | Value |
+| --- | --- |
+| `logins` | Each login, as `address` and `user`. `null` when run as root. |
+| `editors` | `configured`, and `editors`: each editor found, as `name`, `ready` and `message`. `null` when run as root. |
+| `host` | The object that [`spotlight host status --json`](#spotlight-host-status) prints, or `null` when the computer has no host. |
+| `host_as_root` | `true` when root has a host on this computer and the user is not root. |
+
+It exits `0`, and `1` when the logins cannot be read or with a usage error.
+
+## spotlight update
+
+```text
+spotlight update [<release>]
+```
+
+Replaces this `spotlight` binary with a release, such as `20261020-01`.
+Without a release, it uses the release of the Spotlight that this computer's
+host serves. A running host restarts on the new binary when its sandboxes
+finish.
+
+| Message | When |
+| --- | --- |
+| `spotlight update: downloading release <release>` | The download starts. |
+| `spotlight update: <path> is now release <release>. A running host restarts on it when its sandboxes finish.` | The binary was replaced. |
+| `spotlight update: already on release <release>` | The binary is on that release. Nothing changes. |
+
+| Error | Cause |
+| --- | --- |
+| `this computer has no host settings, so Spotlight cannot be asked for its release. Name a release: spotlight update <release>` | No release was given, and there is no host configuration file. |
+| `<path> can't reach the control plane, so name a release (spotlight update <release>): <error>` | No release was given, and the host settings have a problem. |
+| `the control plane at <address> doesn't name a release; name one: spotlight update <release>` | No release was given, and Spotlight names none. |
+
+Each error is printed after `spotlight update: ` on standard error. It exits
+`0` on success and `1` on an error.
+
 ## spotlight host
 
 ```text
 spotlight host
+```
+
+Prints the help for `spotlight host`: its commands and flags. The service runs
+[`spotlight host serve`](#spotlight-host-serve). The [dashboard](#spotlight)
+opens with `spotlight`.
+
+## spotlight host serve
+
+```text
+spotlight host serve
 ```
 
 Serves a pull pool or a runner trust. The host claims work and starts a
@@ -144,13 +301,13 @@ saved values as the defaults.
 
 | Flag | Setting | Without the flag |
 | --- | --- | --- |
-| `--url` | `url` | Asks `Spotlight URL`. Default: the saved value, else `https://app.usespotlight.ai`. |
+| `--url` | `url` | Asks `Spotlight URL`. Default: the saved value, else the address of the [login](#spotlight-login) as `spotlight ssh setup` chooses it, else `https://app.usespotlight.ai`. |
 | `--token` | `token` | Asks `Pool token`, without showing what you type. Enter keeps a saved token. Not asked when a trust is given or saved. |
 | `--trust`, `--oidc-token-file` | `trust`, `oidc-token-file` | The saved values. Either flag removes a saved `token`, and `--token` removes a saved trust. |
 | `--capacity` | `capacity` | Asks `Sandboxes at once`. Default: the saved value, else `5`. |
 | `--image` | `image` | Asks `Runner image`. Default: the saved value, else `ghcr.io/usespotlightai/spotlight-runner:<release>`. That default is not saved, so the host follows its own release. |
 | `--name` | `name` | The saved value. Not asked. |
-| `--no-service` | | Saves and pulls, but installs no service. Prints `Start the host with: spotlight host`. |
+| `--no-service` | | Saves and pulls, but installs no service. Prints `Start the host with: spotlight host serve`. |
 | `--yes` | | Asks nothing. |
 
 `init` asks its questions on the terminal (`/dev/tty`), so they work when the
@@ -196,7 +353,7 @@ To keep the host running after you log out, run:
 | `--token is required: a pull pool's token, from Settings → Runners → Add a host` | No token, no trust and no terminal to ask on. |
 | `a pool token is required` | Three empty answers to `Pool token`. |
 | `pull <image>: <error>` | Step 6, and the machine has no copy. |
-| ``installing a service on <os> is not supported; run `spotlight host` under your own supervisor`` | Step 7 on a platform other than Linux or macOS. |
+| ``installing a service on <os> is not supported; run `spotlight host serve` under your own supervisor`` | Step 7 on a platform other than Linux or macOS. |
 
 ## spotlight host config
 
@@ -204,6 +361,7 @@ To keep the host running after you log out, run:
 spotlight host config [--json]
 spotlight host config get KEY
 spotlight host config set KEY=VALUE… [--now]
+spotlight host config set KEY --stdin [--now]
 spotlight host config unset KEY… [--now]
 spotlight host config keys
 ```
@@ -219,6 +377,7 @@ taken as a variable that applies at a restart.
 | `config --json` | Prints `{"path": …, "settings": [{"key": …, "variable": …, "value": …}]}`, the token masked. |
 | `config get KEY` | Prints the value the file sets, the token in full. Exits `1` when the file does not set it. |
 | `config set KEY=VALUE…` | Sets each value, trimmed. A value is one line. |
+| `config set KEY --stdin` | Sets one value from stdin, without its last line break. The value is not in the command line, so other users of the machine cannot see it in `ps`. An empty value is an error: to remove a setting, use `config unset`. |
 | `config unset KEY…` | Removes each setting, so its default applies. |
 | `config keys` | Prints each key, its variable, and whether it applies live or at a restart. |
 
@@ -251,13 +410,13 @@ spotlight host status [--json]
 Prints the settings path, the service, the sandboxes that run against the
 capacity, the settings as `config` lists them, and these checks:
 
-| Check | Fails when |
-| --- | --- |
-| The settings are valid | A setting does not pass the host's checks. |
-| The host runs | No process holds the state directory's lock. |
-| Spotlight accepts the credential | Spotlight refuses the credential or does not answer. |
-| The container runtime answers | No engine answers. |
-| The default image holds a harness | A warning only, when the default image is Spotlight's runner image. |
+| Check | Name | Fails when |
+| --- | --- | --- |
+| The settings are valid | `settings` | A setting does not pass the host's checks. |
+| The host runs | `service` | No process holds the state directory's lock. |
+| Spotlight accepts the credential | `spotlight` | Spotlight refuses the credential or does not answer. |
+| The container runtime answers | `runtime` | No engine answers. |
+| The default image holds a harness | `image` | A warning only, when the default image is Spotlight's runner image. |
 
 Each failed check prints a line saying what to do. The sandboxes are the runs
 whose containers run with the label `ai.usespotlight.host=<host id>`.
@@ -267,10 +426,11 @@ With `--json` it prints:
 ```json
 {
   "config": "<config path>",
+  "name": "<host name>",
   "service": { "installed": true, "unit": "<unit path>", "running": true, "process": 4242 },
   "sandboxes": { "running": 2, "capacity": 5 },
   "settings": [{ "key": "capacity", "variable": "SPOTLIGHT_CAPACITY", "value": "5" }],
-  "checks": [{ "status": "passed", "message": "The settings are valid." }]
+  "checks": [{ "name": "settings", "status": "passed", "message": "The settings are valid." }]
 }
 ```
 
@@ -329,7 +489,7 @@ the service. When the settings do not pass the host's checks, `restart` sends
 nothing and fails with `nothing restarted, because the host would not start: <problems>`.
 
 When no service is installed, each command fails with
-``the host is not installed as a service; run `spotlight host init` ``.
+`the host is not installed as a service; to install it, run spotlight host init`.
 
 ## spotlight host logs
 
@@ -378,7 +538,7 @@ After writing the unit, `init` runs `systemctl daemon-reload`,
 | `Description` | `Spotlight host: a fresh runner for every run` |
 | `After` | `network-online.target docker.service podman.socket` |
 | `Wants` | `network-online.target` |
-| `ExecStart` | `"<binary>" host` |
+| `ExecStart` | `"<binary>" host serve` |
 | `Environment` | `"SPOTLIGHT_HOST_CONFIG=<config path>"` |
 | `ExecReload` | `/bin/kill -HUP $MAINPID` |
 | `Restart` | `always` |
@@ -392,7 +552,7 @@ After writing the unit, `init` runs `systemctl daemon-reload`,
 | --- | --- |
 | File | `~/Library/LaunchAgents/ai.usespotlight.host.plist` |
 | `Label` | `ai.usespotlight.host` |
-| `ProgramArguments` | `<binary>`, `host` |
+| `ProgramArguments` | `<binary>`, `host`, `serve` |
 | `EnvironmentVariables` | `SPOTLIGHT_HOST_CONFIG=<config path>`, `PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin` |
 | `RunAtLoad` | true |
 | `KeepAlive` | true |
@@ -538,10 +698,10 @@ authorization grant (RFC 8628), and keeps the login in the
 
 | Flag | Description |
 | --- | --- |
-| `--url` | The [Spotlight address](/docs/reference/glossary#spotlight-address). Without it, `SPOTLIGHT_URL`, else `https://app.usespotlight.ai`. |
+| `--url` | The [Spotlight address](/docs/reference/glossary#spotlight-address). Without it, `SPOTLIGHT_URL`. Else the address of the one saved login. Else, in a terminal, it asks `Spotlight address [https://app.usespotlight.ai]`: an empty answer is that default. Without a terminal, `https://app.usespotlight.ai`. With more than one saved login, it asks in a terminal, and without one it fails with `there are logins for <addresses>. Say which one with --url, or set SPOTLIGHT_URL`. |
 | `--no-browser` | Does not open the browser. |
 
-The address must use `https`. Only a local address, `localhost`, `127.0.0.1`,
+An address without a scheme gets `https://`. The address must use `https`. Only a local address, `localhost`, `127.0.0.1`,
 `::1` or a name that ends in `.localhost` or `.test`, may use `http`. The
 address is kept as its scheme and host, and its port when that is not the
 default, so `https://app.usespotlight.ai/` and `https://app.usespotlight.ai:443`
@@ -568,13 +728,15 @@ person, with their role in each workspace they are a member of, and ends after
 | `Opened the page in your browser.` | Step 3. |
 | `Waiting for you to approve the login. Press Ctrl-C to stop.` | Step 4 starts. |
 | `Logged in to <address> as <email>.` | Step 6. |
+| `Next: to open tasks in VS Code or Cursor, run: spotlight ssh setup` | Step 6, when `~/.ssh` does not include the configuration of [`spotlight ssh setup`](#spotlight-ssh-setup). For an address other than `https://app.usespotlight.ai`, the command ends with `--url <address>`. |
 
 | Error | Cause |
 | --- | --- |
 | `the code expired before the login was approved. Run spotlight login again` | 15 minutes passed. |
 | `the login was denied in the browser` | The person clicked "Deny". |
 | `Spotlight refused the login: <error>. <description>` | Another OAuth error. |
-| `Spotlight at <address> did not give a device code. It answered <status>` | Step 1 failed. |
+| `Spotlight at <address> did not give a device code. It answered 404, so it may not be a Spotlight address. To log in to another address, run: spotlight login --url <address>` | Step 1 answered 404. |
+| `Spotlight at <address> did not give a device code. It answered <status>` | Step 1 failed another way. |
 | `Spotlight did not accept the new login token. It answered <status>` | Step 5 failed. |
 | `"<value>" is not a Spotlight address. Use a URL such as https://app.usespotlight.ai` | The address is not an `http` or `https` URL with a host. |
 | `<value> does not use https. Only a local address may use http` | An `http` address that is not local. |
@@ -596,7 +758,10 @@ spotlight logout [--url <address>]
 ```
 
 Ends the session in Spotlight and removes the login for the address from the
-credentials file. The address is found as for `spotlight login`.
+credentials file. The address is `--url`, else `SPOTLIGHT_URL`, else the
+address of your one login, else `https://app.usespotlight.ai`. With more than
+one login and neither of the first two, the command stops with
+`there are logins for <addresses>. Say which one with --url, or set SPOTLIGHT_URL`.
 
 | Message | When |
 | --- | --- |
@@ -615,8 +780,9 @@ spotlight token [--url <address>]
 
 Prints a token for Spotlight on standard output, followed by a newline, for
 [the state backend](/docs/reference/terraform/state-backend) to send as
-`TF_HTTP_PASSWORD`. The address is found as for `spotlight login`. It takes the
-first of these that is set:
+`TF_HTTP_PASSWORD`. The address is found as for
+[`spotlight logout`](#spotlight-logout); `SPOTLIGHT_API_TOKEN` needs no
+address. It takes the first of these that is set:
 
 | Source | Prints |
 | --- | --- |
@@ -626,7 +792,8 @@ first of these that is set:
 
 | Error | Cause |
 | --- | --- |
-| `no token for <address>. Run spotlight login, or set SPOTLIGHT_API_TOKEN, or SPOTLIGHT_OIDC_TRUST in CI` | None of the sources is set. |
+| `no token for <address>. Run spotlight login --url <address>, or set SPOTLIGHT_API_TOKEN, or SPOTLIGHT_OIDC_TRUST in CI` | None of the sources is set. For `https://app.usespotlight.ai`, the command is `spotlight login`. |
+| `there are logins for <addresses>. Say which one with --url, or set SPOTLIGHT_URL` | More than one login, and no address. |
 | `SPOTLIGHT_OIDC_TRUST is set, but no OIDC token was found. Set SPOTLIGHT_OIDC_TOKEN, or run in a GitHub Actions job with the permission id-token: write` | A trust without `SPOTLIGHT_OIDC_TOKEN`, outside a GitHub Actions job that may request OIDC tokens. |
 | `GitHub Actions did not give an OIDC token; the job needs the permission id-token: write: <error>` | GitHub Actions refused the request. |
 | `Spotlight at <address> did not exchange the OIDC token through the OIDC trust <id>: it answered <status>: <body>` | The trust did not accept the job's token. |
@@ -768,6 +935,15 @@ colour and the headings are bold, unless `NO_COLOR` is set.
 | `Set remote.SSH.connectTimeout to 600 in <path>.` | The setting was written. |
 | `Sorry, <path> cannot be read: <error>.` | The settings file is not a JSON object, or cannot be read. Nothing is written. |
 | `Sorry, <path> cannot be changed: <error>.` | The settings file could not be written. |
+
+When there is no login for the address and there is a terminal, the command
+first prints `The editor connects to sandboxes as you, so log in first.` and
+logs in as [`spotlight login`](#spotlight-login) does: with `--url` or
+`SPOTLIGHT_URL`, at that address, else it asks for the address. It then writes
+the configuration for the address of the new login. When the login does not
+finish, it writes nothing. After `Ctrl-C`, it prints
+`Stopped. Nothing was written.` and exits `130`. After another error, it fails
+with `nothing was written, because the login failed: <error>`.
 
 With `--print`, it prints the file under `# ~/.ssh/spotlight/config`, then
 `# Add to the top of ~/.ssh/config` and the `Include` line, then

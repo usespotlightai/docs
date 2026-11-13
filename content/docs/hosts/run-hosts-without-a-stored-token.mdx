@@ -91,11 +91,11 @@ On a [self-hosted Spotlight](/docs/reference/glossary#spotlight-address), use yo
 curl -fsSL https://app.usespotlight.ai/api/install.sh | sh -s -- --trust <trust id> --oidc-token-file /var/run/secrets/token
 ```
 
-If you run `spotlight host` directly, for example as a container's command, set
+If you run `spotlight host serve` directly, for example as a container's command, set
 the same variables with `SPOTLIGHT_URL` in its environment:
 
 ```bash
-SPOTLIGHT_URL=https://app.usespotlight.ai SPOTLIGHT_TRUST=<trust id> SPOTLIGHT_OIDC_TOKEN_FILE=/var/run/secrets/token spotlight host
+SPOTLIGHT_URL=https://app.usespotlight.ai SPOTLIGHT_TRUST=<trust id> SPOTLIGHT_OIDC_TOKEN_FILE=/var/run/secrets/token spotlight host serve
 ```
 
 Do not set `SPOTLIGHT_POOL_TOKEN` as well. The host does not start with both.
