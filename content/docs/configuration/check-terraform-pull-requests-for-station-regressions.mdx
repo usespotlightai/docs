@@ -73,13 +73,15 @@ resource "spotlight_line" "core_delivery" {
 ```
 
 - `max_regressions`: how many tasks a change may regress on and still pass.
-  A task regresses when the live config succeeded on it and the change did
-  not, or the station's judge scored the change lower.
-- `ceiling` and `currency`: the most each replay a check starts may spend.
-  A check always replays the change, and also replays the live config when the
-  set has no baseline for it yet, so one check spends at most twice the
-  ceiling, and a little over if runs are still going when it is reached. A
-  check that reaches its ceiling before it fails is undecided. See
+  A task regresses when the change is clearly worse on it than the live
+  config, after the noise of both sides, or when the station's judge clearly
+  scored the change lower. A task that is flaky on the live config does not
+  regress from one failed repeat or one lower score. See
+  [Regressions](/docs/reference/app/replays#regressions).
+- `ceiling` and `currency`: the most each replay a check starts may spend. A
+  check replays the change, and also replays the live config three times when
+  the set has no baseline for it yet. The baseline's ceiling is scaled to its
+  repeats. A check that reaches its ceiling before it fails is undecided. See
   [Ceiling](/docs/reference/api/replay-checks#ceiling).
 - `min_gain`: the smallest gain in success that counts as more than noise, as
   a share above 0 and at most 1, `0.05` unless set. The output says whether

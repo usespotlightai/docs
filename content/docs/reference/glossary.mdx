@@ -55,8 +55,8 @@ The replay of a station's live config on a replay set's runs that the set's
 other replays are compared with, other than a replay with the answer, which is
 compared with the live replay that started it. A [search's](#search)
 [seed](#seed) is one. A [replay check](#replay-check) starts one when the set
-has none for the current live config, with at least as many repeats of each
-run. See [Regressions](/docs/reference/app/replays#regressions).
+has none for the current live config, with at least three repeats of each run,
+and at least as many as the check's. See [Regressions](/docs/reference/app/replays#regressions).
 
 ## Before event
 
@@ -680,10 +680,9 @@ five causes. Only a cause the config can fix lets the search continue. See
 ## Regression
 
 A task on which a replay did worse than the replay it is compared with,
-usually its set's [baseline](#baseline): the baseline succeeded and the replay
-did not, or the judge scored the replay's change lower. When each run is
-replayed more than once, the share of the baseline's repeats that succeeded is
-higher than the replay's by more than 50 points. A [search](#search) counts
+usually its set's [baseline](#baseline): the replay is clearly less likely to
+succeed on the task, or the judge clearly scored the replay's change lower,
+after the noise of both sides. A [search](#search) counts
 the regressions of each candidate against the live config it started from. See
 [Regressions](/docs/reference/app/replays#regressions) and
 [Regressions against the live config](/docs/reference/app/searches#regressions-against-the-live-config).
@@ -900,7 +899,7 @@ grants name. Spotlight removes the grants when the lease ends, and purges them
 ## Seed
 
 The first replay of a [search](#search): a replay of the station's live config
-on every run of the replay set. It becomes the set's [baseline](#baseline), and
+on every run of the replay set, each at least 3 times. It becomes the set's [baseline](#baseline), and
 the search compares each candidate with it. On a new or refreshed set, it is
 also the set's [calibration](#calibration). The search stops when the live
 config cannot be replayed.
