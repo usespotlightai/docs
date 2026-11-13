@@ -238,7 +238,7 @@ taken as a variable that applies at a restart.
 | `config --json` | Prints `{"path": …, "settings": [{"key": …, "variable": …, "value": …}]}`, the token masked. |
 | `config get KEY` | Prints the value the file sets, the token in full. Exits `1` when the file does not set it. |
 | `config set KEY=VALUE…` | Sets each value, trimmed. A value is one line. |
-| `config set KEY --stdin` | Sets one value from stdin, without its last line break. The value is not in the command line, so other users of the machine cannot see it in `ps`. |
+| `config set KEY --stdin` | Sets one value from stdin, without its last line break. The value is not in the command line, so other users of the machine cannot see it in `ps`. An empty value is an error: to remove a setting, use `config unset`. |
 | `config unset KEY…` | Removes each setting, so its default applies. |
 | `config keys` | Prints each key, its variable, and whether it applies live or at a restart. |
 
@@ -287,6 +287,7 @@ With `--json` it prints:
 ```json
 {
   "config": "<config path>",
+  "name": "<host name>",
   "service": { "installed": true, "unit": "<unit path>", "running": true, "process": 4242 },
   "sandboxes": { "running": 2, "capacity": 5 },
   "settings": [{ "key": "capacity", "variable": "SPOTLIGHT_CAPACITY", "value": "5" }],

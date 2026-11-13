@@ -133,8 +133,10 @@ any action or setting, such as `:rest` for a restart or `:capa` to change
 Before `s` stops the host or `R` restarts it, the dashboard asks if sandboxes
 run. After each action, the dashboard shows the command it ran and what the
 command printed. In the settings, press Enter to change a setting and `x` to
-unset it. A secret, such as the token, starts empty: type a new value, or press
-Enter to keep the current one. A setting marked `↻` applies at a restart,
+unset it. The dashboard hides the token and each variable that is not a
+setting, such as `HTTPS_PROXY`. To change one, type a new value, or press
+Enter to keep the current one. The dashboard passes each value to
+`spotlight host config set` on stdin, so it is not in the command line. A setting marked `↻` applies at a restart,
 when the running sandboxes finish. In the settings and the full log, `/`
 filters the list. In the full log, `pgup`, `pgdown`, `g` and `G` move by
 a page or to the first and last line.
