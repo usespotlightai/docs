@@ -155,7 +155,10 @@ core/delivery/build: FAILED
 ```
 
 With `--repeats` above 1, a line `each run replayed <n> times` comes before
-the `candidate` line. The `candidate` and `baseline` line counts repeats, then
+the `candidate` line. When the check reuses a search's replays, a line
+`reuses a search's replays of the same config, against the search's live
+baseline` comes before it too. See
+[Search replays](/docs/reference/api/replay-checks#search-replays). The `candidate` and `baseline` line counts repeats, then
 gives each side's success with its range over the tasks scored, or `nothing
 scored yet`. The next line gives the candidate's gain over the baseline, as
 `Better than the baseline: …, past the <n>-point gain that counts as real`,

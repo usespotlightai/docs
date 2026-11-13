@@ -61,11 +61,14 @@ The check:
 3. Checks the block as the line would be with the station replaced, by every
    rule of [`spotlight_line`](/docs/reference/terraform/line), each problem at
    its path under `station`.
-4. Replays it, under the planned repositories, images and setup commands, on
-   every run of the station's set, `repeats` times, on the team's runners. When
-   the set has no baseline of the current live config with at least as many
-   repeats, it also starts a baseline replay of the live config with the same
-   `repeats`. See [Ceiling](#ceiling).
+4. Reuses a search's replays of the same config, when there are some. See
+   [Search replays](#search-replays).
+5. Replays it, under the planned repositories, images and setup commands, on
+   every other run of the station's set, `repeats` times, on the team's
+   runners. When the check reuses no search replays and the set has no
+   baseline of the current live config with at least three repeats, and at
+   least as many as `repeats`, it also starts a baseline replay of the live
+   config with that many repeats. See [Ceiling](#ceiling).
 
 A change that changes nothing about how the station's runs go fails with
 `409` and the type `urn:spotlight:problem:nothing-to-replay`.
@@ -73,22 +76,49 @@ A change that changes nothing about how the station's runs go fails with
 A change already checked is answered with that check, `200` and `reused:
 true`, while the earlier check is running, passed or failed, and only if it
 replayed the same runs of the set against the same live config, the same
-threshold, the same scoring and the same `repeats`. Otherwise a new check starts, with the next
+threshold, the same scoring and the same `repeats`. When search replays of the
+change are there, the earlier check must also reuse search replays. Otherwise a new check starts, with the next
 `attempt`. A repeated request with the same `Idempotency-Key` answers `201`
 with the check it started and the header `Idempotent-Replayed: true`.
+
+## Search replays
+
+A search replays each candidate on its searched and its held-out tasks, and
+compares it with its seed. When a check's planned change runs and is scored as
+a search's candidate, the check takes these replays as its result on their
+runs. Its baseline is the seed of that search. So the
+check reads the same task results as the search on these runs, and does not
+replay them again.
+
+A check reuses a search's replays when all of these are true:
+
+- each replay finished, with the same `repeats` as the check;
+- the seed finished, replayed the current live config with at least as many
+  repeats as the check, and covers every run of the set;
+- the replays are of a config that runs and is scored as the planned change.
+
+When replays compared with more than one seed apply, the check takes the seed
+whose replays cover the most runs, the newest seed on a tie, and of its
+replays the newest one of each run. It
+replays the runs that no reused replay covers, against the same seed. When the
+reused replays cover every run, `replayId` is null and the check starts no
+replay.
 
 ## Ceiling
 
 The line's `replay_check.ceiling` caps each replay a check starts, each on its
 own:
 
-- the replay of the planned change, which every check starts;
-- the baseline replay of the live config, only when the station's set has no
-  baseline for the current live config with at least as many repeats of each
-  run. A baseline already there costs the check nothing.
+- the replay of the planned change, on the runs that no reused search replay
+  covers;
+- the baseline replay of the live config, only when the check reuses no search
+  replays and the station's set has no baseline for the current live config
+  with at least three repeats of each run, and at least as many as `repeats`.
+  Its ceiling is the line's ceiling scaled from `repeats` to its own repeats,
+  up to 1,000. A baseline already there costs the check nothing.
 
-So one check spends at most twice the ceiling, plus what runs already running
-spend after a replay reaches it. A run whose cost is not reported, or is in
+Reused search replays cost the check nothing, and the check's `spent` does not
+include them. A run whose cost is not reported, or is in
 another currency, counts as the ceiling divided by the number of runs in the
 set times `repeats`: `threshold.unpricedRun`. When a replay reaches its ceiling, no more of its
 runs start, and runs already running finish, so it can end a little over. A
@@ -104,7 +134,9 @@ after the commit's first 7 characters, or the date.
 | --- | --- | --- |
 | `id`, `teamId`, `lineId`, `stationId`, `stationKey` | string | |
 | `setId` | string | The replay set Spotlight keeps for the station. |
-| `candidateId`, `replayId` | string | The planned candidate and its replay. |
+| `candidateId` | string | The planned candidate. |
+| `replayId` | string or null | The replay of the planned change on the runs that no reused search replay covers. Null when reused search replays cover every run. |
+| `reusedReplayIds` | array | The search replays the check takes as its result on their runs. Empty when it reuses none. See [Search replays](#search-replays). |
 | `baselineReplayId` | string or null | The replay of the live config it is compared with. Null while it is being started. |
 | `attempt` | number | Counts checks of the same change against the same live config, from 1. |
 | `reference` | object | `{ commit, pullRequest }`. |
@@ -166,7 +198,7 @@ did not agree.`, `Nothing scored the run.`, `The replay has not finished.` or
 
 | Result | When |
 | --- | --- |
-| `failed` | More tasks regressed than `maxRegressions` allows. Decided as soon as it happens, while replays still run. A task counts only once each of its repeats, on both sides, has ended. |
+| `failed` | More tasks regressed than `maxRegressions` allows. Decided as soon as it happens. Spotlight stops the check's replay when the next of its runs ends, and its runs that have not started do not start. A task counts only once each of its repeats, on both sides, has ended. |
 | `running` | The change's replay or its baseline is queued or running, or the baseline is still being started. |
 | `undecided` | See below. |
 | `passed` | None of the above. |
