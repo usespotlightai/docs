@@ -757,7 +757,10 @@ spotlight logout [--url <address>]
 ```
 
 Ends the session in Spotlight and removes the login for the address from the
-credentials file. The address is found as for `spotlight login`.
+credentials file. The address is `--url`, else `SPOTLIGHT_URL`, else the
+address of your one login, else `https://app.usespotlight.ai`. With more than
+one login and neither of the first two, the command stops with
+`there are logins for <addresses>. Say which one with --url, or set SPOTLIGHT_URL`.
 
 | Message | When |
 | --- | --- |
@@ -776,8 +779,9 @@ spotlight token [--url <address>]
 
 Prints a token for Spotlight on standard output, followed by a newline, for
 [the state backend](/docs/reference/terraform/state-backend) to send as
-`TF_HTTP_PASSWORD`. The address is found as for `spotlight login`. It takes the
-first of these that is set:
+`TF_HTTP_PASSWORD`. The address is found as for
+[`spotlight logout`](#spotlight-logout); `SPOTLIGHT_API_TOKEN` needs no
+address. It takes the first of these that is set:
 
 | Source | Prints |
 | --- | --- |
@@ -787,7 +791,8 @@ first of these that is set:
 
 | Error | Cause |
 | --- | --- |
-| `no token for <address>. Run spotlight login, or set SPOTLIGHT_API_TOKEN, or SPOTLIGHT_OIDC_TRUST in CI` | None of the sources is set. |
+| `no token for <address>. Run spotlight login --url <address>, or set SPOTLIGHT_API_TOKEN, or SPOTLIGHT_OIDC_TRUST in CI` | None of the sources is set. For `https://app.usespotlight.ai`, the command is `spotlight login`. |
+| `there are logins for <addresses>. Say which one with --url, or set SPOTLIGHT_URL` | More than one login, and no address. |
 | `SPOTLIGHT_OIDC_TRUST is set, but no OIDC token was found. Set SPOTLIGHT_OIDC_TOKEN, or run in a GitHub Actions job with the permission id-token: write` | A trust without `SPOTLIGHT_OIDC_TOKEN`, outside a GitHub Actions job that may request OIDC tokens. |
 | `GitHub Actions did not give an OIDC token; the job needs the permission id-token: write: <error>` | GitHub Actions refused the request. |
 | `Spotlight at <address> did not exchange the OIDC token through the OIDC trust <id>: it answered <status>: <body>` | The trust did not accept the job's token. |
