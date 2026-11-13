@@ -111,8 +111,8 @@ the comparison. In the docs' view, they ran under conditions a replay cannot
 bring back, such as an earlier model release or a dependency that has since
 moved, and a baseline replayed now meets the same conditions the candidate
 meets. A task regresses when the candidate is clearly worse on it than the
-baseline, after the noise of both sides, or when the judge clearly scored the
-candidate lower, after the same noise. How many repeats each side has decides what "clearly" means;
+baseline, after the noise of both sides, or when the judge scored the
+candidate lower. How many repeats each side has decides what "clearly" means;
 see [Repeats of the same run](#repeats-of-the-same-run).
 
 ## Side by side with the baseline
@@ -201,9 +201,8 @@ time is flaky, and one failed repeat of the candidate does not make it
 regress. With one repeat on each side, no task regresses by success, because
 one repeat each cannot tell a regression from noise. A search's seed and a
 replay check's baseline therefore replay each run at least three times. See
-[Regressions](/docs/reference/app/replays#regressions). Counted by judge
-score, the same rule takes each score as a share of a success, so one lower
-score against one does not make a task regress either.
+[Regressions](/docs/reference/app/replays#regressions). A judge's scores are
+compared as the average over each side's repeats.
 
 The baseline a replay is compared with must have at least as many repeats of
 each run. When it has fewer, a new baseline starts beside the replay with the
