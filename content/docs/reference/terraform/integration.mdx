@@ -713,6 +713,7 @@ An action sent from the network fails with:
 | `approval.because` | string | none | When set, each use first asks a person, who is shown this text. May not be empty. The tool may not then have an input named `intent`. |
 | `inputs` | map of name to object | `{}` | The tool's inputs. |
 | `output` | string | none | An expression. What the tool returns. Can read `response`, `status`, `capture` and `inputs`. Without it, the `capture` map. |
+| `enabledOnMark` | string | none | A mark kind of this integration, as in `sentry.issue`. A run on a task that has a mark of this kind has the tool, also at a station that does not list it in `tools`. See [Enabled on a mark](#enabled-on-a-mark). |
 
 Input:
 
@@ -735,6 +736,37 @@ see [What the agent wants](/docs/reference/app/tasks-runs-and-the-inbox#what-the
 returns `the integration answered <status>: <body>`, with the body cut at 500
 characters. See [Approvals](/docs/reference/app/tasks-runs-and-the-inbox#approvals)
 and [Require approval before a tool runs](/docs/integrations/require-approval-before-a-tool-runs).
+
+### Enabled on a mark
+
+A tool with `enabledOnMark` is enabled for each run on a task that has a mark
+of that kind. The station's `tools` and `skills` add to it; they cannot
+remove it. Thus an agent that works on a task that the integration opened or
+found can always read more about it from the service:
+
+```hcl
+tools = {
+  get-issue = {
+    action        = "get-issue"
+    description   = "Read the Sentry issue."
+    enabledOnMark = "sentry.issue"
+    inputs = {
+      issue = { type = "string", default = "$${{ task.marks[\"sentry.issue\"] }}" }
+    }
+  }
+}
+```
+
+The mark kind must start with the integration's name, else the definition is
+rejected with
+`tool <integration>.<tool> can be enabled only on a mark of its own integration, whose kind starts with <integration>.`.
+When no event and no binding of the integration marks a task with that kind,
+the definition gives a warning at `tools.<tool>.enabledOnMark`:
+`names <kind>, but no event or binding of the integration marks a task with it`.
+
+A chat run has no task, so it has the tool only when its agent lists it. The
+station config that a run records, and that Insights compares, lists only the
+station's own `tools`, not the tools enabled on a mark.
 
 For an integration with `connection.oauth2`, the answer to a tool call carries
 `actingAs` beside `output`: whose connection the call used, as `actsAs`

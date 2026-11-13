@@ -405,7 +405,7 @@ config. A chat's run records none.
 | Image | The line's runner image. |
 | Repositories | Each repository of the line, with its `setup` command. |
 | Skills | Each team and catalog skill enabled, with a SHA-256 of its files. Built-in skills are left out. |
-| Tools | The tools enabled. |
+| Tools | The tools the station enables, with the tools of its skills. |
 | Decisions, memories | Whether the station generates decisions and drafts memories. |
 | Judge | The SHA-256 of the judge's rubric, its `sample` and its `minAgreement`, when the station has a [judge](/docs/reference/terraform/line#judge-fields). The station's alerts are not part of the config. |
 
@@ -418,6 +418,9 @@ under "Runs by config"; see [Station outcomes](#station-outcomes).
 `GET /api/teams/{teamId}/runs/{runId}/config` returns a run's config and its
 fingerprint, and, when the station's previous run with a recorded config ran
 another config, that run under `changedSince`, with the changes since it.
+Its `toolsOnMarks` lists the tools the run also had because its task had a
+mark that they are [enabled on](/docs/reference/terraform/integration#enabled-on-a-mark).
+They are not part of the config.
 
 The web app words each change as one phrase, in the names of the groups under
 "Runs by config" and in what a search candidate changes:
