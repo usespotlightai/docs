@@ -410,7 +410,7 @@ task-by-task results and its gain are measured against it.
 | Replay | Reference replay |
 | --- | --- |
 | A search's replay of a candidate, on the searched or the held-out tasks | The search's replay of the live config it started from. |
-| A [replay check](/docs/reference/api/replay-checks) of a planned change | The baseline that starts beside it, else the set's current baseline that covers its runs with at least as many repeats. |
+| A [replay check](/docs/reference/api/replay-checks) of a planned change | The seed of the search whose replays it reuses. Else the baseline that starts beside it, or the set's current baseline that covers its runs with at least three repeats, and at least as many as the check's. |
 | A [replay with the answer](#replay-with-the-answer) | The replay of the live config whose finishing started it. |
 
 The first two also set their changes [side by side](#side-by-side) with it. A
@@ -420,12 +420,34 @@ compared with, and the next replay check of the set starts a new one.
 
 ## Regressions
 
-A task regressed when the reference replay's [success](#success) on it is higher
-than this replay's by more than 50 points (0.5), or when this replay's judge
-score, averaged over its repeats, is more than 0.01 below the reference
-replay's. With one repeat each, that is the reference replay succeeding and
-this replay failing. Either is enough: a task whose repeats all succeeded still
-regresses when its judge score is lower. A task can regress only once every
+A task regressed when this replay is clearly worse on it than the reference
+replay, or when the judge clearly scored this replay lower. Either is enough: a
+task whose repeats all succeeded still regresses when the judge clearly scored
+it lower.
+
+"Clearly worse" takes the noise of each side into account. Spotlight counts
+the scored repeats that succeeded and failed on each side. From these counts,
+it calculates the chance that this replay succeeds less often on the task than
+the reference replay. The task regressed when that chance is above 90%. So the
+number of repeats is important:
+
+| This replay | Reference replay | Regressed |
+| --- | --- | --- |
+| Failed its 1 repeat | Succeeded on 3 of 3 | Yes |
+| Failed its 1 repeat | Succeeded on 2 of 3 | No: the task is flaky on the live config too |
+| Failed its 1 repeat | Succeeded on 1 of 1 | No: one repeat each cannot tell a regression from noise |
+| Succeeded on 1 of 3 | Succeeded on 3 of 3 | Yes |
+| Failed 2 of 2 | Succeeded on 2 of 2 | Yes |
+
+"Clearly scored lower" uses the same rule, with each judge score as a share of
+a success: a yes is 1 and a no is 0, a score from 1 to 5 is 0 to 1 (4 is
+0.75), and a score by claims is the share of claims met. From these shares on
+each side, Spotlight calculates the chance that the judge scores this replay
+lower on the task than the reference replay. The task regressed when that
+chance is above 90%. So one lower score against one is noise, but a score of 2
+on each of 3 repeats against a 5 on each of 3 is a regression.
+
+A task can regress only once every
 repeat of it, on both sides, has ended and has its result. A repeat that has
 neither a scored result nor a judge's verdict cannot make a task regress.
 

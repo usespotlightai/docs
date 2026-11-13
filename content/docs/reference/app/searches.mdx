@@ -94,10 +94,12 @@ due: its period, cooldown and any alert that waits stay as they were. Its
 searched tasks count as used, so no later search of the station holds them
 out.
 
-The first search on a new set, on a set a refresh changed, or after a change
-to the station's config, [calibrates the set](/docs/reference/app/replays#calibration)
-in its replay of the live config, which then replays each run 3 times. The
-set's health checks apply to the searches after it.
+A search's replay of the live config, its seed, replays each run at least 3
+times, so that a task the live config does not pass every time counts as
+flaky and not as a [regression](/docs/reference/app/replays#regressions). The
+first search on a new set, on a set a refresh changed, or after a change to
+the station's config, also [calibrates the set](/docs/reference/app/replays#calibration)
+with its seed. The set's health checks apply to the searches after it.
 
 ### Skip reasons
 

@@ -402,7 +402,7 @@ repositories sorted by name.
 | --- | --- | --- | --- |
 | `happening` | string | required | What happens, integration name first, as in `github.checks.failed`. Matches `^[a-z0-9]+(\.[a-z0-9][a-z0-9_-]*)+$`. |
 | `from` | string | none | The key of the station the task must be at for the reaction to apply. Without it, the reaction applies at any station. |
-| `to` | string | required | The key of the station the task moves to. While the task has a current run, the move waits until the run ends, and is dropped if the run passes the task on. A move to the completed station instead stops the run and asks a person, or, if the task awaits an answer to the run's question, adds a note to it. See [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves). |
+| `to` | string | required | The key of the station the task moves to. While the task has a current run, the move waits until the run ends, and is dropped if the run passes the task on. A move to the completed station applies at once and stops the run. While the run waits on a person's answer to its question, a move to another station applies at once and the question closes. See [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves). |
 
 See [GitHub events](/docs/reference/events/github-events) for the happenings GitHub
 raises. An [integration](/docs/reference/terraform/integration) raises its own.
@@ -435,7 +435,7 @@ See [Replay checks API](/docs/reference/api/replay-checks).
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `maxRegressions` | number | `0` | How many tasks a planned change may regress on and still pass. A whole number, 0 or more. A [search](/docs/reference/app/searches#regressions-against-the-live-config) of one of the line's work stations also marks a candidate whose regressions on its searched and held-out tasks together are more than this, and Spotlight opens no config pull request for such a candidate. In Terraform, `max_regressions`. |
-| `ceiling` | number | `10` | The most each replay a check starts may spend, above 0 and at most 1,000: the planned change's replay, and the baseline replay when the station's replay set has none for the live config. See [Ceiling](/docs/reference/api/replay-checks#ceiling). |
+| `ceiling` | number | `10` | The most each replay a check starts may spend, above 0 and at most 1,000: the planned change's replay, and the baseline replay when the station's replay set has none for the live config, scaled to the baseline's repeats. See [Ceiling](/docs/reference/api/replay-checks#ceiling). |
 | `currency` | string | `USD` | The three-letter currency `ceiling` is counted in. Stored in upper case. |
 | `minGain` | number | `0.05` | The smallest gain in success rate that counts as more than noise, as a share above 0 and at most 1. A gain over the baseline or the live config reads better only when its whole 95% interval is above 0 and it is at least this, and worse in the same way for a loss. It is read by the replays, searches and checks of the line's work stations; a line without `replay_check` reads them against `0.05`. A candidate of a search must do better than the live config on the held-out tasks by this before Spotlight opens a config pull request for it. It does not decide whether a check passes. See [Gains](/docs/reference/app/replays#gains). In Terraform, `min_gain`. |
 

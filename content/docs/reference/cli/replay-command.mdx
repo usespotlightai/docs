@@ -24,8 +24,14 @@ its help, as `spotlight help replay` does.
 ## Install
 
 `spotlight replay check` needs only the `spotlight` binary, not a host. The
-[install script](/docs/reference/cli/install-script) sets up a host, so
-download the binary from the release instead:
+[install script](/docs/reference/cli/install-script) without arguments
+installs only the binary:
+
+```bash
+curl -fsSL https://app.usespotlight.ai/api/install.sh | sh
+```
+
+In CI, or to check the file yourself, download the binary from the release:
 
 | `<os>` | `<arch>` |
 | --- | --- |
@@ -62,7 +68,7 @@ for the results. Give it the output of `terraform show -json <planfile>`, or
 
 | Variable | Description |
 | --- | --- |
-| `SPOTLIGHT_URL` | Required. The [Spotlight address](/docs/reference/glossary#spotlight-address). |
+| `SPOTLIGHT_URL` | The [Spotlight address](/docs/reference/glossary#spotlight-address). Without it, the address of your one [login](/docs/reference/cli/spotlight-command#spotlight-login), else `https://app.usespotlight.ai`. Required with `SPOTLIGHT_API_TOKEN` or `SPOTLIGHT_OIDC_TRUST`. |
 | `SPOTLIGHT_API_TOKEN` | A [workspace token](/docs/reference/api/workspace-token) with `plan`. Used in place of a trust when both are set. |
 | `SPOTLIGHT_OIDC_TRUST` | The id of an [OIDC trust](/docs/reference/terraform/oidc-trust) that grants `plan`. The command exchanges the job's OIDC token through it for a short-lived workspace token, exchanges again before that token expires, and once more on a `401`. |
 | `SPOTLIGHT_OIDC_TOKEN` | The OIDC token to exchange. Without it, the command requests one from GitHub Actions, through `ACTIONS_ID_TOKEN_REQUEST_URL` and `ACTIONS_ID_TOKEN_REQUEST_TOKEN`, which need `permissions: id-token: write`. |
@@ -155,7 +161,10 @@ core/delivery/build: FAILED
 ```
 
 With `--repeats` above 1, a line `each run replayed <n> times` comes before
-the `candidate` line. The `candidate` and `baseline` line counts repeats, then
+the `candidate` line. When the check reuses a search's replays, a line
+`reuses a search's replays of the same config, against the search's live
+baseline` comes before it too. See
+[Search replays](/docs/reference/api/replay-checks#search-replays). The `candidate` and `baseline` line counts repeats, then
 gives each side's success with its range over the tasks scored, or `nothing
 scored yet`. The next line gives the candidate's gain over the baseline, as
 `Better than the baseline: …, past the <n>-point gain that counts as real`,
@@ -198,7 +207,8 @@ the columns Task, Live config, Candidate and Regressed. A gain reads as in
 | ``this is the log `terraform plan -json` streams, which contains no station blocks; save the plan with `terraform plan -out=<planfile>`, then pass this the output of `terraform show -json <planfile>` `` | The file is the streamed log of `terraform plan -json`. |
 | ``the plan is not JSON; pass this the output of `terraform show -json <planfile>` `` | The file is not JSON. |
 | ``this is not a saved plan shown as JSON; pass this the output of `terraform show -json <planfile>` `` | The JSON has no `format_version`. |
-| `set SPOTLIGHT_URL, and SPOTLIGHT_API_TOKEN, SPOTLIGHT_OIDC_TRUST or a login from spotlight login, to check a plan` | No `SPOTLIGHT_URL`. The usage follows. |
+| `set SPOTLIGHT_URL with SPOTLIGHT_API_TOKEN or SPOTLIGHT_OIDC_TRUST, to check a plan` | `SPOTLIGHT_API_TOKEN` or `SPOTLIGHT_OIDC_TRUST` is set, but `SPOTLIGHT_URL` is not. The usage follows. |
+| `there are logins for <addresses>. Set SPOTLIGHT_URL to the one to check the plan with` | No `SPOTLIGHT_URL`, and more than one login. |
 | `no credentials for <address>. Set SPOTLIGHT_API_TOKEN, a workspace token that may plan, or SPOTLIGHT_OIDC_TRUST, an OIDC trust to exchange the job's OIDC token through, or run spotlight login` | No token, no trust and no login for the address. The usage follows. |
 | `read the login for <address>: <error>` | The credentials file cannot be read. |
 | `SPOTLIGHT_OIDC_TRUST needs an OIDC token: set SPOTLIGHT_OIDC_TOKEN, or run in GitHub Actions with permissions: id-token: write` | A trust, but no OIDC token to exchange. |
