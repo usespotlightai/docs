@@ -124,14 +124,15 @@ and opens the page in the browser. `o` opens the page again, and Esc stops the
 login. After you approve the login, the dashboard shows
 `Logged in to <address> as <email>.` If the login fails, the dashboard shows
 the reason under the address. Correct the address and press Enter again. With one login, `a` asks,
-then runs `spotlight logout --url <address>`. With more than one, `a` lists
+then runs `spotlight logout --url <address>`, and `:` `log in` logs in to another address. With more than one, `a` lists
 them, to choose the one to end.
 
 `e` sets up ssh for VS Code and Cursor. When there is no login for the address,
 it logs in first, as `a` does. When an editor's connect timeout is less than
 600 seconds, it asks `Let <editor> wait up to 10 minutes to connect?`. `y` runs
-`spotlight ssh setup --editor-timeout`, `n` runs it with `--no-editor-timeout`,
-and Esc stops. With more than one login, `e` lists them, to choose the address
+`spotlight ssh setup --url <address> --editor-timeout`, `n` runs it with
+`--no-editor-timeout`, and Esc stops. With ready editors, it runs it with
+`--no-editor-timeout` at once. With more than one login, `e` lists them, to choose the address
 for ssh. The footer shows `e` when ssh is not set up, or when an editor's
 connect timeout is too short.
 
@@ -697,10 +698,10 @@ authorization grant (RFC 8628), and keeps the login in the
 
 | Flag | Description |
 | --- | --- |
-| `--url` | The [Spotlight address](/docs/reference/glossary#spotlight-address). Without it, `SPOTLIGHT_URL`. Else the address of the one saved login. Else, in a terminal, it asks `Spotlight address [https://app.usespotlight.ai]`: an empty answer is that default, and an address without `https://` gets it. Without a terminal, `https://app.usespotlight.ai`. With more than one saved login and no terminal, it fails with `there are logins for <addresses>. Say which one with --url`. |
+| `--url` | The [Spotlight address](/docs/reference/glossary#spotlight-address). Without it, `SPOTLIGHT_URL`. Else the address of the one saved login. Else, in a terminal, it asks `Spotlight address [https://app.usespotlight.ai]`: an empty answer is that default. Without a terminal, `https://app.usespotlight.ai`. With more than one saved login, it asks in a terminal, and without one it fails with `there are logins for <addresses>. Say which one with --url, or set SPOTLIGHT_URL`. |
 | `--no-browser` | Does not open the browser. |
 
-The address must use `https`. Only a local address, `localhost`, `127.0.0.1`,
+An address without a scheme gets `https://`. The address must use `https`. Only a local address, `localhost`, `127.0.0.1`,
 `::1` or a name that ends in `.localhost` or `.test`, may use `http`. The
 address is kept as its scheme and host, and its port when that is not the
 default, so `https://app.usespotlight.ai/` and `https://app.usespotlight.ai:443`
