@@ -91,23 +91,23 @@ a check names a real index, as in `integration.webhook.events[0].when`.
 | `poll.request.capture.*` | | `cursor`, `connection`, `response`, `status` |
 | `poll.cursor` | | `body`, `cursor` |
 | `poll.events.*` | as for `webhook.events.*` | `body`, `cursor`, and as for `webhook.events.*` |
-| `actions.*.request.url`, `.query.*`, `.headers.*`, `.body` | | `task`, `ask`, `chat`, `reply`, `target`, `connection`, `inputs` |
+| `actions.*.request.url`, `.query.*`, `.headers.*`, `.body` | | `task`, `ask`, `chat`, `reply`, `request`, `notice`, `target`, `connection`, `inputs` |
 | `actions.*.request.expect.success` | bool | the above, `response`, `status` |
 | `actions.*.request.capture.*` | | the above, `response`, `status` |
-| `actions.*.uploads.each` | list | `task`, `ask`, `chat`, `reply`, `target` |
+| `actions.*.uploads.each` | list | `task`, `ask`, `chat`, `reply`, `request`, `notice`, `target` |
 | `actions.*.uploads.prepare.url`, `.query.*`, `.headers.*`, `.body` | | the above, `connection`, `file` |
 | `actions.*.uploads.prepare.expect.success`, `.capture.*` | | the above, `response`, `status` |
-| `actions.*.uploads.send.url`, `.query.*`, `.headers.*` | | `task`, `ask`, `chat`, `reply`, `target`, `connection`, `file`, `prepared` |
+| `actions.*.uploads.send.url`, `.query.*`, `.headers.*` | | `task`, `ask`, `chat`, `reply`, `request`, `notice`, `target`, `connection`, `file`, `prepared` |
 | `actions.*.uploads.send.expect.success`, `.capture.*` | | the above, `response`, `status` |
-| `actions.*.uploads.complete.url`, `.query.*`, `.headers.*`, `.body` | | `task`, `ask`, `chat`, `reply`, `target`, `connection`, `uploaded` |
+| `actions.*.uploads.complete.url`, `.query.*`, `.headers.*`, `.body` | | `task`, `ask`, `chat`, `reply`, `request`, `notice`, `target`, `connection`, `uploaded` |
 | `actions.*.uploads.complete.expect.success`, `.capture.*` | | the above, `response`, `status` |
-| `actions.*.uploads.ready.url`, `.query.*`, `.headers.*`, `.body` | | `task`, `ask`, `chat`, `reply`, `target`, `connection`, `file`, `prepared` |
+| `actions.*.uploads.ready.url`, `.query.*`, `.headers.*`, `.body` | | `task`, `ask`, `chat`, `reply`, `request`, `notice`, `target`, `connection`, `file`, `prepared` |
 | `actions.*.uploads.ready.expect.success`, `.capture.*` | | the above, `response`, `status` |
 | `tools.*.inputs.*.default` | | `task` |
-| `tools.*.output` | | `task`, `ask`, `chat`, `reply`, `target`, `connection`, `response`, `status`, `capture`, `inputs` |
+| `tools.*.output` | | `task`, `ask`, `chat`, `reply`, `request`, `notice`, `target`, `connection`, `response`, `status`, `capture`, `inputs` |
 | `connection.oauth2.identity` | | `response` |
-| `on.*.*.to.*` | | `task`, `ask`, `chat`, `reply` |
-| `on.*.*.mark.*.value` | | `task`, `ask`, `chat`, `reply`, `target`, `connection`, `response`, `capture` |
+| `on.*.*.to.*` | | `task`, `ask`, `chat`, `reply`, `request`, `notice` |
+| `on.*.*.mark.*.value` | | `task`, `ask`, `chat`, `reply`, `request`, `notice`, `target`, `connection`, `response`, `capture` |
 
 `item` is seen only when the event has `forEach`. Captures are the names in
 the event's `lookup.capture`, each seen by its own name. `inputs` is seen by an
@@ -121,6 +121,8 @@ What an action has at run time depends on what runs it:
 | a tool | `task`, `inputs`, `connection` |
 | an `on` binding for a task event | `task`, `ask`, `target`, `connection` |
 | an `on` binding for a chat event | `chat`, `reply`, `target`, `connection` |
+| an `on` binding for an inbox request event | `task`, `request`, `target`, `connection` |
+| an `on` binding for a notice event | `notice`, `target`, `connection` |
 | a `schedule` | `connection` |
 
 ## Integration values
@@ -177,6 +179,23 @@ What an action has at run time depends on what runs it:
 | `reply.body` | string | What Spotlight says to the chat. |
 | `reply.link` | dyn | The address of the task the reply is about, else of the chat, in Spotlight; null for `chat.refused`. |
 | `reply.proposals` | list | The chat's open proposals, listed in `reply.body`, for the last words of a run; otherwise empty. Each has `number`, `title`, and `line` and `station`, which can be null. |
+
+`request`:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `request.form` | string | What the request asks for: `grade` for a run to grade, `memories` for proposed memories, `alert` for a station alert. |
+| `request.link` | dyn | The address of the request in the inbox, or null. |
+
+`notice`:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `notice.form` | string | `ended` when a search for a better station config ended, `advice` for advice about a station. |
+| `notice.headline` | string | The notice's headline. |
+| `notice.points` | list of string | The notice's points, in order. |
+| `notice.link` | dyn | The address of the notice in the inbox, or null. |
+| `notice.externalLink` | dyn | The notice's link outside Spotlight, such as a pull request, with `url` and `label`; null without one. |
 
 ## Hook positions
 
