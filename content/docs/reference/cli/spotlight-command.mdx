@@ -94,7 +94,7 @@ Enter starts:
 | Choice | What it does |
 | --- | --- |
 | Open tasks in VS Code or Cursor | Logs in, then runs `spotlight ssh setup`, as `e` does |
-| Run agents on this computer | Runs `spotlight host init` |
+| Run agents on this computer | Opens the host set-up, as `i` does |
 | Manage Spotlight with Terraform or replays | Logs in, as `a` does |
 
 The keys of each line, such as `a`, `e` and `i`, also work there.
@@ -105,9 +105,9 @@ on this computer. The host line then shows
 Run as root, the dashboard shows only the host: the login and the editors
 belong to a person, so `a` and `e` do nothing. `:` finds an action or a setting by name, and `?`
 shows every key. Each action runs a `spotlight` command and shows it with the
-last line of its output. `spotlight host init` asks questions, so it runs in
-the whole terminal. When it ends, it prints `Press Enter to go back to spotlight.`,
-so its output stays to read. A command that failed shows
+last line of its output. Run as root, `i` runs `spotlight host init`, which
+asks questions, so it runs in the whole terminal. When it ends, it prints
+`Press Enter to go back to spotlight.`, so its output stays to read. A command that failed shows
 `exited with code <code>`, and one stopped with `Ctrl-C` shows `stopped`. See
 [Manage the host in a terminal](/docs/hosts/run-a-host#manage-the-host-in-a-terminal).
 `q`, Esc or Ctrl+C closes the dashboard. The host keeps serving.
@@ -115,6 +115,10 @@ When the help does not fit, the arrow keys, `j` and `k` scroll it.
 
 `u` asks, then runs [`spotlight update`](#spotlight-update). It does nothing
 when the host is not set up.
+
+`i` opens `Set up this computer as a host` when no service is installed. It
+does nothing when a service is installed, or when root has a host on this
+computer. See [Host set-up](#host-set-up).
 
 `a` logs in on the dashboard when there is no login. It shows `Log in to Spotlight`
 and the address that [`spotlight login`](#spotlight-login) uses without
@@ -291,7 +295,8 @@ ends with `To set up this machine as a host, run: spotlight host init`.
 ## spotlight host init
 
 ```text
-spotlight host init [--url URL] [--token TOKEN | --trust ID --oidc-token-file PATH]
+spotlight host init
+spotlight host init [--url URL] [--token TOKEN | --token-stdin | --trust ID --oidc-token-file PATH]
                     [--capacity N] [--image IMAGE] [--name NAME] [--no-service] [--yes]
 ```
 
@@ -299,10 +304,17 @@ Writes the [host settings](/docs/reference/hosts/host-configuration), pulls the
 default runner image and runs the host as a service. Running it again keeps the
 saved values as the defaults.
 
+With no flags or with `--url` alone, as a user other than root, when standard
+input and standard output are terminals, and when the host settings hold no
+pool token and no trust, `init` opens the [dashboard](#spotlight) at the
+[host set-up](#host-set-up), for the address of `--url` when you give it. In
+all other cases, it works as below.
+
 | Flag | Setting | Without the flag |
 | --- | --- | --- |
 | `--url` | `url` | Asks `Spotlight URL`. Default: the saved value, else the address of the [login](#spotlight-login) as `spotlight ssh setup` chooses it, else `https://app.usespotlight.ai`. |
 | `--token` | `token` | Asks `Pool token`, without showing what you type. Enter keeps a saved token. Not asked when a trust is given or saved. |
+| `--token-stdin` | `token` | Reads the token from standard input, at most 4,096 bytes, without leading and trailing white space. Not together with `--token`. |
 | `--trust`, `--oidc-token-file` | `trust`, `oidc-token-file` | The saved values. Either flag removes a saved `token`, and `--token` removes a saved trust. |
 | `--capacity` | `capacity` | Asks `Sandboxes at once`. Default: the saved value, else `5`. |
 | `--image` | `image` | Asks `Runner image`. Default: the saved value, else `ghcr.io/usespotlightai/spotlight-runner:<release>`. That default is not saved, so the host follows its own release. |
@@ -322,7 +334,7 @@ and no trust.
 | 3 | Checks the settings as the host does. On a problem it saves nothing. |
 | 4 | Asks Spotlight for the host's requirements with the credential. A refused credential stops it, and nothing is saved. When Spotlight does not answer, it warns and goes on. |
 | 5 | Saves the settings file in one rename, with mode `0600`. Comments and settings it does not set stay. |
-| 6 | Pulls the default image with the [registry credentials](/docs/reference/hosts/host-configuration#registry-credentials). An image with `*` is not pulled. When the pull fails and the machine has a copy, it warns and goes on. |
+| 6 | Pulls the default image with the [registry credentials](/docs/reference/hosts/host-configuration#registry-credentials). An image with `*` is not pulled, and neither is an image built on this machine, which has no registry digest. When the pull fails and the machine has a copy, it warns and goes on. |
 | 7 | When a host already runs from these settings, restarts it when its sandboxes finish. Otherwise, without `--no-service`, installs and starts the [service](#service-files). |
 | 8 | When the default image is Spotlight's runner image, prints that it holds no harness. |
 
@@ -332,11 +344,12 @@ and no trust.
 | `Spotlight at <url> does not answer, so the credential is not checked: <error>` | Step 4, a warning. |
 | `Saved the settings in <config path>` | Step 5. |
 | `Pulled <image>` | Step 6. |
+| `Uses <image>, built on this machine` | Step 6, for an image with no registry digest. |
 | `Could not pull <image>, so the host uses the copy on this machine: <error>` | Step 6, a warning. |
 | `Started the systemd service spotlight-host (<unit path>)` | Step 7 on Linux. |
 | `Started the launchd agent ai.usespotlight.host (logs in <log path>)` | Step 7 on macOS. |
 | `The host serves <url>. It shows on the Runners page when it connects.` | Step 7, when the service started. |
-| `The runner image holds no harness, so this host runs checks but no agent run.` | Step 8. Three lines follow with the example images and `Then: spotlight host config set image=IMAGE`. |
+| `The runner image holds no harness, so this host runs checks but no agent run.` | Step 8. The line `Run spotlight host init in a terminal, without flags, to build an image with Claude Code, Codex, Cursor or OpenCode.` follows. |
 
 As a user other than root on Linux, when lingering is off, it also prints:
 
@@ -351,9 +364,64 @@ To keep the host running after you log out, run:
 | `nothing saved, because <problems>` | Step 3. The problems name the settings by key. |
 | `nothing saved, because Spotlight at <url> does not accept the credential` | Step 4. |
 | `--token is required: a pull pool's token, from Settings → Runners → Add a host` | No token, no trust and no terminal to ask on. |
+| `give the token with --token or --token-stdin, not both` | Both flags. |
+| `read the token from stdin: <error>` | `--token-stdin`, and standard input could not be read. |
+| `--token-stdin reads the token from a pipe, as in: printf %s "$POOL_TOKEN" \| spotlight host init --token-stdin` | `--token-stdin`, and standard input is a terminal. |
 | `a pool token is required` | Three empty answers to `Pool token`. |
 | `pull <image>: <error>` | Step 6, and the machine has no copy. |
 | ``installing a service on <os> is not supported; run `spotlight host serve` under your own supervisor`` | Step 7 on a platform other than Linux or macOS. |
+
+### Host set-up
+
+`spotlight host init` with no flags, `i` and the first-run choice
+`Run agents on this computer` open `Set up this computer as a host` in the
+dashboard. It asks one step at a time. `↑↓` (or `k` and `j`) moves, Enter goes
+on and Esc goes back a step.
+
+| Step | Asks | Default |
+| --- | --- | --- |
+| Login | When the address has no login, the [login](#spotlight) screen of `a`. With more than one saved login and no `--url`, `:` offers `set up a host for <address>` for each. | The address of `--url`, else the address [`spotlight login`](#spotlight-login) uses without `--url`. |
+| Workspace | `Which workspace does this host serve?`, only when the login belongs to more than one workspace. | |
+| Harnesses | `Which agents run on this host? Space picks, Enter goes on.`: Claude Code, Codex, Cursor CLI and OpenCode. | None picked. |
+| Key | For each picked harness that has none of its [keys](/docs/reference/hosts/harnesses#harness-keys) as a workspace secret or as the key of a harness before it: `Which key does <harness> use?` when it has more than one, then `Paste the <key>.`. What you paste is not shown. | The first key in the list. |
+| Pool | The name of the pull pool: lowercase letters, digits and single dashes, at most 63 characters. | The computer's host name up to its first `.`, in lowercase, with each run of other characters as `-`. Else `host`. |
+| Sandboxes | How many sandboxes run at once, at least `1`. | `5` |
+| Confirm | `Enter saves the keys, makes the pool, builds the image and installs the host service.` | |
+
+The key choices:
+
+| Harness | Choices |
+| --- | --- |
+| Claude Code | `Claude subscription token, from claude setup-token` (`CLAUDE_CODE_OAUTH_TOKEN`), `Anthropic API key` (`ANTHROPIC_API_KEY`) |
+| Codex | `OpenAI API key` (`OPENAI_API_KEY`), `OpenAI API key for Codex` (`CODEX_API_KEY`) |
+| Cursor CLI | `Cursor API key` (`CURSOR_API_KEY`) |
+| OpenCode | `Anthropic API key` (`ANTHROPIC_API_KEY`), `OpenAI API key` (`OPENAI_API_KEY`), `OpenRouter API key` (`OPENROUTER_API_KEY`) |
+
+After Enter, it takes these steps in order:
+
+| Step | Shows | Action |
+| --- | --- | --- |
+| 1 | `Saving <NAME> as a workspace secret` | Saves each pasted key as the workspace [secret](/docs/reference/terraform/secret#harness-keys) `<NAME>`, with one binding to the provider's host. |
+| 2 | `Making the pull pool <name>` | Makes a pull pool with the name as its key and a token that the CLI makes. The token goes only to step 4. |
+| 3 | `Building the image with <harnesses>`, and the last line of the build | Builds `spotlight-harnesses:<release>-<harness ids>` `FROM ghcr.io/usespotlightai/spotlight-runner:<release>`, with the container runtime at the saved `DOCKER_HOST`, else at the usual sockets. See [Installation](/docs/reference/hosts/harnesses#installation). |
+| 4 | The command | Runs `spotlight host init --url <address> --token-stdin --image <tag> --capacity <n> --name <name> --yes`, with the pool's token on standard input. |
+
+Steps 1 and 2 use the login, through the
+[resource API](/docs/reference/api/resource-api), and need the `secrets` and
+`runners` permissions of a workspace owner or admin. When a step fails, the
+dashboard shows why. `r` tries again from that step, without the steps that
+are done, and Esc closes. While a step works, Esc stops it.
+
+| Message | Cause |
+| --- | --- |
+| `Your login belongs to no workspace. Make one in Spotlight first.` | The login has no workspace. |
+| `Pick at least one harness with space.` | Enter with no harness picked. |
+| `Paste the key. Spotlight keeps it as a workspace secret.` | Enter with no key. |
+| `Use lowercase words joined by dashes, as in my-laptop.` | A pool name with other characters, more than 63 characters, or a dash at an end or next to a dash. |
+| `Give a whole number of 1 or more.` | A number of sandboxes that is not a count of at least 1. |
+| `A pool named <name> is in the workspace. Pick another name.` | Spotlight answered `409` to step 2. The dashboard goes back to the pool name, and a new name gets a new token. |
+| `only a workspace admin can keep keys and make pools. Ask an admin to set up this host, or for a pool token for spotlight host init --token.` | Spotlight answered `403` to step 1 or 2. |
+| `no container runtime answers. Start Docker or Podman, then try again: <error>.` | Step 3 found no container runtime. |
 
 ## spotlight host config
 

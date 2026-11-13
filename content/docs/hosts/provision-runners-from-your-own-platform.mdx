@@ -17,8 +17,11 @@ suits a line:
   an egress. Without one, a run whose harness profile gives an MCP server a
   secret waits for a host. To name one, see
   [Send push pool runs through an egress](/docs/security/send-push-pool-runs-through-an-egress).
-- The host's `sandbox.env` does not apply. Harness keys go in the container's
-  environment, where the agent can read them.
+- The host's `sandbox.env` does not apply. Through an egress, the pool's runs
+  get the harness keys the workspace holds as secrets, and the agent never
+  sees them. A harness key in the container's environment is there for the
+  agent to read. See
+  [Give hosts your harness keys](/docs/hosts/give-sandboxes-your-harness-keys#if-a-push-pool-provisions-the-runners).
 
 You need:
 
@@ -130,7 +133,8 @@ The body is JSON of type `work.provision`. Read these fields from `data`:
 [Provision call](/docs/reference/events/provision-call) lists
 every field.
 
-Start the container with those variables and your harness keys, and leave
+Start the container with those variables, and with any harness key the
+workspace does not hold as a secret. Leave
 the image's entrypoint and user as they are. The entrypoint is
 `spotlight runner`, which runs as root and hands the agent a user of its own.
 With Docker, the equivalent is:

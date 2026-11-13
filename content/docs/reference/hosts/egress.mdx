@@ -82,7 +82,9 @@ or query parameter with the secret's value.
 
 A host keeps the harness keys in its [settings](/docs/reference/hosts/host-configuration#harness-keys)
 and hands them to egress. The sandbox gets `spotlight-egress:<NAME>` in their
-place. Egress replaces the header only when it contains exactly that stand-in,
+place. Harness keys that the workspace holds as
+[secrets](/docs/reference/terraform/secret#harness-keys) are
+[run secrets](#run-secrets). Egress replaces the header only when it contains exactly that stand-in,
 with its prefix, as in `authorization: Bearer spotlight-egress:OPENAI_API_KEY`.
 
 Egress logs one of these reasons and sends the request without the harness
@@ -94,7 +96,10 @@ key:
 ### Run secrets
 
 A secret an MCP server's environment names, as `secret.<NAME>`, is injected for
-the run. The MCP server gets `spotlight-egress:<NAME>`. Egress replaces the
+the run. The MCP server gets `spotlight-egress:<NAME>`. So is each
+[harness key](/docs/reference/terraform/secret#harness-keys) of the run's
+harness that the workspace holds as a secret. The harness gets
+`spotlight-egress:<NAME>` in its environment. Egress replaces the
 bound header only on requests to the bound host whose header contains that
 stand-in, with or without the binding's prefix, as in
 `authorization: Bearer spotlight-egress:LINEAR_API_KEY`. The stand-in must be
@@ -414,8 +419,9 @@ local proxy cannot be added to the bundles, the runner logs
 - Run secrets and [the run's Spotlight token](#the-runs-spotlight-token), as
   above, on the requests the local proxy sends to egress. Those are HTTPS
   requests to port `443` of a bound host only.
-- No harness keys. They enter the sandbox as the push pool's provisioner gives
-  them.
+- Harness keys that the workspace holds as secrets, as run secrets. Keys the
+  push pool's provisioner puts in the runner's environment enter the sandbox
+  as they are.
 - Values Spotlight keeps are sealed to a key the egress process makes when it
   starts. One key serves every run of the process.
 - A forwarded request to a host that is not bound is blocked with `403`.
@@ -523,9 +529,10 @@ message. Its own failures are:
 ## Limitations
 
 - Egress cannot itself send through another proxy.
-- A shared egress injects no harness keys.
+- A shared egress injects no keys of its own. It injects the harness keys that
+  the workspace holds as secrets.
 - A shared egress injects secrets only over HTTPS, to port `443`.
-- `CURSOR_API_KEY` and any other variable not listed under
+- `OPENCODE_API_KEY` and any other variable not listed under
   [Harness keys](/docs/reference/hosts/host-configuration#harness-keys) enter the
   sandbox as they are.
 - Logins that refresh their own tokens are not added.

@@ -143,16 +143,22 @@ degree. See [MCP servers](/docs/reference/terraform/integration#mcp-servers).
 
 ## The host decides where its keys may go
 
-Harness keys, such as an Anthropic or OpenAI key, belong to whoever runs the
-host. The host keeps them out of the sandbox the same way, as stand-ins, and
-egress injects each one into requests to its model provider's API.
+Harness keys, such as an Anthropic or OpenAI key, reach egress in two ways: the
+workspace holds them as secrets, or whoever runs a host keeps them on it. Both
+stay out of the sandbox the same way, as stand-ins, and egress injects each
+one into requests to its model provider's API.
 
-Which key may go to which host is the host's own table, and the control plane
-has no say in it. An earlier design let the control plane declare it. An audit
-showed the flaw: a compromised control plane could then aim an operator's key
-at any host it liked. The field was removed, and a host now adds its keys
+A key the workspace holds is a secret like any other. Its binding, which a
+workspace admin sets, names the host it may go to.
+
+For a key the host keeps, which key may go to which host is the host's own
+table, and the control plane has no say in it. A design that let the control
+plane declare it was rejected after an audit: a compromised control plane
+could then aim an operator's key at any host it liked. A host adds its keys
 only to requests to the destinations it knows, and only in place of the exact
-stand-in. [Give hosts your harness keys](/docs/hosts/give-sandboxes-your-harness-keys) covers setting them.
+stand-in. When the host has a key for a provider's host, egress injects no
+workspace secret there, so on that machine the operator's key is the one
+used. [Give hosts your harness keys](/docs/hosts/give-sandboxes-your-harness-keys) covers setting them.
 
 ## Two users inside the sandbox
 
@@ -172,17 +178,20 @@ cosmetic.
 Some things do not yet go through this design, and each is a gap because it
 leaves a credential or a route outside what egress controls.
 
-Cursor's API key still enters the sandbox, and so do OpenCode Zen's key and the
-key of any OpenCode provider other than Anthropic and OpenAI. The host has no
-destination for them in its table, so they pass into the sandbox as they are. Logins that refresh their own
+OpenCode Zen's key, and the key of any OpenCode provider other than Anthropic,
+OpenAI and OpenRouter, enter the sandbox. The host has no destination for them
+in its table, so they pass into the sandbox as they are. Cursor CLI exchanges
+its key at `api2.cursor.sh` for a short-lived token, and that token is in the
+sandbox, where the agent can read it. Logins that refresh their own
 tokens, such as Codex signed in with ChatGPT or Claude signed in through a
 browser, are not injected by egress; an API key, or a token from `claude
 setup-token`, is. Egress cannot itself sit behind a corporate proxy.
 
 A push pool's sandbox is enforced only if the team's platform makes it so. The
 runner checks and the trace reports it, but a run that reads Not enforced
-still runs. A shared egress has no harness keys, so on a push pool they
-enter the sandbox as they are. A push pool that names no egress has nothing
+still runs. A shared egress keeps no harness keys of its own. It injects the
+ones the workspace holds as secrets, but a key that the push pool's
+provisioner puts in the runner's environment enters the sandbox as it is. A push pool that names no egress has nothing
 to inject a secret into requests, so a run that uses secrets is never offered to
 it, and waits for a host or for a pool that names an egress.
 
