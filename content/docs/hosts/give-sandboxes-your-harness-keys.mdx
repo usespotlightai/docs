@@ -56,12 +56,12 @@ sandbox. `spotlight host init` leaves `sandbox.env` as it is.
 
 ## Pass keys from the host's environment instead
 
-If you run `spotlight host` under your own supervisor and the keys are already
+If you run `spotlight host serve` under your own supervisor and the keys are already
 in its environment, name them in `SPOTLIGHT_SANDBOX_PASS` instead of writing
 them to a file. Set it in the same environment:
 
 ```bash
-SPOTLIGHT_SANDBOX_PASS=ANTHROPIC_API_KEY,OPENAI_API_KEY spotlight host
+SPOTLIGHT_SANDBOX_PASS=ANTHROPIC_API_KEY,OPENAI_API_KEY spotlight host serve
 ```
 
 The host passes only the variables its own process has. Egress keeps the known

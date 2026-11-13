@@ -556,6 +556,10 @@ A definition is rejected with:
 | `tools.<name>.action` | `names the action <action>, which uploads files. Only an event in on sends files. Please name an action without uploads` | A tool names an action with `uploads`. |
 | `schedule.action` | `names the action <action>, which uploads files. Only an event in on sends files. Please name an action without uploads` | The schedule names an action with `uploads`. |
 | `on.<event>.<n>.action` | `names the action <action>, which uploads files. A chat event has no files. Please name an action without uploads` | A binding of a `chat.` event names an action with `uploads`. |
+| `on.<event>.<n>.action` | `names the action <action>, which uploads files. An inbox request event has no files. Please name an action without uploads` | A binding of `inbox-request.opened` names an action with `uploads`. |
+| `on.<event>.<n>.action` | `names the action <action>, which uploads files. A notice event has no files. Please name an action without uploads` | A binding of `notice.raised` names an action with `uploads`. |
+| `on.<event>.<n>` | `A chat event has no task to mark and no line to route by. Please remove mark and routes` | A binding of a `chat.` event has `mark` or `routes`. |
+| `on.<event>.<n>` | `A notice event has no task to mark and no line to route by. Please remove mark and routes` | A binding of `notice.raised` has `mark` or `routes`. |
 
 #### Ready
 
@@ -709,6 +713,7 @@ An action sent from the network fails with:
 | `approval.because` | string | none | When set, each use first asks a person, who is shown this text. May not be empty. The tool may not then have an input named `intent`. |
 | `inputs` | map of name to object | `{}` | The tool's inputs. |
 | `output` | string | none | An expression. What the tool returns. Can read `response`, `status`, `capture` and `inputs`. Without it, the `capture` map. |
+| `enabledOnMark` | string | none | A mark kind of this integration, as in `sentry.issue`. A run on a task that has a mark of this kind has the tool, also at a station that does not list it in `tools`. See [Enabled on a mark](#enabled-on-a-mark). |
 
 Input:
 
@@ -731,6 +736,37 @@ see [What the agent wants](/docs/reference/app/tasks-runs-and-the-inbox#what-the
 returns `the integration answered <status>: <body>`, with the body cut at 500
 characters. See [Approvals](/docs/reference/app/tasks-runs-and-the-inbox#approvals)
 and [Require approval before a tool runs](/docs/integrations/require-approval-before-a-tool-runs).
+
+### Enabled on a mark
+
+A tool with `enabledOnMark` is enabled for each run on a task that has a mark
+of that kind. The station's `tools` and `skills` add to it; they cannot
+remove it. Thus an agent that works on a task that the integration opened or
+found can always read more about it from the service:
+
+```hcl
+tools = {
+  get-issue = {
+    action        = "get-issue"
+    description   = "Read the Sentry issue."
+    enabledOnMark = "sentry.issue"
+    inputs = {
+      issue = { type = "string", default = "$${{ task.marks[\"sentry.issue\"] }}" }
+    }
+  }
+}
+```
+
+The mark kind must start with the integration's name, else the definition is
+rejected with
+`tool <integration>.<tool> can be enabled only on a mark of its own integration, whose kind starts with <integration>.`.
+When no event and no binding of the integration marks a task with that kind,
+the definition gives a warning at `tools.<tool>.enabledOnMark`:
+`names <kind>, but no event or binding of the integration marks a task with it`.
+
+A chat run has no task, so it has the tool only when its agent lists it. The
+station config that a run records, and that Insights compares, lists only the
+station's own `tools`, not the tools enabled on a mark.
 
 For an integration with `connection.oauth2`, the answer to a tool call carries
 `actingAs` beside `output`: whose connection the call used, as `actsAs`
@@ -1058,8 +1094,8 @@ fails with `calling a service: this workspace sends more than <limit> requests e
 
 ## On
 
-`on` maps a task or chat event to a list of bindings. Spotlight runs the
-bindings of an event in their order. A binding that fails does not stop the
+`on` maps a task, chat, inbox request or notice event to a list of
+bindings. Spotlight runs the bindings of an event in their order. A binding that fails does not stop the
 next one. The events are:
 
 | Event | Happens when |
@@ -1074,15 +1110,17 @@ next one. The events are:
 | `chat.replied` | A chat with marks has something to say: the last words of a run with its open proposals, a run that could not finish, a proposal that became a task, or a dismissed proposal. |
 | `chat.refused` | A happening with `opens.chat` could not start or continue a chat, or could not reopen a task. `reply.body` says why. |
 | `chat.acknowledged` | A happening with `opens.chat` reopened a finished task that has its marks. `reply.body` is `""`. |
+| `inbox-request.opened` | A request about a task first opens in the inbox: a run to grade, proposed memories, or a station alert. Bindings do not run again when the request opens again. |
+| `notice.raised` | A notice of the team that is addressed to nobody is first raised, such as a config pull request that Spotlight opened. Bindings do not run again when the notice opens again. |
 
 Binding:
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `action` | string | required | The action to run. It must be defined in `actions`. |
-| `to` | map of name to string | `{}` | Values the action reads in `target`. Can read `task` and `ask` for a task event, `chat` and `reply` for a chat event. Each value is an expression. |
-| `routes` | map of name to string | `{}` | Keyed by line key. When `to` gives no `channel`, the value for the task's line is used as `target.channel`. Not read for a chat event. |
-| `mark` | array of objects | `[]` | Marks kept on the task after the action succeeds. Can read `response` and `capture`. `find` is not read here, and a chat event keeps no mark. A later binding of the same event does not see these marks. |
+| `to` | map of name to string | `{}` | Values the action reads in `target`. Can read `task` and `ask` for a task event, `chat` and `reply` for a chat event, `task` and `request` for an inbox request event, and `notice` for a notice event. Each value is an expression. |
+| `routes` | map of name to string | `{}` | Keyed by line key. When `to` gives no `channel`, the value for the task's line is used as `target.channel`. A binding of a chat or notice event cannot have `routes`. |
+| `mark` | array of objects | `[]` | Marks kept on the task after the action succeeds. Can read `response` and `capture`. `find` is not read here. A binding of a chat or notice event cannot have `mark`. A later binding of the same event does not see these marks. |
 
 A binding runs only when `target` contains a `channel` or a `thread`. Otherwise
 nothing is sent.

@@ -6,7 +6,7 @@ description: Log in to Spotlight with spotlight login, so that the spotlight com
 ---
 
 You need the `spotlight` binary on your machine. To get it, see
-[Install](/docs/reference/cli/replay-command#install). You also need a
+[Install script](/docs/reference/cli/install-script). You also need a
 Spotlight account.
 
 A login acts as you, with your role in each workspace that you are a member of.
@@ -26,7 +26,16 @@ Run:
 spotlight login
 ```
 
-The command prints a page address and a code, then waits:
+If you have no login yet, the command asks for the
+[Spotlight address](/docs/reference/glossary#spotlight-address):
+
+```text
+Spotlight address [https://app.usespotlight.ai]:
+```
+
+Press Enter for `https://app.usespotlight.ai`, or type your deployment's
+address, such as `spotlight.example.com`. The command then prints a page
+address and a code, and waits:
 
 ```text
 Open this page to log in to https://app.usespotlight.ai:
@@ -62,7 +71,12 @@ prints:
 
 ```text
 Logged in to https://app.usespotlight.ai as you@example.com.
+Next: to open tasks in VS Code or Cursor, run: spotlight ssh setup
 ```
+
+The `Next` line shows only when SSH is not set up for Spotlight on this
+computer. See
+[Open a working copy in VS Code](/docs/tasks/open-a-working-copy-in-vs-code).
 
 </Step>
 </Steps>
@@ -119,6 +133,11 @@ Spotlight, add `--url <address>`.
 
 If Spotlight does not answer, the command still removes the login, and prints
 that the token stays valid until it expires.
+
+In a terminal, `spotlight` without a command opens a dashboard that shows the
+login, by user and address. Press `a` to log in, or to log out. The dashboard
+logs in on its own screen: it shows the page and the code, and waits for your
+approval.
 
 ## If something goes wrong
 

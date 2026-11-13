@@ -147,6 +147,12 @@ station {
 
 Outside Terraform, the name is `<integration>.<tool>`, as in `acme.comment`.
 
+If the tool is for the tasks that the integration opens, set
+`enabledOnMark` to the mark kind that its events put on those tasks, as in
+`enabledOnMark = "acme.issue"`. Then each run on a task with that mark has
+the tool, at every station. See
+[Enabled on a mark](/docs/reference/terraform/integration#enabled-on-a-mark).
+
 Run `terraform apply`. The next run at that station has the tool. Its agent
 calls it with `spotlight tools call`:
 

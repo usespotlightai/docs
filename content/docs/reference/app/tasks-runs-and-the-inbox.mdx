@@ -225,8 +225,8 @@ When a happening finds a task, the line decides one of these outcomes:
 | Outcome | Condition | Effect |
 | --- | --- | --- |
 | nothing | The task is at the completed station, or none of the other outcomes applies. | None. |
-| moves | A reaction for the happening, from this station or from any, leads to another station, and either the task has no current run or that station is the completed station. | The task moves there. A move to the completed station during a run ends the run as for a person's move, and the run's later handover is ignored. An open question or approval closes, and earlier deferred moves are dropped. |
-| deferred move | As for moves, but the task has a current run, queued, claimed or suspended, and the station is not the completed station. | A `message` note with the happening's message, or else its summary, and the station it moves to. While the move waits, the inbox shows `Arrived during a run. If the run does not pass the task on, the task moves to <Station> when the run ends.` under the note. The run gets the note with `This arrived while a run was in progress on the task. If the run does not pass the task on, the task moves to <Station> when the run ends.` before it, and keeps the task. A later `passed` note, or a later `asked` note other than an approval, drops deferred moves; a later `stays` outcome does not. |
+| moves | A reaction for the happening, from this station or from any, leads to another station, and the task has no current run, its current run waits on a person's answer to a question (a pending approval or connection ask does not count), or that station is the completed station. | The task moves there. A move during a run ends the run as for a person's move, and the run's later handover is ignored. An open question or approval closes, and earlier deferred moves are dropped. |
+| deferred move | As for moves, but the task has a current run, queued, claimed or suspended, that does not wait on a person's answer to a question, and the station is not the completed station. | A `message` note with the happening's message, or else its summary, and the station it moves to. While the move waits, the inbox shows `Arrived during a run. If the run does not pass the task on, the task moves to <Station> when the run ends.` under the note. The run gets the note with `This arrived while a run was in progress on the task. If the run does not pass the task on, the task moves to <Station> when the run ends.` before it, and keeps the task. A later `passed` note, or a later `asked` note other than an approval, drops deferred moves; a later `stays` outcome does not. |
 | answers | No reaction leads to another station, the task awaits review, and the happening carries a message (`answers: true`). | An `answered` note; the run that asked carries on, or else a run starts at the same station. |
 | stays | A reaction applies and leads to the task's current station, and the happening does not answer. | A `message` note. |
 
@@ -405,7 +405,7 @@ config. A chat's run records none.
 | Image | The line's runner image. |
 | Repositories | Each repository of the line, with its `setup` command. |
 | Skills | Each team and catalog skill enabled, with a SHA-256 of its files. Built-in skills are left out. |
-| Tools | The tools enabled. |
+| Tools | The tools the station enables, with the tools of its skills. |
 | Decisions, memories | Whether the station generates decisions and drafts memories. |
 | Judge | The SHA-256 of the judge's rubric, its `sample` and its `minAgreement`, when the station has a [judge](/docs/reference/terraform/line#judge-fields). The station's alerts are not part of the config. |
 
@@ -418,6 +418,9 @@ under "Runs by config"; see [Station outcomes](#station-outcomes).
 `GET /api/teams/{teamId}/runs/{runId}/config` returns a run's config and its
 fingerprint, and, when the station's previous run with a recorded config ran
 another config, that run under `changedSince`, with the changes since it.
+Its `toolsOnMarks` lists the tools the run also had because its task had a
+mark that they are [enabled on](/docs/reference/terraform/integration#enabled-on-a-mark).
+They are not part of the config.
 
 The web app words each change as one phrase, in the names of the groups under
 "Runs by config" and in what a search candidate changes:
