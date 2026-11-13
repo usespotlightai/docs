@@ -105,16 +105,18 @@ spotlight host reload
 
 ## Manage the host in a terminal
 
-Run `spotlight host` without a command to open the dashboard:
+Run `spotlight` without a command to open the dashboard:
 
 ```bash
-spotlight host
+spotlight
 ```
 
-The dashboard shows the service, the sandboxes in use, the checks and the live
-log. It refreshes every 5 seconds. Press `:` and type part of a name to find
-any action or setting, such as `:rest` for a restart or `:capa` to change
-`capacity`. The commands also have keys:
+The dashboard shows the service, the sandboxes in use, the checks, the live
+log, the login of the command line, and the editors that
+[`spotlight ssh setup`](/docs/tasks/open-a-working-copy-in-vs-code) set up. It
+refreshes every 5 seconds. Press `:`
+and type part of a name to find any action or setting, such as `:rest` for a
+restart or `:capa` to change `capacity`. The commands also have keys:
 
 | Key | Action | Command it runs |
 | --- | --- | --- |
@@ -124,6 +126,8 @@ any action or setting, such as `:rest` for a restart or `:capa` to change
 | `o` | Reloads `host.env`, `sandbox.env` and `egress.env`. | `spotlight host reload` |
 | `u` | Replaces the binary with the release of Spotlight. | `spotlight host update` |
 | `i` | Connects the machine and installs the service. | `spotlight host init` |
+| `a` | Logs in, or asks and logs out. | `spotlight login`, `spotlight logout` |
+| `e` | Sets up ssh for VS Code and Cursor. | `spotlight ssh setup` |
 | `c` | Opens the settings. | `spotlight host config set`, `spotlight host config unset` |
 | `l` | Opens the full log. | `spotlight host logs -f` |
 | `ctrl+r` | Checks the host again. | `spotlight host status` |

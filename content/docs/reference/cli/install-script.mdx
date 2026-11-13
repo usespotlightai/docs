@@ -72,7 +72,7 @@ The script stops at the first failure. Each failure listed under
 | 3 | Chooses and creates the binary directory. |
 | 4 | Downloads `spotlight` and its checksum, checks the checksum, and installs the binary at `<bin dir>/spotlight`. |
 | 5 | When `<bin dir>` is not on `PATH`, adds a next step: the line that puts it on `PATH`. |
-| 6 | With arguments, runs `<bin dir>/spotlight host init --url <spotlight address>` with them. `init` asks its questions on the terminal, so they work when the script comes from a pipe. Without arguments, adds two next steps: `spotlight login --url <spotlight address>`, and `spotlight host init --url <spotlight address>`. |
+| 6 | With arguments, runs `<bin dir>/spotlight host init --url <spotlight address>` with them. `init` asks its questions on the terminal, so they work when the script comes from a pipe. Without arguments, adds three next steps: `spotlight`, to see what is set up on this computer; `spotlight login --url <spotlight address>` and `spotlight ssh setup`, to open tasks in VS Code or Cursor; and `spotlight host init --url <spotlight address>`, to run agents on this computer. |
 | 7 | Prints the next steps. |
 
 With arguments, the script exits with the exit code of `spotlight host init`.

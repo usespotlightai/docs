@@ -20,6 +20,7 @@ that `ssh`, VS Code and Cursor reach the sandbox of a task or chat through
 ## Synopsis
 
 ```text
+spotlight
 spotlight host
 spotlight host serve
 spotlight host init
@@ -53,7 +54,8 @@ The [agent commands](/docs/reference/cli/agent-commands) work inside a run.
 
 | Invocation | Output | Exit code |
 | --- | --- | --- |
-| `spotlight`, `spotlight help`, `-h` or `--help` | The commands, by group, on standard output. Inside a run, the agent commands. Outside one, the commands for hosts, replays, the login and editors. | `0` |
+| `spotlight help`, `-h` or `--help` | The commands, by group, on standard output. Inside a run, the agent commands. Outside one, the commands by goal: the login, editors, hosts and replays. | `0` |
+| `spotlight` | In a terminal outside a run, the [dashboard](#spotlight). In the terminal of a sandbox that an editor opened, a [note](#spotlight). Else the same as `spotlight help`. | `0` |
 | `spotlight help --all` | Every command, by group. | `0` |
 | `spotlight <command> --help`, `-h`, or `spotlight help <command>` | The command's usage, flags, environment, examples, exit codes and docs link. | `0` |
 | `spotlight replay` | The help for `spotlight replay`. | `0` |
@@ -66,22 +68,59 @@ standard error and exits `1`. A near command follows, as
 A usage error prints the command's usage line, then
 `Run spotlight <command> --help for flags and examples.`
 
+## spotlight
+
+```text
+spotlight
+```
+
+In a terminal outside a run, opens the dashboard for this computer. It
+refreshes every 5 seconds. It shows:
+
+| Line | Shows |
+| --- | --- |
+| `host` | The service and the sandboxes in use, then the [checks](#spotlight-host-status) and the live log. When the machine has no host settings and no service, one line: `○ not set up on this computer`. |
+| `account` | The [login](#spotlight-login) of the command line, by user and address, or `○ not logged in`. |
+| `editors` | What [`spotlight ssh setup`](#spotlight-ssh-setup) set up: `ssh`, and each editor it found, with `!` when its connect timeout is less than 600 seconds. Without the ssh configuration, `○ not set up for VS Code or Cursor`. |
+
+When the host is not set up, the header shows no host name, and the footer
+shows `i set up a host` in place of the settings and the log. `:` finds an action or a setting by name, and `?`
+shows every key. Each action runs a `spotlight` command and shows it with the
+last line of its output. See
+[Manage the host in a terminal](/docs/hosts/run-a-host#manage-the-host-in-a-terminal).
+`q`, Esc or Ctrl+C closes the dashboard. The host keeps serving.
+When the help does not fit, the arrow keys, `j` and `k` scroll it.
+
+`a` runs `spotlight login` when there is no login. With one login, `a` asks,
+then runs `spotlight logout --url <address>`. With more than one, `a` lists
+them, to choose the one to end. `e` runs `spotlight ssh setup`. The footer
+shows `e` when ssh is not set up, or when an editor's connect timeout is too
+short.
+
+When standard input or standard output is not a terminal, `spotlight` prints
+the [help](#help).
+
+When `SPOTLIGHT_EDITOR_SESSION` is set, as in the terminal of a sandbox that
+VS Code or Cursor opened, `spotlight` prints this note and exits `0`:
+
+```text
+This terminal is in the sandbox of a Spotlight task.
+Run spotlight login, spotlight ssh setup and the host commands on your own computer.
+Agent commands work only in a run. To see them: spotlight help --all
+```
+
 ## spotlight host
 
 ```text
 spotlight host
 ```
 
-In a terminal, opens the dashboard. The dashboard shows the service, the
-sandboxes in use, the [checks](#spotlight-host-status) and the live log, and
-refreshes every 5 seconds. `:` finds an action or a setting by name, and `?`
-shows every key. Each action runs a `spotlight host` command and shows it with
-the last line of its output. See
-[Manage the host in a terminal](/docs/hosts/run-a-host#manage-the-host-in-a-terminal).
-`q`, Esc or Ctrl+C closes the dashboard. The host keeps serving.
+In a terminal, prints the help for `spotlight host`: its commands and flags.
+The [dashboard](#spotlight) opens with `spotlight`.
 
-When standard input or standard output is not a terminal, `spotlight host`
-does as [`spotlight host serve`](#spotlight-host-serve) does.
+Inside a run, `spotlight host` also prints its help. Outside a run, when
+standard input or standard output is not a terminal, `spotlight host` does as
+[`spotlight host serve`](#spotlight-host-serve) does.
 
 ## spotlight host serve
 
@@ -350,7 +389,7 @@ the service. When the settings do not pass the host's checks, `restart` sends
 nothing and fails with `nothing restarted, because the host would not start: <problems>`.
 
 When no service is installed, each command fails with
-``the host is not installed as a service; run `spotlight host init` ``.
+`the host is not installed as a service; to install it, run spotlight host init`.
 
 ## spotlight host logs
 
@@ -589,6 +628,7 @@ person, with their role in each workspace they are a member of, and ends after
 | `Opened the page in your browser.` | Step 3. |
 | `Waiting for you to approve the login. Press Ctrl-C to stop.` | Step 4 starts. |
 | `Logged in to <address> as <email>.` | Step 6. |
+| `Next: to open tasks in VS Code or Cursor, run: spotlight ssh setup` | Step 6, when `~/.ssh` does not include the configuration of [`spotlight ssh setup`](#spotlight-ssh-setup). For an address other than `https://app.usespotlight.ai`, the command ends with `--url <address>`. |
 
 | Error | Cause |
 | --- | --- |
@@ -789,6 +829,12 @@ colour and the headings are bold, unless `NO_COLOR` is set.
 | `Set remote.SSH.connectTimeout to 600 in <path>.` | The setting was written. |
 | `Sorry, <path> cannot be read: <error>.` | The settings file is not a JSON object, or cannot be read. Nothing is written. |
 | `Sorry, <path> cannot be changed: <error>.` | The settings file could not be written. |
+
+When there is no login for the address and there is a terminal, the command
+first asks
+`There is no login for <address>. The editor connects as you. Log in now? (y/N)`.
+With `y` or `yes`, it runs `spotlight login --url <address>`, then checks the
+login again.
 
 With `--print`, it prints the file under `# ~/.ssh/spotlight/config`, then
 `# Add to the top of ~/.ssh/config` and the `Include` line, then
