@@ -129,7 +129,7 @@ Each follows `The sandbox's egress didn't start. Error: `.
 | `Missing, rotated or unknown pool token, or a workload the trust does not match` | Spotlight did not accept the host's credential, with `401`. | [Authentication](/docs/reference/terraform/runner-trust#authentication), [Run hosts without a stored token](/docs/hosts/run-hosts-without-a-stored-token) |
 | `Host <id> is in use by another pool or trust. Please stop it there, or give it its own state directory.` | `409` `host-in-use`. Another pool or trust uses the host's id. The host stops claiming. | [Authentication](/docs/reference/terraform/runner-trust#authentication), [State](/docs/reference/hosts/host-configuration#state) |
 | `could not pull the runner image, so it runs the copy it has` | A pull failed, and the host has a copy of the image. | [Pull runner images from a private registry](/docs/hosts/pull-images-from-a-private-registry#check-that-it-pulls) |
-| `the runner image holds no harness, so it runs checks but no agent run; install a harness in an image built from it` | A warning. The image holds none of the harnesses Spotlight looks for. | [Installed harnesses](/docs/reference/hosts/harnesses#installed-harnesses), [Install a harness in your runner image](/docs/hosts/install-a-harness-in-your-runner-image) |
+| `the runner image holds no harness, so it runs checks but no agent run; run spotlight host init in a terminal to build one with a harness` | A warning. The image holds none of the harnesses Spotlight looks for. | [Installed harnesses](/docs/reference/hosts/harnesses#installed-harnesses), [Install a harness in your runner image](/docs/hosts/install-a-harness-in-your-runner-image) |
 | `another spotlight host already serves from <state>: <error>` | Another host uses the state directory. | [Validation](/docs/reference/hosts/host-configuration#validation) |
 | ``spotlight host: installing a service on <os> is not supported; run `spotlight host serve` under your own supervisor`` | `spotlight host init` on a platform other than Linux or macOS. | [spotlight host init](/docs/reference/cli/spotlight-command#spotlight-host-init) |
 
@@ -143,11 +143,23 @@ Every message goes to standard error, prefixed `spotlight host: `. The command e
 | `nothing saved, because <problems>` | `init` gave settings that do not pass the checks. | [spotlight host init](/docs/reference/cli/spotlight-command#spotlight-host-init) |
 | `nothing saved, because Spotlight at <url> does not accept the credential` | `init` was given a token or trust that Spotlight refused. | [spotlight host init](/docs/reference/cli/spotlight-command#spotlight-host-init), [Create a pull pool](/docs/hosts/create-a-pull-pool) |
 | `--token is required: a pull pool's token, from Settings → Runners → Add a host` | `init` had no token, no saved token and no terminal to ask on. | [spotlight host init](/docs/reference/cli/spotlight-command#spotlight-host-init) |
+| `give the token with --token or --token-stdin, not both` | `init` got both flags. | [spotlight host init](/docs/reference/cli/spotlight-command#spotlight-host-init) |
+| `read the token from stdin: <error>` | `init --token-stdin` could not read standard input. | [spotlight host init](/docs/reference/cli/spotlight-command#spotlight-host-init) |
 | `pull <image>: <error>` | `init` could not pull the default runner image, and the machine has no copy of it. | [spotlight host init](/docs/reference/cli/spotlight-command#spotlight-host-init), [Pull runner images from a private registry](/docs/hosts/pull-images-from-a-private-registry) |
 | `The runner image holds no harness, so this host runs checks but no agent run.` | A warning from `init` and `status`. The default image is Spotlight's runner image, which holds no harness. | [Install a harness in your runner image](/docs/hosts/install-a-harness-in-your-runner-image) |
 | `nothing reloaded, because <problems>` | `reload` found settings that do not pass the checks. The host keeps the settings it has. | [spotlight host reload](/docs/reference/cli/spotlight-command#spotlight-host-reload) |
 | `no host runs from <config path>` | `reload` found no host that holds the state directory's lock. | [spotlight host reload](/docs/reference/cli/spotlight-command#spotlight-host-reload) |
 | `the host is not installed as a service; to install it, run spotlight host init` | `start`, `stop`, `restart`, `logs` or `uninstall` found no service. | [spotlight host start, stop and restart](/docs/reference/cli/spotlight-command#spotlight-host-start-stop-and-restart) |
+
+### Host set-up
+
+The dashboard shows these under `Set up this computer as a host`.
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `only a workspace admin can keep keys and make pools. Ask an admin to set up this host, or for a pool token for spotlight host init --token.` | The login is not a workspace owner or admin, so Spotlight refused to save a key or make the pool. | [Host set-up](/docs/reference/cli/spotlight-command#host-set-up), [Install a host](/docs/hosts/run-a-host#install-the-host-with-a-pool-token) |
+| `Your login belongs to no workspace. Make one in Spotlight first.` | The login has no workspace. | [Host set-up](/docs/reference/cli/spotlight-command#host-set-up) |
+| `no container runtime answers. Start Docker or Podman, then try again: <error>.` | No container runtime answered, so the image was not built. | [Host set-up](/docs/reference/cli/spotlight-command#host-set-up) |
 
 ### Host settings
 
@@ -195,7 +207,7 @@ injected, and requests go without it.
 | --- | --- | --- |
 | `the host's allow-list does not allow <host>` | The host's egress allow-list does not allow the host the key or secret would be sent to. | [What egress injects into requests](/docs/reference/hosts/egress#what-egress-injects-into-requests), [Limit where sandboxes can connect](/docs/security/limit-where-sandboxes-connect) |
 | `it is empty or more than one line` | A harness key is empty or more than one line. | [Harness keys](/docs/reference/hosts/egress#harness-keys) |
-| `the host has a key of its own for <host>` | A run secret is bound to a host a harness key already goes to. | [Run secrets](/docs/reference/hosts/egress#run-secrets) |
+| `the host has a key of its own for <host>` | A run secret, such as a harness key the workspace holds, is bound to a host that a key the host keeps already goes to. The host's key is used. | [Run secrets](/docs/reference/hosts/egress#run-secrets) |
 | `the host does not let egress read <secret id>` | `SPOTLIGHT_EGRESS_SECRET_ALLOW` does not allow the AWS Secrets Manager secret. | [Run secrets](/docs/reference/hosts/egress#run-secrets), [Give an MCP server a secret](/docs/security/give-an-mcp-server-a-secret) |
 | `another secret is already injected in <target> for <host>` | Another secret already goes in that header or query parameter to the host. `<target>` is the header's name, or `?<parameter>`. | [Run secrets](/docs/reference/hosts/egress#run-secrets) |
 | `its location is neither a header nor a query parameter` | A run secret's binding names neither a header nor a query parameter. | [Run secrets](/docs/reference/hosts/egress#run-secrets) |

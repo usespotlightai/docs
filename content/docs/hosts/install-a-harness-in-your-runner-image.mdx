@@ -8,9 +8,14 @@ description: Build a runner image that holds Claude Code, Codex, Cursor or OpenC
 Spotlight's runner image, `ghcr.io/usespotlightai/spotlight-runner:<release>`,
 holds no harness. A host that serves only that image runs change-stack checks,
 but no agent run. Build your own image `FROM` it, with the harness that your
-subscription covers, and let your hosts serve that image. You need Docker or
-Podman on the machine that builds the image, and a shell on each host
-machine.
+subscription covers, and let your hosts serve that image.
+
+On your own computer, `spotlight host init` with no flags builds the image for
+you, with the harnesses you pick, and makes it the host's image. See
+[Install a host](/docs/hosts/run-a-host#install-the-host). Follow the steps
+below to build the image yourself, for example to push it to a registry for
+more than one host. You need Docker or Podman on the machine that builds the
+image, and a shell on each host machine.
 
 ## Find the release your hosts run
 
@@ -20,39 +25,41 @@ too. Use this release as `<release>` in the steps below.
 
 ## Build the image
 
-The Spotlight repository has one example Dockerfile for each harness, in
-[`.docker/runner/examples`](https://github.com/usespotlightai/spotlight/tree/main/.docker/runner/examples):
+The Spotlight repository has one Dockerfile for each harness, in
+[`data-plane/host/internal/harnesses/dockerfiles`](https://github.com/usespotlightai/spotlight/tree/main/data-plane/host/internal/harnesses/dockerfiles).
+`spotlight host init` builds from the same files:
 
-| Harness | Example | Installs |
+| Harness | Dockerfile | Installs |
 | --- | --- | --- |
 | Claude Code | `claude-code.Dockerfile` | `@anthropic-ai/claude-code` and `@agentclientprotocol/claude-agent-acp` |
 | Codex | `codex.Dockerfile` | `@agentclientprotocol/codex-acp` |
 | Cursor | `cursor.Dockerfile` | `cursor-agent`, from Cursor's install script |
 | OpenCode | `opencode.Dockerfile` | `opencode-ai`, major version 1 |
 
-Download the example for your harness into an empty directory, and build it
+Download the Dockerfile for your harness into an empty directory, and build it
 with `BASE` set to Spotlight's image at your hosts' release. For Claude Code:
 
 ```bash
 mkdir -p ~/spotlight-runner && cd ~/spotlight-runner
-curl -fsSLO https://raw.githubusercontent.com/usespotlightai/spotlight/main/.docker/runner/examples/claude-code.Dockerfile
+curl -fsSLO https://raw.githubusercontent.com/usespotlightai/spotlight/main/data-plane/host/internal/harnesses/dockerfiles/claude-code.Dockerfile
 docker build --file claude-code.Dockerfile \
   --build-arg BASE=ghcr.io/usespotlightai/spotlight-runner:<release> \
   --tag ghcr.io/acme/spotlight-runner-claude-code:<release> .
 ```
 
-Always set `BASE`. Without it, the example builds on `:latest`, which can be a
+Always set `BASE`. Without it, the Dockerfile builds on `:latest`, which can be a
 different release from the one your hosts run. To pin a harness version, also
 set its build argument: `CLAUDE_CODE_VERSION` and `CLAUDE_AGENT_ACP_VERSION`
 for Claude Code, `CODEX_ACP_VERSION` for Codex, or `OPENCODE_VERSION` for
-OpenCode. The OpenCode argument is `1` by default, because Spotlight supports
-only OpenCode version 1. The other arguments are `latest` by default.
+OpenCode. `OPENCODE_VERSION` is `1` by default, because Spotlight supports
+OpenCode version 1. `CLAUDE_AGENT_ACP_VERSION` is `0.101.0` by default. The
+other arguments are `latest` by default.
 
-To put more than one harness in one image, build the examples one on top of
-the other. Set `BASE` of the second build to the tag of the first:
+To put more than one harness in one image, build the Dockerfiles one on top
+of the other. Set `BASE` of the second build to the tag of the first:
 
 ```bash
-curl -fsSLO https://raw.githubusercontent.com/usespotlightai/spotlight/main/.docker/runner/examples/codex.Dockerfile
+curl -fsSLO https://raw.githubusercontent.com/usespotlightai/spotlight/main/data-plane/host/internal/harnesses/dockerfiles/codex.Dockerfile
 docker build --file codex.Dockerfile \
   --build-arg BASE=ghcr.io/acme/spotlight-runner-claude-code:<release> \
   --tag ghcr.io/acme/spotlight-runner:<release> .
@@ -120,7 +127,7 @@ If **Harnesses** reads **None** in red, the images that the host can use hold
 no harness. Hover over it for the reason. Check that the first entry of
 `SPOTLIGHT_RUNNER_IMAGE` is your image, and that the host was restarted. The
 host log also has the warning
-`the runner image holds no harness, so it runs checks but no agent run; install a harness in an image built from it`.
+`the runner image holds no harness, so it runs checks but no agent run; run spotlight host init in a terminal to build one with a harness`.
 
 ## Rebuild for a new release
 

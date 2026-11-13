@@ -79,74 +79,29 @@ team already has two lines. **Delivery** takes a request from Triage through to
 Code Review, and **Review** looks over pull requests. This tutorial uses
 Delivery.
 
-## Let your computer take work from Spotlight
+## Get your Claude key ready
 
-Spotlight hands work to a
-[pool](/docs/administration/pools-trusts-and-tokens), a group of
-computers that all prove who they are with the same secret token. Here you
-create a pool with only your computer in it.
-
-<Steps>
-<Step>
-
-In Spotlight, open the workspace menu at the top of the sidebar, choose
-**Settings**, then **Runners**. This page lists the computers that run agents
-for the workspace. It has none yet, and reads **No hosts yet**. Click **Add the
-first host**.
-
-</Step>
-<Step>
-
-The **Add a host** page has three steps. Under **Create a pool**, **Pool name**
-already reads `my-computer-1`. Leave it and click **Create pool**.
-
-The next step, **Add the machine to the my-computer-1 pool**, now shows a
-command that installs Spotlight on a computer, with the pool's token already
-in it. Spotlight shows the token only this once, so keep the page open.
-
-</Step>
-</Steps>
-
-## Start running agents on your computer
-
-<Steps>
-<Step>
-
-Open a terminal. Each agent runs in a container, a sandbox, where it is
-not signed in to Claude. Give it a key in the file Spotlight reads on your
-computer when it starts. Use the tab for what you pay Anthropic with:
+Each agent runs in a container, a sandbox, where it is not signed in to
+Claude. Spotlight keeps a key for it. Use the tab for what you pay Anthropic
+with:
 
 <Tabs items={['Anthropic API key', 'Claude subscription']}>
 <Tab value="Anthropic API key">
 
-```bash
-mkdir -p ~/.spotlight
-echo 'ANTHROPIC_API_KEY=<your Anthropic key>' >> ~/.spotlight/sandbox.env
-chmod 600 ~/.spotlight/sandbox.env
-```
-
-The commands print nothing.
+Have your Anthropic API key ready to paste.
 
 </Tab>
 <Tab value="Claude subscription">
 
 Make a token for your subscription. Claude Code must be installed on your
-computer:
+computer. In a terminal, run:
 
 ```bash
 claude setup-token
 ```
 
 It opens your browser to sign in to Claude, then prints a token that starts
-with `sk-ant-oat`. Save the token:
-
-```bash
-mkdir -p ~/.spotlight
-echo 'CLAUDE_CODE_OAUTH_TOKEN=<the token>' >> ~/.spotlight/sandbox.env
-chmod 600 ~/.spotlight/sandbox.env
-```
-
-The commands print nothing.
+with `sk-ant-oat`. Keep the token ready to paste.
 
 If Claude Code on your computer is already signed in, you still need the
 token. The sandbox can't use that sign-in.
@@ -154,105 +109,86 @@ token. The sandbox can't use that sign-in.
 </Tab>
 </Tabs>
 
-</Step>
-<Step>
+## Set up your computer to run agents
 
-On the **Add a host** page, click **Copy command** and run it in the terminal. It
-looks like this, with the pool's token in place of `<pool token>`:
-
-```bash
-curl -fsSL https://app.usespotlight.ai/api/install.sh | sh -s -- --token <pool token>
-```
-
-The command downloads the `spotlight` program, then asks two questions:
-
-```text
-Sandboxes at once [5]:
-Runner image [ghcr.io/usespotlightai/spotlight-runner:<release>]:
-```
-
-Press Enter for each. Five sandboxes let your computer run five agents at the
-same time. Use a lower number if your computer is slow, or a higher number if
-it has much memory. You can change the number later with
-`spotlight host config set capacity=<number>`.
-
-The command then downloads Spotlight's container image and sets the program to
-keep running in the background. The image download takes a few minutes. Then
-this line shows:
-
-```text
-The host serves https://app.usespotlight.ai. It shows on the Runners page when it connects.
-```
-
-Below it, four lines say that the image holds no harness. You add Claude Code
-to it in the next section.
-
-If it stops with `no container runtime answers`, Docker, or whichever of the
-tools above you use, isn't running. Start it and run the command again.
-
-</Step>
-<Step>
-
-Watch the last step, **Wait for the host to connect**. Within a minute of the
-command finishing, your computer connects and Spotlight opens the **Runners**
-page. Your computer appears in its own row, with **Pool my-computer-1** under
-**Serves**. Its status reads **Idle**: it is connected and waiting for work.
-Under **Harnesses** it reads **None**, in red: the image holds no coding tool
-yet, so no agent can run.
-
-</Step>
-</Steps>
-
-## Add a harness to the image
-
-Spotlight's image holds no harness, so you build an image on top of it that
-holds Claude Code. Spotlight gives an example file for this.
+Spotlight hands work to a
+[pool](/docs/administration/pools-trusts-and-tokens), a group of computers
+that all prove who they are with the same secret token. The `spotlight`
+program makes a pool with only your computer in it, and builds the container
+image the agents run in, with Claude Code inside.
 
 <Steps>
 <Step>
 
-In the terminal, download the example into a new folder:
+In a terminal, install the `spotlight` program:
 
 ```bash
-mkdir -p ~/spotlight-runner && cd ~/spotlight-runner
-curl -fsSLO https://raw.githubusercontent.com/usespotlightai/spotlight/main/.docker/runner/examples/claude-code.Dockerfile
+curl -fsSL https://app.usespotlight.ai/api/install.sh | sh
 ```
+
+The last lines are next steps. If one of them puts a folder on your `PATH`,
+run it.
 
 </Step>
 <Step>
 
-Build the image on the same release of Spotlight's image that the install
-command downloaded. The first command gets that release from the `spotlight`
-program:
+Start the set-up:
 
 ```bash
-base="ghcr.io/usespotlightai/spotlight-runner:$(spotlight version)"
-docker build --file claude-code.Dockerfile --build-arg BASE="$base" --tag my-runner:claude-code .
+spotlight host init
 ```
 
-With Podman, write `podman` in place of `docker`. The build takes a few
-minutes. Near the end, its output names `my-runner:claude-code`.
-
-If the terminal says `command not found: spotlight`, write
-`~/.spotlight/bin/spotlight` in place of `spotlight`, here and in the next step.
+The terminal shows the Spotlight dashboard, with **Log in to Spotlight** and
+the address `app.usespotlight.ai`. Press Enter. Your browser opens a page that
+asks **Approve the Spotlight CLI?**. Check that its code is the same as the
+code in the terminal, and click **Approve**.
 
 </Step>
 <Step>
 
-Tell Spotlight on your computer to use the new image:
+The terminal shows **Set up this computer as a host**, and asks which agents
+run on it. Press Space to pick **Claude Code**, then press Enter.
 
-```bash
-spotlight host config set image=my-runner:claude-code
-```
-
-The last line says `The running host applied the change`. The host uses the
-new image at once. It does not restart.
+If it asks which workspace the host serves, pick the workspace you created.
 
 </Step>
 <Step>
 
-Go back to the **Runners** page. Within a minute, **Harnesses** shows the
-Claude Code logo in place of **None**.
+It asks which key Claude Code uses. Pick **Anthropic API key** or **Claude
+subscription token, from claude setup-token**, and press Enter. Paste the key
+or token, and press Enter. The terminal does not show what you paste.
+Spotlight keeps it as a secret of the workspace, and the agents never see it.
+
+</Step>
+<Step>
+
+It asks for the pool's name, and shows your computer's name. Press Enter.
+
+It asks how many sandboxes run at once, and shows `5`. Press Enter. Five
+sandboxes let your computer run five agents at the same time. Use a lower
+number if your computer is slow, or a higher number if it has much memory. You
+can change the number later with `spotlight host config set capacity=<number>`.
+
+</Step>
+<Step>
+
+Press Enter to set up the host. The dashboard saves the key, makes the pool,
+then builds the image. The build takes a few minutes, and the dashboard shows
+its last line as it goes. Then it sets the program to keep running in the
+background, and shows your computer's host. Press `q` to close the dashboard.
+The host keeps running.
+
+If it stops with `no container runtime answers`, Docker, or whichever of the
+tools above you use, isn't running. Start it and press `r` to try again.
+
+</Step>
+<Step>
+
+In Spotlight, open the workspace menu at the top of the sidebar, choose
+**Settings**, then **Runners**. This page lists the computers that run agents
+for the workspace. Within a minute, your computer appears in its own row, with
+your pool under **Serves**. Its status reads **Idle**: it is connected and
+waiting for work. **Harnesses** shows the Claude Code logo.
 
 </Step>
 <Step>
@@ -341,8 +277,10 @@ computer starts a container for the agent.
 
 If the run stops with a message that starts `start agent:` or
 `open a session:` and names authentication, the sandbox could not sign in to
-Claude. Check the line in `~/.spotlight/sandbox.env`, then run
-`spotlight host reload` and move the task to Backlog and back to Triage.
+Claude, most often because the key is wrong.
+[Give hosts your harness keys](/docs/hosts/give-sandboxes-your-harness-keys)
+shows how to give the host the right key. Then move the task to Backlog and
+back to Triage.
 
 </Step>
 <Step>
@@ -415,7 +353,7 @@ Spotlight stops it. The task moves to Completed, the end of the line, and the
 ## What you built
 
 You created a workspace and set up your own computer to run its agents, in an
-image that you built with Claude Code in it. You gave a task to Triage. Spotlight sent the work to your computer, which started
+image with Claude Code in it. You gave a task to Triage. Spotlight sent the work to your computer, which started
 a container, and Claude Code worked on the task inside it signed in with your
 key. The agent asked you a question through the inbox, took your
 answer, and you closed the task by moving it to Completed.

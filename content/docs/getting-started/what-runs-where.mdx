@@ -117,15 +117,14 @@ the current run of its task or chat, and only for the repositories the run's lin
 the credential that can push to the team's repositories never leaves
 Spotlight, and a run's access to GitHub ends when the run does.
 
-Model API keys, such as an Anthropic key, go the other way. Spotlight calls
-them [harness keys](/docs/reference/glossary#harness-key). They stay on the
-host and never reach Spotlight. The sandbox never sees the Anthropic or OpenAI
-keys the host keeps: it has a placeholder, and the run's egress swaps in the
-real key on requests to the model provider. The `spotlight` program fixes which
-provider each of those keys may go to, and the host's list of servers
-sandboxes may reach can still block it. The reasons, and the harness keys that
-still enter the sandbox, are in [The sandbox is the security
-boundary](/docs/security/the-sandbox-is-the-security-boundary).
+Model API keys, such as an Anthropic key, are what Spotlight calls
+[harness keys](/docs/reference/glossary#harness-key). The workspace keeps them
+as secrets, or a host keeps them in a file of its own, where they never reach
+Spotlight. Either way the sandbox never sees them: it has a placeholder, and
+the run's egress swaps in the real key on requests to the model provider. The
+host's list of servers sandboxes may reach can still block it. The reasons,
+and the harness keys that enter the sandbox as they are, are in [The sandbox
+is the security boundary](/docs/security/the-sandbox-is-the-security-boundary).
 
 Secrets needed by an MCP server, a tool server the agent connects to, are split
 between the two sides. A secret stored with Spotlight is encrypted to a key

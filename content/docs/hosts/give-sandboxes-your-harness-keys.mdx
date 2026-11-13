@@ -2,28 +2,14 @@
 type: how-to
 icon: SquarePen
 title: Give hosts your harness keys
-description: Hand a host the API keys its harnesses need, so agents reach their models from their sandboxes.
+description: Keep the API keys your harnesses need as workspace secrets or on a host, so agents reach their models from their sandboxes.
 ---
 
-Start from an installed host (see
-[Install a host](/docs/hosts/run-a-host)) whose runner image holds your
-harness (see
-[Install a harness in your runner image](/docs/hosts/install-a-harness-in-your-runner-image)). Its
-sandboxes get their [harness keys](/docs/reference/glossary#harness-key), the
-API keys the harnesses reach their models with, from a file beside the host's
-configuration.
-
-## Write the keys to sandbox.env
-
-`sandbox.env` sits beside `host.env`: `/etc/spotlight/sandbox.env` for a host
-installed as root, `~/.spotlight/sandbox.env` for one installed as yourself.
-Add one `KEY=VALUE` line for each harness your lines use, and make the file
-readable only by its owner:
-
-```bash
-echo 'ANTHROPIC_API_KEY=<your key>' >> ~/.spotlight/sandbox.env
-chmod 600 ~/.spotlight/sandbox.env
-```
+A [harness key](/docs/reference/glossary#harness-key) is the API key or token
+a harness reaches its model with. Keep it as a workspace secret, which every
+host of the workspace uses, or on one host. Either way, the sandbox gets the
+stand-in `spotlight-egress:<NAME>`, and the run's egress puts the key in the
+requests to the model provider.
 
 Use the variable for your harness:
 
@@ -33,7 +19,7 @@ Use the variable for your harness:
 | Claude Code, with a Claude subscription | `CLAUDE_CODE_OAUTH_TOKEN` |
 | Codex | `OPENAI_API_KEY` or `CODEX_API_KEY` |
 | Cursor | `CURSOR_API_KEY` |
-| OpenCode | the key of the model's provider, for example `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`, or `OPENCODE_API_KEY` for OpenCode Zen |
+| OpenCode | the key of the model's provider: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` or `OPENROUTER_API_KEY`, or `OPENCODE_API_KEY` for OpenCode Zen |
 
 For a Claude subscription, run `claude setup-token` on your own computer and
 use the token it prints as `CLAUDE_CODE_OAUTH_TOKEN`.
@@ -45,16 +31,83 @@ Copilot does not work either.
 
 <Callout type="warn">
 
-`CURSOR_API_KEY` and `OPENCODE_API_KEY` are not keys that egress keeps. They
-enter the sandbox as they are, where the agent can read them. The same is true
-for the key of an OpenCode provider other than Anthropic or OpenAI.
+`OPENCODE_API_KEY`, and the key of an OpenCode provider other than Anthropic,
+OpenAI and OpenRouter, are not keys that egress keeps. They enter the sandbox
+as they are, where the agent can read them. Cursor CLI exchanges
+`CURSOR_API_KEY` at `api2.cursor.sh` for a short-lived token, and the agent
+can read that token.
 
 </Callout>
+
+## Keep the keys as workspace secrets
+
+A workspace secret whose name is one of the variables above is that
+harness's key. Every run of the harness, in tasks, chats and replays, gets the
+stand-in, on each host and on each push pool that names an egress. Writing a
+secret needs a workspace owner or admin, or a workspace token with the
+`secrets` scope.
+
+<Tabs items={['spotlight host init', 'Terraform']}>
+<Tab value="spotlight host init">
+
+Run `spotlight host init` in a terminal, with no flags. For each harness you
+pick whose key the workspace does not hold, it asks for the key and saves it
+as a workspace secret. See
+[Install a host](/docs/hosts/run-a-host#install-the-host).
+
+</Tab>
+<Tab value="Terraform">
+
+Add a [`spotlight_secret`](/docs/reference/terraform/secret) with the
+variable's name, bound to the provider's host:
+
+```hcl
+resource "spotlight_secret" "anthropic_api_key" {
+  workspace_id = spotlight_workspace.acme.id
+  name         = "ANTHROPIC_API_KEY"
+  bindings = [
+    { host = "api.anthropic.com", name = "x-api-key" },
+  ]
+  value_wo         = var.anthropic_api_key
+  value_wo_version = 1
+}
+```
+
+Bind each key as [Harness keys](/docs/reference/terraform/secret#harness-keys)
+shows.
+
+</Tab>
+</Tabs>
+
+When the workspace holds a harness's key, a run of that harness goes only to
+a runner with an egress: a host, or a push pool that names an egress.
+
+When the workspace holds a new harness key, each host checks its images again,
+with the key. The models of the harness then show on the **Runners** page.
+
+## Keep the keys on a host
+
+`sandbox.env` sits beside `host.env`: `/etc/spotlight/sandbox.env` for a host
+installed as root, `~/.spotlight/sandbox.env` for one installed as yourself.
+Add one `KEY=VALUE` line for each key, and make the file readable only by its
+owner:
+
+```bash
+echo 'ANTHROPIC_API_KEY=<your key>' >> ~/.spotlight/sandbox.env
+chmod 600 ~/.spotlight/sandbox.env
+```
+
+Egress keeps every variable in the table above except `OPENCODE_API_KEY`. The
+key that the host keeps goes first: when the host has a key for a provider's
+host, egress does not inject a workspace secret bound to that host, and the
+run's harness gets no stand-in for that secret. For example, a host that keeps
+`OPENAI_API_KEY` runs Codex with that key, also when the workspace holds
+`CODEX_API_KEY`.
 
 Keep keys out of `host.env`: the host does not pass its own settings to the
 sandbox. `spotlight host init` leaves `sandbox.env` as it is.
 
-## Pass keys from the host's environment instead
+### Pass keys from the host's environment instead
 
 If you run `spotlight host serve` under your own supervisor and the keys are already
 in its environment, name them in `SPOTLIGHT_SANDBOX_PASS` instead of writing
@@ -67,14 +120,7 @@ SPOTLIGHT_SANDBOX_PASS=ANTHROPIC_API_KEY,OPENAI_API_KEY spotlight host serve
 The host passes only the variables its own process has. Egress keeps the known
 keys in the same way as keys from `sandbox.env`.
 
-## If a push pool provisions the runners
-
-Put the keys in the environment your provisioner gives each runner it starts,
-as in [Provision runners from your own platform](/docs/hosts/provision-runners-from-your-own-platform#start-the-runner).
-The keys enter the sandbox as they are, also when the pool names an egress: a
-shared egress has no harness keys.
-
-## Reload the host
+### Reload the host
 
 The host reads the sandbox environment when it starts and when it reloads.
 After every change, reload it:
@@ -86,14 +132,28 @@ spotlight host reload
 Sandboxes the host starts after the reload get the new environment. Running
 sandboxes keep the one they started with.
 
-If you have limited where sandboxes connect with `egress-allow`, the
-list must allow the provider's host, such as `api.anthropic.com`, or egress
-does not add the key. See [Limit where sandboxes can connect](/docs/security/limit-where-sandboxes-connect).
+## If a push pool provisions the runners
+
+Keep the keys as workspace secrets, and let the pool name an egress, as in
+[Send push pool runs through an egress](/docs/security/send-push-pool-runs-through-an-egress).
+The egress injects them as it injects every secret of the run.
+
+A key that your provisioner puts in the environment of each runner it starts,
+as in [Provision runners from your own platform](/docs/hosts/provision-runners-from-your-own-platform#start-the-runner),
+enters the sandbox as it is, where the agent can read it.
+
+## If you limit where sandboxes connect
+
+If you have limited where sandboxes connect with `egress-allow`, the list must
+allow the provider's host, such as `api.anthropic.com`, or egress does not add
+the key. See [Limit where sandboxes can connect](/docs/security/limit-where-sandboxes-connect).
 
 ## Related
 
 - [Harnesses](/docs/reference/hosts/harnesses#installation): what each harness
   installs and reads.
 - [Harness keys](/docs/reference/hosts/host-configuration#harness-keys), for the keys
-  egress keeps and the host each one is sent to.
+  egress keeps on a host and the host each one is sent to.
+- [spotlight_secret](/docs/reference/terraform/secret#harness-keys), for the
+  bindings of harness keys kept as workspace secrets.
 - [The sandbox is the security boundary](/docs/security/the-sandbox-is-the-security-boundary)

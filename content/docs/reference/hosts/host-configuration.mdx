@@ -113,7 +113,7 @@ environment.
 A run goes only to an image that holds its station's harness. An image that
 holds no harness runs change-stack checks only. For each image that it can
 use and that holds no harness, the host logs
-`the runner image holds no harness, so it runs checks but no agent run; install a harness in an image built from it`.
+`the runner image holds no harness, so it runs checks but no agent run; run spotlight host init in a terminal to build one with a harness`.
 See [Harnesses](/docs/reference/hosts/harnesses#installed-harnesses).
 
 ### Registry credentials
@@ -165,8 +165,15 @@ gives them a value, are stored by egress. The sandbox gets the stand-in
 | `CLAUDE_CODE_OAUTH_TOKEN` | `api.anthropic.com` | `authorization: Bearer` |
 | `OPENAI_API_KEY` | `api.openai.com` | `authorization: Bearer` |
 | `CODEX_API_KEY` | `api.openai.com` | `authorization: Bearer` |
+| `CURSOR_API_KEY` | `api2.cursor.sh` | `authorization: Bearer` |
+| `OPENROUTER_API_KEY` | `openrouter.ai` | `authorization: Bearer` |
 
-Any other variable, including `CURSOR_API_KEY` and `OPENCODE_API_KEY`, enters the sandbox as it is.
+Any other variable, including `OPENCODE_API_KEY`, enters the sandbox as it is.
+
+A workspace can also hold these keys as
+[secrets](/docs/reference/terraform/secret#harness-keys). When the host keeps
+a key for a host, egress does not inject a workspace secret bound to the same
+host. The host's own key is used.
 
 ## Egress
 

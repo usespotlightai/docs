@@ -25,7 +25,8 @@ Protocol (ACP), in `/workspace`, as the `agent` user.
 | Native settings format | JSON object | JSON object | `config.toml` text | JSON object (OpenCode's `opencode.json`) |
 
 Spotlight's runner image holds no harness. A team installs each harness in its
-own image, built `FROM` that image. See [Installation](#installation).
+own image, built `FROM` that image, or lets `spotlight host init` build one.
+See [Installation](#installation).
 
 A station names its harness; there is no default, and a station without one
 runs nothing. The work stations of the [built-in lines](/docs/reference/built-ins/built-in-lines)
@@ -95,27 +96,58 @@ prints, kept when it matches:
 key in the environment, and the free OpenCode Zen models (`opencode/...`).
 
 A discovery command that fails, or does not finish within 15 seconds, lists no
-models. Model discovery runs behind an egress, which injects the host's harness
-keys into requests to the model endpoints.
+models. Model discovery runs behind an egress, which injects the harness keys
+into requests to the model endpoints: the keys the host keeps, and the
+[harness keys](#harness-keys) the workspace holds as secrets.
+
+## Harness keys
+
+| Harness | Keys |
+| --- | --- |
+| `claude-code` | `ANTHROPIC_API_KEY`, `CLAUDE_CODE_OAUTH_TOKEN` |
+| `codex` | `CODEX_API_KEY`, `OPENAI_API_KEY` |
+| `cursor` | `CURSOR_API_KEY` |
+| `opencode` | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `OPENROUTER_API_KEY` |
+
+A workspace [secret](/docs/reference/terraform/secret#harness-keys) with one
+of these names is a key of each harness that lists it. Spotlight adds
+`<NAME>=spotlight-egress:<NAME>` to the environment of every run of the
+harness, and the run's secrets include the key. A run with secrets goes only
+to a runner with an egress.
+
+A host learns which keys the workspace holds from
+`GET /api/hosts/requirements`, as `harnessKeys`. For model discovery, the
+host's egress fetches them with the host's pool token or trust, from
+`POST /api/hosts/harness-keys`. Values that Spotlight stores come back sealed
+to egress. When the list of held keys changes, the host checks its images
+again.
 
 ## Installation
 
 | | Claude Code | Cursor | Codex | OpenCode |
 | --- | --- | --- | --- | --- |
-| Example Dockerfile | `claude-code.Dockerfile` | `cursor.Dockerfile` | `codex.Dockerfile` | `opencode.Dockerfile` |
+| Dockerfile | `claude-code.Dockerfile` | `cursor.Dockerfile` | `codex.Dockerfile` | `opencode.Dockerfile` |
 | Installs | npm `@anthropic-ai/claude-code` and `@agentclientprotocol/claude-agent-acp` | Cursor's install script, from `https://cursor.com/install`, into `/opt/cursor` | npm `@agentclientprotocol/codex-acp` | npm `opencode-ai` |
 | Executable on `PATH` | `claude-agent-acp` | `cursor-agent`, linked at `/usr/local/bin/cursor-agent` | `codex-acp` | `opencode` |
 | Build arguments | `CLAUDE_CODE_VERSION`, `CLAUDE_AGENT_ACP_VERSION` | none | `CODEX_ACP_VERSION` | `OPENCODE_VERSION`, default `1` |
-| Credentials | `ANTHROPIC_API_KEY`, or `CLAUDE_CODE_OAUTH_TOKEN` from `claude setup-token` | `CURSOR_API_KEY` | `CODEX_API_KEY` or `OPENAI_API_KEY`. A ChatGPT sign-in is not supported. | the provider's key, for example `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`, or `OPENCODE_API_KEY` for OpenCode Zen. A ChatGPT or GitHub Copilot sign-in is not supported. |
+| Credentials | `ANTHROPIC_API_KEY`, or `CLAUDE_CODE_OAUTH_TOKEN` from `claude setup-token` | `CURSOR_API_KEY` | `CODEX_API_KEY` or `OPENAI_API_KEY`. A ChatGPT sign-in is not supported. | the provider's key, for example `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` or `OPENROUTER_API_KEY`, or `OPENCODE_API_KEY` for OpenCode Zen. A ChatGPT or GitHub Copilot sign-in is not supported. |
 
-The example Dockerfiles are in
-[`.docker/runner/examples`](https://github.com/usespotlightai/spotlight/tree/main/.docker/runner/examples)
+The Dockerfiles are in
+[`data-plane/host/internal/harnesses/dockerfiles`](https://github.com/usespotlightai/spotlight/tree/main/data-plane/host/internal/harnesses/dockerfiles)
 in the Spotlight repository. Each takes the build argument `BASE`, the image
 it is built on, with the default `ghcr.io/usespotlightai/spotlight-runner:latest`.
-A version argument has the default `latest`, except `OPENCODE_VERSION`.
+A version argument has the default `latest`, except `OPENCODE_VERSION`, which
+is `1`, and `CLAUDE_AGENT_ACP_VERSION`, which is `0.101.0`.
 Spotlight supports OpenCode major version 1. The npm `dev` tag of
-`opencode-ai` publishes version 2, which Spotlight does not support. An image built from one example
+`opencode-ai` publishes version 2, which Spotlight does not support. An image built from one Dockerfile
 can be the `BASE` of another, so that one image holds more than one harness.
+
+`spotlight host init`, with no flags in a terminal, builds one image on the
+machine from the Dockerfiles of the harnesses picked, with `BASE` set to
+`ghcr.io/usespotlightai/spotlight-runner:<release>` at the binary's release.
+Its tag is `spotlight-harnesses:<release>-<harness ids>`, as in
+`spotlight-harnesses:0.1.0-claude-code-codex`. The host does not pull an image
+that exists only on its machine.
 
 The `claude` and `codex` command lines alone do not count as installed.
 Model discovery and version probes run `sh`, `curl`, `jq` and, for Claude
@@ -138,7 +170,7 @@ changes and no longer holds the harness, the run fails with
 `Runner image <digest> no longer has the <harness> harness.`
 
 For each image that it can use and that holds no harness, the host logs
-`the runner image holds no harness, so it runs checks but no agent run; install a harness in an image built from it`.
+`the runner image holds no harness, so it runs checks but no agent run; run spotlight host init in a terminal to build one with a harness`.
 When all the images that a host can use hold no harness, the
 [Runners page](/docs/reference/app/web-app#workspace-pages) shows "None" in
 red under "Harnesses".
@@ -147,7 +179,7 @@ red under "Harnesses".
 
 A harness's version is the one built into the runner image. The image digest
 pins it. To install a particular version, set the version build arguments of
-the example Dockerfile. Cursor's install script installs Cursor's latest
+the Dockerfile. Cursor's install script installs Cursor's latest
 release.
 
 Spotlight's runner image is built from `.docker/runner/Dockerfile` in the
