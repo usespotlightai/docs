@@ -69,20 +69,21 @@ the files there, and do not move them into subfolders.
 ## Point the provider at Spotlight
 
 The provider uses a workspace token or an OIDC trust when one is set.
-When neither is set, it uses the login that `spotlight login` keeps for its
-address. See [Provider configuration](/docs/reference/terraform/terraform-provider#provider-configuration).
+When neither is set, it uses the login that `spotlight login` keeps. See [Provider configuration](/docs/reference/terraform/terraform-provider#provider-configuration).
 
 On a [self-hosted Spotlight](/docs/reference/glossary#spotlight-address), use your deployment's address in place of `app.usespotlight.ai`.
 
 <Tabs items={['As yourself', 'With a workspace token']}>
 <Tab value="As yourself">
 
-Log in once, then give the provider only the address:
+Log in once. The provider needs nothing else:
 
 ```bash
 spotlight login
-export SPOTLIGHT_URL=https://app.usespotlight.ai
 ```
+
+The provider uses the address of your login. If you logged in to more than one
+address, set `SPOTLIGHT_URL` to the one to use.
 
 Do not set `SPOTLIGHT_API_TOKEN` or `SPOTLIGHT_OIDC_TRUST`. If one of them is
 set, the provider uses it, not your login.

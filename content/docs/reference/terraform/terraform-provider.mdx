@@ -32,8 +32,8 @@ only for an exact version, so `version` names one.
 
 | Attribute | Type | Default | Description |
 | --- | --- | --- | --- |
-| `url` | string | none | The [Spotlight address](/docs/reference/glossary#spotlight-address), `https://app.usespotlight.ai` or a self-hosted deployment's address. Without it, the `SPOTLIGHT_URL` environment variable. |
-| `token` | string | none | Sensitive. A stored [workspace token](/docs/reference/api/workspace-token). Without it, the `SPOTLIGHT_API_TOKEN` environment variable. Without either, and without a trust, the login for `url`. |
+| `url` | string | none | The [Spotlight address](/docs/reference/glossary#spotlight-address), `https://app.usespotlight.ai` or a self-hosted deployment's address. Without it, the `SPOTLIGHT_URL` environment variable. Without either, and without a token or trust, the address of the one login that `spotlight login` keeps. |
+| `token` | string | none | Sensitive. A stored [workspace token](/docs/reference/api/workspace-token). Without it, the `SPOTLIGHT_API_TOKEN` environment variable. Without either, and without a trust, the login for the address. |
 | `oidc.trust` | string | none | The `id` of an [OIDC trust](/docs/reference/terraform/oidc-trust) to exchange through. Without it, the `SPOTLIGHT_OIDC_TRUST` environment variable. |
 | `oidc.token` | string | none | Sensitive. The OIDC token the CI platform issued the job. Without it, the `SPOTLIGHT_OIDC_TOKEN` environment variable; in GitHub Actions, one is requested for each exchange. |
 | `oidc.audience` | string | none | The audience to request the OIDC token for. Must equal the trust's audience. Without it, the `SPOTLIGHT_OIDC_AUDIENCE` environment variable, else `spotlight`. |
@@ -41,26 +41,33 @@ only for an exact version, so `version` names one.
 ## Credentials
 
 The provider uses a token or a trust when one is set. When neither is set, it
-uses the login for `url`.
+uses the login that `spotlight login` keeps.
 
 | Credential | Set by | Acts |
 | --- | --- | --- |
 | A stored workspace token | `token`, else `SPOTLIGHT_API_TOKEN` | only within its workspace, as its scopes allow |
 | An OIDC trust | `oidc.trust`, else `SPOTLIGHT_OIDC_TRUST` | only within its workspace, as the trust's scopes allow |
-| The login for `url` | [`spotlight login`](/docs/reference/cli/spotlight-command#spotlight-login) | as the person who logged in, with their role in each workspace |
+| A login | [`spotlight login`](/docs/reference/cli/spotlight-command#spotlight-login) | as the person who logged in, with their role in each workspace |
 
 - A token and a trust are exclusive. With both, configuration fails with
   `Both a token and an OIDC trust`.
 - The provider reads the login from `credentials.json`, in
   `SPOTLIGHT_CONFIG_DIR`, else `$XDG_CONFIG_HOME/spotlight`, else
-  `~/.config/spotlight`. It takes the entry for the address of `url`: its
-  scheme and host, and its port when that is not the default.
+  `~/.config/spotlight`. It takes the entry for the address of `url`, else of
+  `SPOTLIGHT_URL`: its scheme and host, and its port when that is not the
+  default.
+- With no `url` and no `SPOTLIGHT_URL`, the provider uses the one login in the
+  file and its address. With more than one login, configuration fails on `url`
+  with `there are logins for <addresses>; set url, or SPOTLIGHT_URL, to the one to use`.
 - A credentials file that is not valid JSON fails configuration with
-  `Could not read the Spotlight login`.
+  `Could not use the Spotlight login`. The provider skips an entry that has no
+  token.
+- A login acts with the person's role in the workspace. Runner pools, secrets
+  and trusts need a workspace admin. A `403` to a login says so.
 - With no credential, configuration fails on `token` with `No API token`:
   `The provider has no API token, OIDC trust or login for this Spotlight. On your machine, run spotlight login. Or set token, or SPOTLIGHT_API_TOKEN, to a Spotlight API token. In CI, set oidc.trust, or SPOTLIGHT_OIDC_TRUST, to the id of an OIDC trust.`
 - When Spotlight answers a login with `401`, the request fails with
-  `the control plane did not accept the login of <email> for <address>; run spotlight login to sign in again`.
+  `the login of <email> for <address> expired or was revoked; run spotlight login --url <address> to sign in again`.
 
 - `url` and `token` must be known when Terraform plans.
 

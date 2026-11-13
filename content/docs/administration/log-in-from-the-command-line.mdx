@@ -102,18 +102,21 @@ log in to each.
 
 ## Use the login with Terraform
 
-On your machine, the provider needs only the address. Do not set `token`,
-`SPOTLIGHT_API_TOKEN`, `oidc.trust` or `SPOTLIGHT_OIDC_TRUST`. If one of them
-is set, the provider uses it, not your login.
+On your machine, `spotlight login` is enough. The provider needs no token and
+no environment variables:
 
 ```hcl
-provider "spotlight" {
-  url = "https://app.usespotlight.ai"
-}
+provider "spotlight" {}
 ```
 
-Then run `terraform plan` or `terraform apply` as usual. The provider uses the
-login for that address, and Spotlight checks your role for each change.
+Then run `terraform plan` or `terraform apply` as usual. The provider uses your
+login and its address, and Spotlight checks your role for each change. Runner
+pools, secrets and trusts need a workspace admin.
+
+If you logged in to more than one address, set `url` or `SPOTLIGHT_URL` to the
+one to use. Do not set `token`, `SPOTLIGHT_API_TOKEN`, `oidc.trust` or
+`SPOTLIGHT_OIDC_TRUST`. If one of them is set, the provider uses it, not your
+login.
 
 `spotlight replay` also uses the login when `SPOTLIGHT_API_TOKEN` is not set.
 Set `SPOTLIGHT_URL` to the address that you logged in to. If you are a member of
@@ -146,8 +149,9 @@ approval.
 | `spotlight login: the code expired before the login was approved. Run spotlight login again` | You did not approve within 15 minutes. Run `spotlight login` again. |
 | `spotlight login: the login was denied in the browser` | Someone clicked **Deny**. Run `spotlight login` again and click **Approve**. |
 | The page shows "Code doesn't work" | The code expired, or it is not complete. Run `spotlight login` again and open the new address. |
-| Terraform shows `No API token` | The provider has no login for its `url`. Make sure that `url` is the address you logged in to, then run `spotlight login`. |
-| Terraform says that the control plane did not accept the login | The session ended. A session ends after 7 days without use. Run `spotlight login` again. |
+| Terraform shows `No API token` | The provider has no login. Run `spotlight login`. If you set `url` or `SPOTLIGHT_URL`, make sure that it is the address you logged in to. |
+| Terraform says `there are logins for <addresses>` | You logged in to more than one address. Set `url` or `SPOTLIGHT_URL` to the one to use. |
+| Terraform says that the login expired or was revoked | The session ended. A session ends after 7 days without use. Run `spotlight login --url <address>` again. |
 | An API call gets `401` with `The token is unknown, expired or revoked.` or `The token is not a current login.` | The session ended, or you logged out. Run `spotlight login` again. |
 
 [Errors and messages](/docs/reference/errors-and-messages#command-line-login)
