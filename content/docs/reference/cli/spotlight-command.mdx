@@ -711,7 +711,7 @@ are the same address.
 | --- | --- |
 | 1 | Asks Spotlight for a device code, as the client `spotlight-cli`. |
 | 2 | Prints the page to open, `<address>/device?user_code=<code>`, and the code as `XXXX-XXXX`. |
-| 3 | When standard output is a terminal and `--no-browser` is not given, opens the page with `open` on macOS or `xdg-open` on Linux. |
+| 3 | When standard output is a terminal and `--no-browser` is not given, opens the page with `open` on macOS, or with `xdg-open` on Linux when `DISPLAY` or `WAYLAND_DISPLAY` is set. |
 | 4 | Asks Spotlight for the login every 5 seconds, 5 seconds more after each `slow_down` answer, until the code is approved, denied or expires after 15 minutes. |
 | 5 | Reads the person's email from the new session. |
 | 6 | Writes the login for the address to the credentials file, and keeps the logins for other addresses. |
@@ -978,7 +978,12 @@ it as the `ProxyCommand` that `spotlight ssh setup` writes.
 | `--url` | The Spotlight address. |
 
 It uses the login for the address in the [credentials file](#credentials-file),
-and opens a WebSocket to `/api/sandboxes/connect` at that address. If the
+and opens a WebSocket to `/api/sandboxes/connect` at that address. If there is
+no login for the address, or Spotlight answers `401`, the command logs in as
+[`spotlight login`](#spotlight-login) does, and then connects. It writes the
+login page and the code on standard error, opens the page in the browser, and
+waits for the approval. On Linux, it opens the browser only when `DISPLAY` or
+`WAYLAND_DISPLAY` is set. It logs in at most once for each connection. If the
 sandbox of the task or chat is not running, Spotlight starts it, and the
 command waits until it is ready, for at most 10 minutes. When the sandbox does
 not answer in 10 seconds, the command writes
@@ -989,8 +994,8 @@ connect is in
 
 | Error | Cause |
 | --- | --- |
-| `Sorry, you are not signed in to <address>. Run: spotlight login` | No login for the address. |
-| `Sorry, your login for <address> expired. Run: spotlight login` | Spotlight answered `401`. |
+| `Sorry, the login to <address> did not finish: <reason>. Run: spotlight login` | The command started a login, and the login failed, was denied, or expired. |
+| `Sorry, your login for <address> expired. Run: spotlight login` | Spotlight answered `401` to the new login too. |
 | `Sorry, Spotlight at <address> cannot be reached: <error>` | The connection failed, or Spotlight did not answer within 1 minute. |
 | `Sorry, Spotlight at <address> did not find one task or chat in <alias>` | Spotlight answered `400`. |
 | `Sorry, Spotlight at <address> refused the connection: <reason>` | Spotlight answered `403`. |

@@ -116,6 +116,10 @@ and the button on runs and chats then show that editor.
 Let the browser open the editor. The editor connects to the task's sandbox
 and opens the folder `/workspace`, with each repository checked out in it.
 
+If this computer has no login for Spotlight, or the login expired, the
+browser opens the page **Approve the Spotlight CLI?**. Select **Approve**.
+The editor then connects.
+
 If no sandbox is up for the task, Spotlight starts one and restores the
 working copy the task's last run left. The editor waits until the sandbox is
 ready. This can take a few minutes. The editor's log shows
@@ -127,6 +131,11 @@ ready. This can take a few minutes. The editor's log shows
 If the editor does not open within about two seconds, Spotlight shows **Set up
 this computer once**, which reads "If VS Code did not open, this computer
 needs…", with the setup steps. Do the steps, then open the working copy again.
+
+If the editor opens but does not connect to Spotlight within 20 seconds,
+Spotlight shows **VS Code did not connect to Spotlight**, with the same steps.
+If a login page opened in the browser, approve it. Spotlight closes the
+message when the editor connects.
 
 ## Work in the working copy
 
@@ -161,8 +170,8 @@ most common ones:
 | Message | Do this |
 | --- | --- |
 | `Connection timed out during banner exchange` | The editor stopped before the sandbox was ready. Set `"remote.SSH.connectTimeout": 600` in the editor's settings, or run `spotlight ssh setup --editor-timeout`, then reconnect. |
-| `Sorry, you are not signed in to <address>. Run: spotlight login` | Run `spotlight login`. |
-| `Sorry, your login for <address> expired. Run: spotlight login` | Run `spotlight login`. |
+| `Sorry, the login to <address> did not finish: <reason>. Run: spotlight login` | Run `spotlight login`, then reconnect. |
+| `Sorry, your login for <address> expired. Run: spotlight login` | Run `spotlight login`, then reconnect. |
 | `Sorry, there is no task <id> in workspace <workspace> that you may open` | Check that you are a member of the workspace, and, for a chat, that you started it. |
 | `Sorry, the sandbox did not start in 10 minutes. Please try again` | Check that a host that can take the task's runs is online, on the **Runners** page under **Settings**. |
 | `The sandbox stopped. Connect again to start it` | Reconnect. |
