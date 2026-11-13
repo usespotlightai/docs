@@ -117,6 +117,34 @@ fails, or when a mention reopens it, set `finished_reaction`,
 `failed_reaction` and `acknowledge`, or set them to `null` for no reaction. On a [self-hosted Spotlight](/docs/reference/glossary#spotlight-address), set
 `spotlight_url` to your deployment's address. Run `terraform apply`.
 
+## Choose what the app posts
+
+By default, the app posts the questions of tasks and says in a task's thread
+when the task is complete. Set `notify` to choose what it posts:
+
+| Value | What the app posts | Where |
+| --- | --- | --- |
+| `questions` | The questions of tasks. | The channel of the task's Slack chat, or else the channel in `routes` for the task's line. |
+| `finished` | A message that the task is complete. | The task's thread. |
+| `inbox_requests` | A request that waits for a person in the inbox: a run to grade, proposed memories, or a station alert. | The channel of the task's Slack chat, or else the channel in `routes` for the task's line. |
+| `notices` | A notice of the team that is addressed to nobody, such as a config pull request that Spotlight opened. | The channel in `notices_channel`. |
+
+```hcl
+module "slack" {
+  # ...
+
+  notify          = ["questions", "finished", "inbox_requests", "notices"]
+  notices_channel = "<channel id>"
+}
+```
+
+Each post has an **Open in Spotlight** button. A notice that links to a pull
+request also has a button to it. When a request has no channel,
+because its task did not come from Slack and its line has no route, the app
+does not post it. A notice that is addressed to one person stays in that
+person's inbox. The app posts a request or a notice once, when it first opens.
+Without `questions`, nobody can answer a question in Slack.
+
 ## Point Slack at the team
 
 In the Slack app's event subscription settings:
