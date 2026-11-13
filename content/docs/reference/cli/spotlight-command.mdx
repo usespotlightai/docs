@@ -5,7 +5,7 @@ title: The spotlight command
 description: The subcommands of the spotlight binary, what each reads, prints and exits with, the service units spotlight host init writes, the login file spotlight login keeps, and the SSH configuration spotlight ssh setup writes.
 ---
 
-`spotlight` is one binary. A host runs `spotlight host`. Each sandbox runs
+`spotlight` is one binary. A host runs `spotlight host serve`. Each sandbox runs
 `spotlight runner` and `spotlight egress` from the runner image. A shared
 egress for push pools runs `spotlight egress serve`. An agent runs
 the [agent commands](/docs/reference/cli/agent-commands) inside its sandbox.
@@ -21,6 +21,7 @@ that `ssh`, VS Code and Cursor reach the sandbox of a task or chat through
 
 ```text
 spotlight host
+spotlight host serve
 spotlight host init
 spotlight host config
 spotlight host status
@@ -69,6 +70,23 @@ A usage error prints the command's usage line, then
 
 ```text
 spotlight host
+```
+
+In a terminal, opens the dashboard. The dashboard shows the service, the
+sandboxes in use, the [checks](#spotlight-host-status) and the live log, and
+refreshes every 5 seconds. `:` finds an action or a setting by name, and `?`
+shows every key. Each action runs a `spotlight host` command and shows it with
+the last line of its output. See
+[Manage the host in a terminal](/docs/hosts/run-a-host#manage-the-host-in-a-terminal).
+`q`, Esc or Ctrl+C closes the dashboard. The host keeps serving.
+
+When standard input or standard output is not a terminal, `spotlight host`
+does as [`spotlight host serve`](#spotlight-host-serve) does.
+
+## spotlight host serve
+
+```text
+spotlight host serve
 ```
 
 Serves a pull pool or a runner trust. The host claims work and starts a
@@ -150,7 +168,7 @@ saved values as the defaults.
 | `--capacity` | `capacity` | Asks `Sandboxes at once`. Default: the saved value, else `5`. |
 | `--image` | `image` | Asks `Runner image`. Default: the saved value, else `ghcr.io/usespotlightai/spotlight-runner:<release>`. That default is not saved, so the host follows its own release. |
 | `--name` | `name` | The saved value. Not asked. |
-| `--no-service` | | Saves and pulls, but installs no service. Prints `Start the host with: spotlight host`. |
+| `--no-service` | | Saves and pulls, but installs no service. Prints `Start the host with: spotlight host serve`. |
 | `--yes` | | Asks nothing. |
 
 `init` asks its questions on the terminal (`/dev/tty`), so they work when the
@@ -196,7 +214,7 @@ To keep the host running after you log out, run:
 | `--token is required: a pull pool's token, from Settings → Runners → Add a host` | No token, no trust and no terminal to ask on. |
 | `a pool token is required` | Three empty answers to `Pool token`. |
 | `pull <image>: <error>` | Step 6, and the machine has no copy. |
-| ``installing a service on <os> is not supported; run `spotlight host` under your own supervisor`` | Step 7 on a platform other than Linux or macOS. |
+| ``installing a service on <os> is not supported; run `spotlight host serve` under your own supervisor`` | Step 7 on a platform other than Linux or macOS. |
 
 ## spotlight host config
 
@@ -204,6 +222,7 @@ To keep the host running after you log out, run:
 spotlight host config [--json]
 spotlight host config get KEY
 spotlight host config set KEY=VALUE… [--now]
+spotlight host config set KEY --stdin [--now]
 spotlight host config unset KEY… [--now]
 spotlight host config keys
 ```
@@ -219,6 +238,7 @@ taken as a variable that applies at a restart.
 | `config --json` | Prints `{"path": …, "settings": [{"key": …, "variable": …, "value": …}]}`, the token masked. |
 | `config get KEY` | Prints the value the file sets, the token in full. Exits `1` when the file does not set it. |
 | `config set KEY=VALUE…` | Sets each value, trimmed. A value is one line. |
+| `config set KEY --stdin` | Sets one value from stdin, without its last line break. The value is not in the command line, so other users of the machine cannot see it in `ps`. |
 | `config unset KEY…` | Removes each setting, so its default applies. |
 | `config keys` | Prints each key, its variable, and whether it applies live or at a restart. |
 
@@ -251,13 +271,13 @@ spotlight host status [--json]
 Prints the settings path, the service, the sandboxes that run against the
 capacity, the settings as `config` lists them, and these checks:
 
-| Check | Fails when |
-| --- | --- |
-| The settings are valid | A setting does not pass the host's checks. |
-| The host runs | No process holds the state directory's lock. |
-| Spotlight accepts the credential | Spotlight refuses the credential or does not answer. |
-| The container runtime answers | No engine answers. |
-| The default image holds a harness | A warning only, when the default image is Spotlight's runner image. |
+| Check | Name | Fails when |
+| --- | --- | --- |
+| The settings are valid | `settings` | A setting does not pass the host's checks. |
+| The host runs | `service` | No process holds the state directory's lock. |
+| Spotlight accepts the credential | `spotlight` | Spotlight refuses the credential or does not answer. |
+| The container runtime answers | `runtime` | No engine answers. |
+| The default image holds a harness | `image` | A warning only, when the default image is Spotlight's runner image. |
 
 Each failed check prints a line saying what to do. The sandboxes are the runs
 whose containers run with the label `ai.usespotlight.host=<host id>`.
@@ -270,7 +290,7 @@ With `--json` it prints:
   "service": { "installed": true, "unit": "<unit path>", "running": true, "process": 4242 },
   "sandboxes": { "running": 2, "capacity": 5 },
   "settings": [{ "key": "capacity", "variable": "SPOTLIGHT_CAPACITY", "value": "5" }],
-  "checks": [{ "status": "passed", "message": "The settings are valid." }]
+  "checks": [{ "name": "settings", "status": "passed", "message": "The settings are valid." }]
 }
 ```
 
@@ -378,7 +398,7 @@ After writing the unit, `init` runs `systemctl daemon-reload`,
 | `Description` | `Spotlight host: a fresh runner for every run` |
 | `After` | `network-online.target docker.service podman.socket` |
 | `Wants` | `network-online.target` |
-| `ExecStart` | `"<binary>" host` |
+| `ExecStart` | `"<binary>" host serve` |
 | `Environment` | `"SPOTLIGHT_HOST_CONFIG=<config path>"` |
 | `ExecReload` | `/bin/kill -HUP $MAINPID` |
 | `Restart` | `always` |
@@ -392,7 +412,7 @@ After writing the unit, `init` runs `systemctl daemon-reload`,
 | --- | --- |
 | File | `~/Library/LaunchAgents/ai.usespotlight.host.plist` |
 | `Label` | `ai.usespotlight.host` |
-| `ProgramArguments` | `<binary>`, `host` |
+| `ProgramArguments` | `<binary>`, `host`, `serve` |
 | `EnvironmentVariables` | `SPOTLIGHT_HOST_CONFIG=<config path>`, `PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin` |
 | `RunAtLoad` | true |
 | `KeepAlive` | true |

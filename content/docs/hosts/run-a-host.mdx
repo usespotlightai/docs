@@ -61,7 +61,7 @@ loginctl enable-linger $USER
 
 If you want to run the host under your own supervisor instead of a service,
 add `--no-service` to the install command, then start the host with
-`spotlight host`.
+`spotlight host serve`.
 
 ## Give the host a harness
 
@@ -102,6 +102,42 @@ Then have the host read the new key:
 ```bash
 spotlight host reload
 ```
+
+## Manage the host in a terminal
+
+Run `spotlight host` without a command to open the dashboard:
+
+```bash
+spotlight host
+```
+
+The dashboard shows the service, the sandboxes in use, the checks and the live
+log. It refreshes every 5 seconds. Press `:` and type part of a name to find
+any action or setting, such as `:rest` for a restart or `:capa` to change
+`capacity`. The commands also have keys:
+
+| Key | Action | Command it runs |
+| --- | --- | --- |
+| `s` | Starts or stops the service. | `spotlight host start`, `spotlight host stop` |
+| `r` | Restarts when the running sandboxes finish. | `spotlight host restart` |
+| `R` | Restarts at once. | `spotlight host restart --now` |
+| `o` | Reloads `host.env`, `sandbox.env` and `egress.env`. | `spotlight host reload` |
+| `u` | Replaces the binary with the release of Spotlight. | `spotlight host update` |
+| `i` | Connects the machine and installs the service. | `spotlight host init` |
+| `c` | Opens the settings. | `spotlight host config set`, `spotlight host config unset` |
+| `l` | Opens the full log. | `spotlight host logs -f` |
+| `ctrl+r` | Checks the host again. | `spotlight host status` |
+| `?` | Shows every key. | |
+| `q` | Closes the dashboard. The host keeps serving. | |
+
+Before `s` stops the host or `R` restarts it, the dashboard asks if sandboxes
+run. After each action, the dashboard shows the command it ran and what the
+command printed. In the settings, press Enter to change a setting and `x` to
+unset it. A secret, such as the token, starts empty: type a new value, or press
+Enter to keep the current one. A setting marked `↻` applies at a restart,
+when the running sandboxes finish. In the settings and the full log, `/`
+filters the list. In the full log, `pgup`, `pgdown`, `g` and `G` move by
+a page or to the first and last line.
 
 ## Change the host settings
 
