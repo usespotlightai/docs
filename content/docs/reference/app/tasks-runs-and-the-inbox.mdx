@@ -17,7 +17,8 @@ inbox. The terms are defined in the [glossary](/docs/reference/glossary).
 | Title | Up to 200 characters. Fixed once the task is created. |
 | Description | Markdown, up to 20,000 characters. Optional. Fixed once the task is created. |
 | Station | The task's current station. |
-| Assignee | The person whose inbox the task's conversations reach. A task created by a person is assigned to them. |
+| Assignee | The person whose inbox the task's conversations reach, and the one person the task waits on. A task created by a person is assigned to them. A task that a happening opens is assigned to the member that `opens.assignBy.email` names, else to the line's [`defaultAssignee`](/docs/reference/terraform/line#line-fields), else to nobody. See [Questions for the team](#questions-for-the-team). |
+| Followers | Every person who wrote in the task's conversation, as the author or a co-author of a note. See [Following](#following). |
 | Created by | The person who created the task, if a person did. |
 | Attachments | Files given with the task. See [Attachments](#attachments). |
 | Pull request | The pull request the task opened, or the one it reviews. |
@@ -867,7 +868,10 @@ linked to the run, then the failure, "Visit", "Checks", "Human action", "Pull re
 
 A person's inbox contains every conversation, open or resolved, on every task in
 the workspace that is assigned to them, the [running work](#running-work) on
-those tasks, and the [notices](#notices) of their teams. Items are ordered by
+those tasks, the open conversations of tasks with no assignee on the teams
+they are a member of (see [Questions for the team](#questions-for-the-team)),
+the open conversations and running work of the tasks they
+[follow](#following), and the [notices](#notices) of their teams. Items are ordered by
 their latest note, notices by when they were raised, and runs by when they were
 queued, newest first.
 
@@ -875,20 +879,21 @@ queued, newest first.
 | --- | --- | --- |
 | Open | The open conversations that are not working, the open inbox requests and the notices that are not resolved. | Expanded |
 | Running | The working conversations and the running work. | Collapsed |
+| Following | The open conversations and the running work of the tasks the person follows. | Collapsed |
 | Resolved | The resolved conversations, inbox requests and notices. | Collapsed |
 
-"Running" and "Resolved" are at the bottom of the list. The sections that are
+"Running", "Following" and "Resolved" are at the bottom of the list, in that order. The sections that are
 collapsed or expanded are kept in the browser.
 
 | Flag | Set when |
 | --- | --- |
 | resolved | A `passed` note has closed the conversation. |
 | working | The conversation is open, the task has a current run, and the task does not await a person. |
-| unread | An `asked` note in the conversation has not been read. Opening the item reads it. |
+| unread | An `asked` note in the conversation has not been read. Opening the item reads it. Never set on an item of a task the person [follows](#following). |
 | failure | The conversation contains a failure. Shown as `×N` once it has occurred N times, N being 2 or more. |
 
-Only the task's assignee can answer an item, and only an open conversation can
-be answered. An answer writes an `answered` note. The run that asked carries
+Only the task's assignee can answer an item, or a member of the task's team
+when the task has no assignee, and only an open conversation can be answered. An answer writes an `answered` note. The run that asked carries
 on; if the task has no current run and the station has a harness, a run starts there,
 taking up the harness session where the last run left it.
 
@@ -913,6 +918,55 @@ run does: `Queued. <Station> starts when a runner is free.`,
 inbox. Running work cannot be answered or resolved, and it leaves the inbox
 when the run ends. When the run asks the person something, its conversation
 shows under "Open".
+
+### Questions for the team
+
+A conversation on a task with no assignee reaches the inbox of every member of
+the task's team who can act on it. A person who can see the team but is not a
+member of it does not get it, and neither does an owner or admin of the
+workspace who is not a member. A task created by a person has no such conversation: its question
+assigns it to that person.
+
+The row shows a people icon, which reads `Waiting for team` on hover. Above the
+answer box, the item reads `Waiting for team. An answer assigns the task to
+you.`, with "Take it".
+
+The first member who answers the conversation, resolves it or selects "Take
+it" becomes the task's assignee. A message on the run page that answers the
+conversation counts as an answer, under the same rules: it fails with `403`
+from a person who is not a member of the team, such as an owner or admin of the
+workspace who is not on it, and with `409` once another person is the
+assignee. A reply in the task's Slack thread that answers it assigns the task
+to the member that Spotlight matches to the reply, if there is one. The
+conversation then leaves the inboxes of the other members, unless they [follow](#following) the task. Once another person is
+the assignee, a take or an answer fails: with `409` for a member of the team
+who follows the task, with `403` for a follower who does not act on the team,
+else with `404`. The read state is shared: when one member opens the item, it
+is read for all of them.
+
+Taking is `POST /api/workspaces/{slug}/inbox/{itemId}/take`, answering `204`.
+It fails with `409` when another person is the task's assignee and the caller
+is a member of the team who follows the task, or when nothing waits on anyone
+at that conversation. It fails with `403` when the caller follows the task
+but does not act on the team, and with `404` for a conversation the caller
+does not see.
+
+### Following
+
+A person follows a task once they write in its conversation: as the author or a
+co-author of a note written in the inbox or on the run page, or of a reply in
+the task's Slack thread that Spotlight matches to them. Nobody can stop
+following a task.
+
+While another person is the task's assignee, the follower sees the task's open
+conversations and its running work under "Following". Resolved conversations
+do not show to a follower. In place of the answer box, the item reads
+`You follow this task. Its assignee answers here.` A follower cannot answer,
+resolve or take the conversation; doing so fails with `409`, or with `403`
+when they do not act on the team. Opening the item does not read it for the
+assignee. A follower's items are never unread, so they send no
+[notifications](/docs/inbox/get-notified). The assignee stays the one person
+the task waits on.
 
 ### Notices
 
