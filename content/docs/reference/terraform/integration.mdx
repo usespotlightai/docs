@@ -415,7 +415,7 @@ Mark:
 | `station` | string | none | The key of the station to open at. Without it, or with a key the line does not have, the line's first `work` station. |
 | `title` | string | required | An expression. The task's title. No task opens when it is empty. |
 | `description` | string | none | An expression. The task's description. |
-| `assignBy.email` | string | none | An expression. The email of the person to assign: a member's sign-in email or an email they [verified](/docs/administration/add-another-email-to-your-account). With no such member, the task opens with no assignee. |
+| `assignBy.email` | string | none | An expression. The email of the person to assign: a member's sign-in email or an email they [verified](/docs/administration/add-another-email-to-your-account). The person must be a member of the line's team. With no such member, the task is assigned to the line's [`defaultAssignee`](/docs/reference/terraform/line#line-fields), or opens with no assignee when the line has none, and its questions [wait for the team](/docs/reference/app/tasks-runs-and-the-inbox#questions-for-the-team). |
 
 A task opens only on a line of the team whose role is `lineRole`, and only when
 the raise carries at least one mark.

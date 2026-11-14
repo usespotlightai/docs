@@ -8,9 +8,11 @@ description: Verify more email addresses for your Spotlight account, so that Spo
 Spotlight knows you by the email you sign in with and by each additional email
 you verify. A mention of Spotlight in Slack is yours when your Slack account
 uses one of these addresses. A task that an integration assigns with
-[`assignBy.email`](/docs/reference/terraform/integration) goes to you when the
-email is one of them, and a reply in Slack that answers a task shows your
-avatar. You need to be able to read mail sent to the address you
+[`assignBy.email`](/docs/reference/terraform/integration#raise) goes to you when the
+email is one of them. So does a task that an event opens without a person on
+a line whose
+[`default_assignee`](/docs/reference/terraform/line#line-fields) is one of
+them. A reply in Slack that answers a task shows your avatar. You need to be able to read mail sent to the address you
 add.
 
 ## Add an email
@@ -59,7 +61,7 @@ are in that count.
 Open the address's actions menu on the Emails page and choose
 **Remove email**. Spotlight then stops matching that address to you. A Slack
 mention from an account with that address is refused, and a task assigned by
-that address opens with no assignee.
+that address goes to the line's default assignee, or opens with no assignee.
 
 ## If the address is not verified
 
