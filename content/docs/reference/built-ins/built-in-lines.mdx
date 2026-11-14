@@ -28,7 +28,7 @@ The same team gets a task titled `Set up your team` at Delivery's backlog. See
 | Key | Name | Kind | Passes to | Ends | Diffs | Decisions | Tools |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `backlog` | Backlog | `backlog` | `triage` | no | no | no | |
-| `triage` | Triage | `work` | `spec`, `implementation` | no | no | no | |
+| `triage` | Triage | `work` | `spec`, `implementation` | no | no | no | `open-tasks` |
 | `spec` | Spec | `work` | `implementation` | no | no | no | |
 | `implementation` | Implementation | `work` | `code-review`, `spec` | no | no | yes | `checks` |
 | `code-review` | Code Review | `work` | `spec`, `implementation` | yes | no | no | `pull-request` |
@@ -78,7 +78,7 @@ none.
 
 | Line | Station | Opens with | Tells the agent to |
 | --- | --- | --- | --- |
-| Delivery | `triage` | "Decide what the request actually wants, and whether it is clear and coherent enough to plan against." | Read only, state what the request comes down to, and pass the task to Spec once a plan could be written against it. |
+| Delivery | `triage` | "Decide what the request actually wants, and whether it is clear and coherent enough to plan against." | Read only, state what the request comes down to, and pass the task to Spec once a plan could be written against it. List the other open tasks on the line, and give a duplicate to a person with the task it repeats. |
 | Delivery | `spec` | "Take the request as triage decided it and turn it into a plan someone can implement without going back to the requester." | Write a plan: the approach, the files and functions to change, how to test it, and what is out of scope. Revise the plan against the returned note when implementation or code review passes the task back. |
 | Delivery | `implementation` | "Make the change the spec describes, and no more than it." | Make the change with tests, leave tests and linter passing, and push the task's branch. Pass the task back to `spec` when the spec is wrong or leaves something out. |
 | Delivery | `code-review` | "Review the change against what the task requested, not against how you would have written it." | Pass the task back to implementation with findings, or to `spec` when the fault is in the plan, or open a pull request and pass the task to `done`. |
@@ -94,7 +94,7 @@ the Station page once it agrees enough with people. See
 
 | Line | Station | The rubric checks that |
 | --- | --- | --- |
-| Delivery | `triage` | The note says what the request comes down to and what it leaves open, the run changed no file, and the task went to a person when the request was unclear. |
+| Delivery | `triage` | The note says what the request comes down to and what it leaves open, the run changed no file, and the task went to a person when the request was unclear or a duplicate of an open task, which the note names. |
 | Delivery | `spec` | The plan names the approach, the real files and functions, the tests and what is out of scope, and does not reopen what the request wants. |
 | Delivery | `implementation` | The change does what the spec describes and no more, has tests that fail without it, passes the tests and the linter, and is pushed. |
 | Delivery | `code-review` | Each finding is real, has a severity and says what would fix it, and the task went back to the right station or on to a pull request. |

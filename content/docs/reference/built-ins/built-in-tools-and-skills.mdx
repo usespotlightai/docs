@@ -15,6 +15,7 @@ Spotlight has tools and skills of its own. An agent calls a tool with
 | --- | --- | --- |
 | `pull-request` | Runs at a station that lists it in `tools`. | `spotlight-pull-request` |
 | `checks` | Runs at a station that lists it in `tools`. | none |
+| `open-tasks` | Runs at a station that lists it in `tools`. | none |
 | `review-comment` | Runs at a station that lists it in `tools`. | `spotlight-review` |
 | `review` | Runs at a station that lists it in `tools`. | `spotlight-review` |
 | `propose-task` | Every chat run. A station cannot enable it. | none |
@@ -73,6 +74,25 @@ fails.
 
 GitHub gives the step and the log only if the App has **Actions: read**; see
 [Connect GitHub](/docs/integrations/connect-github#let-the-app-read-failed-checks).
+
+### open-tasks
+
+Lists the other open tasks on the line of the task: every task at a station
+that is not of kind `completed`, except the task itself and the setup task.
+It has no inputs. A station that triages new tasks uses it to find a duplicate
+before work starts.
+
+It answers with `tasks`, the newest first, at most 50, and `more`, which is
+`true` when the line has more open tasks than it lists:
+
+| Field | Description | `null` when |
+| --- | --- | --- |
+| `id` | The task's ID. | never |
+| `title` | The task's title. | never |
+| `station` | The key of the station the task is at. | never |
+| `createdAt` | When the task was created, as an ISO 8601 time. | never |
+| `description` | The description without blank space at its ends. A longer one is cut at 600 characters and ends with `…`. | The task has no description, or only blank space. |
+| `lastNote` | The task's last note, cut in the same way. | The task has no note, or only blank space. |
 
 ### review-comment
 
