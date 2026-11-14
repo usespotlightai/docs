@@ -175,8 +175,9 @@ one, and no person has sent a message, the runner does this:
 The wait limit is `SPOTLIGHT_BACKGROUND_WAIT`, default 30 minutes, counted
 from the end of the turn. The wait also ends when Claude Code reports no work
 and no background work, and sends nothing more for 5 seconds. Only Claude Code
-reports background work. With any other harness the runner sends the reminder
-at once.
+over ACP version 2 reports background work. With any other harness the runner
+sends the reminder at once. See
+[ACP versions](/docs/reference/hosts/harnesses#acp-versions).
 
 The reminder reads:
 
@@ -195,10 +196,23 @@ stops and the run is tried again. The run's steps show the work that stopped,
 and the next run or attempt of the task starts with the line
 `These background tasks stopped when your last sandbox stopped: <tasks>. Run them again if you still need them.`
 
-A run's steps show the wait as "Waited for", the reminder as "Reminded the
-agent to hand over", background work that stopped as "Stopped", and each
-Claude Code subagent as one "Delegated" step with what the subagent was
-asked, what it did, and its answer.
+A run's steps show the wait as "Waited for", a turn that the agent started by
+itself as "Continued on its own", the reminder as "Reminded the agent to hand
+over", background work that stopped as "Stopped", and each Claude Code
+subagent as one "Delegated" step with what the subagent was asked, what it
+did, and its answer.
+
+While the run is in progress, the end of its conversation shows what the
+agent does:
+
+| The harness reports | Shown |
+| --- | --- |
+| A wait for a permission | `<Station> needs a permission…` |
+| No turn in progress, and background work that still runs | `<Station> waits for background work…` |
+| Anything else | `<Station> is working…` |
+
+Below it, each piece of background work that still runs is listed with its
+command or description.
 
 ## Moves
 
