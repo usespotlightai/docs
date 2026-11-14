@@ -38,6 +38,37 @@ listens, and writes its certificate authority for the host to lay into the
 sandbox. The host waits up to 90 seconds for it. On `SIGTERM` it stops within 5
 seconds and clears the secret values it stored.
 
+## The runner's proxy relay
+
+The proxy address in the sandbox contains the sandbox's credential. Some
+clients do not send the user name and password of a proxy address, and egress
+answers them `407`. An example is the `postinstall` script of `ffmpeg-static`.
+Thus the runner opens a proxy relay at `127.0.0.1:3128`, and gives it to the
+harness, the setup commands and the change stack checks:
+
+| Variable | Value |
+| --- | --- |
+| `HTTP_PROXY`, `HTTPS_PROXY`, `http_proxy`, `https_proxy` | `http://127.0.0.1:3128` |
+
+The other proxy and certificate variables stay as the host set them.
+
+| Request to the relay | What the relay does |
+| --- | --- |
+| `CONNECT` | Requests a `CONNECT` tunnel from egress to the same host and port, with the sandbox's credential. |
+| A plain-HTTP request | Sends it to egress with the sandbox's credential. |
+| Anything else | `400` `The proxy relay accepts only an absolute URL or CONNECT. Send an absolute URL, or CONNECT to a host.` |
+
+Egress applies the same rules to these requests as to requests from the
+sandbox, and the relay passes its answers back unchanged. When the relay cannot
+reach egress, it answers `502`.
+
+A runner without `SPOTLIGHT_EGRESS_URL` opens the relay when the first proxy
+variable that is set, in the order `HTTPS_PROXY`, `https_proxy`, `HTTP_PROXY`,
+`http_proxy`, is an `http` address with a password. If the relay cannot open,
+the runner logs
+`could not open the proxy relay, so the agent gets the egress address with its password`,
+and the agent gets the proxy address of the sandbox.
+
 ## Allowed hosts
 
 | `SPOTLIGHT_EGRESS_ALLOW` | Allowed |
