@@ -14,7 +14,7 @@ page of the web app; see
 
 | Kind | Endpoint | Terraform | Address |
 | --- | --- | --- | --- |
-| `inference-endpoint` | `/api/v1/resources/workspaces/{workspaceId}/inference-endpoint` | `spotlight_inference_endpoint` | `<workspace slug>` |
+| `inference-endpoint` | `/api/v1/resources/workspaces/{workspaceId}/inference-endpoints` | `spotlight_inference_endpoint` | `<workspace slug>` |
 
 See [Resource API](/docs/reference/api/resource-api) for the operations, headers
 and errors every kind shares.
@@ -50,6 +50,10 @@ resource "spotlight_inference_endpoint" "acme" {
 Spotlight stores the key encrypted, as the reserved built-in
 [secret](/docs/reference/terraform/secret) `SPOTLIGHT_INFERENCE_API_KEY`. The
 secrets list does not show it. No read, list or export returns the key.
+
+## Token scope
+
+A token needs the `secrets` scope to change the endpoint.
 
 ## Requests
 
