@@ -38,6 +38,12 @@ listens, and writes its certificate authority for the host to lay into the
 sandbox. The host waits up to 90 seconds for it. On `SIGTERM` it stops within 5
 seconds and clears the secret values it stored.
 
+The host also writes `/run/spotlight-host/takeover.json` into the egress
+container of each sandbox. This file holds the sandbox's proxy credential,
+extra hosts and the names of its harness keys, and no other secret. Egress does
+not read or delete it, so a host that restarts can take over the sandbox. See
+[Updates](/docs/reference/cli/spotlight-command#updates).
+
 ## The runner's proxy relay
 
 The proxy address in the sandbox contains the sandbox's credential. Some

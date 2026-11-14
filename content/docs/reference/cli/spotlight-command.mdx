@@ -269,7 +269,7 @@ ends with `To set up this machine as a host, run: spotlight host init`.
 | `the container runtime is not answering yet` | The engine did not respond. The host retries. |
 | `could not report to the control plane, still trying` | Spotlight did not respond. The host retries. |
 | `took over a running sandbox` | At start, the host found a running sandbox of an earlier host process. It reports the sandbox, delivers its next runs, and destroys it when it ends. |
-| `could not take over a sandbox left behind, so it is destroyed` | A running sandbox of an earlier host process has no running egress container or no network. |
+| `could not take over a sandbox left behind, so it is destroyed` | A running sandbox of an earlier host process has no running egress container, no `/run/spotlight-host/takeover.json` in its egress container, or no network. The host also destroys it when a harness key that the sandbox started with is no longer in `sandbox-env`. |
 | `destroyed a sandbox left behind` | A container of an earlier host process that no running sandbox uses was removed at start. |
 | `removed a sandbox network left behind` | A sandbox network that no sandbox uses was removed. The host looks for these at start and every 5 minutes. |
 | `started a sandbox` | A run or check began in a new sandbox. |
@@ -301,7 +301,10 @@ is on another release. Then the host:
 3. Starts the new binary in the same process. Its sandboxes, their egress
    containers and their networks keep going.
 4. Takes over each running sandbox before its first heartbeat, so Spotlight
-   does not count the sandbox as lost.
+   does not count the sandbox as lost. It reads the sandbox's proxy
+   credential, extra hosts and harness key names from
+   `/run/spotlight-host/takeover.json` in the egress container. It takes the
+   values of those harness keys from its own `sandbox-env`.
 5. Claims new work up to `capacity`. Each sandbox that it took over uses one
    place of the capacity until it ends.
 
