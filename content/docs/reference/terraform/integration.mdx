@@ -142,7 +142,7 @@ that name themselves in a cycle, produce a warning and are then ignored.
 | `oauth2.token` | string | required unless `discover` | The service's token endpoint. |
 | `oauth2.scopes` | array of strings | `[]` | Scopes requested, joined by `scopeSeparator`. |
 | `oauth2.scopeSeparator` | string | `" "` | `" "` or `","`. What joins `scopes` in the authorization URL's `scope` parameter. Slack takes `","`. |
-| `oauth2.pkce` | boolean | `true` | Whether the connection uses PKCE (RFC 7636). With `false`, the authorization URL has no `code_challenge` and the code exchange sends no `code_verifier`. |
+| `oauth2.pkce` | boolean | `true` | Whether the connection uses PKCE (RFC 7636). With `false`, the authorization URL has no `code_challenge` and the code exchange sends no `code_verifier`. Only a client with a secret may turn it off: `client.secret`, or a deployment's `OAUTH_CLIENTS` entry. |
 | `oauth2.identity` | string | none | An expression. Names the linked account, shown under "Team account" or "Your account" in the web app. Can read `response`, the token endpoint's response. |
 | `oauth2.client.id` | string | none | The client ID that the service gave the team's own OAuth app. See [OAuth client](#oauth-client). |
 | `oauth2.client.secret` | string | none | A secret reference, `secret.<NAME>`. The workspace secret that holds the client secret of the team's own OAuth app. Without it, token requests send no `client_secret`. Bind the secret to the host of `token`: Spotlight sends it only to a token endpoint it is bound to. |
@@ -156,8 +156,12 @@ Without `discover`, `oauth2` must name both `authorize` and `token`. With
 beside it is rejected as an unrecognized key. A discovered server always gets
 scopes joined by spaces, and PKCE. `discover` without an `mcp` block is rejected at `connection.oauth2` with
 `discovers how to connect from its MCP server, but mcp.url names no MCP server`.
-`client` with `registration` is rejected at `connection.oauth2` with
+`client` with `registration` is rejected at `connection.oauth2.client` with
 `names its own client, so it registers none: remove registration or client`.
+`pkce = false` with a `client` that has no `secret`, or with `registration`,
+is rejected at `connection.oauth2.pkce` with
+`is false, which only a client with a secret may use: give client.secret, or remove pkce: false`.
+Any other key beside `authorize` and `token` is rejected as an unrecognized key.
 An empty `client.id` is rejected with `is the client ID the provider gave`.
 
 `actsAs = "requester"` without `oauth2` is rejected with
