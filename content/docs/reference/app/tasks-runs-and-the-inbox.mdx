@@ -927,29 +927,19 @@ member of it does not get it, and neither does an owner or admin of the
 workspace who is not a member. A task created by a person has no such conversation: its question
 assigns it to that person.
 
-The row shows a people icon, which reads `Waiting for team` on hover. Above the
-answer box, the item reads `Waiting for team. An answer assigns the task to
-you.`, with "Take it".
-
-The first member who answers the conversation, resolves it or selects "Take
-it" becomes the task's assignee. A message on the run page that answers the
-conversation counts as an answer, under the same rules: it fails with `403`
-from a person who is not a member of the team, such as an owner or admin of the
-workspace who is not on it, and with `409` once another person is the
-assignee. A reply in the task's Slack thread that answers it assigns the task
-to the member that Spotlight matches to the reply, if there is one. The
-conversation then leaves the inboxes of the other members, unless they [follow](#following) the task. Once another person is
-the assignee, a take or an answer fails: with `409` for a member of the team
-who follows the task, with `403` for a follower who does not act on the team,
-else with `404`. The read state is shared: when one member opens the item, it
-is read for all of them.
-
-Taking is `POST /api/workspaces/{slug}/inbox/{itemId}/take`, answering `204`.
-It fails with `409` when another person is the task's assignee and the caller
-is a member of the team who follows the task, or when nothing waits on anyone
-at that conversation. It fails with `403` when the caller follows the task
-but does not act on the team, and with `404` for a conversation the caller
-does not see.
+The row and the item look the same as for the assignee. The first member who
+answers the conversation or resolves it becomes the task's assignee. A message
+on the run page that answers the conversation counts as an answer, under the
+same rules: it fails with `403` from a person who is not a member of the team,
+such as an owner or admin of the workspace who is not on it, and with `409` once
+another person is the assignee. A reply in the task's Slack thread that answers
+it assigns the task to the member that Spotlight matches to the reply, if there
+is one. The conversation then leaves the inboxes of the other members, unless
+they [follow](#following) the task. Once another person is the assignee, an
+answer or a resolve fails: with `409` for a member of the team who follows the
+task, with `403` for a follower who does not act on the team, else with `404`.
+The read state is shared: when one member opens the item, it is read for all of
+them.
 
 ### Following
 
@@ -961,8 +951,8 @@ following a task.
 While another person is the task's assignee, the follower sees the task's open
 conversations and its running work under "Following". Resolved conversations
 do not show to a follower. In place of the answer box, the item reads
-`You follow this task. Its assignee answers here.` A follower cannot answer,
-resolve or take the conversation; doing so fails with `409`, or with `403`
+`You follow this task. Its assignee answers here.` A follower cannot answer or
+resolve the conversation; doing so fails with `409`, or with `403`
 when they do not act on the team. Opening the item does not read it for the
 assignee. A follower's items are never unread, so they send no
 [notifications](/docs/inbox/get-notified). The assignee stays the one person
