@@ -198,13 +198,14 @@ spotlight update [<release>]
 
 Replaces this `spotlight` binary with a release, such as `20261020-01`.
 Without a release, it uses the release of the Spotlight that this computer's
-host serves. A running host restarts on the new binary when its sandboxes
-finish.
+host serves. A running host restarts on the new binary at once. Its running
+sandboxes keep going, and the restarted host takes them over. See
+[Updates](#updates).
 
 | Message | When |
 | --- | --- |
 | `spotlight update: downloading release <release>` | The download starts. |
-| `spotlight update: <path> is now release <release>. A running host restarts on it when its sandboxes finish.` | The binary was replaced. |
+| `spotlight update: <path> is now release <release>. A running host restarts on it now and keeps its running sandboxes.` | The binary was replaced. |
 | `spotlight update: already on release <release>` | The binary is on that release. Nothing changes. |
 
 | Error | Cause |
@@ -267,7 +268,9 @@ ends with `To set up this machine as a host, run: spotlight host init`.
 | `serving` | The host started. |
 | `the container runtime is not answering yet` | The engine did not respond. The host retries. |
 | `could not report to the control plane, still trying` | Spotlight did not respond. The host retries. |
-| `destroyed a sandbox left behind` | A sandbox from an earlier host process was removed at start. |
+| `took over a running sandbox` | At start, the host found a running sandbox of an earlier host process. It reports the sandbox, delivers its next runs, and destroys it when it ends. |
+| `could not take over a sandbox left behind, so it is destroyed` | A running sandbox of an earlier host process has no running egress container or no network. |
+| `destroyed a sandbox left behind` | A container of an earlier host process that no running sandbox uses was removed at start. |
 | `removed a sandbox network left behind` | A sandbox network that no sandbox uses was removed. The host looks for these at start and every 5 minutes. |
 | `started a sandbox` | A run or check began in a new sandbox. |
 | `started a sandbox with no run; it restores its workspace and waits for runs` | An editor asked for the sandbox of a task or chat that had none. |
@@ -282,7 +285,29 @@ ends with `To set up this machine as a host, run: spotlight host init`.
 | `could not start a sandbox; claiming from this image pauses` | Claims for that image pause, longer after each failure in a row, up to about 30 seconds. |
 | `failed the work: its egress sidecar did not start` | Egress did not start. The run fails, or the check is skipped. |
 | `the host is stopping, so the work is left to be claimed again` | The host stopped before the sandbox started. |
+| `the host binary was replaced; it restarts now, and the restarted host takes over its running sandboxes` | `spotlight update` replaced the binary. See [Updates](#updates). |
+| `updated to release <release>; it restarts now, and the restarted host takes over its running sandboxes` | [`auto-update`](/docs/reference/hosts/host-configuration) replaced the binary with Spotlight's release. See [Updates](#updates). |
+| `the host restarts, and leaves the sandbox running for the restarted host` | The host restarts on a new binary. The sandbox keeps going. |
 | `the control plane will not have this host; it stops claiming and lets its sandboxes finish` | Spotlight did not accept the host. It exits `3`. |
+
+### Updates
+
+The host updates when `spotlight update` replaces its binary, or when
+[`auto-update`](/docs/reference/hosts/host-configuration) is on and Spotlight
+is on another release. Then the host:
+
+1. Stops claiming. A sandbox that it already claimed starts.
+2. Lets each run that it delivers into a live sandbox take its assignment.
+3. Starts the new binary in the same process. Its sandboxes, their egress
+   containers and their networks keep going.
+4. Takes over each running sandbox before its first heartbeat, so Spotlight
+   does not count the sandbox as lost.
+5. Claims new work up to `capacity`. Each sandbox that it took over uses one
+   place of the capacity until it ends.
+
+A sandbox that it took over still stops at `SPOTLIGHT_RUN_TIMEOUT` and when
+Spotlight drains it. An editor connection to a sandbox closes at the restart.
+Connect again when the host is back.
 
 ### Exit codes
 

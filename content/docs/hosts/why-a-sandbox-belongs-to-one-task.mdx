@@ -143,15 +143,20 @@ The host then stops the sandbox, and destroys it with its egress container and
 its network. The task's next run starts a new sandbox, on any host that can
 take it, and restores the stored working copy there.
 
-A host that stops to update or restart keeps reporting while it has
-sandboxes, and tells Spotlight that it stops. Spotlight then drains each of
-its sandboxes as soon as no run is in it, so a run in progress finishes first.
+A host that stops or restarts keeps reporting while it has sandboxes, and
+tells Spotlight that it stops. Spotlight then drains each of its sandboxes as
+soon as no run is in it, so a run in progress finishes first.
+
+A host that updates restarts at once and keeps its sandboxes. The restarted
+host takes over each running sandbox, so the task's next run still starts in
+it. See [Updates](/docs/reference/cli/spotlight-command#updates).
 
 A sandbox can also end without a drain. When a host stops reporting it, or the
 host itself is silent for 90 seconds, Spotlight counts the sandbox as gone, and
 the task's next run starts in a new one. When a host starts, before it claims
-anything, it looks for containers and networks labelled with its own id and
-destroys them. A crash leaves a sandbox behind for as long as the host is down.
+anything, it looks for containers and networks labelled with its own id. It
+takes over each sandbox that still runs with its egress container, and
+destroys the rest.
 
 ## Containers now
 
