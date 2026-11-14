@@ -15,13 +15,13 @@ You need:
 - An account at the service that may grant the scopes the integration requests.
 - The integration created for the team with a `connection.oauth2` block, as
   below.
-- An OAuth client for the integration. Either Spotlight's deployment has one,
-  registered at the service with the redirect URL
+- An OAuth app of the team at the service, with the redirect URL
   `https://app.usespotlight.ai/api/integrations/oauth/callback` (on a
-  self-hosted Spotlight, your deployment's address in its place) and looked up
-  by the integration's `integration` name, or the service registers clients on
-  request and the definition names its `registration` endpoint. Without either,
-  the connect button opens nothing.
+  self-hosted Spotlight, your deployment's address in its place), and its
+  client secret stored as a workspace secret. See
+  [`spotlight_secret`](/docs/reference/terraform/secret). For a remote MCP
+  server, or other ways to get a client, see
+  [Use another OAuth client](#use-another-oauth-client).
 - To connect the team: to be an owner or admin of the workspace. To connect
   yourself: to be on the team.
 
@@ -43,6 +43,7 @@ resource "spotlight_integration" "core_acme" {
         token     = "https://acme.example/oauth/token"
         scopes    = ["issues:write"]
         identity  = "$${{ response.account.name }}"
+        client    = { id = "<client id>", secret = "secret.ACME_CLIENT_SECRET" }
       }
     }
     actions = {
@@ -59,20 +60,42 @@ resource "spotlight_integration" "core_acme" {
 }
 ```
 
+Replace `<client id>` with the client ID that the service gave your OAuth app,
+and `ACME_CLIENT_SECRET` with the name of the secret that holds its client
+secret. Bind the secret to the host of `token`: Spotlight sends the client
+secret only to a token endpoint the secret is bound to. For a public client,
+which has no secret, leave out `secret`.
+
 `identity` is optional. It reads the service's token response and names the
 account Spotlight shows once connected; point it at whatever field your service
 returns.
 
+If the service joins scopes with commas, set `scopeSeparator = ","`. If the
+service's app does not take PKCE, set `pkce = false`. See
+[Connection](/docs/reference/terraform/integration#connection).
+
 If the integration's tools should act as the person who started each task, set
 `actsAs = "requester"` in `connection`. A hook cannot call these tools.
 
-For a remote MCP server whose connection discovers its endpoints, a client
-the deployment has must also name the `issuer` of the server's authorization
-server; see [Discovery](/docs/reference/terraform/integration#discovery).
+If the service asks which resource the access is for, set `resource` to its
+address.
 
-If the deployment has no OAuth client for the integration, set
-`registration` to the service's client registration endpoint. If the service
-asks which resource the access is for, set `resource` to its address:
+Run `terraform apply`.
+
+### Use another OAuth client
+
+Without `client`, Spotlight uses the first client it has of these. A remote
+MCP server whose connection has `discover = true` takes no `client`, and uses
+these too.
+
+- The deployment's client for the integration's `integration` name, in
+  [`OAUTH_CLIENTS`](/docs/reference/self-hosted-settings#calls-out-of-spotlight).
+  For a discovered server, that client must also name the `issuer` of the
+  server's authorization server; see
+  [Discovery](/docs/reference/terraform/integration#discovery).
+- A client that the service registers on request. A discovered server names
+  its registration endpoint itself. Otherwise, set `registration` to the
+  service's client registration endpoint:
 
 ```hcl
     connection = {
@@ -171,25 +194,40 @@ authorize again. The new connection replaces the old one.
 ## If it does not connect
 
 If you select **Connect team account** or **Connect your account** and the row
-shows "Could not connect. Try again." instead of taking you anywhere, Spotlight
-would not begin. Either you may not make that
-connection (the team's needs an owner or admin; your own needs you to be on the
-team and the integration to have `actsAs = "requester"`), or Spotlight has no
-OAuth client for the integration: the deployment has none and the definition
-has no `registration`, or the service did not register one.
+shows a message instead of taking you anywhere, Spotlight would not begin. Find
+the message:
+
+| Message | What to change |
+| --- | --- |
+| `Only a workspace owner or admin can connect a team account.` | Ask an owner or admin of the workspace to connect the team. |
+| `Integration <integration> doesn't take a personal account.` | The integration acts as the team. Connect the team with **Connect team account** instead. |
+| `Secret <NAME> not found. Please create it first.` | Create the secret that `client.secret` names, or correct the name. |
+| `Secret <NAME> is not bound to <origin>.` | Bind the secret that `client.secret` names to the host of `token`. |
+| `Integration <integration> has no OAuth2 client.` | Add `client` to the definition. See [Declare the connection](#declare-the-connection). |
+| `Integration <integration> has no OAuth2 client for its authorization server.` | Give the deployment's client the `issuer` of the server's authorization server. See [Discovery](/docs/reference/terraform/integration#discovery). |
+| `Outbound call to <host> blocked.`, then a reason | Allow the host in the deployment's or the workspace's outbound list. See [Calls out of Spotlight](/docs/reference/self-hosted-settings#calls-out-of-spotlight). |
+| `OAuth2 endpoints for integration <integration> not found.` | Check what the MCP server publishes. See [Discovery](/docs/reference/terraform/integration#discovery). |
+| `Client registration for integration <integration> failed.` | Check the service's registration endpoint. See [Client registration](/docs/reference/terraform/integration#client-registration). |
+
+For every message, see
+[Begin errors](/docs/reference/terraform/integration#begin-errors).
 
 If you authorized at the service but land on Spotlight's start page instead of
 the page you started from, the connection failed, and Spotlight shows no
 message. Check that:
 
-- you may make the connection, as above;
+- you may make the connection: the team's needs an owner or admin of the
+  workspace, and your own needs you to be on the team;
 - you came back within 10 minutes of starting to connect;
 - you did not sign in to Spotlight as someone else in the meantime;
 - you approved the request at the service rather than declining it.
 
 Then select **Connect** again. If it fails every time, the service may be
-rejecting Spotlight's client or its redirect URL, which whoever runs your
-Spotlight deployment can check.
+rejecting the client or its redirect URL. Check that the OAuth app at the
+service names the redirect URL
+`https://app.usespotlight.ai/api/integrations/oauth/callback`, and that the
+definition's `client` names its client ID and client secret. For a client in
+`OAUTH_CLIENTS`, whoever runs your Spotlight deployment can check it.
 
 ## Related
 
