@@ -322,7 +322,8 @@ Connect again when the host is back.
 ```text
 spotlight host init
 spotlight host init [--url URL] [--token TOKEN | --token-stdin | --trust ID --oidc-token-file PATH]
-                    [--capacity N] [--image IMAGE] [--name NAME] [--no-service] [--yes]
+                    [--capacity N] [--sandbox-memory SIZE] [--image IMAGE] [--name NAME]
+                    [--no-service] [--yes]
 ```
 
 Writes the [host settings](/docs/reference/hosts/host-configuration), pulls the
@@ -342,6 +343,7 @@ all other cases, it works as below.
 | `--token-stdin` | `token` | Reads the token from standard input, at most 4,096 bytes, without leading and trailing white space. Not together with `--token`. |
 | `--trust`, `--oidc-token-file` | `trust`, `oidc-token-file` | The saved values. Either flag removes a saved `token`, and `--token` removes a saved trust. |
 | `--capacity` | `capacity` | Asks `Sandboxes at once`. Default: the saved value, else `5`. |
+| `--sandbox-memory` | `sandbox-memory` | Asks `Memory per sandbox (none sets no limit)`. Default: the saved value, else the container runtime's memory less `2g`, divided by the capacity and rounded down to whole mebibytes, such as `2688m` for 23 GiB and 8 sandboxes. `none` is saved, so a later `init` keeps it. No default when that share is below `6m`, or when the runtime does not give its memory; then `init` prints `The container runtime does not give its memory, so init suggests no memory limit: <error>`. |
 | `--image` | `image` | Asks `Runner image`. Default: the saved value, else `ghcr.io/usespotlightai/spotlight-runner:<release>`. That default is not saved, so the host follows its own release. |
 | `--name` | `name` | The saved value. Not asked. |
 | `--no-service` | | Saves and pulls, but installs no service. Prints `Start the host with: spotlight host serve`. |
@@ -638,6 +640,7 @@ After writing the unit, `init` runs `systemctl daemon-reload`,
 | `RestartSec` | `5` |
 | `RestartPreventExitStatus` | `3` |
 | `TimeoutStopSec` | `90` |
+| `OOMScoreAdjust` | `-500`, as root only. A user unit cannot lower its score. |
 
 ### launchd agent
 

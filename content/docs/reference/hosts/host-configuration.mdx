@@ -41,6 +41,7 @@ going. A setting that applies at a restart waits until the host restarts.
 | `oidc-token-file` | `SPOTLIGHT_OIDC_TOKEN_FILE` | at a restart |
 | `name` | `SPOTLIGHT_HOST_NAME` | live |
 | `capacity` | `SPOTLIGHT_CAPACITY` | live |
+| `sandbox-memory` | `SPOTLIGHT_SANDBOX_MEMORY` | live |
 | `image` | `SPOTLIGHT_RUNNER_IMAGE` | live |
 | `registry-config` | `SPOTLIGHT_REGISTRY_CONFIG` | at a restart |
 | `run-timeout` | `SPOTLIGHT_RUN_TIMEOUT` | live |
@@ -87,6 +88,7 @@ Exactly one of `SPOTLIGHT_POOL_TOKEN`, or `SPOTLIGHT_TRUST` with
 | Variable | Default | Description |
 | --- | --- | --- |
 | `SPOTLIGHT_CAPACITY` | `1` | Sandboxes the host runs at once. At least `1`. A sandbox takes its place for as long as it lives, with or without a run in it. See [Sandbox lifetime](/docs/reference/hosts/sandbox#sandbox-lifetime). |
+| `SPOTLIGHT_SANDBOX_MEMORY` | none | The memory limit of each sandbox: a whole number of bytes, or of binary units such as `512m`, `6g` or `6GiB`. At least `6m`. `none` sets no limit. A sandbox gets no swap above the limit. With no limit, a sandbox can use all of the machine's memory. A reload applies it to the sandboxes started after it. Egress has no limit. See [Memory](/docs/reference/hosts/sandbox#memory). |
 | `SPOTLIGHT_RUNNER_IMAGE` | `ghcr.io/usespotlightai/spotlight-runner:<release>`, or `:latest` for a binary built without a release | Comma-separated images the host serves. Each entry is an exact image reference, or a prefix ending in `*` such as `ghcr.io/acme/*`. The first exact entry is the default image, used by every line that names none. If no entry is exact, the built-in default is added. |
 | `SPOTLIGHT_REGISTRY_CONFIG` | `$DOCKER_CONFIG/config.json`, else `~/.docker/config.json` | A Docker config file whose `auths` the host pulls with. Read on every pull. See [registry credentials](#registry-credentials). |
 | `SPOTLIGHT_RUN_TIMEOUT` | `6h` | A Go duration. Applies to each run on its own: a run that works longer is stopped and reported `timed-out`, and its sandbox stays up. A change stack check's sandbox running longer is stopped and destroyed. A reload applies it to the sandboxes started after it. |
@@ -249,6 +251,8 @@ variable. Messages include:
 | `SPOTLIGHT_POOL_TOKEN (a pull pool's token) is required, or SPOTLIGHT_TRUST and SPOTLIGHT_OIDC_TOKEN_FILE to claim through a runner trust` | Neither a token nor a trust. |
 | `SPOTLIGHT_OIDC_TOKEN_FILE names the workload token file, and is required with SPOTLIGHT_TRUST` | Trust without a token file. |
 | `SPOTLIGHT_CAPACITY: "<x>" is not a count of at least 1` | Bad capacity. |
+| `SPOTLIGHT_SANDBOX_MEMORY: "<x>" is not a size such as 512m or 6g, or none` | Bad memory limit, such as `1.5g`. |
+| `SPOTLIGHT_SANDBOX_MEMORY: "<x>" is below Docker's least limit, 6m` | A memory limit below `6m`. |
 | `SPOTLIGHT_RUN_TIMEOUT: "<x>" is not a duration such as 6h` | Bad timeout. |
 | `SPOTLIGHT_RUNNER_IMAGE: "<x>" is not an image reference such as ghcr.io/acme/runner:main` | Bad image entry. |
 | `SPOTLIGHT_EGRESS_ALLOW: "*" allows everything; leave the list empty for that` | `SPOTLIGHT_EGRESS_ALLOW=*`. |
