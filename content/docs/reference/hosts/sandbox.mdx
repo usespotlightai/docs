@@ -161,6 +161,18 @@ egress with the run's egress token, and copies the run's assignment into the
 sandbox. A run delivered into a live sandbox uses the image the sandbox
 started from.
 
+## Memory
+
+| Item | Value |
+| --- | --- |
+| Limit | The host's [`SPOTLIGHT_SANDBOX_MEMORY`](/docs/reference/hosts/host-configuration#sandboxes), set when the sandbox starts. No swap above it. Default: no limit. |
+| At the limit | The kernel stops a process in the sandbox. |
+| OOM score | Every sandbox starts with `oom_score_adj` `500`. When the machine runs out of memory, the kernel stops a process in a sandbox before the host. Egress keeps the runtime's default score. |
+
+To find a limit, divide the machine's memory, less about 2 GiB for the host,
+Docker and egress, by `SPOTLIGHT_CAPACITY`. `spotlight host init` suggests this
+value. A later change of `SPOTLIGHT_CAPACITY` does not change the limit.
+
 ## Warm sandboxes
 
 A line with `warmSandboxes` above 0 has that many warm sandboxes. A warm
