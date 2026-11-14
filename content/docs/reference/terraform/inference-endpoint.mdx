@@ -1,0 +1,81 @@
+---
+type: reference
+icon: BookText
+title: spotlight_inference_endpoint
+description: The fields of a workspace's inference endpoint, how its API key is written and rotated, and how to import it.
+---
+
+The `spotlight_inference_endpoint` resource, and the inference endpoint
+resource of the API: the OpenAI-compatible endpoint and the one model that a
+workspace uses for change stacks, decisions, answer grading, memory drafts and
+judges. A workspace has at most one. The same setting is on the **Inference**
+page of the web app; see
+[Set the workspace inference endpoint](/docs/administration/set-the-workspace-inference-endpoint).
+
+| Kind | Endpoint | Terraform | Address |
+| --- | --- | --- | --- |
+| `inference-endpoint` | `/api/v1/resources/workspaces/{workspaceId}/inference-endpoints` | `spotlight_inference_endpoint` | `<workspace slug>` |
+
+See [Resource API](/docs/reference/api/resource-api) for the operations, headers
+and errors every kind shares.
+
+## Example
+
+```hcl
+resource "spotlight_inference_endpoint" "acme" {
+  workspace_id = spotlight_workspace.acme.id
+  base_url     = "https://api.openai.com/v1"
+  model        = "gpt-5-mini"
+
+  api_key_wo         = var.inference_api_key
+  api_key_wo_version = 1
+}
+```
+
+## Fields
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `base_url` | string | required | The base URL of an API that accepts OpenAI Chat Completions requests at `/chat/completions`. |
+| `model` | string | required | The model, as the endpoint names it. |
+| `supports_reasoning_effort` | bool | `false` | Set it to `true` to send `reasoning_effort`. A model that does not accept the field refuses the request. |
+| `api_key_wo` | string | none | Write-only and sensitive. The API key. |
+| `api_key_wo_version` | number | none | A change, with a new `api_key_wo`, rotates the key. |
+| `api_key_set` | bool | read-only | Whether a key is stored. |
+
+`api_key_wo` is write-only and needs Terraform 1.11 or later.
+
+## The key
+
+Spotlight stores the key encrypted, as the reserved built-in
+[secret](/docs/reference/terraform/secret) `SPOTLIGHT_INFERENCE_API_KEY`. The
+secrets list does not show it. No read, list or export returns the key.
+
+When `base_url` changes, the same apply must send `api_key_wo` and a new
+`api_key_wo_version`. Spotlight refuses to send the stored key to a new address.
+To clear the key, delete the resource and create it again.
+
+## Token scope
+
+A token needs the `secrets` scope to change the endpoint.
+
+## Requests
+
+Requests go through the workspace's egress rules. A private or loopback host
+works only where the deployment already allows it.
+
+## Import
+
+Import it by the slug of its workspace:
+
+```hcl
+import {
+  to = spotlight_inference_endpoint.acme
+  id = "<workspace id>/acme"
+}
+```
+
+## Delete
+
+Deleting it removes the endpoint and its key. Change stacks, decisions, answer
+grading, memory drafts and judges are then off for the workspace.

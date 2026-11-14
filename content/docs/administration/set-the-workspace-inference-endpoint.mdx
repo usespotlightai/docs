@@ -1,0 +1,117 @@
+---
+type: how-to
+icon: SquarePen
+title: Set the workspace inference endpoint
+description: Give a workspace the OpenAI-compatible endpoint and model that generate its change stacks and decisions, grade answers, draft memories and run judges.
+---
+
+Each workspace has one inference endpoint and one model. Spotlight uses them to
+generate change stacks and decisions, to grade answers to their questions, to
+draft memories and to run judges. The setting replaces the `LLM_*` and
+`*_MODEL` environment variables of the control plane. See
+[Self-hosted settings](/docs/reference/self-hosted-settings#models).
+
+Without an endpoint, none of these run. The web app shows `Add an inference endpoint in Settings`.
+
+Only an owner or admin of the workspace can set the endpoint. You need:
+
+- The base URL of an API that accepts OpenAI Chat Completions requests at
+  `/chat/completions`, such as `https://api.openai.com/v1`.
+- The name of one model, as the endpoint names it.
+- An API key, if the endpoint needs one.
+
+Requests go through the workspace's egress rules. An address on a private
+network or on the loopback interface works only where the deployment already
+allows such addresses. See
+[Limit where sandboxes connect](/docs/security/limit-where-sandboxes-connect).
+
+<Tabs items={['Web app', 'Terraform']}>
+<Tab value="Web app">
+
+<Steps>
+<Step>
+
+Open **Settings** from the workspace menu, then **Workspace**, then
+**Inference**.
+
+</Step>
+<Step>
+
+Under **Base URL**, enter the base URL. Under **API key**, enter the key.
+Under **Model**, enter the model.
+
+</Step>
+<Step>
+
+Turn on **Supports reasoning effort** only if the model accepts the
+`reasoning_effort` field. A model that does not accept it refuses the request.
+
+</Step>
+<Step>
+
+Click **Save**. Then click **Test connection**. Spotlight sends one small
+request and shows the result. If the request fails, the page shows the cause in
+plain words, such as that the account has insufficient credits.
+
+</Step>
+</Steps>
+
+After you save, the page shows `Key is set` in place of the key. Spotlight
+never shows the key again. To replace it, enter a new key and click **Save**.
+
+When you change the base URL, Spotlight asks for the key again. It does not send
+a stored key to a new address. **Test connection** sends the stored key only to
+the saved base URL.
+
+To clear the key, or to stop all inference in the workspace, click **Remove**
+and confirm. This deletes the endpoint and its key.
+
+If the endpoint reports insufficient credits, a change stack fails with that
+reason, and the answer to a question shows the same message. Add credits at the
+provider and try again.
+
+</Tab>
+<Tab value="Terraform">
+
+```hcl
+variable "inference_api_key" {
+  type      = string
+  sensitive = true
+}
+
+resource "spotlight_inference_endpoint" "acme" {
+  workspace_id = spotlight_workspace.acme.id
+  base_url     = "https://api.openai.com/v1"
+  model        = "gpt-5-mini"
+
+  api_key_wo         = var.inference_api_key
+  api_key_wo_version = 1
+}
+```
+
+`api_key_wo` is write-only and needs Terraform 1.11 or later. To rotate the
+key, give `api_key_wo` the new key and change `api_key_wo_version`. See
+[`spotlight_inference_endpoint`](/docs/reference/terraform/inference-endpoint).
+
+</Tab>
+</Tabs>
+
+## Where the key is kept
+
+Spotlight stores the key encrypted, as the built-in secret
+`SPOTLIGHT_INFERENCE_API_KEY`. The name is reserved, and the secrets list does
+not show it.
+
+## After you upgrade
+
+A deployment has no fallback to the old environment variables. If it set
+`LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`, `LLM_SUPPORTS_REASONING_EFFORT`,
+`CHANGE_STACK_MODEL`, `DECISIONS_MODEL`, `MEMORIES_MODEL` or `JUDGE_MODEL`,
+Spotlight ignores them. Set the endpoint of each workspace in Settings or with
+Terraform. Until then, the functions above are off.
+
+## Related
+
+- [Change stacks and decisions](/docs/reference/app/change-stacks-and-decisions)
+- [Set a station's judge and alerts](/docs/improvement/set-a-stations-judge-and-alerts)
+- [`spotlight_inference_endpoint`](/docs/reference/terraform/inference-endpoint)
