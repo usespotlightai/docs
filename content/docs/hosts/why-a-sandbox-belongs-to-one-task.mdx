@@ -95,6 +95,11 @@ a lease on the sandbox:
   lease up at once, and the sandbox stays with the task.
 - A person's editor holds one while it is connected. See [Open a task's
   working copy in VS Code](/docs/tasks/open-a-working-copy-in-vs-code).
+- The runner holds one after a run reports its turn, while it stores the
+  working copy. The person sees the answer or question first. While the lease
+  holds, the task's next run waits for the stored working copy. If the lease
+  expires or the sandbox is lost, a new sandbox restores the newest working
+  copy that was stored.
 
 When the last lease ends, the sandbox is idle. After an idle grace, 10 minutes
 by default, Spotlight drains it. An editor alone keeps a sandbox up for at most
@@ -180,8 +185,8 @@ the mirror afterwards. Because the clone lets go of the mirror, a stored
 working copy can restore on any host, including one that has never seen the
 mirror.
 
-Working copy archives carry a task's work from one sandbox to the next. At the end
-of each turn, and when its sandbox drains, the runner packs the task's
+Working copy archives carry a task's work from one sandbox to the next. After
+each turn is reported, and when its sandbox drains, the runner packs the task's
 working copy (its checkout and the harness's conversation) and stores it. A new
 sandbox restores the newest archive of its task before its first run starts.
 [How a conversation survives between

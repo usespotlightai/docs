@@ -39,15 +39,17 @@ worked in and the harness's record of the conversation.
 
 When an agent asks a person something, or needs a tool call approved, its run
 is suspended: it gives up its place in the sandbox, and the sandbox stays with
-the task. At the end of the turn, the runner packs the working copy into an
-archive and stores it. The archive belongs to the task (or to a chat, for the
-agent's planning chats). When the answer arrives, the same run carries on as
+the task. When the question has reached the person, the runner packs the
+working copy into an archive and stores it. Until the archive is stored, the
+sandbox takes no other run, and the task gets no new sandbox. The archive
+belongs to the task (or to a chat, for the agent's planning chats). When the
+answer arrives, the same run carries on as
 its next attempt, and the harness resumes the conversation it left. If the
 task's sandbox is still up, the run goes back into it, and the working copy is
 already there. If the sandbox has gone, any runner that meets the run's
 placement restores the archive into a new sandbox before the harness starts.
 
-The runner also stores the working copy at the end of every other turn, and when
+The runner also stores the working copy after every other turn, and when
 a sandbox is drained after edits a person made in it. Every later run of the
 task starts from the newest archive, unless it runs in the task's live
 sandbox.
