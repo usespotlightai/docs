@@ -25,7 +25,7 @@ and errors every kind shares.
 resource "spotlight_inference_endpoint" "acme" {
   workspace_id = spotlight_workspace.acme.id
   base_url     = "https://api.openai.com/v1"
-  model        = "gpt-5.4-mini"
+  model        = "gpt-5-mini"
 
   api_key_wo         = var.inference_api_key
   api_key_wo_version = 1
@@ -50,6 +50,10 @@ resource "spotlight_inference_endpoint" "acme" {
 Spotlight stores the key encrypted, as the reserved built-in
 [secret](/docs/reference/terraform/secret) `SPOTLIGHT_INFERENCE_API_KEY`. The
 secrets list does not show it. No read, list or export returns the key.
+
+When `base_url` changes, the same apply must send `api_key_wo` and a new
+`api_key_wo_version`. Spotlight refuses to send the stored key to a new address.
+To clear the key, delete the resource and create it again.
 
 ## Token scope
 
