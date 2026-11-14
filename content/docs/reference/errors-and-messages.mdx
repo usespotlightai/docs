@@ -195,6 +195,7 @@ environment, are prefixed `egress: `.
 | `SPOTLIGHT_EGRESS_TRAFFIC: "<value>" is not all or bound` | A value that is not `all` or `bound`. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
 | `SPOTLIGHT_EGRESS_URL "<value>" is not an address such as https://egress.example.com` | Not an `http` or `https` URL with a host. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
 | `could not open the local proxy, so the work fails` | The runner's local proxy did not open. The run fails before the agent starts. | [The runner's local proxy](/docs/reference/hosts/egress#the-runners-local-proxy) |
+| `could not open the proxy relay, so the agent gets the egress address with its password` | A warning. The runner's proxy relay did not open. The agent gets the proxy address of the sandbox. | [The runner's proxy relay](/docs/reference/hosts/egress#the-runners-proxy-relay) |
 | `could not trust the authority of the local proxy, so TLS through it can fail` | A warning. The authority of the local proxy could not be added to the image's bundles. | [The runner's local proxy](/docs/reference/hosts/egress#the-runners-local-proxy) |
 | `SPOTLIGHT_RUN_TIMEOUT: "<x>" is not a duration such as 6h, or 0 for no limit` | The run timeout the runner got is not a duration, or is negative. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
 | `Change stacks are not set up on this deployment.` | A station with `diffs: true` on a deployment without models set up. The runner logs the error, and the checkout gets no change stack. | [Change stacks and decisions](/docs/reference/app/change-stacks-and-decisions) |
@@ -423,6 +424,9 @@ the running search, such as <name>`.
 | `Egress couldn't reach <host:port>. Error: <reason>` | `502`. Any other failure of a tunnelled `CONNECT`. | [Responses](/docs/reference/hosts/egress#responses) |
 | `Egress couldn't reach <host:port>.` | `502`. A plain-HTTP or intercepted request that could not be passed on, for any reason. The reason and the URL are left out. | [Responses](/docs/reference/hosts/egress#responses) |
 | `Egress could not intercept TLS for <host>. Error: <reason>` | `502`. No certificate could be made for an intercepted host. | [Responses](/docs/reference/hosts/egress#responses) |
+| `The proxy relay accepts only an absolute URL or CONNECT. Send an absolute URL, or CONNECT to a host.` | `400`. From the runner's proxy relay: a request that is neither `CONNECT` nor an absolute URL. | [The runner's proxy relay](/docs/reference/hosts/egress#the-runners-proxy-relay) |
+| `The proxy relay could not reach egress for <host:port>. Error: <reason>` | `502`. From the runner's proxy relay: a `CONNECT` tunnel could not be requested from egress. | [The runner's proxy relay](/docs/reference/hosts/egress#the-runners-proxy-relay) |
+| `The proxy relay could not reach egress for <host>.` | `502`. From the runner's proxy relay: a plain-HTTP request could not be sent to egress. | [The runner's proxy relay](/docs/reference/hosts/egress#the-runners-proxy-relay) |
 
 ### Shared egress responses
 
