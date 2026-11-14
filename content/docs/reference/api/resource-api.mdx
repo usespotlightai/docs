@@ -102,6 +102,7 @@ Every resource representation has these fields besides its own.
 | `egress` | key | `shared` |
 | `runner-trust` | key | `production-cluster` |
 | `workspace-runners` | the workspace's slug | `acme` |
+| `inference-endpoint` | the workspace's slug | `acme` |
 
 ## Errors
 
@@ -178,6 +179,7 @@ All paths are under `/api/v1/resources`.
 | `egress` | workspace | `POST /workspaces/{workspaceId}/egresses` | `/egresses/{id}` | `/workspaces/{workspaceId}/egresses` |
 | `runner-trust` | workspace | `POST /workspaces/{workspaceId}/runner-trusts` | `/runner-trusts/{id}` | `/workspaces/{workspaceId}/runner-trusts` |
 | `workspace-runners` | workspace | `POST /workspaces/{workspaceId}/workspace-runners` | `/workspace-runners/{id}` | `/workspaces/{workspaceId}/workspace-runners` |
+| `inference-endpoint` | workspace | `POST /workspaces/{workspaceId}/inference-endpoint` | `/inference-endpoint/{id}` | `/workspaces/{workspaceId}/inference-endpoint` |
 
 Import is the list path followed by `/import`, except for workspaces.
 
@@ -188,8 +190,8 @@ Rules particular to a kind:
 - `workspace-token`: only a person with the `administer` permission creates,
   updates or deletes one. An update changes only its `description`. A delete
   revokes it.
-- `workspace-runners`: a workspace has at most one, so its list returns zero or
-  one item.
+- `workspace-runners` and `inference-endpoint`: a workspace has at most one, so
+  its list returns zero or one item.
 
 Each kind's fields are on its own page:
 
@@ -209,6 +211,7 @@ Each kind's fields are on its own page:
 | `egress` | [`spotlight_egress`](/docs/reference/terraform/egress) |
 | `runner-trust` | [`spotlight_runner_trust`](/docs/reference/terraform/runner-trust) |
 | `workspace-runners` | [`spotlight_workspace_runners`](/docs/reference/terraform/workspace-runners) |
+| `inference-endpoint` | [`spotlight_inference_endpoint`](/docs/reference/terraform/inference-endpoint) |
 
 ## Export
 

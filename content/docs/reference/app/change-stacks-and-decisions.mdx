@@ -15,9 +15,9 @@ its [station fields](/docs/reference/terraform/line#station-fields):
 | `check` | Each change stack generated at the station is checked with this command, so it has effect only with `diffs: true`. With both set, every repository of the line must have `setup`. |
 | `decisions: true` | After each completed run, decisions are generated from it. |
 
-Spotlight, not the agent, generates both after the run. Both need the deployment
-to have [models](/docs/reference/self-hosted-settings#models) set up; where it
-does not, a change stack fails with `Change stacks are not set up on this
+Spotlight, not the agent, generates both after the run. Both need the workspace to have an
+[inference endpoint](/docs/administration/set-the-workspace-inference-endpoint);
+where it has none, a change stack fails with `Change stacks are not set up on this
 deployment.`, and no decisions are generated. [Reviewing an agent's
 changes](/docs/runs/reviewing-an-agents-changes) gives the reasons.
 

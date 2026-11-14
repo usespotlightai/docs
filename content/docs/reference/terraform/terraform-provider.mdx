@@ -99,6 +99,7 @@ uses the login for `url`.
 | [`spotlight_integration`](/docs/reference/terraform/integration) | `integration` | `<workspace id>/<team key>/<integration>` |
 | [`spotlight_hook`](/docs/reference/terraform/hook) | `hook` | `<workspace id>/<team key>/<key>` |
 | [`spotlight_secret`](/docs/reference/terraform/secret) | `secret` | `<workspace id>/<name>` |
+| [`spotlight_inference_endpoint`](/docs/reference/terraform/inference-endpoint) | `inference-endpoint` | `<workspace id>/<workspace slug>` |
 | [`spotlight_oidc_trust`](/docs/reference/terraform/oidc-trust) | `oidc-trust` | `<workspace id>/<key>` |
 | [`spotlight_runner_pool`](/docs/reference/terraform/runner-pool) | `runner-pool` | `<workspace id>/<key>` |
 | [`spotlight_egress`](/docs/reference/terraform/egress) | `egress` | `<workspace id>/<key>` |
@@ -145,7 +146,7 @@ Each resource has a list resource of the same name, used in a `list` block in a
 | List resource | Configuration |
 | --- | --- |
 | `spotlight_workspace` | none |
-| `spotlight_team`, `spotlight_secret`, `spotlight_oidc_trust`, `spotlight_runner_pool`, `spotlight_egress`, `spotlight_runner_trust`, `spotlight_workspace_runners` | `workspace_id` |
+| `spotlight_team`, `spotlight_secret`, `spotlight_inference_endpoint`, `spotlight_oidc_trust`, `spotlight_runner_pool`, `spotlight_egress`, `spotlight_runner_trust`, `spotlight_workspace_runners` | `workspace_id` |
 | `spotlight_line`, `spotlight_skill`, `spotlight_harness_profile`, `spotlight_integration`, `spotlight_hook` | `workspace_id`, and optionally `team_id` to list one team's |
 
 ```hcl
@@ -174,7 +175,7 @@ Changing any of these attributes replaces the resource.
 | `spotlight_secret` | `workspace_id`, `name` |
 | `spotlight_oidc_trust`, `spotlight_runner_trust`, `spotlight_egress` | `workspace_id`, `key` |
 | `spotlight_runner_pool` | `workspace_id`, `key`, and adding or removing `provision` |
-| `spotlight_workspace_runners` | `workspace_id` |
+| `spotlight_workspace_runners`, `spotlight_inference_endpoint` | `workspace_id` |
 
 ## Write-only values
 
@@ -185,6 +186,7 @@ sends the value again.
 | Resource | Write-only attribute | Version attribute |
 | --- | --- | --- |
 | `spotlight_secret` | `value_wo` | `value_wo_version` |
+| `spotlight_inference_endpoint` | `api_key_wo` | `api_key_wo_version` |
 | `spotlight_runner_pool` | `token` | `token_version` |
 | `spotlight_runner_pool` | `provision.secret` | `provision.secret_version` |
 | `spotlight_egress` | `token` | `token_version` |
