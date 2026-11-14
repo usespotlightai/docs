@@ -7,7 +7,8 @@ description: The agent CLIs Spotlight runs, how each is installed, started and g
 
 A harness is the agent CLI a station runs. A station names one by its id in
 `harness`. Spotlight runs four. The runner starts each over the Agent Client
-Protocol (ACP), in `/workspace`, as the `agent` user.
+Protocol (ACP), in `/workspace`, as the `agent` user. See
+[ACP versions](#acp-versions).
 
 ## Built-in harnesses
 
@@ -16,6 +17,7 @@ Protocol (ACP), in `/workspace`, as the `agent` user.
 | Id | `claude-code` | `cursor` | `codex` | `opencode` |
 | Name | Claude Code | Cursor CLI | Codex | OpenCode |
 | ACP command | `claude-agent-acp` | `cursor-agent acp` | `codex-acp` | `opencode acp` |
+| ACP version | 2 | 1 | 1 | 1 |
 | Model binding | `ANTHROPIC_MODEL` environment variable | `--model <model>` argument | `model` in the JSON of `CODEX_CONFIG` | `model` in the JSON of `OPENCODE_CONFIG_CONTENT`, as `provider/model` |
 | Effort binding | `CLAUDE_CODE_EFFORT_LEVEL` environment variable | appended to the model as `<model>[effort=<effort>]`, when a model is set | `model_reasoning_effort` in the JSON of `CODEX_CONFIG` | the ACP session option `effort`, set when the session opens. See [OpenCode effort](#opencode-effort). |
 | Model discovery | `GET https://api.anthropic.com/v1/models` | `cursor-agent models` | `GET https://api.openai.com/v1/models`, ids starting `gpt`, `o<digit>` or `codex` | `opencode models` |
@@ -59,6 +61,22 @@ A [harness profile](/docs/reference/terraform/harness-profile) adds the harness'
 settings, MCP servers and permission rules. See
 [Inside a sandbox](/docs/reference/hosts/sandbox#the-agents-environment) for the rest
 of the agent's environment.
+
+## ACP versions
+
+The runner asks Claude Code for ACP version 2. If `claude-agent-acp` answers
+with version 1, the runner speaks version 1 to it. The runner speaks version 1
+to Cursor, Codex and OpenCode.
+
+| The harness reports | Over ACP version 2 | Over ACP version 1 |
+| --- | --- | --- |
+| Background work: commands, monitors and subagents that still run after a turn ends | Yes | No |
+| Turns that the agent starts by itself, for example when background work ends | Yes | No |
+| That it waits for a permission | Yes | No |
+| Token usage at the end of each turn | Yes | Yes. See [Token counts](#token-counts). |
+
+A run waits for background work only when its harness reports it. See
+[Turns without a handover](/docs/reference/app/tasks-runs-and-the-inbox#turns-without-a-handover).
 
 ## Token counts
 
@@ -137,7 +155,8 @@ The Dockerfiles are in
 in the Spotlight repository. Each takes the build argument `BASE`, the image
 it is built on, with the default `ghcr.io/usespotlightai/spotlight-runner:latest`.
 A version argument has the default `latest`, except `OPENCODE_VERSION`, which
-is `1`, and `CLAUDE_AGENT_ACP_VERSION`, which is `0.101.0`.
+is `1`, `CLAUDE_CODE_VERSION`, which is `2.1.323`, and
+`CLAUDE_AGENT_ACP_VERSION`, which is `0.107.0`.
 Spotlight supports OpenCode major version 1. The npm `dev` tag of
 `opencode-ai` publishes version 2, which Spotlight does not support. An image built from one Dockerfile
 can be the `BASE` of another, so that one image holds more than one harness.
