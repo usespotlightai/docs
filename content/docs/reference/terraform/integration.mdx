@@ -764,6 +764,13 @@ When no event and no binding of the integration marks a task with that kind,
 the definition gives a warning at `tools.<tool>.enabledOnMark`:
 `names <kind>, but no event or binding of the integration marks a task with it`.
 
+Spotlight finds these tools again each time a task's run continues, after an
+answer or a message. The run gets the tools that the task's marks enable at
+that time, and loses the ones they no longer enable. Its agent is told which
+tools it gained and which it lost. Thus a run that started before the task had
+the mark, or before the integration had the tool, has the tool from its next
+turn.
+
 A chat run has no task, so it has the tool only when its agent lists it. The
 station config that a run records, and that Insights compares, lists only the
 station's own `tools`, not the tools enabled on a mark.
