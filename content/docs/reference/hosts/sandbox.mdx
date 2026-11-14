@@ -119,6 +119,7 @@ when the sandbox drains.
 | --- | --- |
 | Run | While a run of the task or chat is claimed in the sandbox. A run that is suspended, completes or fails gives it up. |
 | Editor | While an editor connection is open. Renewed every 30 seconds while the connection carried traffic in the last 30 minutes. Expires 2 minutes after the last renewal. |
+| Archive | From just before a run reports its turn until the runner has stored the run's working copy, or failed to. Renewed every 30 seconds. Expires 2 minutes after the last renewal. While it is held, the sandbox takes no run, its task or chat gets no new sandbox, and the host is not told to drain it. |
 
 | State | Meaning |
 | --- | --- |
@@ -150,7 +151,9 @@ working copy when it changed since it was last restored or stored, then exits.
 The host stops the sandbox with a 30-second grace and destroys it with its
 egress and network. A runner that gets `SIGTERM` during a turn stores the
 working copy before it exits, and does not report the turn; the run's lease
-expires and the run is tried again.
+expires and the run is tried again. A runner that gets `SIGTERM` while it
+stores the working copy after a completion continues for up to 25 seconds.
+Spotlight does not tell a host to drain a sandbox that holds an archive lease.
 
 A sandbox takes one place in the host's `SPOTLIGHT_CAPACITY`, and counts
 toward its pool's [`maxRuns`](/docs/reference/terraform/runner-pool), for as
@@ -244,8 +247,8 @@ has `exited`, and a harness that cannot resume or open a session has
 | Harness start | The harness starts in `/workspace` as `agent`, over the Agent Client Protocol. The previous session is resumed, or a new session opens. A session the harness no longer has opens a new one. The harness command's session options, such as OpenCode's `effort`, are then set on the session. | | Fails the run: `The runner couldn't start the agent. Error: start agent: <error>`, `The runner couldn't start the agent. Error: resume the session: <error>`, `The runner couldn't start the agent. Error: open a session: <error>` or `The runner couldn't start the agent. Error: set the harness's <option> to <value>: <error>`. The codes are `exited` for `start agent` and `set the harness's <option>`, and `unprepared` for `resume the session` and `open a session`. A session option marked optional that the harness refuses is logged, and the run continues without it. |
 | Prompt | The [briefing](#briefing) is sent. Each message a person sends during the turn cancels the turn and is sent next. When a turn ends, messages waiting are sent as the next prompt. With none, the run completes, or, when it put the task to a person, is suspended. A message that came in during a turn that put the task to a person starts the run again at once. | | See below. |
 | Change stacks | For a station with `diffs: true`, each checkout's changes are sent for a change stack. A replay run sends them when its turn ends, before it completes. | | Skipped for that checkout. |
-| Archive | The working copy is packed and stored at the end of every turn, unless nothing changed since it was last restored or stored. A replay run stores none. | 2 GiB packed, 8 GiB unpacked; 30 minutes to upload | Skipped. |
-| Completion | The exit code, the handover and the session id are reported. | | |
+| Completion | The exit code, the handover and the session id are reported. From then on, the answer, the question or the handover shows in the inbox, in Slack and on the run. Before it reports, the runner takes the sandbox's archive lease. | | |
+| Archive | The working copy is packed and stored after the completion, unless nothing changed since it was last restored or stored. The sandbox's archive lease holds the task's or chat's next run until the archive is stored or has failed. While the lease holds, the next run, in this sandbox or a new one, does not start from an older archive. If the lease expires or the sandbox is lost, a new sandbox restores the newest archive that was stored. A runner with no sandbox, such as one a push pool provisions, or one whose sandbox does not take the lease, stores the working copy before the completion. A replay run stores none. | 2 GiB packed, 8 GiB unpacked; 30 minutes to upload | Skipped. The run keeps the outcome it reported. A sandbox that drains later stores the working copy again. |
 
 The runner stops a run, in any phase, once it has run for
 `SPOTLIGHT_RUN_TIMEOUT` (default `6h`), and reports it `timed-out` with
@@ -336,6 +339,9 @@ These phases record their output on the run under a step name:
 | `prepare` | `reusing <path>`, `cloning <path> from the host's mirror`, `cloning <path>`, `caught <path> up with what was pushed to <branch>`, `left <path> as the last run left it: <branch> has moved on both here and on the remote`, `left <path> behind the remote's <branch>: uncommitted changes here block the fast-forward`, and git's output |
 | `setup` | The command's output, `Setup failed for <path>. Error: <error>` on failure, and `Skipped setup for <path>: the setup command and the dependency files did not change after the last setup in this sandbox.` |
 | `archive` | `Captured the workspace for the next run (<size>)`, `Coalesced: nothing changed since the workspace was last restored or archived`, `Skipped: <error>` |
+
+The `archive` step comes after the run's completion. The sandbox records it
+on the run under its archive lease.
 
 A run that fails in any phase up to and including the harness start records a
 `failed` event with the failure message. See
