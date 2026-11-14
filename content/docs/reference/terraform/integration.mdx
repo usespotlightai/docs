@@ -140,17 +140,29 @@ that name themselves in a cycle, produce a warning and are then ignored.
 | `oauth2.discover` | boolean | `false` | Find the endpoints, the registration endpoint and the scopes from what the MCP server named in `mcp.url` publishes. See [Discovery](#discovery). |
 | `oauth2.authorize` | string | required unless `discover` | The service's authorization endpoint. |
 | `oauth2.token` | string | required unless `discover` | The service's token endpoint. |
-| `oauth2.scopes` | array of strings | `[]` | Scopes requested, joined by spaces. |
+| `oauth2.scopes` | array of strings | `[]` | Scopes requested, joined by `scopeSeparator`. |
+| `oauth2.scopeSeparator` | string | `" "` | `" "` or `","`. What joins `scopes` in the authorization URL's `scope` parameter. Slack takes `","`. |
+| `oauth2.pkce` | boolean | `true` | Whether the connection uses PKCE (RFC 7636). With `false`, the authorization URL has no `code_challenge` and the code exchange sends no `code_verifier`. Only a client with a secret may turn it off: `client.secret`, or a deployment's `OAUTH_CLIENTS` entry. |
 | `oauth2.identity` | string | none | An expression. Names the linked account, shown under "Team account" or "Your account" in the web app. Can read `response`, the token endpoint's response. |
-| `oauth2.registration` | string | none | A URL. The service's dynamic client registration endpoint (RFC 7591). Used only when the deployment has no OAuth client for the integration. See [Client registration](#client-registration). |
+| `oauth2.client.id` | string | none | The client ID that the service gave the team's own OAuth app. See [OAuth client](#oauth-client). |
+| `oauth2.client.secret` | string | none | A secret reference, `secret.<NAME>`. The workspace secret that holds the client secret of the team's own OAuth app. Without it, token requests send no `client_secret`. Bind the secret to the host of `token`: Spotlight sends it only to a token endpoint it is bound to. |
+| `oauth2.registration` | string | none | A URL. The service's dynamic client registration endpoint (RFC 7591). Used when the definition has no `client` and the deployment has no OAuth client for the integration. See [Client registration](#client-registration). |
 | `oauth2.resource` | string | none | A URL. Sent as the `resource` parameter (RFC 8707) on the authorization URL and on every token request. |
 | `manual.secrets` | array of strings | `[]` | Secrets the connection uses, each a secret reference, `secret.<NAME>`. |
 
 Without `discover`, `oauth2` must name both `authorize` and `token`. With
 `discover = true` it takes only `scopes`, `identity` and `resource`; naming
-`authorize`, `token` or `registration` beside it is rejected as an unrecognized
-key. `discover` without an `mcp` block is rejected at `connection.oauth2` with
+`authorize`, `token`, `registration`, `client`, `scopeSeparator` or `pkce`
+beside it is rejected as an unrecognized key. A discovered server always gets
+scopes joined by spaces, and PKCE. `discover` without an `mcp` block is rejected at `connection.oauth2` with
 `discovers how to connect from its MCP server, but mcp.url names no MCP server`.
+`client` with `registration` is rejected at `connection.oauth2.client` with
+`names its own client, so it registers none: remove registration or client`.
+`pkce = false` with a `client` that has no `secret`, or with `registration`,
+is rejected at `connection.oauth2.pkce` with
+`is false, which only a client with a secret may use: give client.secret, or remove pkce: false`.
+Any other key beside `authorize` and `token` is rejected as an unrecognized key.
+An empty `client.id` is rejected with `is the client ID the provider gave`.
 
 `actsAs = "requester"` without `oauth2` is rejected with
 `Integration <integration> takes each person's connection. A person can connect only over oauth2.`
@@ -201,26 +213,83 @@ An integration with `connection.oauth2` shows a `Connect team account`
 button, and `Change account` once connected, on the team's Integrations settings
 page. An integration whose `actsAs` is `requester` also shows
 `Connect your account` there, where each person connects their own account. It
-connects only when Spotlight has an OAuth client for it: one the deployment has
-for the integration's name in [`OAUTH_CLIENTS`](/docs/reference/self-hosted-settings#calls-out-of-spotlight), or one registered at `oauth2.registration`.
+connects only when Spotlight has an OAuth client for it. See
+[OAuth client](#oauth-client).
 
 | Step | Endpoint | Behaviour |
 | --- | --- | --- |
-| Begin | `POST /api/teams/{teamId}/integrations/{integration}/connect` | An optional body with `actsAs` and `returnTo`. `actsAs` is `team`, the default, which needs a signed-in owner or admin of the workspace (the `administer` permission); `requester`, the caller's own connection, needs a signed-in person on the team, and an integration whose `actsAs` is `requester`. `returnTo` is where to return to afterwards, a path under `/w/<slug>/inbox` or `/w/<slug>/settings`. Returns `{ "url": ... }`, the authorization URL with `client_id`, `redirect_uri`, `response_type=code`, `scope`, a signed `state`, `code_challenge` with `code_challenge_method=S256`, and `resource` when set, and sets a one-time cookie. `400` when `actsAs` is neither. `404` when there is no such team, the person may not make that connection, the integration does not connect over OAuth, or there is no client. |
-| Callback | `GET /api/integrations/oauth/callback` | Needs the same signed-in person, still allowed to make the connection, and the cookie. Exchanges the code with its PKCE verifier and keeps the tokens encrypted. Redirects to `returnTo` with `?connected=<integration>`, or else to `/w/<slug>/settings/team/<teamId>/integrations?connected=<integration>`, or to `/?integration=failed`. |
+| Begin | `POST /api/teams/{teamId}/integrations/{integration}/connect` | An optional body with `actsAs` and `returnTo`. `actsAs` is `team`, the default, which needs a signed-in owner or admin of the workspace (the `administer` permission); `requester`, the caller's own connection, needs a signed-in person on the team, and an integration whose `actsAs` is `requester`. `returnTo` is where to return to afterwards, a path under `/w/<slug>/inbox` or `/w/<slug>/settings`. Returns `{ "url": ... }`, the authorization URL with `client_id`, `redirect_uri`, `response_type=code`, `scope`, a signed `state`, `code_challenge` with `code_challenge_method=S256` unless `pkce` is `false`, and `resource` when set, and sets a one-time cookie. For the errors, see [Begin errors](#begin-errors). |
+| Callback | `GET /api/integrations/oauth/callback` | Needs the same signed-in person, still allowed to make the connection, and the cookie. Exchanges the code, with its PKCE verifier unless `pkce` is `false`, and keeps the tokens encrypted. Redirects to `returnTo` with `?connected=<integration>`, or else to `/w/<slug>/settings/team/<teamId>/integrations?connected=<integration>`, or to `/?integration=failed`. |
 | List | `GET /api/teams/{teamId}/connections` | Needs a signed-in person on the team. Returns `mine`, the caller's own connections, each with `integration`, `linkedAccount`, `connectedAt` and `tools`, the caller's rule for each tool as `{ tool, rule }`, and `people`, every person's connection in the team with `personId` and `name` as well, for an owner or admin, or `null` for anyone else. Never a token. |
 | Disconnect | `DELETE /api/teams/{teamId}/integrations/{integration}/connections/mine` | Needs a signed-in person on the team. Removes the caller's own connection. Returns `204`. There is no endpoint to remove another person's connection. |
 | Set a tool rule | `PUT /api/teams/{teamId}/integrations/{integration}/connections/mine/tools/{tool}` | Needs a signed-in person on the team. A body `{ "rule": ... }`: `allowed`, the default, follows the team's rule; `needs-approval` asks the caller first; `blocked` never runs the tool. `{tool}` is the tool's full name, as in `linear.comment`. Applies only to calls made with the caller's own connection, and the stricter of the team's rule and the caller's wins. See [Person rules](/docs/reference/app/tasks-runs-and-the-inbox#person-rules). Returns `204`. `404` when the caller is not on the team, the integration does not offer the tool, or its `connection.actsAs` is not `requester`. `422` validation error for a malformed tool name or any other rule. |
 
 The `state` expires after 10 minutes. A request with `auth.oauth2` sends the
-access token as `Authorization: Bearer`.
+access token as `Authorization: Bearer`. An event's `lookup.request` and an
+`attachments.fetch` send the team's access token, also for a `requester`
+integration. While the team has not connected, they are sent without a token.
+
+### Begin errors
+
+The Integrations settings page shows the message beside the button that began the connection.
+
+| Status | Message | When |
+| --- | --- | --- |
+| `400` | `A connection must act as team or requester. Received: <actsAs>` | `actsAs` is neither. |
+| `403` | `Only a workspace owner or admin can connect a team account.` | `actsAs` is `team`, and the caller is not an owner or admin of the workspace. |
+| `403` | `Outbound call to <host> blocked. <reason>` | Discovery or client registration calls a host that the deployment or the workspace does not allow. See [Requests](#requests). |
+| `403` | `Secret <NAME> is not bound to <origin>.` | The secret that `oauth2.client.secret` gives is not bound to the host of `token`. See [Bindings](/docs/reference/terraform/secret#bindings). |
+| `404` | `Team <teamId> not found.` | There is no such team, or the caller is not in its workspace. |
+| `404` | `Integration <integration> not found.` | The team has no such integration. |
+| `404` | `Integration <integration> doesn't take a team account.` or `Integration <integration> doesn't take a personal account.` | The integration has no `connection.oauth2`, or a person asks for their own connection and its `actsAs` is not `requester`. |
+| `409` | `Secret <NAME> not found. Please create it first.` | The workspace has no secret of the name that `oauth2.client.secret` gives. |
+| `422` | `Integration <integration> has no OAuth2 client.` | Spotlight has no OAuth client for the integration. See [OAuth client](#oauth-client). |
+| `422` | `Integration <integration> has no OAuth2 client for its authorization server.` | The deployment's client for a discovered server has no `issuer`, or another one. See [Discovery](#discovery). |
+| `502` | `OAuth2 endpoints for integration <integration> not found.` | Discovery found no endpoints. See [Discovery](#discovery). |
+| `502` | `Client registration for integration <integration> failed.` | The registration endpoint did not register a client. See [Client registration](#client-registration). |
+
+`<integration>` is the integration's `integration` name.
+
+### OAuth client
+
+Spotlight connects with the first OAuth client it has for the integration:
+
+1. The team's own client, `oauth2.client`.
+2. The deployment's client for the integration's name, in [`OAUTH_CLIENTS`](/docs/reference/self-hosted-settings#calls-out-of-spotlight).
+3. A client registered at `oauth2.registration`, or at the registration endpoint that [discovery](#discovery) finds. See [Client registration](#client-registration).
+
+A connection with `discover = true` has no `oauth2.client`.
+
+```hcl
+connection = {
+  oauth2 = {
+    authorize = "https://acme.example/oauth/authorize"
+    token     = "https://acme.example/oauth/token"
+    scopes    = ["issues:write"]
+    client    = { id = "acme-client-id", secret = "secret.ACME_CLIENT_SECRET" }
+  }
+}
+```
+
+The service's OAuth app must name the redirect URL
+`https://app.usespotlight.ai/api/integrations/oauth/callback`, with the
+deployment's address in place of `app.usespotlight.ai` on a
+[self-hosted Spotlight](/docs/reference/glossary#spotlight-address).
+
+Spotlight reads the secret that `client.secret` names when a connection
+begins, when its code is exchanged and when its token is refreshed. It sends
+the value as `client_secret` on token requests, and nowhere else. The secret
+counts as one the integration names, so it cannot be deleted while the
+definition names it. See [Rules](/docs/reference/terraform/secret#rules). A
+client without `secret` sends no `client_secret`.
 
 ### Refresh
 
 | When | What Spotlight does |
 | --- | --- |
 | An access token has less than 5 minutes left. | Refreshes it with the refresh token. |
-| A request with `auth.oauth2` is answered `401`. | Refreshes the token once and sends the request once more with the new one. Any other status, or a request authenticated by `secrets`, is not retried. |
+| A request with `auth.oauth2` is answered `401`. | Refreshes the token once and sends the request once more with the new one. Any other status, and a request authenticated by `secrets`, are not retried. |
+| An event's `lookup.request` or `attachments.fetch` with `auth.oauth2` is answered `401`. | Refreshes the team's token once and sends the request once more with the new one. The other requests of the same delivery use the new token. |
 | A spec fetch with `auth.oauth2` is answered `401`. | Refreshes the team's token once and fetches the spec once more with the new one. |
 
 One refresh of a connection runs at a time, across every control-plane
@@ -233,8 +302,8 @@ tool needs it.
 
 ### Client registration
 
-When the deployment has no OAuth client for the integration and
-`oauth2.registration` is set, Spotlight registers a client at that endpoint
+When the definition has no `oauth2.client`, the deployment has no OAuth
+client for the integration, and `oauth2.registration` is set, Spotlight registers a client at that endpoint
 the first time someone in the team connects, once per team and integration.
 The registration is a `POST` of JSON with `client_name` `Spotlight`, the
 callback URL as the one `redirect_uris` entry, `grant_types`
@@ -244,7 +313,9 @@ callback URL as the one `redirect_uris` entry, `grant_types`
 `client_secret_expires_at`. The client is reused until the registration
 endpoint or the callback URL changes or the client secret expires, and is then
 registered again. A client without a secret sends no `client_secret` on token
-requests.
+requests. When the endpoint does not answer with a client, beginning the
+connection answers `502` with
+`Client registration for integration <integration> failed.`
 
 The deployment must allow calls to the registration endpoint, as to the token
 endpoint. See [Calls out of Spotlight](/docs/reference/self-hosted-settings#calls-out-of-spotlight).
@@ -276,9 +347,11 @@ Discovery fails when the authorization server metadata's `issuer` is not the
 URL it was read for (RFC 8414), when its `code_challenge_methods_supported`
 does not list `S256`, or when the protected resource metadata names a
 `resource` that is neither `mcp.url` nor on its origin above its path. Then the
-integration does not connect, and beginning a connection answers `404`. Every
+integration does not connect, and beginning a connection answers `502` with
+`OAuth2 endpoints for integration <integration> not found.` Every
 request goes only to hosts that the deployment allows, and each waits at most
-15 seconds. What was found is cached for 10 minutes on each control
+15 seconds. A request to another host makes beginning a connection answer
+`403` with the message that blocked it. What was found is cached for 10 minutes on each control
 plane server.
 
 The client a connection uses is bound to the authorization server it was made
@@ -287,7 +360,7 @@ with: its issuer, authorization endpoint and token endpoint.
 | Client | Bound by |
 | --- | --- |
 | Registered at `registration_endpoint` | Spotlight stores the three with the registration. When a later discovery finds others, the next connection registers again, and exchanging a code or refreshing a token with the old client fails. |
-| Configured in the deployment for the integration | Its configured `issuer`. A deployment client without an `issuer`, or with another one, is not used for a discovered server, and the integration does not connect. |
+| Configured in the deployment for the integration | Its configured `issuer`. A deployment client without an `issuer`, or with another one, is not used for a discovered server, and the integration does not connect: beginning a connection answers `422` with `Integration <integration> has no OAuth2 client for its authorization server.` |
 
 ## Webhook
 
@@ -376,7 +449,7 @@ its `when` is true.
 | --- | --- | --- | --- |
 | `forEach` | string | none | An expression that returns a list. The event is read once for each item, which expressions see as `item`. |
 | `when` | string | required | An expression that returns bool. The event raises only when it is true. An expression that fails to evaluate counts as false. |
-| `lookup.request` | object | none | A further request made before raising. See [requests](#requests). When it does not succeed, the event raises without the captures. |
+| `lookup.request` | object | none | A further request made before raising. See [requests](#requests). With `auth.oauth2`, it carries the team's connection. When it does not succeed, the event raises without the captures. |
 | `lookup.capture` | map of name to string | none | Values read from the lookup's response. Raise expressions see each by its name. Each value is an expression. Required with `lookup`. |
 | `raise` | object | required | See [raise](#raise). |
 
@@ -450,7 +523,7 @@ in one image. When a chat cannot start or continue, the integration's
 | `name` | string | required | An expression. The file name. An entry with no name is skipped. |
 | `type` | string | none | An expression. The content type. |
 | `size` | string | none | An expression. The size in bytes. |
-| `fetch` | object | required | The request that downloads the file. |
+| `fetch` | object | required | The request that downloads the file. With `auth.oauth2`, it carries the team's connection. |
 
 ## Poll
 
@@ -517,7 +590,7 @@ post-question = {
       method  = "GET"
       url     = "https://slack.com/api/files.getUploadURLExternal"
       query   = { filename = "$${{ file.name }}", length = "$${{ string(file.size) }}" }
-      auth    = { secrets = ["secret.SLACK_BOT_TOKEN"] }
+      auth    = { oauth2 = { connection = true } }
       capture = { url = "$${{ response.upload_url }}", id = "$${{ response.file_id }}" }
     }
     send = {
@@ -527,21 +600,21 @@ post-question = {
     complete = {
       method = "POST"
       url    = "https://slack.com/api/files.completeUploadExternal"
-      auth   = { secrets = ["secret.SLACK_BOT_TOKEN"] }
+      auth   = { oauth2 = { connection = true } }
       body   = "$${{ {\"files\": uploaded.map(each, {\"id\": each.prepared.id, \"title\": each.name})} }}"
     }
     ready = {
       method = "GET"
       url    = "https://slack.com/api/files.info"
       query  = { file = "$${{ prepared.id }}" }
-      auth   = { secrets = ["secret.SLACK_BOT_TOKEN"] }
+      auth   = { oauth2 = { connection = true } }
       expect = { success = "$${{ response.ok && has(response.file.mimetype) && response.file.mimetype != \"\" }}" }
     }
   }
   request = {
     method = "POST"
     url    = "https://slack.com/api/chat.postMessage"
-    auth   = { secrets = ["secret.SLACK_BOT_TOKEN"] }
+    auth   = { oauth2 = { connection = true } }
     body   = "$${{ {\"channel\": target.channel, \"text\": ask.body, \"blocks\": uploaded.map(each, {\"type\": \"image\", \"slack_file\": {\"id\": each.prepared.id}, \"alt_text\": each.name})} }}"
   }
 }

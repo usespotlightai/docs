@@ -364,7 +364,7 @@ Each command exits `1` and prints its message on standard error.
 | `This workspace’s outbound allow-list doesn’t include <host>.` | The detail of a provision call that failed with `not-allowed`. The workspace's `outboundHosts` does not allow the host of the pool's `provision.url`. | [Workspace lists](/docs/reference/self-hosted-settings#workspace-lists), [Provision call](/docs/reference/events/provision-call) |
 | `this workspace sends more than <limit> requests each second to other services` | The reason of a hook step that failed with `throttled`. The workspace is over its rate limit, and no request became free within 5 seconds, so Spotlight did not send the hook request. | [Rate limit](/docs/reference/self-hosted-settings#rate-limit), [Failures](/docs/reference/terraform/hook#failures) |
 | `Secret <NAME> not found. Please create it first.` | A secret is named but does not exist. It fails where it is used. | [Where a secret is named](/docs/reference/terraform/secret#where-a-secret-is-named) |
-| `Secret <NAME> is not bound to <origin>.` | A request names a secret in `auth.secrets` that has no binding for the request's `https` host. `<origin>` is the request's scheme and host. | [Bindings](/docs/reference/terraform/secret#bindings) |
+| `Secret <NAME> is not bound to <origin>.` | A request names a secret in `auth.secrets` that has no binding for the request's `https` host, or `connection.oauth2.client.secret` names a secret with no binding for the host of `token`. `<origin>` is the request's scheme and host. | [Bindings](/docs/reference/terraform/secret#bindings) |
 | `sending a request to <host> from the workspace’s network: no host of the workspace sent it within <n> seconds` | An integration action whose `from` is `network`. No host of the workspace claimed it, sent it and returned the response within its `timeoutSeconds`. | [Sent from the network](/docs/reference/terraform/integration#sent-from-the-network) |
 | `sending a request to <host> from the workspace’s network: <error>` | An integration action whose `from` is `network` got no response. `<error>` is the host's reason, such as `Egress couldn't redeem the call's secrets, so it didn't send the call. Error: <reason>`. | [Sent from the network](/docs/reference/terraform/integration#sent-from-the-network) |
 | `Secret <NAME> could not be read. This deployment does not read from AWS Secrets Manager.` | An integration request made by Spotlight uses a secret from AWS Secrets Manager, and the deployment does not read from it. | [Sources](/docs/reference/terraform/secret#sources) |
@@ -581,6 +581,9 @@ slugs.
 | `is 1 to 60 seconds` | An action's `timeoutSeconds` is below 1 or above 60. | [Actions](/docs/reference/terraform/integration#actions) |
 | `is a Host header. Egress sends an action from the network to the host its URL names. Please remove the Host header` | An action whose `from` is `network` sets a `Host` header. | [Sent from the network](/docs/reference/terraform/integration#sent-from-the-network) |
 | `Integration <integration> takes each person's connection. A person can connect only over oauth2.` | `connection.actsAs` is `requester` and there is no `connection.oauth2`. | [Connection](/docs/reference/terraform/integration#connection) |
+| `names its own client, so it registers none: remove registration or client` | A `connection.oauth2` with both `client` and `registration`. | [Connection](/docs/reference/terraform/integration#connection) |
+| `is false, which only a client with a secret may use: give client.secret, or remove pkce: false` | A `connection.oauth2` with `pkce = false` and a `client` without `secret`, or with `registration`. | [Connection](/docs/reference/terraform/integration#connection) |
+| `is the client ID the provider gave` | A `connection.oauth2.client` with an empty `id`. | [Connection](/docs/reference/terraform/integration#connection) |
 | `reads a secret's value. No expression may read a secret. Please name the secret in auth.secrets, and Spotlight injects it for the hosts it is bound to` | An expression contains `secret.` or `secret[`. | [Secrets in expressions](/docs/reference/terraform/integration#secrets-in-expressions), [Add a tool from an HTTP API](/docs/integrations/add-a-tool-from-an-http-api) |
 | `must be an expression, written as ${{ ... }}` | A field that contains one expression has something around it. | [Syntax](/docs/reference/api/expressions#syntax) |
 | `does not check: <message>` | A warning. An integration expression parses but does not type-check. `. Did you mean <suggestion>?` follows when there is one. | [Type-checking](/docs/reference/api/expressions#type-checking) |
@@ -720,6 +723,24 @@ request and no such causes, and a skip for any other reason, send no notice.
 | --- | --- | --- |
 | `Spotlight couldn't generate the change stack.` | Every generation attempt failed. | [States](/docs/reference/app/change-stacks-and-decisions#states) |
 | `Generation was interrupted before it finished.` | Generation stopped without a reason. | [States](/docs/reference/app/change-stacks-and-decisions#states) |
+
+### Connecting an integration
+
+The endpoint that begins a connection answers with these, and the
+Integrations settings page shows them beside the button that began it.
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `Only a workspace owner or admin can connect a team account.` | `403`. Connecting the team, by someone who is not an owner or admin of the workspace. | [Begin errors](/docs/reference/terraform/integration#begin-errors), [Integration connections](/docs/reference/roles-and-permissions#integration-connections) |
+| `Integration <integration> doesn't take a team account.` | `404`. The integration has no `connection.oauth2`. | [Begin errors](/docs/reference/terraform/integration#begin-errors) |
+| `Integration <integration> doesn't take a personal account.` | `404`. A person connects their own account, and the integration's `actsAs` is not `requester`. | [Begin errors](/docs/reference/terraform/integration#begin-errors) |
+| `Integration <integration> has no OAuth2 client.` | `422`. The definition has no `connection.oauth2.client`, the deployment has no client for the integration, and there is no registration endpoint. | [OAuth client](/docs/reference/terraform/integration#oauth-client), [Connect an integration that signs in with OAuth](/docs/integrations/connect-an-integration#if-it-does-not-connect) |
+| `Integration <integration> has no OAuth2 client for its authorization server.` | `422`. The deployment's client for a discovered server has no `issuer`, or another one. | [Discovery](/docs/reference/terraform/integration#discovery) |
+| `OAuth2 endpoints for integration <integration> not found.` | `502`. Discovery found no endpoints. | [Discovery](/docs/reference/terraform/integration#discovery) |
+| `Client registration for integration <integration> failed.` | `502`. The registration endpoint did not register a client. | [Client registration](/docs/reference/terraform/integration#client-registration) |
+| `Secret <NAME> not found. Please create it first.` | `409`. The secret that `connection.oauth2.client.secret` names does not exist. | [OAuth client](/docs/reference/terraform/integration#oauth-client) |
+| `Secret <NAME> is not bound to <origin>.` | `403`. The secret that `connection.oauth2.client.secret` names is not bound to the host of `token`. | [OAuth client](/docs/reference/terraform/integration#oauth-client) |
+| `Sorry, the account couldn’t be connected. Please try again.` | From the web app. The connection did not begin, and the answer had no message. | [Connect an integration that signs in with OAuth](/docs/integrations/connect-an-integration#if-it-does-not-connect) |
 
 ### Members, invites and GitHub
 
