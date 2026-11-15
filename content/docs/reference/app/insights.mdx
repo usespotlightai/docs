@@ -501,11 +501,10 @@ that last update until 210 days after it.
 
 ## Stations
 
-The Stations tab, `?tab=stations`, has the sections "Runs at each station",
-"Config changes" and "Candidates". With `&stationId=<stationId>` it shows
-[one station](#one-station) instead.
+The Stations tab, `?tab=stations`, has the sections "Runs", "Config changes"
+and "Candidates".
 
-### Runs at each station
+### Runs
 
 "The whole team" sums up the team's runs, counted as for
 [station outcomes](/docs/reference/app/tasks-runs-and-the-inbox#station-outcomes):
@@ -522,7 +521,9 @@ The Stations tab, `?tab=stations`, has the sections "Runs at each station",
 
 "By station" lists each station with a run ending in the period, in the order
 each one's first run ended, and each station with task failures and no runs.
-A station's name opens [its own view](#one-station). "Runs per day" draws its
+A station's name opens the station's
+[Activity tab](/docs/reference/app/tasks-runs-and-the-inbox#activity-tab) for
+the same period. "Runs per day" draws its
 runs per day, failures in red, beside the change in its runs. Then:
 
 | Column | Counts |
@@ -544,45 +545,6 @@ in the period is above 0. "Runs" and "Failed" open the Traces tab at the
 station's runs, or its failed ones. Each row has the anchor
 `#station-<stationId>`, which a station alert's "Open in Insights" opens.
 
-### One station
-
-`?tab=stations&stationId=<stationId>` shows one station, under the breadcrumb
-"Stations" and the station's name, with its line beside it. It is opened from
-a station's name under "By station", from judge links on this page, and from
-the station's page: "See in Insights" and "History".
-
-| Part | Shows |
-| --- | --- |
-| Over this period | The tiles of "The whole team", for the station's runs alone. "Runs" and "Failed" open the Traces tab at the station's runs, or its failed ones. With task failures and no runs, the tiles read 0. With neither in the period, `No runs at this station in this period.` |
-| Why runs failed | Shown when the station has failed runs or task failures in the period. See below. |
-| Runs by config | The station's latest 50 runs, whatever the period, grouped by config. See below. |
-
-"Why runs failed" lists the station's failed runs by reason, the reason or
-`No reason given`, with how many runs, most first; and its task failures by
-source (`run` or `hook:<key>`) and code, as `<source> · <code>`, with how many
-times, and `· <n> in a row` when one task raised it more than once in a row.
-With both, they are headed "Run failures" and "Task failures". A reason with
-one run opens that run; another opens the Traces tab at the station's failed
-runs. A task failure that one task raised opens the Traces tab at that task. A
-hook the loop guard stopped shows only among task failures.
-
-"Runs by config" groups runs that started one after another with the same
-config, the newest group first; a config that returns after another starts a
-new group. A group is named by the first of its
-[changes](/docs/reference/app/tasks-runs-and-the-inbox#config) from the last
-config that ran before it, with `+<n> more`, or `Config <fingerprint>`, the first 8 characters;
-the group of runs before any recorded config reads
-`Before the first run with a config`. A group whose runs never started on its
-config is marked "Never started". Each group shows "Checks" as
-`<share> passed`, "Human action" as `<share> accepted`, "Pull request" as
-`<share> merged`, "Duration" (the median), "Cost" and "Ended", and "Impact" when
-it has changes (see [Impact](#impact)). Expanding it lists its runs, with
-"Run", "Visit", "Checks", "Human action", "Pull request", "Duration", "Cost" and "Ended". With
-no runs, the card reads "No runs yet".
-
-The judge's agreement with people shows on the station's
-[Judge tab](/docs/reference/app/tasks-runs-and-the-inbox#judge-tab).
-
 ### Config changes
 
 "Config changes" lists the times a station started a new config in the period,
@@ -602,8 +564,7 @@ Each row ends with "Impact". With none, the card reads
 
 #### Impact
 
-"Impact", on a row of "Config changes", a diamond on Overview or a group of
-"Runs by config", opens a panel beside the page, titled `<station>: impact`.
+"Impact", on a row of "Config changes" or a diamond on Overview, opens a panel beside the page, titled `<station>: impact`.
 It stays open across tabs until it is closed with its close button ("Close
 the change"), and closes when the Traces tab opens.
 
@@ -629,7 +590,7 @@ started, or ended where it never started:
 | Failed rate | Runs that ended Failed, of runs. |
 | Merged rate | Tasks whose pull request merged, of the tasks of the runs whose pull request merged or closed unmerged. |
 | Cost per run | The cost of the priced runs, per priced run. |
-| Judge pass rate | Only while the station's judge is qualified: the share of judged runs the judge passed on each side, or `–`. Hovering shows `The share of judged runs that the judge passed. Judged runs: <n> before, <m> after. Opens the judge’s agreement with people.`, and the label opens [the station's judge](#one-station). |
+| Judge pass rate | Only while the station's judge is qualified: the share of judged runs the judge passed on each side, or `–`. Hovering shows `The share of judged runs that the judge passed. Judged runs: <n> before, <m> after. Opens the judge’s agreement with people.`, and the label opens the station's [Judge tab](/docs/reference/app/tasks-runs-and-the-inbox#judge-tab). |
 
 Each row but "Runs" counts, on each side, the runs measured for it, as for
 [station alerts](/docs/reference/app/tasks-runs-and-the-inbox#station-alerts).
