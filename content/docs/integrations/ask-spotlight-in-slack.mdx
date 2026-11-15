@@ -8,10 +8,11 @@ description: Add the Slack module so a mention of your Slack app starts a chat w
 The agent answers in the mention's thread and can propose tasks, which you
 accept or dismiss with a button. You need:
 
-- A Slack app you can configure, installed in your Slack workspace.
+- Permission to create and install apps in your Slack workspace.
 - Terraform 1.11 or later, set up with the Spotlight provider, using a token
   that has the `configure` and `secrets` scopes. See
   [Manage Spotlight with Terraform](/docs/configuration/manage-spotlight-with-terraform).
+- To connect the app: to be an owner or admin of the Spotlight workspace.
 - A Spotlight account for each person who mentions the app, on the team that
   holds the integration. The email of their Slack account is their sign-in
   email or an email they verified. See
@@ -20,46 +21,16 @@ accept or dismiss with a button. You need:
   list includes `slack.com` and `files.slack.com`. Spotlight calls Slack's API
   and downloads Slack files from its own servers.
 
-## Prepare the Slack app
-
-In the Slack app's settings:
-
-<Steps>
-<Step>
-
-Give the app's bot the scopes `app_mentions:read`, `chat:write`,
-`channels:history`, `files:read`, `files:write`, `reactions:write`,
-`users:read` and `users:read.email`, and reinstall the app.
-
-</Step>
-<Step>
-
-Turn on **Agents & AI Apps**. Slack then shows a status in the thread while
-the agent works.
-
-</Step>
-<Step>
-
-Copy the app's bot token and its signing secret.
-
-</Step>
-<Step>
-
-Note the ID of the Slack channel that questions from other tasks should go
-to.
-
-</Step>
-</Steps>
-
-## Add the Slack module
+## Get the app manifest
 
 The [Slack module](https://registry.terraform.io/modules/usespotlightai/slack/spotlight)
-keeps the signing secret and the bot token as workspace secrets, and creates
-the Slack integration on the team. A task created from a Slack chat posts its
-questions to the channel of that chat, each in a new thread. `routes` names
-the channel for questions from a line's other tasks, by the line's key
-(`delivery` is the built-in Delivery line's key): replace `<channel id>` with
-the channel you noted.
+creates the Slack integration on the team, and gives a Slack app manifest
+with the addresses, scopes and events the app needs. With `create = false`, it
+creates nothing and gives the manifest. A task created from a Slack chat
+posts its questions to the channel of that chat, each in a new thread.
+`routes` names the channel for questions from a line's other tasks, by the
+line's key (`delivery` is the built-in Delivery line's key): replace
+`<channel id>` with the ID of that channel.
 
 ```hcl
 terraform {
@@ -71,35 +42,22 @@ terraform {
   }
 }
 
-variable "slack_signing_secret" {
-  type      = string
-  sensitive = true
-  ephemeral = true
-}
-
-variable "slack_bot_token" {
-  type      = string
-  sensitive = true
-  ephemeral = true
-}
-
 module "slack" {
   source  = "usespotlightai/slack/spotlight"
-  version = "0.1.0-rc.3"
+  version = "0.1.0-rc.12"
+
+  create = false
 
   workspace = "acme"
   team      = "core"
-
-  signing_secret = var.slack_signing_secret
-  bot_token      = var.slack_bot_token
 
   routes = {
     delivery = "<channel id>"
   }
 }
 
-output "slack_webhook_url" {
-  value = module.slack.webhook_url
+output "slack_manifest" {
+  value = module.slack.manifest
 }
 ```
 
@@ -109,13 +67,116 @@ configuration already has a `required_providers` block, set the provider's
 `version` there.
 
 Change `workspace` to the part after `/w/` in the workspace's address, and
-`team` to your team's key. The agent reads the repositories of the team's
-lines. To answer with another harness, set `harness`, as in `codex`. To show
-another status while the agent works, set `status`, or set it to `null` for no
-status. To react with other emojis when a task is complete, when a run of it
-fails, or when a mention reopens it, set `finished_reaction`,
-`failed_reaction` and `acknowledge`, or set them to `null` for no reaction. On a [self-hosted Spotlight](/docs/reference/glossary#spotlight-address), set
-`spotlight_url` to your deployment's address. Run `terraform apply`.
+`team` to your team's key. On a [self-hosted Spotlight](/docs/reference/glossary#spotlight-address), set
+`spotlight_url` to your deployment's address. Run `terraform apply`, then:
+
+```bash
+terraform output -raw slack_manifest
+```
+
+## Create the Slack app
+
+<Steps>
+<Step>
+
+At [api.slack.com/apps](https://api.slack.com/apps), select **Create New App**,
+then **From a manifest**. Choose your Slack workspace and paste the manifest.
+If Slack says that it cannot verify the request URL, continue. The address
+answers once the integration exists.
+
+</Step>
+<Step>
+
+Turn on **Agents & AI Apps** in the app's settings. Slack then shows a status
+in the thread while the agent works.
+
+</Step>
+<Step>
+
+Under **Basic Information** › **App Credentials**, copy the client ID, the
+client secret and the signing secret.
+
+</Step>
+</Steps>
+
+If you already have a Slack app, paste the manifest on its **App Manifest**
+page instead, and reinstall the app if Slack asks.
+
+## Create the integration
+
+Add the app's credentials to the module, and remove `create = false`:
+
+```hcl
+variable "slack_client_id" {
+  type = string
+}
+
+variable "slack_client_secret" {
+  type      = string
+  sensitive = true
+  ephemeral = true
+}
+
+variable "slack_signing_secret" {
+  type      = string
+  sensitive = true
+  ephemeral = true
+}
+
+module "slack" {
+  source  = "usespotlightai/slack/spotlight"
+  version = "0.1.0-rc.12"
+
+  workspace = "acme"
+  team      = "core"
+
+  client_id      = var.slack_client_id
+  client_secret  = var.slack_client_secret
+  signing_secret = var.slack_signing_secret
+
+  routes = {
+    delivery = "<channel id>"
+  }
+}
+```
+
+The module keeps the client secret and the signing secret as workspace
+secrets. The agent reads the repositories of the team's lines. To answer with
+another harness, set `harness`, as in `codex`. To show another status while
+the agent works, set `status`, or set it to `null` for no status. To react with
+other emojis when a task is complete, when a run of it fails, or when a mention
+reopens it, set `finished_reaction`, `failed_reaction` and `acknowledge`, or
+set them to `null` for no reaction.
+
+Run `terraform apply`. Then open the app's **Event Subscriptions** page in
+Slack and select **Retry** next to the request URL. Slack sends a challenge,
+Spotlight responds to it, and Slack marks the address verified.
+
+## Connect the app
+
+<Steps>
+<Step>
+
+In Spotlight, open **Settings** from the workspace menu, then **Integrations**
+under the team's name.
+
+</Step>
+<Step>
+
+Select **Connect team account** on the Slack row.
+
+</Step>
+<Step>
+
+Allow the app in Slack. Slack installs the app in your Slack workspace.
+
+</Step>
+</Steps>
+
+Slack sends you back to **Integrations**. Open the Slack row: **Team account**
+shows the name of your Slack workspace. Until the team is connected, the app
+answers nothing in Slack. See
+[Connect an integration that signs in with OAuth](/docs/integrations/connect-an-integration).
 
 ## Choose what the app posts
 
@@ -144,36 +205,6 @@ because its task did not come from Slack and its line has no route, the app
 does not post it. A notice that is addressed to one person stays in that
 person's inbox. The app posts a request or a notice once, when it first opens.
 Without `questions`, nobody can answer a question in Slack.
-
-## Point Slack at the team
-
-In the Slack app's event subscription settings:
-
-<Steps>
-<Step>
-
-Turn events on and give the `slack_webhook_url` output as the request URL.
-Slack sends a challenge, Spotlight responds to it, and Slack marks the
-address verified.
-
-</Step>
-<Step>
-
-Subscribe the bot to the `app_mention` and `message.channels` events.
-
-</Step>
-<Step>
-
-Save, and reinstall the app if Slack asks.
-
-</Step>
-<Step>
-
-In the interactivity settings, turn interactivity on and give the
-`slack_webhook_url` output as the request URL. The buttons need it.
-
-</Step>
-</Steps>
 
 ## Check it
 
@@ -215,7 +246,7 @@ If the app replies that no member uses your email, check that the email of
 your Slack account is your Spotlight sign-in email or a verified email under
 **Settings** › **Emails**. If it is neither,
 [add it to your account](/docs/administration/add-another-email-to-your-account).
-Also check that the bot has the `users:read` and `users:read.email` scopes.
+Also check that the app has the `users:read` and `users:read.email` scopes.
 
 If the app replies that the team's lines run in different images, the agent
 cannot read all their repositories in one chat. Give the team's lines one
