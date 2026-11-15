@@ -629,7 +629,7 @@ post-question = {
       method  = "GET"
       url     = "https://slack.com/api/files.getUploadURLExternal"
       query   = { filename = "$${{ file.name }}", length = "$${{ string(file.size) }}" }
-      auth    = { oauth2 = { connection = true } }
+      auth    = { secrets = ["secret.SLACK_BOT_TOKEN"] }
       capture = { url = "$${{ response.upload_url }}", id = "$${{ response.file_id }}" }
     }
     send = {
@@ -639,21 +639,21 @@ post-question = {
     complete = {
       method = "POST"
       url    = "https://slack.com/api/files.completeUploadExternal"
-      auth   = { oauth2 = { connection = true } }
+      auth   = { secrets = ["secret.SLACK_BOT_TOKEN"] }
       body   = "$${{ {\"files\": uploaded.map(each, {\"id\": each.prepared.id, \"title\": each.name})} }}"
     }
     ready = {
       method = "GET"
       url    = "https://slack.com/api/files.info"
       query  = { file = "$${{ prepared.id }}" }
-      auth   = { oauth2 = { connection = true } }
+      auth   = { secrets = ["secret.SLACK_BOT_TOKEN"] }
       expect = { success = "$${{ response.ok && has(response.file.mimetype) && response.file.mimetype != \"\" }}" }
     }
   }
   request = {
     method = "POST"
     url    = "https://slack.com/api/chat.postMessage"
-    auth   = { oauth2 = { connection = true } }
+    auth   = { secrets = ["secret.SLACK_BOT_TOKEN"] }
     body   = "$${{ {\"channel\": target.channel, \"text\": ask.body, \"blocks\": uploaded.map(each, {\"type\": \"image\", \"slack_file\": {\"id\": each.prepared.id}, \"alt_text\": each.name})} }}"
   }
 }
