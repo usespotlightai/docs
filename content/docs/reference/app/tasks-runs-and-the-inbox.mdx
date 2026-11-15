@@ -428,8 +428,9 @@ The run's [config fingerprint](/docs/reference/glossary#config-fingerprint) is
 a SHA-256 of these parts. The task's title, description and marks are not part
 of it.
 
-The live config of a station shows under "Config" on the station's page, and the station's view on Insights groups its runs by config
-under "Runs by config"; see [Station outcomes](#station-outcomes).
+A station's [Config tab](#config-tab) shows its live config, and its
+[Activity tab](#activity-tab) the runs on it; see
+[Station outcomes](#station-outcomes).
 `GET /api/teams/{teamId}/runs/{runId}/config` returns a run's config and its
 fingerprint, and, when the station's previous run with a recorded config ran
 another config, that run under `changedSince`, with the changes since it.
@@ -437,8 +438,8 @@ Its `toolsOnMarks` lists the tools the run also had because its task had a
 mark that they are [enabled on](/docs/reference/terraform/integration#enabled-on-a-mark).
 They are not part of the config.
 
-The web app words each change as one phrase, in the names of the groups under
-"Runs by config" and in what a search candidate changes:
+The web app words each change as one phrase in what a search candidate
+changes:
 
 | Change | Phrase |
 | --- | --- |
@@ -617,6 +618,77 @@ While the judge is not qualified, a run's judge verdict and its reasons are both
 A verdict given under an earlier claims version stays hidden, whatever the
 calibration. A new claims version starts with no runs that have both verdicts.
 
+### Station page
+
+A station's page, `…/lines/<lineId>/stations/<stationId>`, shows the
+station's name and description. A backlog shows only
+`Tasks wait here until someone starts them. Nothing runs at a backlog. It has no harness and no prompt.`,
+and a completed station only
+`Tasks land here when the line is done with them. Nothing runs here.` With no
+station at the address, the page reads "Station not found" and
+`This line has no station at that address.`
+
+A work station's page has these tabs:
+
+| Tab | Address | Shows |
+| --- | --- | --- |
+| Config | The page's own address | The station's config, read-only. See [Config tab](#config-tab). |
+| Activity | `…/activity` | How the station's runs went. See [Activity tab](#activity-tab). |
+| Judge | `…/judge` | How far the judge agrees with people. Shown when the station has a judge. See [Judge tab](#judge-tab). |
+
+### Config tab
+
+The Config tab shows "Prompt", the station's prompt, or `No prompt.`; then
+"Judge" and, when the station has alerts, "Alert rules" (see
+[Judge and alerts](#judge-and-alerts)). Beside them, or above them on a narrow
+screen:
+
+| Part | Shows |
+| --- | --- |
+| Live config | "Since": the day the first run on the live config ended, or `No run ended yet`. Hovering shows `Config <fingerprint>`, the first 8 characters. "Change": "Pull request", which opens the config pull request a search opened for that config, when there is one. Before any run has used a config, `No run has used a config yet.`; when the station's runs cannot be read, `Sorry, the station’s runs couldn’t be loaded.` |
+| Agent | "Harness", "Model" and, when the station sets one, "Effort". With no harness, `No agent. Please pick a harness in Terraform.` |
+| Line | "Name"; "Repositories", each of which opens its repository, or "None"; and "Skills", or "None". |
+| Automatic improvement | The station's search policy, when it has one. See [Automatic improvement card](/docs/reference/app/searches#automatic-improvement-card). |
+
+The live config is the config of the newest group of runs with a recorded
+config, whether its runs started or not; see [Station outcomes](#station-outcomes).
+
+### Activity tab
+
+The Activity tab shows the station's runs on its live config, or in a period.
+The picker beside the station's name chooses "Live config", the default, or
+an [Insights period](/docs/reference/app/insights#period), kept in the address
+as `?period=<period>`.
+
+| Part | Shows |
+| --- | --- |
+| Latest runs on this config | On "Live config". The tiles of [Station outcomes](#station-outcomes). Before a run has run a config, `No run on a config yet.` |
+| `Runs in the <period>` | In a period, as in `Runs in the past 30 days`. The tiles "Runs", "Outcomes", "Cost" and "Median run" of the Insights [Stations tab](/docs/reference/app/insights#runs), for the station alone, each with its change against the period before. With no runs in the period, "No runs in this period" and `The station’s runs show here once it runs in this period.` |
+| What needs attention | See below. On "Live config", it compares the past 30 days. |
+| Recent runs | See [Station outcomes](#station-outcomes). In a period, it still shows the live config, marked "Live config". |
+
+"What needs attention" lists the station's signals that declined over the
+period, or that fall below team benchmarks, as under "Stations worth
+improving" on [Insights](/docs/reference/app/insights#overview). Hovering the
+title shows `Signals that have declined over the <period> or fall below team benchmarks.`
+With no such signal, it reads "All signals are healthy" and
+`No issues in the past 30 days.` "Ask the agent" beside a signal opens the
+Agent page with the station attached to a new chat and the message
+`<signal> <now> (was <before>, all stations <all>). What should change at this station?`
+written, leaving out a comparison it lacks. Beside "All signals are healthy",
+"Ask the agent" opens it with the station attached.
+
+Under it, "Why runs failed" lists the station's failed runs on the live
+config, or in the period, by reason: the reason or `No reason given`, with
+how many runs, most first. It then lists the station's task failures by
+source (`run` or `hook:<key>`) and code, as `<source> · <code>`, with how many
+times, and `· <n> in a row` when one task raised it more than once in a row.
+With both, they are headed "Run failures" and "Task failures". A reason with
+one run opens that run; another opens the Traces tab at the station's failed
+runs. A task failure that one task raised opens the Traces tab at that task. A
+hook the loop guard stopped shows only among task failures. With no failures,
+`No runs failed.`
+
 ### Judge tab
 
 A work station with a judge has a "Judge" tab on its page, at
@@ -772,11 +844,11 @@ runs again with the new claims.`
 
 ### Judge and alerts
 
-A work station's page shows its
+A work station's [Config tab](#config-tab) shows its
 [judge](/docs/reference/terraform/line#judge-fields) under "Judge" and its
-[alerts](/docs/reference/terraform/line#alert-fields) under
-`Alert rules · <n>`, read-only. "Judge" has the anchor `#judge`.
-`Alert rules · <n>` shows only when the station has alerts.
+[alerts](/docs/reference/terraform/line#alert-fields) under "Alert rules",
+read-only. "Judge" has the anchor `#judge`. "Alert rules" shows only when the
+station has alerts.
 
 Only people on the team, the workspace's owners and admins, and workspace
 tokens with the `read` scope can read the judge's agreement with people.
@@ -795,12 +867,12 @@ Otherwise "Judge" lists:
 The judge's claims follow under "Claims". "Agreement details" opens the
 station's [Judge tab](#judge-tab).
 
-`Alert rules · <n>` lists the alerts in the order written, on a track that
-scrolls sideways. When they do not all fit, arrows and dots page through them.
-Each alert shows the measure's label, then the condition: `+<change>` for
-`risesBy`, `−<change>` for `fallsBy`, `> <threshold>` for `above` and
-`< <threshold>` for `below`, with a change in a rate as `<n> pts`. Under it, how
-many runs it compares: `over <over> runs`. With `over` set to 1, this reads
+"Alert rules" lists the alerts in the order written, one row each, under the
+headings "Measure", "Condition" and "Window". "Measure" is the measure's label.
+"Condition" reads `rises <change> or more` for `risesBy`,
+`falls <change> or more` for `fallsBy`, `goes above <threshold>` for `above`
+and `drops below <threshold>` for `below`. "Window" is how many runs the alert
+compares: `over <over> runs`. With `over` set to 1, it reads
 `from one run to the next` for `risesBy` and `fallsBy`, and `in a single run`
 for `above` and `below`. See [Station alerts](#station-alerts) for when an
 alert fires.
@@ -814,7 +886,7 @@ alert fires.
 | `merged_rate` | Merged rate |
 | `cost_per_run` | Cost per run |
 
-Each alert also has a one-line description: the accessible name of its slide,
+Each alert also has a one-line description: the accessible name of its row,
 and the title of the chart on its inbox item. It reads
 `Alerts when the <measure>`, with the measure's label in lower case, then:
 
@@ -825,12 +897,14 @@ and the title of the chart on its inbox item. It reads
 | `above` | `goes above <threshold> over <over> runs` |
 | `below` | `drops below <threshold> over <over> runs` |
 
-In the description, a change in a rate is in points, as `20 points`, and a
-threshold of a rate is a percentage. Cost is a number, to two decimals, or four
-under 0.01, with no currency on the slide and in the currency of the
-station's runs on the inbox item. With `over` set to 1, the description ends
-with `from one run to the next` or `in a single run`, as on the slide. For
-example: `Alerts when the sent-back rate rises 20 points or more over 20 runs`.
+In "Condition" and in the description, a change in a rate is in points, as
+`20 points` or `1 point`, and a threshold of a rate is a percentage. Cost is in
+the currency of the station's search policy, or else of its line's, on the
+Config tab, and in the currency of the station's runs on the inbox item. With
+no currency, cost is a number, to two decimals, or four under 0.01. With
+`over` set to 1, the description ends with `from one run to the next` or
+`in a single run`, as in "Window". For example:
+`Alerts when the sent-back rate rises 20 points or more over 20 runs`.
 
 ### Judge verdict
 
@@ -968,19 +1042,14 @@ are shown in these places:
 
 | Where | Shows |
 | --- | --- |
-| "Latest runs on this config", on the station's page | Tiles for "Runs", "Outcomes", "Cost" and "Median", over the live config: the newest config that ran, in its newest group and in earlier groups of it that only groups that never started separate from it. The newest group of another config that ran ends it and is not counted. "Outcomes" reads `<share> accepted`, with a bar of each [resolution](#run-resolution)'s share; hovering it shows each resolution as `<n> of <runs> runs`, with Failed as "Failed, no answer", and the merged tasks as `<n> tasks`. "Runs" draws the resolutions of the newest group with a recorded config as a strip, oldest first; "Cost" and "Median" draw that group's costs and durations run by run, when they vary. The tiles are not shown until a run has run a recorded config, or when the outcomes cannot be read. |
-| "Recent runs", on the station's page | The latest 8 runs of the newest group with a recorded config, whether its runs started or not, one row each. With none, "No runs on this config yet" and `Runs on earlier configs are under All runs.`, or, when the station has no runs, "No runs yet" and `Latest runs show here once tasks reach this station.` To a person who may not read the outcomes, `Only team members can see this station's runs`. "All runs" opens the Insights Traces tab at the station. |
-| "Config fingerprint", in the station's "Config" | The newest group with a recorded config, whether its runs started or not: `Live since <day>`, the day its first run ended, or "Live", with `Config <fingerprint>`, the first 8 characters. "View pull request" opens the config pull request a search opened for that config, when there is one, and "History" opens the station's view on Insights. Before any such group, "None yet" and `The first run of the station sets the first config fingerprint.`; when the outcomes cannot be read, "Unknown" and `Sorry, the station's runs couldn't be loaded.` |
-| "Runs by config", on the station's view on Insights | Every group, newest first. With no runs, "No runs yet" and `Runs show here by config once tasks reach this station.` To a person who may not read the outcomes, `Only team members can see this station's runs`. See [One station](/docs/reference/app/insights#one-station). |
+| "Latest runs on this config", on the station's [Activity tab](#activity-tab) | Tiles for "Runs", "Outcomes", "Cost" and "Median run", over the live config: the newest config that ran, in its newest group and in earlier groups of it that only groups that never started separate from it. The newest group of another config that ran ends it and is not counted. "Outcomes" reads `<share> accepted`, with a bar of each [resolution](#run-resolution)'s share; hovering it shows each resolution as `<n> of <runs> runs`, with Failed as "Failed, no answer", and the merged tasks as `<n> tasks`. "Runs" draws the resolutions of the newest group with a recorded config as a strip, oldest first; "Cost" and "Median run" draw that group's costs and durations run by run, when they vary. Before a run has run a recorded config, `No run on a config yet.` When the outcomes cannot be read, the tiles are not shown. |
+| "Recent runs", on the station's [Activity tab](#activity-tab) | The latest 8 runs of the newest group with a recorded config, whether its runs started or not, one row each. With none, "No runs on this config yet" and `Runs on earlier configs are under All runs.`, or, when the station has no runs, "No runs yet" and `Latest runs show here once tasks reach this station.` To a person who may not read the outcomes, `Only team members can see this station's runs`. "All runs" opens the Insights Traces tab at the station. |
+| "Live config", on the station's [Config tab](#config-tab) | The newest group with a recorded config, whether its runs started or not, and the day its first run ended. |
 
 Runs are grouped by config, in the order they started: each group contains runs
 that started one after another with the same fingerprint. A config that
-returns after another starts a new group. A group is named by the first of its
-[changes](#config) from the last config that ran before it, or
-`Config <fingerprint>`, the fingerprint's first 8 characters. The group of
-runs before any recorded config reads `Before the first run with a config`. A
-group whose runs never started on its config, because they failed before
-starting or were cancelled, is marked "Never started".
+returns after another starts a new group. Runs before any recorded config are
+in a group of their own.
 
 A run's outcome:
 
@@ -1035,18 +1104,16 @@ A tally counts:
 | Cost | The runs' cost together, when all are in one currency. |
 | Median, p90 | The time the runs took. |
 
-"Latest runs on this config" shows "Runs", "Outcomes", "Cost" and "Median". "Runs by config" shows each group's shares, median, cost
-and days. The other figures are returned only by
+"Latest runs on this config" shows "Runs", "Outcomes", "Cost" and "Median run".
+The other figures are returned only by
 `GET /api/teams/{teamId}/lines/{lineId}/stations/{stationId}/insights`; the
-Insights [Stations tab](/docs/reference/app/insights#runs-at-each-station)
+Insights [Stations tab](/docs/reference/app/insights#runs)
 counts them in the same way.
 
-On "Runs by config", each group shows "Checks" as `<share> passed`, of the
-runs whose check passed or failed; "Human action" as `<share> accepted` and
-"Pull request" as `<share> merged`, of its runs; "Duration", the median; "Cost"; and
-"Ended", the day or days its runs ended. Each run row shows the ending,
-linked to the run, then the failure, "Visit", "Checks", "Human action", "Pull request",
-"Duration", "Cost" and "Ended". A part with no value shows `–`.
+Each row of "Recent runs" shows the run's resolution, linked to the run, with
+the failure on hover, then "Visit", "Checks", "Human action", "Pull request",
+"Duration", "Cost" and "Ended". A resolution of Other shows the ending in its
+place. A part with no value shows `–`.
 
 ## The inbox
 
@@ -1505,7 +1572,7 @@ The item shows:
 | Reading | What the runs did, then the alert rule, with cost in the currency of the station's runs. For a rate, `<value> of the last <over> runs <did>.`, where `<did>` is "were sent back", "were accepted", "were merged", "failed" or "failed their checks". For cost, `The last <over> runs cost <value> each on average.` For `risesBy` and `fallsBy`, the comparison follows before the full stop: `, up from <value> in the <over> before`, or `down from` or `the same as`. Then `The alert is set at a <change>-point rise.` (or `fall`), `a rise of <threshold>` for cost, or `The alert is set at above <threshold>.` (or `below`). With `over` set to 1, `the last run` and `the one before`, with "was sent back", "was accepted", "was merged", "failed" or "failed its checks", and `The last run cost <value>` for cost. |
 | Recovery | `The station has been back under the threshold since <day>.`, or `over` in place of `under` for `fallsBy` and `below`, once the alert has resolved. |
 | Chart | The measure over the `over` measured runs up to each run, from 2 × `over` runs before the run that fired it to `over` runs after. Its legend names "Alert level" with the threshold, for `above` and `below`; "Before" with the measure over the runs before, for `risesBy` and `fallsBy`; and "The run it fired at". It is drawn from the station's latest 500 runs; without that run among them, it reads `There is no chart to show. The runs behind this alert are deleted.` |
-| Links | "Open the station", which opens its page; "Open in Insights", which opens the [Stations tab](/docs/reference/app/insights#runs-at-each-station) at the station's row, `#station-<stationId>`, over the shortest period that covers the day it fired; and "Improve", while the station is on one of the team's lines, which opens the Agent page with the station attached to a new chat. |
+| Links | "Open the station", which opens its page; "Open in Insights", which opens the [Stations tab](/docs/reference/app/insights#runs) at the station's row, `#station-<stationId>`, over the shortest period that covers the day it fired; and "Improve", while the station is on one of the team's lines, which opens the Agent page with the station attached to a new chat. |
 
 ### Requests to connect
 
