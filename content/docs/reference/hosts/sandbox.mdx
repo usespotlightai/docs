@@ -187,7 +187,8 @@ sandbox.
 | Rule | Value |
 | --- | --- |
 | Kept | Every 30 seconds, Spotlight requests the missing warm sandboxes of each line and drains the extra ones. A warm sandbox whose line changed its repositories, setups, image or `runners` drains, and a new one replaces it. |
-| Placed | On a host that matches the line's `runners` and image and has a free place. The host starts it only when no run of the workspace waits for that host. |
+| Placed | On a host that matches the line's `runners` and image and has two or more free places. A warm sandbox never takes the last free place of a host. The host starts it only when no run of the workspace waits for that host. |
+| Gives way | When a host has no free place and a queued run waits for a new sandbox, the host drains its oldest `ready` warm sandbox. It drains one at a time. The run takes the free place. A new warm sandbox replaces the drained one when the host has room again. |
 | Mirrors | The host mounts its mirror of each repository. A host with no mirror of a repository cannot warm the sandbox: the sandbox is `gone`, and the line gets no new warm sandbox for 15 minutes. |
 | Setup | A failed setup is not recorded, so the first run runs it again. |
 | First run | A queued first run of a task of the line, which restores no working copy, starts in a `ready` warm sandbox with no run in it. For 60 seconds after it is queued, other hosts leave such a run to the warm sandbox's host. Replays, searches and chats do not use warm sandboxes. |

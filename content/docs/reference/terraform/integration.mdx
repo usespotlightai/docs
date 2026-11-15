@@ -263,7 +263,7 @@ connection = {
 
 ### Begin errors
 
-The Integrations settings page shows the message beside the button that began the connection.
+The Integrations settings page shows the message at the bottom of the page.
 
 | Status | Message | When |
 | --- | --- | --- |
@@ -825,6 +825,7 @@ An action sent from the network fails with:
 | `approval.because` | string | none | When set, each use first asks a person, who is shown this text. May not be empty. The tool may not then have an input named `intent`. |
 | `inputs` | map of name to object | `{}` | The tool's inputs. |
 | `output` | string | none | An expression. What the tool returns. Can read `response`, `status`, `capture` and `inputs`. Without it, the `capture` map. |
+| `readOnly` | boolean | `false` | The tool reads and changes nothing in the service. A [replay](#tools-in-a-replay) has the tool only when it is `true` and the tool has no `approval`. Spotlight does not check it against the action. |
 | `enabledOnMark` | string | none | A mark kind of this integration, as in `sentry.issue`. A run on a task that has a mark of this kind has the tool, also at a station that does not list it in `tools`. See [Enabled on a mark](#enabled-on-a-mark). |
 
 Input:
@@ -848,6 +849,24 @@ see [What the agent wants](/docs/reference/app/tasks-runs-and-the-inbox#what-the
 returns `the integration answered <status>: <body>`, with the body cut at 500
 characters. See [Approvals](/docs/reference/app/tasks-runs-and-the-inbox#approvals)
 and [Require approval before a tool runs](/docs/integrations/require-approval-before-a-tool-runs).
+
+### Tools in a replay
+
+A [replay](/docs/improvement/why-changes-are-replayed-on-past-tasks) has a
+tool only when the tool changes nothing: the tool has `readOnly = true` and
+no `approval`. A tool generated from an API spec or listed by an MCP server is
+never read-only, so a replay does not have it. A replay has no built-in tools
+and no catalog tools.
+
+A replay has these tools from its station's `tools` and from the marks of its
+past task, as the run it replays had them. It calls them as no person. A tool
+that needs a person's connection fails there, and no person is asked to
+connect. A tool reads the service as it is when the replay runs, not as it was
+when the past task ran.
+
+A replay that calls a tool that changes data, as when the integration changed
+after the replay started, fails the call with
+`This run may not call <tool>, which can change data or needs a person’s approval: it acts on nothing beyond its own result`.
 
 ### Enabled on a mark
 
@@ -875,6 +894,13 @@ rejected with
 When no event and no binding of the integration marks a task with that kind,
 the definition gives a warning at `tools.<tool>.enabledOnMark`:
 `names <kind>, but no event or binding of the integration marks a task with it`.
+
+Spotlight finds these tools again each time a task's run continues, after an
+answer or a message. The run gets the tools that the task's marks enable at
+that time, and loses the ones they no longer enable. Its agent is told which
+tools it gained and which it lost. Thus a run that started before the task had
+the mark, or before the integration had the tool, has the tool from its next
+turn.
 
 A chat run has no task, so it has the tool only when its agent lists it. The
 station config that a run records, and that Insights compares, lists only the

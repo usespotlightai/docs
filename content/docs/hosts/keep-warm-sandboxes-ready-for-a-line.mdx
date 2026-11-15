@@ -33,7 +33,10 @@ resource "spotlight_line" "core_delivery" {
 
 In the resource API, the field is `warmSandboxes`. Each warm sandbox takes one
 place in a host's `SPOTLIGHT_CAPACITY` and counts toward its pool's `maxRuns`
-while it waits, so raise those first if the hosts are full.
+while it waits. A host keeps its last free place for other runs. When a host is
+full and a run that cannot use a warm sandbox waits, the host drains a warm
+sandbox to start the run. To keep all warm sandboxes ready, give the hosts more
+places than `warm_sandboxes`.
 
 ## Give the host a mirror of each repository
 

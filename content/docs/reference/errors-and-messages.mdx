@@ -42,7 +42,8 @@ pages for each command.
 
 ### Answering an approval
 
-Each is a `409` from answering an approval item, shown in the card.
+Each is a `409` from answering an approval item, shown in a message at the
+bottom of the page.
 
 | Message | Cause | See |
 | --- | --- | --- |
@@ -55,6 +56,30 @@ Each is a `409` from answering an approval item, shown in the card.
 | `Only the person whose connection the tool acts with can approve this request.` | An approval by someone other than the person whose own tool rule asked; the task goes to that person, who can approve or dismiss it. | [Person rules](/docs/reference/app/tasks-runs-and-the-inbox#person-rules) |
 | `Task <taskId> has nothing waiting for approval at that note.` | A decision on a conversation that asks for no approval. | [Approvals](/docs/reference/app/tasks-runs-and-the-inbox#approvals) |
 | `Only a person can approve or dismiss a request.` | A decision made with a workspace token. | [Approvals](/docs/reference/app/tasks-runs-and-the-inbox#approvals) |
+
+### Answering a judge disagreement
+
+Each comes from answering a
+[judge disagreement](/docs/reference/app/tasks-runs-and-the-inbox#judge-disagreements).
+In the `422` messages, "the judge passed the run" means the judge passed a run
+that people failed. `<n>` is the claim's number, from 1.
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `A judge disagreement note must be at most 2000 characters.` | `422`. The note is longer than 2,000 characters. | [Judge disagreements](/docs/reference/app/tasks-runs-and-the-inbox#judge-disagreements) |
+| `A judge disagreement must answer a claim with judge-right or claim-wrong.` | `422`. The answer to a claim is not `judge-right` or `claim-wrong`. | [Judge disagreements](/docs/reference/app/tasks-runs-and-the-inbox#judge-disagreements) |
+| `A judge disagreement must answer a claim by its place, from 0.` | `422`. The claim's place is below 0. | [Judge disagreements](/docs/reference/app/tasks-runs-and-the-inbox#judge-disagreements) |
+| `Claim <n> is not in dispute in judge disagreement <id>. Answer only a claim the judge and people read differently.` | `422`. The claim is met in both verdicts, or past the last claim. | [Judge disagreements](/docs/reference/app/tasks-runs-and-the-inbox#judge-disagreements) |
+| `A judge disagreement with claims in dispute takes an answer for each of them, one by one.` | `422`. The answer names a claim not met, but the disagreement has claims in dispute, or the judge failed the run. Answer each claim in dispute instead. | [Judge disagreements](/docs/reference/app/tasks-runs-and-the-inbox#judge-disagreements) |
+| `A judge disagreement where the judge passed the run and no claim covers it, must say what was wrong.` | `422`. `shouldHaveFailed` is `null`, and the answer has no note. | [Judge disagreements](/docs/reference/app/tasks-runs-and-the-inbox#judge-disagreements) |
+| `A judge disagreement must name the claim that should have failed by its place, from 0.` | `422`. `shouldHaveFailed` is below 0 or not a whole number. | [Judge disagreements](/docs/reference/app/tasks-runs-and-the-inbox#judge-disagreements) |
+| `A judge disagreement must name a claim of the judge that looked at the run.` | `422`. `shouldHaveFailed` is past the last claim. | [Judge disagreements](/docs/reference/app/tasks-runs-and-the-inbox#judge-disagreements) |
+| `Claim <n> of judge disagreement <id> already has an answer.` | `409`. A person answered this claim before. | [Judge disagreements](/docs/reference/app/tasks-runs-and-the-inbox#judge-disagreements) |
+| `Judge disagreement <id> already has an answer.` | `409`. A person answered which claim the run did not meet before. | [Judge disagreements](/docs/reference/app/tasks-runs-and-the-inbox#judge-disagreements) |
+| `Judge disagreement <id> is withdrawn. The judge and people agree now, the claims changed, or the outcome a person gave is gone.` | `409`. Spotlight withdrew the disagreement. | [Judge disagreements](/docs/reference/app/tasks-runs-and-the-inbox#judge-disagreements) |
+| `Judge disagreement <id> changed since you loaded it. Please reload and try again.` | `409`. The disagreement changed while the answer was sent. | [Judge disagreements](/docs/reference/app/tasks-runs-and-the-inbox#judge-disagreements) |
+| `Judge disagreement <id> asks another person. Only that person can answer it.` | `403`. The item goes to another person on the team. | [Judge disagreements](/docs/reference/app/tasks-runs-and-the-inbox#judge-disagreements) |
+| `Judge disagreement <id> not found.` | `404`. The team has no such disagreement. | [Judge disagreements](/docs/reference/app/tasks-runs-and-the-inbox#judge-disagreements) |
 
 ### Run failure messages
 
@@ -406,7 +431,8 @@ shows the change as a Terraform diff in its place.
 | `no-fresh-held-out` | `Earlier searches used the held-out tasks of the replay set. Spotlight has no fresh held-out tasks to measure the change on.` | [Skip reasons](/docs/reference/app/searches#skip-reasons) |
 | `ceiling-too-low` | `The search ceiling is too low to replay each task of the set for each candidate. Please raise the search ceiling in the search policy of the line.` | [Skip reasons](/docs/reference/app/searches#skip-reasons) |
 | `noisy` | `Success moves too much between repeats of the same runs. Spotlight cannot tell configs apart on the replay set. Please make the judge or the check of the station give the same result for the same work.` | [Skip reasons](/docs/reference/app/searches#skip-reasons) |
-| `judge-unstable` | `The judge of the station does not give the same verdict twice for the same run. Please make the rubric of the judge more exact.` | [Skip reasons](/docs/reference/app/searches#skip-reasons) |
+| `judge-unstable` | `The judge of the station does not give the same verdict twice for the same run. Please make the claims of the judge more exact.` | [Skip reasons](/docs/reference/app/searches#skip-reasons) |
+| `judge-disagrees-with-people` | `The verdicts of the judge of the station do not agree with the verdicts of people often enough. Spotlight cannot trust the verdicts of the judge to score a config. Please change the claims of the judge until its verdicts agree with the verdicts of people.` | [Skip reasons](/docs/reference/app/searches#skip-reasons) |
 | `flaky-checks` | `The check of the station gives a different result when it runs twice on the same change. Please fix the check of the station.` | [Skip reasons](/docs/reference/app/searches#skip-reasons) |
 | `no-headroom` | `The live config already does about as well as the best past runs on the replay set. A change cannot show a gain.` | [Skip reasons](/docs/reference/app/searches#skip-reasons) |
 
@@ -700,7 +726,7 @@ their own messages.
 
 In a stalled search's notice, `<cause>` is `the task itself`, `the judge`,
 `the check` or `what the run needed around the work`, and `<fix>` is
-`Spotlight takes the task out of the replay set.`, `Please fix the rubric of
+`Spotlight takes the task out of the replay set.`, `Please fix the claims of
 the judge.`, `Please fix the check of the station.` or `Please fix the setup
 that the run needs.`
 
@@ -713,7 +739,8 @@ The points of `Spotlight cannot search the <station> station`, by
 | `ceiling-too-low` | `The search ceiling is too low to replay each task of the set for each candidate.` `Please raise the search ceiling in the search policy of the line.` |
 | `no-agent` | `No runner can start the harness of the search agent.` `Please set a harness for the station, or an agent in its search policy.` |
 | `noisy` | `Success moves too much between repeats of the same runs. Spotlight cannot tell configs apart on the replay set.` `Please make the judge or the check of the station give the same result for the same work.` |
-| `judge-unstable` | `The judge of the station does not give the same verdict twice for the same run.` `Please make the rubric of the judge more exact.` |
+| `judge-unstable` | `The judge of the station does not give the same verdict twice for the same run.` `Please make the claims of the judge more exact.` |
+| `judge-disagrees-with-people` | `The verdicts of the judge of the station do not agree with the verdicts of people often enough. Spotlight cannot trust the verdicts of the judge to score a config.` `Please change the claims of the judge until its verdicts agree with the verdicts of people.` |
 | `flaky-checks` | `The check of the station gives a different result when it runs twice on the same change.` `Please fix the check of the station.` |
 
 A search that nobody requested a candidate of, and that ends with no pull
@@ -729,7 +756,7 @@ request and no such causes, and a skip for any other reason, send no notice.
 ### Connecting an integration
 
 The endpoint that begins a connection answers with these, and the
-Integrations settings page shows them beside the button that began it.
+Integrations settings page shows them in a message at the bottom of the page.
 
 | Message | Cause | See |
 | --- | --- | --- |
@@ -779,8 +806,9 @@ answer with these. A caller who is not an owner or admin of the workspace gets
 ### Members page and accepting an invite
 
 The web app shows these on the Members page, a team's General page and the
-page an invite link opens. When an invite request fails, the invite dialog
-shows the message from the table above beneath its fields.
+page an invite link opens. When an action on these pages fails, the message
+from the table above, or a `Sorry` message here, shows at the bottom of the
+page.
 
 | Message | Cause | See |
 | --- | --- | --- |
@@ -798,8 +826,8 @@ shows the message from the table above beneath its fields.
 
 ### Emails page and verifying an email
 
-The Emails page shows these in the "Add an email" dialog or beside an address.
-The page a verification link opens shows them under "Email not verified".
+The Emails page shows these in a message at the bottom of the page. The page a
+verification link opens shows them under "Email not verified".
 
 | Message | Cause | See |
 | --- | --- | --- |

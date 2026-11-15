@@ -108,18 +108,18 @@ A run is scored by the candidate's own station block:
 | Scored by | When | Passes |
 | --- | --- | --- |
 | Its checks | The block sets `diffs: true` and a `check`. | The check passes on every layer of the run's change stack. |
-| Its judge | The block has a `judge`. Every replay run is judged, whatever the judge's `sample`. | `Yes`, 4 or more on a 1 to 5 rubric, or at least the judge's `passThreshold` of its claims met. |
+| Its judge | The block has a `judge`. Every replay run is judged, whatever the judge's `sample`. | At least the judge's `passThreshold` of its claims met. |
 
 With both, a run must pass both. When a person closed the original run's task
 as the first thing they did on it after the run, the judge is also given the
-original's change, and scores the replay against it. The judge is told the run
+original's change, and judges the replay against it. The judge is told the run
 is a replay. It grades the work the run produced, its changes and the plan,
 findings or note in its steps, as if every effect the replay blocked had
 succeeded: a push, a pull request, a review comment or message, a tool or MCP
 server call. It never counts a blocked effect, its failure or its absence
-against the run. A replay's judge score is
+against the run. What the judge says of a replay is
 not a run's
-[judge score](/docs/reference/app/tasks-runs-and-the-inbox#judge-score): it
+[judge verdict](/docs/reference/app/tasks-runs-and-the-inbox#judge-verdict): it
 counts in no agreement, alert or Insights figure of the team's runs.
 
 The reason is the first reason of a repeat that shows the result: a repeat
@@ -142,7 +142,7 @@ one that went unscored for `unscored`. It reads `<reason>.`, or
 | `judged` | `Judge passed it` | The judge's reason |
 | `judge-failed` | `Judge failed it` | The judge's reason |
 | `unjudged` | `Judge could not judge it` | [Why](#judging-failures) |
-| `nothing-judges` | `No check or judge scores this station` | |
+| `nothing-judges` | `The station has no check or judge` | |
 
 Without a reason to show, the side reads `Checks passed.`, `The run failed.`,
 `The repeats did not agree.`, `Nothing scored the run.`, `The replay has not
@@ -201,7 +201,7 @@ A replay's checks run as a station's checks do. See
 | Code | Detail |
 | --- | --- |
 | `unavailable` | `no judge model was available` |
-| `unreadable-rubric` | `the rubric could not be read`. Also when the replay's candidate is gone or has no judge. |
+| `unreadable-rubric` | `the claims of the judge could not be read`. Also when the replay's candidate is gone or has no judge. |
 | `no-evidence` | `there was nothing to judge` |
 | `request-failed` | `the judge request failed` |
 | `unreadable` | `the answer of the judge could not be read` |
@@ -225,15 +225,15 @@ Spotlight drops the `guidance` field when it:
 - is more than 280 characters, or contains a line break;
 - names a claim by its number or place, as in `claim 2`, `#3` or `the first
   claim`;
-- repeats 5 or more words in a row from the rubric or from a claim, ignoring
-  case and punctuation;
-- contains a whole sentence of 3 or more words from the rubric or from a
-  claim, ignoring case and punctuation. The text between two line breaks
+- repeats 5 or more words in a row from a claim, ignoring case and
+  punctuation;
+- contains a whole sentence of 3 or more words from a claim, ignoring case
+  and punctuation. The text between two line breaks
   counts as a sentence too.
 
 These judgings give no `guidance` field: the second judging of a change when a
 replay [calibrates the set](#calibration), a run's own
-[judging](/docs/reference/app/tasks-runs-and-the-inbox#judge-score), and
+[judging](/docs/reference/app/tasks-runs-and-the-inbox#judge-verdict), and
 [side-by-side](#side-by-side) judging.
 
 ### Success
@@ -277,10 +277,9 @@ with the same number, or else its first repeat, when all of these are true:
   result.
 - People accepted the original run's change: the first thing a person did on
   its task after it was closing the task.
-- Both replays are judged under the same rubric version.
+- Both replays are judged under the same claims version.
 
-The judge is given the rubric, the claims or both of the replay's own
-candidate, the task's title and description, the two changes as hunks labelled
+The judge is given the claims of the replay's own candidate, the task's title and description, the two changes as hunks labelled
 A and B, and the accepted change, which is neither. The changes are cut at
 60,000 characters, and each hunk at 200 lines. It is not told which change is
 the replay's. It answers `A`, `B` or a tie, with 1 to 5 reasons, each citing 1
@@ -317,6 +316,7 @@ when a check found a problem. A check not yet measured stops no search.
 | [Room to improve](#room-to-improve) | The newest finished [replay with the answer](#replay-with-the-answer) of the live config, against the live replay that started it. | The answer does not do clearly better. | `no-headroom` |
 | Judge agreeing with itself | The newest finished replay of the live config over every run of the set that [calibrated the set](#calibration). | The judge passed or failed the same change alike less than 80% of the time. | `judge-unstable` |
 | Flaky checks | The same replay. | The check passed once and failed once on at least one change. | `flaky-checks` |
+| [Judge agreeing with people](#judge-agreeing-with-people) | Insights, for the claims and pass threshold of the live config. Read only when the live config has a judge. | The judge's state is `failing`. | `judge-disagrees-with-people` |
 
 The live config's success over the whole set also decides a search's
 [aim](/docs/reference/app/searches#aims): above 95%, a search aims for the
@@ -402,6 +402,26 @@ finishing then starts the replay with the answer.
 A search that calibrates the set starts before the set's health is measured,
 so the health checks apply from the next search.
 
+### Judge agreeing with people
+
+Spotlight reads the judge's
+[agreement with people](/docs/reference/app/tasks-runs-and-the-inbox#agreement)
+for the live config's claims version, as Insights measures it, and gives the
+judge one of three states:
+
+| State | When |
+| --- | --- |
+| `qualified` | The judge is qualified. |
+| `unmeasured` | Fewer than 10 runs have both verdicts, Cohen's kappa cannot be worked out, as when every verdict so far is the same, or Insights has not yet measured the live config's claims version. |
+| `failing` | Cohen's kappa is below `min_agreement`, or the claims cannot be read. |
+
+A `failing` judge skips a search as `judge-disagrees-with-people`, and fails a
+[replay check](/docs/reference/api/replay-checks#results). An `unmeasured`
+judge stops no search and fails no check. A config pull request and the
+[replay command](/docs/reference/cli/replay-command#output) say when the judge
+is `failing` or `unmeasured`, because their scores come from the verdicts of
+that judge.
+
 ## Reference replays
 
 A replay's reference replay is the replay of the set it is compared with. Its
@@ -421,9 +441,9 @@ compared with, and the next replay check of the set starts a new one.
 ## Regressions
 
 A task regressed when this replay is clearly worse on it than the reference
-replay, or when the judge clearly scored this replay lower. Either is enough: a
-task whose repeats all succeeded still regresses when the judge clearly scored
-it lower.
+replay, or when the judge found clearly fewer claims met on this replay. Either
+is enough: a task whose repeats all succeeded still regresses when the judge
+found clearly fewer claims met on it.
 
 "Clearly worse" takes the noise of each side into account. Spotlight counts
 the scored repeats that succeeded and failed on each side. From these counts,
@@ -439,21 +459,20 @@ number of repeats is important:
 | Succeeded on 1 of 3 | Succeeded on 3 of 3 | Yes |
 | Failed 2 of 2 | Succeeded on 2 of 2 | Yes |
 
-"Clearly scored lower" uses the same rule, with each judge score as a share of
-a success: a yes is 1 and a no is 0, a score from 1 to 5 is 0 to 1 (4 is
-0.75), and a score by claims is the share of claims met. From these shares on
-each side, Spotlight calculates the chance that the judge scores this replay
-lower on the task than the reference replay. The task regressed when that
-chance is above 90%. So one lower score against one is noise, but a score of 2
-on each of 3 repeats against a 5 on each of 3 is a regression.
+"Clearly fewer claims met" uses the same rule, with the share of claims the
+judge found met as a share of a success. From these shares on each side,
+Spotlight calculates the chance that this replay meets a lower share of claims
+on the task than the reference replay. The task regressed when that chance is
+above 90%. So one lower share against one is noise, but a quarter of the claims
+met on each of 3 repeats against every claim met on each of 3 is a regression.
 
 A task can regress only once every
 repeat of it, on both sides, has ended and has its result. A repeat that has
 neither a scored result nor a judge's verdict cannot make a task regress.
 
-Judge scores are compared only when both runs were judged, under the same
-rubric version, either both or neither against the original's accepted change,
-and on the same scale.
+Shares of claims met are compared only when both runs were judged, under the
+same claims version, and either both or neither against the original's accepted
+change.
 
 ## Why a run cannot be replayed
 

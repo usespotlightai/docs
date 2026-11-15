@@ -235,7 +235,7 @@ skill starting `spotlight-`.
 | `spotlight-handover` | Every run at a station. |
 | `spotlight-pull-request` | Runs with the `pull-request` tool enabled. |
 | `spotlight-review` | Runs with the `review-comment` or `review` tool enabled. |
-| `spotlight-tools` | Runs with a tool enabled from an integration or the catalog that Spotlight can describe. Never a replay. |
+| `spotlight-tools` | Runs with a tool enabled from an integration or the catalog that Spotlight can describe. |
 
 `spotlight-tools` says how to find a tool with `spotlight tools search`, read
 it with `spotlight tools describe`, give inputs as flags or as one JSON object,
@@ -246,7 +246,9 @@ type. See [Inferred output](/docs/reference/cli/agent-commands#inferred-output).
 Such a run's briefing also has a `## Tools` section naming each
 integration it has tools enabled from, with how many, and the `search` and
 `describe` commands. Catalog tools are named there as `the Spotlight catalog`.
-A replay has no tools enabled, so it gets neither the skill nor the section.
+A replay has only the integration tools that change nothing, so its skill and
+section name those tools alone. A replay has no built-in tools: `checks` and
+`open-tasks` read the task as it is now, with the work of the run it replays.
 
 A run also has the tools listed in the `tools` of each team skill its
 station enables. See [`spotlight_skill`](/docs/reference/terraform/skill).

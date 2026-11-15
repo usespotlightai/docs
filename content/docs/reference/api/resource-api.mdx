@@ -68,6 +68,7 @@ path, from the [endpoint catalogue](#endpoint-catalogue). `<holder>` is
 | `If-Match` | request, update and delete | Required. The `ETag` of the version the write is based on, as in `"3"`. |
 | `Spotlight-Api-Version` | request and response | Optional on a request. Every response carries the version it was served in. |
 | `Spotlight-Client` | request | Optional. The client making the request, recorded with every [configuration change](#configuration-changes): `terraform-provider/<version>` is recorded as the Terraform provider at that version, `web` as the web app, and anything else, or nothing, as `unknown`. |
+| `Spotlight-Source-Commit` | request, line create and update | Optional. The commit the line's definition comes from, as `<owner>/<name>@<sha>` on GitHub. Each new claims version of a station keeps the first commit that wrote it. See [Source commit](/docs/reference/terraform/line#source-commit). |
 | `ETag` | response | The resource's `version` as a strong entity tag, as in `"3"`. |
 | `Idempotent-Replayed` | response | `true` when a create returns an earlier attempt with the same key. |
 | `Spotlight-Workspace-Token` | response | The new token, on creating a workspace token. Returned once. |
@@ -230,14 +231,13 @@ The export's files are ordered by path and are the same on every export:
 | `skills-<team>.tf`, `hooks-<team>.tf`, `profiles-<team>.tf` | A team's skills, hooks and harness profiles. |
 | `variables.tf` | A sensitive variable for each value Spotlight never returns, such as secret values, runner pool tokens and egress tokens. |
 | `prompts/<team>/<line>/<station>.md` | Each station prompt, read with `file()`. |
-| `judges/<team>/<line>/<station>.md` | Each station judge's rubric, read with `file()`. A judge with claims alone has none. |
 | `skills/<team>/<key>/<path>` | Each skill file, read with `file()`. |
 | `.gitignore` | `.terraform/`, state files and `*.tfvars`. |
 
 Workspace tokens are not exported.
 
 The `hcl` string contains, in order, any variable the resource reads, an `import`
-block that imports it, and the resource. `files` contains the prompt, rubric and skill
+block that imports it, and the resource. `files` contains the prompt and skill
 files it reads. `collection` is one of `workspaces`, `teams`, `lines`, `skills`,
 `harness-profiles`, `integrations`, `hooks`, `secrets`, `oidc-trusts`,
 `runner-trusts`, `runner-pools`, `egresses` or `workspace-runners`.

@@ -65,7 +65,10 @@ resource "spotlight_line" "core_delivery" {
     passes_to = ["code-review"]
 
     judge {
-      rubric        = file("${path.module}/judges/core/delivery/implementation.md")
+      claims = [
+        "The change adds a test that fails without it.",
+        "The change touches only what the task names.",
+      ]
       sample        = 0.2
       min_agreement = 0.6
     }
@@ -159,7 +162,7 @@ The same line as a request body:
       "skills": ["grafana"],
       "runners": ["gpu"],
       "passesTo": ["code-review"],
-      "judge": { "rubric": "Did the run meet the task?", "sample": 0.2, "minAgreement": 0.6 },
+      "judge": { "claims": ["The change adds a test that fails without it."], "passThreshold": 1, "sample": 0.2, "minAgreement": 0.6 },
       "alerts": [{ "measure": "sent_back_rate", "risesBy": 0.2, "over": 20 }],
       "search": {
         "ceiling": 20,
@@ -250,7 +253,7 @@ reviews {
 | `skills` | array of strings | `[]` | The skills the station enables for its agent: a team [skill](/docs/reference/terraform/skill) key, or a catalog skill as `catalog.<name>@<x.y.z>`. Each skill once. A key starting `spotlight-` is rejected. |
 | `passesTo` | array of strings | `[]` | The keys of the stations a run here may hand a task on to. |
 | `ends` | boolean | `false` | Whether a run here may finish the task by handing over with `done`. From any other station, `done` goes to a person instead. |
-| `judge` | object | none | Scores the station's runs against a rubric, a list of claims, or both. Only on a `work` station. See [judge fields](#judge-fields). A read leaves it out when none is set. |
+| `judge` | object | none | Judges the station's runs against a list of claims. Only on a `work` station. See [judge fields](#judge-fields). A read leaves it out when none is set. |
 | `alerts` | array of objects | `[]` | Thresholds on a measure of the station's runs, kept in the order written. Only on a `work` station. See [alert fields](#alert-fields). |
 | `search` | object | none | Changes the line's `search` for this station. Only on a `work` station. See [station search fields](#station-search-fields). A read leaves it out when none is set. |
 
@@ -275,21 +278,18 @@ the built-in and catalog tools, and
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `rubric` | string | none | What a good run looks like, in Markdown. Not empty, at most 20,000 characters. In Terraform, usually read with `file()`. Required when `claims` is not set. |
-| `claims` | array of strings | none | Checkable claims the judge answers yes or no about each run, in order: 1 to 20, each not empty and at most 500 characters, with surrounding spaces trimmed. Required when `rubric` is not set. |
-| `passThreshold` | number | `1` | The share of claims a replayed run must meet to pass, from 0 to 1. `1` means every claim. Only with `claims`. Terraform: `pass_threshold`. |
+| `claims` | array of strings | required | Checkable claims the judge answers yes or no about each run, in order: 1 to 20, each not empty and at most 500 characters, with surrounding spaces trimmed. |
+| `passThreshold` | number | `1` | The share of claims a run must meet to pass, above 0, up to 1. `1` means every claim. Terraform: `pass_threshold`. |
 | `sample` | number | required | The share of runs judged, from 0 to 1. |
-| `minAgreement` | number | required | The minimum agreement with people the judge needs before its scores show, from 0 to 1: Cohen's kappa on a yes-or-no rubric and on claims, Spearman's ρ on a 1 to 5 rubric. See [Agreement](/docs/reference/app/tasks-runs-and-the-inbox#agreement). |
+| `minAgreement` | number | required | The minimum agreement with people the judge needs before its verdicts show on runs, from 0 to 1, as Cohen's kappa. See [Agreement](/docs/reference/app/tasks-runs-and-the-inbox#agreement). |
 
-A judge has `sample`, `minAgreement`, and `rubric`, `claims` or both. See
-[Judging](/docs/reference/app/tasks-runs-and-the-inbox#judging) for which runs
-are judged and when scores show.
+See [Judging](/docs/reference/app/tasks-runs-and-the-inbox#judging) for which runs
+are judged and when verdicts show.
 
-A judge with `claims` scores claim by claim: its score is the share of claims
-met. A `rubric` beside them is given to the judge with the claims, and needs no
-`scores:` line. `passThreshold` decides only whether a replayed run passes; see
-[Results](/docs/reference/app/replays#results). A read returns `claims` and
-`passThreshold` only when the judge has claims, and `rubric` only when it has one.
+The judge checks claim by claim. A run's share of claims met decides its
+verdict: the run passes when that share is at least `passThreshold`. The same verdict
+decides whether a replayed run passes; see
+[Results](/docs/reference/app/replays#results).
 
 ```hcl
 judge {
@@ -303,41 +303,23 @@ judge {
 }
 ```
 
-Without `claims`, the rubric names its scale on its first line that is not blank, or on a line
-of a front matter block that opens the rubric between two `---` lines:
-
-| Line | Scale |
-| --- | --- |
-| `scores: yes-no` | Yes or no. |
-| `scores: 1-5` | A whole number from 1 to 5. |
-| none | Yes or no. |
-
-`scores` is matched without regard to case, with any spaces around the colon.
-A `scores:` line further down is not read.
-
-An export writes each rubric to
-`judges/<team>/<line>/<station>.md` and reads it with `file()`. It writes
-`claims` in the block, one claim to a line, with `pass_threshold`.
+An export writes `claims` in the block, one claim to a line. It writes
+`pass_threshold` only when it is not `1`.
 
 The judge is part of the station's config: a run records one SHA-256 of its
-rubric, claims and pass threshold together, its rubric version, with `sample` and
+claims and pass threshold together, its claims version, with `sample` and
 `minAgreement`. A change to any of them changes the
 [config fingerprint](/docs/reference/glossary#config-fingerprint), and a
-change to the rubric, a claim or the pass threshold starts a new rubric version.
+change to a claim or to the pass threshold starts a new claims version.
 
 | Message | Cause |
 | --- | --- |
-| `Judge rubric must not be empty.` | `rubric` is empty or only whitespace. |
-| `Judge rubric must be at most 20000 characters.` | `rubric` is longer. |
-| `Judge sample must be from 0 to 1.` | `sample` is outside 0 to 1. |
-| `Judge minAgreement must be from 0 to 1.` | `minAgreement` is outside 0 to 1. |
-| `Judge rubric names its scale as "scores: yes-no" or "scores: 1-5" on its first line.` | The judge has no `claims`, and the `scores:` line names another scale, or the rubric opens a front matter block with `---` and never closes it. |
-| `Judge rubric or claims must be set.` | Neither `rubric` nor `claims` is set. |
 | `Judge claims must list 1 to 20 claims.` | `claims` is empty or has more than 20. |
 | `Judge claims each must not be empty.` | A claim is empty or only whitespace. |
 | `Judge claims each must be at most 500 characters.` | A claim is longer. |
-| `Judge passThreshold needs claims to count.` | `passThreshold` is set without `claims`. |
-| `Judge passThreshold must be from 0 to 1.` | `passThreshold` is outside 0 to 1. |
+| `Judge passThreshold must be above 0, up to 1.` | `passThreshold` is 0 or less, or above 1. |
+| `Judge sample must be from 0 to 1.` | `sample` is outside 0 to 1. |
+| `Judge minAgreement must be from 0 to 1.` | `minAgreement` is outside 0 to 1. |
 
 Each is returned with `422` at the path `stations[<n>].judge.<field>`.
 
@@ -552,6 +534,30 @@ See [The pull request](/docs/reference/app/searches#the-pull-request).
 | `Config source path must be a path from the repository root with forward slashes, as in teams/core/delivery.tf.` | `source.path` |
 | `Config source path must not contain empty, . or .. parts.` | `source.path` |
 | `Config source path must end in .tf.` | `source.path` |
+
+## Source commit [#source-commit]
+
+When the provider creates or updates a line in a GitHub Actions job, it sends
+the commit the job runs on as the `Spotlight-Source-Commit` header,
+`<owner>/<name>@<sha>`. It reads `GITHUB_REPOSITORY` and `GITHUB_SHA`, and
+sends the header only when `GITHUB_SERVER_URL` is empty or
+`https://github.com`. Without these variables, it sends no header. The header
+does not change the resource's schema or plan.
+
+For each work station with a judge, Spotlight keeps the first commit that
+wrote each claims version. A change that leaves a station's claims and pass
+threshold as they are keeps no commit for that station. A later apply of the
+same claims, from another commit, keeps the first one. Spotlight then finds the
+pull request that merged the commit, else the first pull request that has it,
+through its GitHub App. When it finds none, it looks again after 1, 5 and 30
+minutes, because GitHub can list the pull request of a new commit late. When
+no pull request has the commit after the last look, for example because the
+App is not installed on the repository, the version keeps the commit alone. A header that is not
+`<owner>/<name>@<sha>`, with a 40 or 64 character hexadecimal `sha`, records
+nothing.
+
+The [Judge tab](/docs/reference/app/tasks-runs-and-the-inbox#judge-tab) shows
+the commit under "Agreement by claims version".
 
 ## Placement
 
