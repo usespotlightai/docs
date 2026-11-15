@@ -144,6 +144,7 @@ that name themselves in a cycle, produce a warning and are then ignored.
 | `oauth2.scopeSeparator` | string | `" "` | `" "` or `","`. What joins `scopes` in the authorization URL's `scope` parameter. Slack takes `","`. |
 | `oauth2.pkce` | boolean | `true` | Whether the connection uses PKCE (RFC 7636). With `false`, the authorization URL has no `code_challenge` and the code exchange sends no `code_verifier`. Only a client with a secret may turn it off: `client.secret`, or a deployment's `OAUTH_CLIENTS` entry. |
 | `oauth2.identity` | string | none | An expression. Names the linked account, shown under "Team account" or "Your account" in the web app. Can read `response`, the token endpoint's response. |
+| `oauth2.hosts` | array of strings | `[]` | Host names, as in `files.slack.com`. More hosts that get the access token, beside the hosts the definition writes out. See [Token hosts](#token-hosts). |
 | `oauth2.client.id` | string | none | The client ID that the service gave the team's own OAuth app. See [OAuth client](#oauth-client). |
 | `oauth2.client.secret` | string | none | A secret reference, `secret.<NAME>`. The workspace secret that holds the client secret of the team's own OAuth app. Without it, token requests send no `client_secret`. Bind the secret to the host of `token`: Spotlight sends it only to a token endpoint it is bound to. |
 | `oauth2.registration` | string | none | A URL. The service's dynamic client registration endpoint (RFC 7591). Used when the definition has no `client` and the deployment has no OAuth client for the integration. See [Client registration](#client-registration). |
@@ -151,7 +152,7 @@ that name themselves in a cycle, produce a warning and are then ignored.
 | `manual.secrets` | array of strings | `[]` | Secrets the connection uses, each a secret reference, `secret.<NAME>`. |
 
 Without `discover`, `oauth2` must name both `authorize` and `token`. With
-`discover = true` it takes only `scopes`, `identity` and `resource`; naming
+`discover = true` it takes only `scopes`, `identity`, `resource` and `hosts`; naming
 `authorize`, `token`, `registration`, `client`, `scopeSeparator` or `pkce`
 beside it is rejected as an unrecognized key. A discovered server always gets
 scopes joined by spaces, and PKCE. `discover` without an `mcp` block is rejected at `connection.oauth2` with
@@ -163,6 +164,8 @@ is rejected at `connection.oauth2.pkce` with
 `is false, which only a client with a secret may use: give client.secret, or remove pkce: false`.
 Any other key beside `authorize` and `token` is rejected as an unrecognized key.
 An empty `client.id` is rejected with `is the client ID the provider gave`.
+An entry of `hosts` that is not a host name, as a URL, is rejected at
+`connection.oauth2.hosts.<n>` with `names a host, as in files.slack.com`.
 
 `actsAs = "requester"` without `oauth2` is rejected with
 `Integration <integration> takes each person's connection. A person can connect only over oauth2.`
@@ -225,9 +228,38 @@ connects only when Spotlight has an OAuth client for it. See
 | Set a tool rule | `PUT /api/teams/{teamId}/integrations/{integration}/connections/mine/tools/{tool}` | Needs a signed-in person on the team. A body `{ "rule": ... }`: `allowed`, the default, follows the team's rule; `needs-approval` asks the caller first; `blocked` never runs the tool. `{tool}` is the tool's full name, as in `linear.comment`. Applies only to calls made with the caller's own connection, and the stricter of the team's rule and the caller's wins. See [Person rules](/docs/reference/app/tasks-runs-and-the-inbox#person-rules). Returns `204`. `404` when the caller is not on the team, the integration does not offer the tool, or its `connection.actsAs` is not `requester`. `422` validation error for a malformed tool name or any other rule. |
 
 The `state` expires after 10 minutes. A request with `auth.oauth2` sends the
-access token as `Authorization: Bearer`. An event's `lookup.request` and an
+access token as `Authorization: Bearer`, only to a host the integration names.
+See [Token hosts](#token-hosts). An event's `lookup.request` and an
 `attachments.fetch` send the team's access token, also for a `requester`
-integration. While the team has not connected, they are sent without a token.
+integration. While the team has not connected, Spotlight sends neither, and
+the delivery fails with
+`Integration <name> has no team connection. Connect the team account to read its deliveries.`
+
+### Token hosts
+
+Spotlight sends the access token only to these hosts:
+
+- The host of each `url` with `auth.oauth2`, where the definition writes the
+  host out. `https://slack.com/api/${{ inputs.method }}` names `slack.com`.
+- The host of `url` and `baseUrl` of an `openapi` or `graphql` block with
+  `auth.oauth2`.
+- Each host in `oauth2.hosts`.
+
+A `url` whose host comes from an expression, as
+`${{ file.url_private_download }}`, names no host. Its request gets the token
+only for a host in `oauth2.hosts`. For any other host, Spotlight does not send
+the request, and the request fails with
+`<host> is not a host the integration names, so Spotlight did not send the connection token there. Add <host> to connection.oauth2.hosts.`
+
+```hcl
+connection = {
+  oauth2 = {
+    authorize = "https://slack.com/oauth/v2/authorize"
+    token     = "https://slack.com/api/oauth.v2.access"
+    hosts     = ["files.slack.com"]
+  }
+}
+```
 
 ### Begin errors
 
@@ -283,6 +315,12 @@ counts as one the integration names, so it cannot be deleted while the
 definition names it. See [Rules](/docs/reference/terraform/secret#rules). A
 client without `secret` sends no `client_secret`.
 
+Each connection keeps the ID of the client it was made through. When
+`client.id` names another client, **Team account** shows "Made through
+another OAuth app" and the **Connect team account** button, and Spotlight
+does not refresh the connection. Connect the team account again to make it
+through the new client.
+
 ### Refresh
 
 | When | What Spotlight does |
@@ -290,6 +328,7 @@ client without `secret` sends no `client_secret`.
 | An access token has less than 5 minutes left. | Refreshes it with the refresh token. |
 | A request with `auth.oauth2` is answered `401`. | Refreshes the token once and sends the request once more with the new one. Any other status, and a request authenticated by `secrets`, are not retried. |
 | An event's `lookup.request` or `attachments.fetch` with `auth.oauth2` is answered `401`. | Refreshes the team's token once and sends the request once more with the new one. The other requests of the same delivery use the new token. |
+| A refresh finds that Spotlight now connects through another client than the one the connection was made through. | Does not refresh. Marks the connection failed. See [OAuth client](#oauth-client). |
 | A spec fetch with `auth.oauth2` is answered `401`. | Refreshes the team's token once and fetches the spec once more with the new one. |
 
 One refresh of a connection runs at a time, across every control-plane
