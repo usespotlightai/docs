@@ -194,6 +194,25 @@ sandbox.
 | First run | A queued first run of a task of the line, which restores no working copy, starts in a `ready` warm sandbox with no run in it. For 60 seconds after it is queued, other hosts leave such a run to the warm sandbox's host. Replays, searches and chats do not use warm sandboxes. |
 | Age | A warm sandbox that no run took drains this long after it started. The control plane's `SPOTLIGHT_WARM_SANDBOX_AGE`, default `24h`. A new one replaces it. |
 | Capacity | As for any sandbox: one place in the host's `SPOTLIGHT_CAPACITY` and its pool's `maxRuns`. |
+| Setup image | After its setups, the host keeps a copy of the warm sandbox as a [setup image](#setup-images), before the sandbox takes a run. |
+
+## Setup images
+
+A setup image is a local Docker image of a warm sandbox after its setups.
+A new sandbox with the same setups starts from it, with the repositories
+cloned and their dependencies installed, so its first run skips setup.
+
+| Rule | Value |
+| --- | --- |
+| Made | When a warm sandbox's setups all succeed and at least one of them ran. The sandbox takes no run until the host has made the image. A host makes one image at a time for each set of setups. |
+| Holds | `/workspace`, the home directories with their package caches such as `~/.npm`, and the record of the setups. The image has the runner image's configuration. The runner's files, the sandbox's variables and the run's authorities in the system's trusted certificates stay out of it. If the sandbox changed another path, the host makes no image. A runner image with a volume on `/workspace`, `/home` or `/var/lib/spotlight` gets no setup image. |
+| Checked | The host tags an image `spotlight-setup:<key>` only after it checked that the image holds no variable or label of the sandbox. A sandbox starts only from a tagged image. |
+| Used | By a new sandbox of the same workspace, runner image and repositories, with the same `setup` on each repository: a warm sandbox, or a run that starts a sandbox. A sandbox with no `setup` on its repositories starts from the runner image. If a sandbox cannot start from the setup image, it starts from the runner image. |
+| First run | The first run in a sandbox from a setup image skips each setup whose command and dependency files are the same as in the image. See [Setup](#setup). |
+| Updated | A warm sandbox from a setup image moves each repository to its default branch in the mirror. If a dependency file changed, that setup runs on top of what is installed, and the host makes a new image. After three images on top of each other, the next warm sandbox starts from the runner image. |
+| Disk | The host makes no image when the free disk is below `SPOTLIGHT_SETUP_IMAGE_DISK_FLOOR`. See [Host settings](/docs/reference/hosts/host-configuration#sandboxes). |
+| Removed | When a newer image of the same setups replaces it, when the host no longer serves its runner image, after 7 days with no sandbox started from it, or when the host has more than 8. An untagged image is removed 15 minutes after it was made. An image that a sandbox uses or starts from stays until the sandbox ends. |
+| Local | Each host makes its own images. A host sends them to no registry. |
 
 ## Editor connections
 
@@ -286,7 +305,9 @@ A change stack check runs in a sandbox of its own, in place of a run. See
 After a setup succeeds, the sandbox records its command and the content of the
 repository's dependency files. The next run in the same sandbox skips that
 setup when both are the same. A new sandbox, a restored working copy and a
-replay run record nothing, so their setup runs. A skip looks only at the
+replay run record nothing, so their setup runs. In a sandbox from a
+[setup image](#setup-images), the first run uses the image's record, and the
+later runs use only the record of their own sandbox. A skip looks only at the
 command and the dependency files, so keep `setup` to what installs
 dependencies: a build or code generation step in it is skipped with the install.
 

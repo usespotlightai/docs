@@ -57,6 +57,11 @@ for each repository with a `setup`. If a dependency file changed on the default 
 the warm sandbox started, the setup runs in it, on top of what is already
 installed.
 
+The first warm sandbox of the line on a host takes no run until the host has
+made its [setup image](/docs/reference/hosts/sandbox#setup-images). The host
+logs `committed a setup image`. Later sandboxes with the same setups start from
+that image.
+
 To stop, set `warm_sandboxes = 0` or remove the attribute. Spotlight drains the
 line's warm sandboxes.
 
