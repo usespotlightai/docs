@@ -10,7 +10,7 @@ asks you something, when its run fails, when a tool needs your approval, or
 when a tool needs to act as you at a service you have not connected.
 Each of these is an item in your inbox. A task with no assignee asks
 everyone on its team, and a task you wrote in shows its questions to you too.
-Items that grade a run, propose
+Items that grade a run, ask why the judge and people disagree, propose
 memories or report a station alert are inbox requests. They wait on nothing,
 and so do notices about your team's work that need a person, such as a config
 pull request that Spotlight opened.
@@ -101,7 +101,8 @@ your values. An approval covers one call; the next call asks again. A
 dismissal stays valid: the same call with the same inputs at this station is
 dismissed without asking you.
 
-If Spotlight cannot take your answer, the card says why. See
+If Spotlight cannot take your answer, a message at the bottom of the page says
+why. See
 [Answering an approval](/docs/reference/errors-and-messages#answering-an-approval).
 
 If you write a reply instead of choosing, the run carries on with no decision
@@ -120,11 +121,49 @@ resumes. The connection stays for later tasks; see
 
 An item that reads **A judged run needs your grade. Grades check the judge.**
 asks for your view of one run at a station with a judge. It shows the run's
-conversation, then a card with the question and, where the station has one,
-the judge's rubric. Select **Yes** or **No**, or a number from 1 to 5. Your
-grade saves as soon as you choose. Anyone on the team, or an owner or admin of
-the workspace, can grade it, and nothing waits on it. See
+conversation, then a card with the judge's claims. Select **Yes** or **No**
+beside each claim. Then select **Save grade**. Anyone on the team, or an owner
+or admin of the workspace, can grade it, and nothing waits on it. See
 [Check a station's judge against people](/docs/improvement/check-a-stations-judge-against-people).
+
+## Say why the judge and people disagree
+
+An item that reads **The judge and people disagree on a run. Spotlight asks
+why.** is about a run where the judge's verdict is not people's. It shows the
+run's conversation, then one card for each claim in dispute, each of which
+reads **Waiting for your answer**. A line above the cards names who gave the
+label and the judge's verdict, for example
+**You passed this run in a grade. The judge failed it.** Your answer does not
+change any verdict.
+Spotlight uses it to rewrite the claims of the judge.
+
+1. To see the run's trace, select the binoculars icon at the right of a
+   card's title (**Open the trace**).
+2. On a card, read the "Claim", your mark if you graded the run, and the
+   "Judge" mark with its reasons. **See** opens the cited step in the run's
+   steps above the card, or the cited file in a pane beside it with the cited
+   lines selected. A **See** link in grey shows that the run no longer has
+   the step or file; hover it to see why.
+3. Under "Answer", select **The judge is right** or **The claim does not fit
+   this run**.
+4. Optionally, write a note under "Why" ("Tell Spotlight why (optional)").
+5. Select **Send answer** on that card. The card then reads **Answered by
+   you** with the day. The other cards keep what you wrote in them.
+6. Do steps 2 to 5 for each card that reads **Waiting for your answer**.
+
+When each claim has an answer, the item moves to **Resolved** as
+**Disagreement resolved.** An answer cannot be changed.
+
+If the item shows one card with **Claim not met**, no claim is in dispute.
+Select a claim or **No claim covers it**. With **No claim covers it**, say
+what the run did wrong under "What was wrong". Then select **Send answer**.
+
+When people's verdict changes so that it agrees with the judge's, or is gone,
+or the judge's claims change, Spotlight withdraws the question. The item moves to
+**Resolved**, each card reads **Withdrawn** with the day, and nobody can
+answer it. If a message at the bottom of the page says the answer was not
+sent, select **Send answer** again. See
+[Judge disagreements](/docs/reference/app/tasks-runs-and-the-inbox#judge-disagreements).
 
 ## Look into a station alert
 
@@ -178,7 +217,7 @@ request, goes to you alone. Read the points under
 - If Spotlight cannot search a station, the points say what to fix, such as
   `Please add a judge or a check to the station in the Terraform of the line.`
 - If a search stalled on causes outside the config, each point names a task,
-  its cause and what to fix, such as the judge's rubric or the station's
+  its cause and what to fix, such as the judge's claims or the station's
   check.
 - If a change that you asked to test did not become the pull request, the
   first point says why, such as `No candidate did better than the live config

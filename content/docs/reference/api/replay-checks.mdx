@@ -76,7 +76,10 @@ A change that changes nothing about how the station's runs go fails with
 A change already checked is answered with that check, `200` and `reused:
 true`, while the earlier check is running, passed or failed, and only if it
 replayed the same runs of the set against the same live config, the same
-threshold, the same scoring and the same `repeats`. When search replays of the
+threshold, the same scoring and the same `repeats`. Where the scoring uses the
+judge, the judge's calibration state must also be the same as when the earlier
+check started, and a check that failed because the judge disagrees with people
+is never reused. When search replays of the
 change are there, the earlier check must also reuse search replays. Otherwise a new check starts, with the next
 `attempt`. A repeated request with the same `Idempotency-Key` answers `201`
 with the check it started and the header `Idempotent-Replayed: true`.
@@ -147,6 +150,8 @@ after the commit's first 7 characters, or the date.
 | `gain` | object or null | The candidate's gain in success over the baseline, `{ gain, low, high, significance, minGain, tasks }`: the gain and its 95% interval as shares, `better`, `worse` or `within-noise` as in [Gains](/docs/reference/app/replays#gains), the line's `min_gain`, and the tasks scored on both sides. It does not decide `result`. Null with no baseline or no replay, and while no task was scored on both sides. |
 | `result` | string | See [Results](#results). |
 | `undecidedBecause` | string or null | See [Results](#results). |
+| `failedBecause` | string or null | `too-many-regressions` or `judge-disagrees-with-people`. Null unless `result` is `failed`. See [Results](#results). |
+| `judge` | object or null | `{ state, agreement, pairs, minPairs, minAgreement }`: how the verdicts of the live judge agree with people's. `state` is `qualified`, `unmeasured` or `failing`, as in [Judge agreeing with people](/docs/reference/app/replays#judge-agreeing-with-people). `agreement` is Cohen's kappa, `pairs` counts the runs with both verdicts, `minPairs` the runs needed, and `minAgreement` is the judge's `min_agreement`. `agreement` and `minAgreement` can be null. Null when the live config has no judge. |
 | `taskCount` | number | How many tasks the set replays. |
 | `compared` | number | How many were scored on both sides. |
 | `candidate`, `baseline` | object | Each `{ state, entries, scored, succeeded, successRate, interval, tasksScored, spent }`. `state` is the replay's state, `queued`, `running`, `finished`, `stopped` or `ceiling-reached`, or null once it is gone. `entries`, `scored` and `succeeded` count repeats; `successRate` is the share of scored repeats that succeeded, `interval` its 95% interval `{ low, high }`, and `tasksScored` counts tasks with a scored repeat. |
@@ -186,7 +191,7 @@ It reads the reason, then a colon and its detail when it has one:
 | `judged` | `Judge passed it` |
 | `judge-failed` | `Judge failed it` |
 | `unjudged` | `Judge could not judge it` |
-| `nothing-judges` | `No check or judge scores this station` |
+| `nothing-judges` | `The station has no check or judge` |
 
 Without a reason, it reads `Checks passed.`, `The run failed.`, `The repeats
 did not agree.`, `Nothing scored the run.`, `The replay has not finished.` or
@@ -198,7 +203,7 @@ did not agree.`, `Nothing scored the run.`, `The replay has not finished.` or
 
 | Result | When |
 | --- | --- |
-| `failed` | More tasks regressed than `maxRegressions` allows. Decided as soon as it happens. Spotlight stops the check's replay when the next of its runs ends, and its runs that have not started do not start. A task counts only once each of its repeats, on both sides, has ended. |
+| `failed` | The live judge is `failing`, or more tasks regressed than `maxRegressions` allows. See `failedBecause` below. |
 | `running` | The change's replay or its baseline is queued or running, or the baseline is still being started. |
 | `undecided` | See below. |
 | `passed` | None of the above. |
@@ -211,6 +216,14 @@ did not agree.`, `Nothing scored the run.`, `The replay has not finished.` or
 | `no-baseline` | There is no replay of the live config to compare with. |
 | `baseline-unfinished` | The live config's replay did not finish. |
 | `too-few-scored` | Fewer than half the tasks were scored on both sides. |
+
+| `failedBecause` | When |
+| --- | --- |
+| `judge-disagrees-with-people` | The live config has a judge, and the judge's state is `failing` when the check starts. The check fails at once: Spotlight starts no replay and no baseline replay for it, and it spends nothing. |
+| `too-many-regressions` | More tasks regressed than `maxRegressions` allows. Decided as soon as it happens. Spotlight stops the check's replay when the next of its runs ends, and its runs that have not started do not start. A task counts only once each of its repeats, on both sides, has ended. |
+
+Spotlight reads the judge's state into `judge` when the check starts. The
+check keeps it, also when the judge's agreement with people changes later.
 
 ## Who may read and change
 

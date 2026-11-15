@@ -76,14 +76,13 @@ hosts the host's allow-list allows, as for any run; see
 
 A replay is scored by what the candidate itself requires. If the candidate's
 station generates change stacks (`diffs: true`) and has a `check`, its change must
-pass that check. If it has a judge, the judge scores the change against its
-rubric. Where people accepted the original's change, by moving the task to the completed station as
+pass that check. If it has a judge, the judge checks the change against its
+claims. Where people accepted the original's change, by moving the task to the completed station as
 the first thing they did on it after the run, the judge is also shown that
-change and scores the replay against it. A run passes the judge on a yes, on 4 or more on a 1 to 5
-rubric, or, for a judge with claims, on meeting at least its pass threshold of
-them. With both a check and a judge, a run must pass both.
+change and scores the replay against it. A run passes the judge when it meets at least the judge's pass
+threshold of its claims. With both a check and a judge, a run must pass both.
 
-A replay's judge scores never count in the judge's agreement with people,
+A replay's judge verdicts never count in the judge's agreement with people,
 its calibration, alerts or the Insights figures of the team's runs. They are only
 compared between replays.
 
@@ -115,17 +114,17 @@ the comparison. In the docs' view, they ran under conditions a replay cannot
 bring back, such as an earlier model release or a dependency that has since
 moved, and a baseline replayed now meets the same conditions the candidate
 meets. A task regresses when the candidate is clearly worse on it than the
-baseline, after the noise of both sides, or when the judge clearly scored the
-candidate lower, after the same noise. How many repeats each side has decides what "clearly" means;
+baseline, after the noise of both sides, or when the judge found clearly fewer
+claims met on the candidate, after the same noise. How many repeats each side has decides what "clearly" means;
 see [Repeats of the same run](#repeats-of-the-same-run).
 
 ## Side by side with the baseline
 
-A judge's score is absolute: it says how good one change is, read on its own.
+A judge's verdict is absolute: it says how good one change is, read on its own.
 Where there is a replay to compare with, the judge can instead be shown both
 changes and prompted to say which is better, which makes its verdict steadier and easier
 to check. In the docs' view, two changes can both pass while one is plainly
-closer to what the task needed, and scores given to each on its own may not
+closer to what the task needed, and verdicts given to each on its own may not
 show it.
 
 So once a replay has finished, on each task where both it and the replay it is
@@ -151,7 +150,7 @@ its gain use that one replay, and so do its wins and losses, where it has
 them; a replay with the answer is never set side by side. A baseline started
 later does not change what an earlier replay was compared with. In the docs' view, figures read against two
 different replays could not be read together. Pairs judged under different
-rubric versions are left out; in the docs' view, comparing them would mix two
+claims versions are left out; in the docs' view, comparing them would mix two
 questions.
 
 The comparisons do not count against the replay's ceiling, its spend or its
@@ -205,9 +204,9 @@ time is flaky, and one failed repeat of the candidate does not make it
 regress. With one repeat on each side, no task regresses by success, because
 one repeat each cannot tell a regression from noise. A search's seed and a
 replay check's baseline therefore replay each run at least three times. See
-[Regressions](/docs/reference/app/replays#regressions). Counted by judge
-score, the same rule takes each score as a share of a success, so one lower
-score against one does not make a task regress either.
+[Regressions](/docs/reference/app/replays#regressions). Counted by claims
+met, the same rule takes the share of claims the judge found met as a share of
+a success, so one lower share against one does not make a task regress either.
 
 The baseline a replay is compared with must have at least as many repeats of
 each run. When it has fewer, a new baseline starts beside the replay with the
@@ -384,7 +383,7 @@ shows whether it still did well on the team's real work.
 ## Related
 
 - [Replays](/docs/reference/app/replays)
-- [Why a judge must agree with people before its scores show](/docs/improvement/why-a-judge-must-agree-with-people)
+- [Why a judge must agree with people before its verdicts show](/docs/improvement/why-a-judge-must-agree-with-people)
 - [Why a search holds tasks out](/docs/improvement/why-a-search-holds-tasks-out)
 - [How Spotlight improves a station](/docs/improvement/how-spotlight-improves-a-station)
 - [Insights: Candidates](/docs/reference/app/insights#candidates)

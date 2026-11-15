@@ -80,6 +80,10 @@ uses the login that `spotlight login` keeps.
   `ACTIONS_ID_TOKEN_REQUEST_TOKEN` to request the OIDC token.
 - Every request carries `Spotlight-Client: terraform-provider/<version>` and
   `Spotlight-Api-Version`.
+- In GitHub Actions, a line's create and update carry
+  `Spotlight-Source-Commit: <owner>/<name>@<sha>`, from `GITHUB_REPOSITORY`
+  and `GITHUB_SHA`, when `GITHUB_SERVER_URL` is empty or
+  `https://github.com`. See [Source commit](/docs/reference/terraform/line#source-commit).
 - `GET` requests, and requests that carry an `Idempotency-Key`, are retried up
   to 3 times after a network error or a `429`, `502`, `503` or `504` response,
   waiting 500 milliseconds before the first retry and doubling each time.
