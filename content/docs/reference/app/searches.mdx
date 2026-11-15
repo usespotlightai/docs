@@ -117,6 +117,7 @@ in UTC, for `monthly-ceiling`. The first row that applies decides:
 | `set-too-small` | The set cannot give at least 2 held-out tasks and 3 searched tasks, so it covers fewer than 5 tasks. | No |
 | `noisy` | At the search's repeats, the set's [noise](/docs/reference/app/replays#noise) is more than the line's `min_gain` allows. | Yes |
 | `judge-unstable` | The set's newest [calibration](/docs/reference/app/replays#calibration) found the judge agreeing with itself less than 80% of the time. | Yes |
+| `judge-disagrees-with-people` | The station's judge is [`failing`](/docs/reference/app/replays#judge-agreeing-with-people): its Cohen's kappa against people is below `min_agreement`, or its claims cannot be read. | Yes |
 | `flaky-checks` | The set's newest calibration found a flaky check. | Yes |
 | `no-headroom` | The newest [replay with the answer](/docs/reference/app/replays#replay-with-the-answer) found no [room to improve](/docs/reference/app/replays#room-to-improve). | No |
 | `no-fresh-held-out` | Fewer of the set's tasks than a search holds out are ones no earlier search of the station searched on. | No |
@@ -255,7 +256,7 @@ ends, or fails:
 | `cause` | Means | In a notice |
 | --- | --- | --- |
 | `task` | The task is unclear, out of date, or can't be done as written. No config would get it right. | `the task itself`, then `Spotlight takes the task out of the replay set.` The next refresh takes the task out of the set; see [How Spotlight keeps the set](/docs/reference/app/replays#how-spotlight-keeps-the-set). |
-| `judge` | The work can be fine, but the judge scored it wrong. | `the judge`, then `Please fix the rubric of the judge.` |
+| `judge` | The work can be fine, but the judge judged it wrong. | `the judge`, then `Please fix the claims of the judge.` |
 | `check` | The check failed for a reason that the change didn't cause, such as a broken or flaky test. | `the check`, then `Please fix the check of the station.` |
 | `infra` | Something around the work failed the run, such as the runner, the network or a missing tool. | `what the run needed around the work`, then `Please fix the setup that the run needs.` |
 | `config` | A change to the station's config, such as prompt, model or skills, could still fix it. | Not shown. |
@@ -461,9 +462,22 @@ Spotlight. It opens with `Spotlight searched for a better config of the
 <station key> station on the <line key> line and found <candidate name>.
 Spotlight picked it because it did better than the live config on the held-out
 tasks. This changes the station as the candidate has it: <attributes>.` Then,
-when they apply, a paragraph for an [overfit](#overfit) candidate, or for a
-candidate whose held-out replay had not finished, and a paragraph for a
-candidate [over the regression limit](#regressions-against-the-live-config).
+when they apply, a paragraph about the station's judge, a paragraph for an
+[overfit](#overfit) candidate, or for a candidate whose held-out replay had not
+finished, and a paragraph for a candidate
+[over the regression limit](#regressions-against-the-live-config).
+
+The paragraph about the judge reads the
+[judge's agreement with people](/docs/reference/app/replays#judge-agreeing-with-people)
+for the live config when Spotlight opens the pull request:
+
+| Judge | Paragraph |
+| --- | --- |
+| Agrees with people well enough, or the station has no judge | None. |
+| Does not agree well enough | ``The verdicts of the judge of the station do not agree with the verdicts of people often enough. Its agreement with people is <agreement>, below the minimum of <min_agreement> (`min_agreement`). The scores below come from the verdicts of that judge, so weigh that before merging.`` The sentence with the agreement shows only when the agreement can be measured. |
+| Not checked yet, with fewer runs than it needs | `Spotlight has not yet checked the judge of the station against people: <pairs> of the <needed> runs it needs have both a verdict of the judge and a verdict of a person. The scores below come from the verdicts of that judge, so weigh that before merging.` |
+| Not checked yet, with enough runs that all have the same verdict | `Spotlight cannot yet measure how well the judge of the station agrees with people: on all <pairs> runs that have both verdicts, every verdict of the judge and of people was the same: all pass or all fail. The scores below come from the verdicts of that judge, so weigh that before merging.` |
+
 The sections follow:
 
 | Section | Holds |
@@ -604,7 +618,8 @@ links to a pull request only at `https://github.com/`.
 | `ceiling-too-low` | `The search ceiling is too low to replay each task of the set for each candidate.`, `Please raise the search ceiling in the search policy of the line.` |
 | `no-agent` | `No runner can start the harness of the search agent.`, `Please set a harness for the station, or an agent in its search policy.` |
 | `noisy` | `Success moves too much between repeats of the same runs. Spotlight cannot tell configs apart on the replay set.`, `Please make the judge or the check of the station give the same result for the same work.` |
-| `judge-unstable` | `The judge of the station does not give the same verdict twice for the same run.`, `Please make the rubric of the judge more exact.` |
+| `judge-unstable` | `The judge of the station does not give the same verdict twice for the same run.`, `Please make the claims of the judge more exact.` |
+| `judge-disagrees-with-people` | `The verdicts of the judge of the station do not agree with the verdicts of people often enough. Spotlight cannot trust the verdicts of the judge to score a config.`, `Please change the claims of the judge until its verdicts agree with the verdicts of people.` |
 | `flaky-checks` | `The check of the station gives a different result when it runs twice on the same change.`, `Please fix the check of the station.` |
 
 A person who requested a candidate of a search gets one of these, addressed

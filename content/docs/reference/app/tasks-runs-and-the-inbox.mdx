@@ -422,7 +422,7 @@ config. A chat's run records none.
 | Skills | Each team and catalog skill enabled, with a SHA-256 of its files. Built-in skills are left out. |
 | Tools | The tools the station enables, with the tools of its skills. |
 | Decisions, memories | Whether the station generates decisions and drafts memories. |
-| Judge | The SHA-256 of the judge's rubric, its `sample` and its `minAgreement`, when the station has a [judge](/docs/reference/terraform/line#judge-fields). The station's alerts are not part of the config. |
+| Judge | The SHA-256 of the judge's claims and pass threshold, its `sample` and its `minAgreement`, when the station has a [judge](/docs/reference/terraform/line#judge-fields). The station's alerts are not part of the config. |
 
 The run's [config fingerprint](/docs/reference/glossary#config-fingerprint) is
 a SHA-256 of these parts. The task's title, description and marks are not part
@@ -449,7 +449,7 @@ The web app words each change as one phrase, in the names of the groups under
 | Skill | `Skill <key> added`, `Skill <key> removed`, `Skill <key> changed` |
 | Tool | `Tool <name> added`, `Tool <name> removed` |
 | Decisions, memories | `Decisions on`, `Decisions off`, `Memories on`, `Memories off` |
-| Judge | `Judge added`, `Judge removed`, `Judge rubric changed`, `Judge sample <was> → <now>`, `Judge min agreement <was> → <now>`, with sample and minimum agreement as percentages |
+| Judge | `Judge added`, `Judge removed`, `Judge claims changed`, `Judge sample <was> → <now>`, `Judge min agreement <was> → <now>`, with sample and minimum agreement as percentages |
 
 For example: `Effort high → xhigh`.
 
@@ -512,9 +512,10 @@ of these are true:
 - It falls in the judge's `sample`. Whether a run falls in it is worked out
   from the run's id, so it never changes. A `sample` of 1 judges every run, and
   0 none.
-- The rubric's scale can be read. A judge with claims always scores claim by
-  claim.
-- It has not been judged before. A run is judged once.
+- Its claims can be read.
+- It has not been judged before. A run is judged once, unless
+  [re-judging after a claims change](#re-judging-after-a-claims-change)
+  judges it again.
 
 At most 4 runs are judged at once. The judge reads the task's title (up to 300
 characters) and description (up to 4,000), the run's steps from every attempt,
@@ -528,113 +529,246 @@ change to after its last, with 3 lines of context.
 
 The judge is told how many steps and hunks were left out.
 
-The judge answers with a score on the rubric's scale and 1 to 5 reasons. Each
-reason is up to 1,000 characters and cites 1 to 10 steps, by their place in the
-run's journal, or hunks, by name. A reason citing a step or hunk the judge did
-not read is dropped.
+The judge answers each claim, in order, met or not, with 1 to 3 reasons of its
+own. Each reason is up to 1,000 characters and cites 1 to 10 steps, by their
+place in the run's journal, or hunks, by name. A reason citing a step or hunk
+the judge did not read is dropped. The judge is told that a claim the steps and
+hunks do not show to be true is not met.
 
-A judge with claims answers each claim, in order, met or not, with 1 to 3
-reasons of its own in the same form. It is told that a claim the steps and
-hunks do not show to be true is not met. Its score is the share of claims met,
-and each claim keeps its result and its reasons.
-
-A score is recorded against the rubric version: the SHA-256 of the rubric, the
-claims and the pass threshold together.
+The score is the share of claims met, and each claim keeps its result and its
+reasons. The run passes when the share is at least the judge's
+`passThreshold`; this pass or fail is the judge's verdict. A score is recorded
+against the claims version: the SHA-256 of the claims and the pass threshold
+together.
 
 | Failure | When | Tried again |
 | --- | --- | --- |
 | `no-evidence` | The run left no steps and no hunks. | no |
 | `request-failed` | The request to the model failed. | up to 4 attempts, from 30 seconds to 10 minutes apart |
-| `unreadable` | The answer could not be read, gave more than 5 reasons, or a score off the scale. With claims: it did not answer each claim once, in order, or gave a claim no reasons or more than 3. | up to 3 attempts, from 30 seconds to 5 minutes apart |
-| `ungrounded` | Half the reasons or fewer cited what the judge read. With claims: half or fewer of any one claim's reasons. | up to 3 attempts, from 30 seconds to 5 minutes apart |
+| `unreadable` | The answer could not be read, did not answer each claim once, in order, or gave a claim no reasons or more than 3. | up to 3 attempts, from 30 seconds to 5 minutes apart |
+| `ungrounded` | Half or fewer of any one claim's reasons cited what the judge read. | up to 3 attempts, from 30 seconds to 5 minutes apart |
 | `errored` | Another error. | up to 4 attempts, from 30 seconds to 10 minutes apart |
 
 A run whose judging failed shows no score.
 
 ### Agreement
 
-A judged run's people's score is the latest grade a person gave it on the
-judge's scale. A grade counts only for the rubric version it was given under:
-the version of the run's judge score, or else the station's rubric at the time.
-On a yes-or-no scale, a run no one graded takes its people's score from its
-[first human action](#station-outcomes): Yes when it was Accepted, No when it was Sent
-back; failing those, Yes when its pull request merged and No when it closed
-unmerged. Approving or dismissing an approval is never a human action. A 1 to 5
-scale and claims use grades only.
+Agreement compares the judge's verdict with people's verdict on the same run.
+A judged run's people's verdict comes from the first of these that the run has:
 
-Agreement is measured from the station's latest 500 judge scores, across
-rubric versions, grouped by version, from the runs with both scores. The
-measure decides whether the judge is qualified; the statistics are shown under
-"Statistics" on the station's view on Insights (see
-[One station](/docs/reference/app/insights#one-station)):
-
-| Scale | Measure | Statistics |
+| Source | Passes | Fails |
 | --- | --- | --- |
-| Yes or no | Cohen's kappa | "Cohen's kappa"; "F1 score": twice the runs both scored Yes, over the runs the judge scored Yes plus the runs people scored Yes; "Overall agreement": the share of runs where both scores are the same. |
-| 1 to 5 | Spearman's ρ, with tied ranks averaged | "Pearson correlation"; "Spearman correlation"; "Mean absolute error": the mean absolute difference between the two scores, in points on the scale; "Root mean square error": the square root of the mean squared difference. |
-| Claims | Cohen's kappa over every claim's results, pooled across claims | "Cohen's kappa", "F1 score" and "Overall agreement", over the pooled claim results, with Met in place of Yes. For each claim, its own Cohen's kappa, agreed share and count of runs. |
+| The latest grade a person gave it | The grade meets at least `passThreshold` of the claims. | The grade meets less. |
+| Its [first human action](#station-outcomes) | Accepted | Sent back |
+| Its pull request | Merged | Closed unmerged |
 
-On claims, a run counts once in the runs with both scores, however many
-claims it has. Statistics are shown to two decimals, and "Overall agreement" as
-a percentage. A statistic that cannot be worked out reads `–`.
+A grade counts only for the claims version it was given under: the version of
+the run's judge verdict, or else the station's at the time. Approving or
+dismissing an approval is never a human action. A verdict from
+[re-judging after a claims change](#re-judging-after-a-claims-change) is a
+judge's verdict like any other, so its run counts when it also has people's
+verdict.
 
-Cohen's kappa, each claim's kappa and the two correlations each carry a
-reading, shown on hover with what the statistic measures. "F1 score", "Mean
-absolute error" and "Root mean square error" have no reading.
+Agreement is measured from the station's latest 500 judge verdicts, across
+claims versions, grouped by version, from the runs with both verdicts. The
+measure is Cohen's kappa of the judge's verdicts against people's, and it
+decides whether the judge is qualified. The station's [Judge tab](#judge-tab)
+shows it with two more statistics:
+
+| Statistic | What it is |
+| --- | --- |
+| Cohen's kappa | The agreement of the two verdicts beyond what chance would give. 1 is perfect agreement. |
+| Same verdict | The share of runs where both verdicts are the same, agreement by chance included. |
+| F1 score | Twice the runs both passed, over the runs the judge passed plus the runs people passed. |
+
+Each claim also has its own Cohen's kappa, agreed share and count of runs. These
+come from grades only, because a grade is the one source that marks each claim.
+They show which claim the judge reads differently from people. They do not
+decide whether the judge is qualified.
+
+Statistics are shown to two decimals, and "Same verdict" as a percentage.
+A statistic that cannot be worked out reads `–`.
+
+Cohen's kappa and each claim's kappa carry a reading:
 
 | Cohen's kappa | Reads |
 | --- | --- |
-| 0.81 or more | Almost perfect agreement |
-| 0.61 to below 0.81 | Substantial agreement |
-| 0.41 to below 0.61 | Moderate agreement |
-| 0 to below 0.41 | Fair to slight agreement |
-| Below 0 | Less agreement than chance |
+| 0.81 or more | Almost perfect |
+| 0.61 to below 0.81 | Substantial |
+| 0.41 to below 0.61 | Moderate |
+| 0.21 to below 0.41 | Fair |
+| 0.01 to below 0.21 | Slight |
+| Below 0.01 | No better than chance |
 
-| Pearson, Spearman | Reads |
-| --- | --- |
-| 0.9 or more | Very strong correlation |
-| 0.7 to below 0.9 | Strong correlation |
-| 0.5 to below 0.7 | Moderate correlation |
-| 0 to below 0.5 | Weak correlation |
-| Below 0 | Inverse correlation |
-
-The judge's scores show only when the station's current rubric is qualified:
+The judge's verdicts show only when the station's current claims version is
+qualified:
 
 | Calibration | When | Reads |
 | --- | --- | --- |
-| Qualified | At least 10 runs have both scores, and the measure is at least the judge's `minAgreement`. | `Qualified. <measure>: <value> over <n> runs. Minimum required: <minAgreement>` |
-| Hidden: too few runs | Fewer than 10 runs have both scores. | `Hidden until more runs have scores from both the judge and people. Runs so far: <n>` |
-| Hidden: no agreement | The measure cannot be worked out, as when every score so far is the same. | `Hidden. Agreement can't be measured while all scores are identical.` |
-| Hidden: below minimum agreement | The measure is below `minAgreement`. | `Hidden. <measure>: <value>. Minimum required: <minAgreement>` |
-| Hidden: unreadable rubric | The rubric's scale cannot be read. | `Hidden. The rubric names a scale that cannot be read.` |
+| Qualified | At least 10 runs have both verdicts, and Cohen's kappa is at least the judge's `minAgreement`. | `Qualified. Cohen’s kappa: <value> over <n> runs. Minimum required: <minAgreement>` |
+| Hidden: too few runs | Fewer than 10 runs have both verdicts. | `Judge verdicts are hidden until 10 runs have a verdict from the judge and from people. Runs so far: <n>.` |
+| Hidden: no agreement | Cohen's kappa cannot be worked out, as when every verdict so far is the same. | `Judge verdicts are hidden. Agreement cannot be measured while every verdict is the same.` |
+| Hidden: below minimum agreement | Cohen's kappa is below `minAgreement`. | `Judge verdicts are hidden. Cohen’s kappa: <value>. Minimum required: <minAgreement>.` |
+| Hidden: unreadable claims | The station's claims cannot be read. | `Judge verdicts are hidden. The judge’s claims cannot be read.` |
 
-The measure reads "Cohen's kappa" or "Spearman's ρ", and the value and `minAgreement`
-are shown to two decimals.
+The value and `minAgreement` are shown to two decimals.
 
-While the judge is not qualified, a run's score and its reasons are both hidden.
-A score given under an earlier rubric version stays hidden, whatever the
-calibration. A new rubric version starts with no runs that have both scores.
+While the judge is not qualified, a run's judge verdict and its reasons are both hidden.
+A verdict given under an earlier claims version stays hidden, whatever the
+calibration. A new claims version starts with no runs that have both verdicts.
 
-The station's view on Insights shows, under "How far the judge agrees with people", the
-measure with the calibration, then how many of the station's latest 200 ended
-runs, less those cancelled, have "Both scores", "Judge only", "People only"
-and "Neither", each with `<share> of the last <n>`. A qualified judge's calibration there reads
-`Qualified. Minimum required: <minAgreement>`. With no judged runs, it reads "No judged
-runs yet" and
-`Judge agreement with people shows here per rubric once the judge scores runs.`
+### Judge tab
+
+A work station with a judge has a "Judge" tab on its page, at
+`…/stations/<stationId>/judge`. It shows "Agreement with people" for one
+version of the claims: `Current claims`, or `Claims until <day>` for an
+earlier version, `<day>` being the day of its last verdict. When the judge has
+judged runs under more than one version, "Claims" picks the version. With no
+judged runs, the tab reads "No judged runs yet" and `Agreement with people
+shows here for each version of the claims after the judge’s first verdict.`
 To a person who may not read it, `Only team members can see judge agreement`.
-Each rubric version then shows:
 
-| Card | Shows |
+On the current version, a line reads `Judge verdicts show on runs.` or
+`Judge verdicts are hidden on runs.` Hovering the hidden line shows why:
+
+| Calibration | Why |
 | --- | --- |
-| Statistics | The statistics above. Hovering over one shows what it measures, with its reading when it has one. |
-| Score comparison | Runs counted by the judge's score, in rows, against people's, in columns. On claims, it counts claim results. Shown when runs have both scores. |
-| Distribution | How often each score was given, by the judge and by people, over runs with both scores. On claims, it counts the pooled claim results. Shown when runs have both scores. |
-| Trend over time | The judge's and people's scores by day, as `share scored yes, by day`, `mean score, by day` or `share of claims met, by day`. The judge's line shows only on the current rubric while it is qualified; otherwise its legend reads "Judge hidden". |
-| By claim | For a judge with claims: "Claim", "Cohen's kappa", "Agreed" and "Runs" for each claim. On an earlier rubric version, a claim reads `Claim <n>`. |
+| Hidden: too few runs | `They show when 10 runs have a verdict from the judge and from people.` |
+| Hidden: no agreement | `Agreement cannot be measured while every verdict is the same.` |
+| Hidden: below minimum agreement | `Cohen’s kappa is below the minimum, <minAgreement>.` |
+| Hidden: unreadable claims | `The judge’s claims cannot be read.` |
 
-"Rubric" picks the version when the judge has judged runs under more than one:
-"Current version", or `Version until <day>`.
+Tiles follow. Hovering a tile shows what it measures.
+
+| Tile | Shows |
+| --- | --- |
+| Runs with both verdicts | Fewer than 10 runs: `<n> of 10`, on a bar, with `Kappa and same verdict show at 10 runs.` From 10 runs: the count, with `Of <n> judged`. |
+| Cohen's kappa | From 10 runs. The value on a bar marked at `minAgreement`, with its reading. |
+| Same verdict | From 10 runs. The share, with `<agreed> of <compared> runs`. Hovering it also shows the F1 score. |
+
+The parts below the tiles:
+
+| Part | Shows |
+| --- | --- |
+| Agreement by claims version | When the judge has judged runs under more than one version: "Claims", "Cohen's kappa", "Same verdict" and "Runs" for each version, current first. "Claims" picks the version the tab shows. Under "Claims", a version with a [source commit](/docs/reference/terraform/line#source-commit) shows the commit's first 7 characters, followed by `Current` on the current version. The commit links to the pull request that merged it, else to the first pull request that has it, else to the commit itself, and opens in a new tab. A version without a source commit reads `Current claims`, or `Claims until <day>`. |
+| Agreement by claim | "Claim", "Cohen's kappa", "Same verdict" and "Runs" for each claim, from grades, with the claims numbered. On an earlier version, a claim reads `Claim <n>`. Shown when a run has a grade under the version. |
+| Judge compared with people | Runs counted by the judge's verdict, in rows, against people's, in columns: "Failed" and "Passed", with a "Total". Cells where the two agree are indigo, cells where they disagree are red. Shown when runs have both verdicts. |
+| Pass rate by day | `The share of runs that pass each day, by the judge and by people. Lines far apart mean they disagree.`, one line for the judge and one for people. Until at least 30 runs have both verdicts on more than one day, `No trend yet. It shows at 30 runs with both verdicts, on more than one day.` Shown when runs have both verdicts. |
+| `Verdicts on the last <n> runs` | Of the station's latest 200 ended runs, on any version of the claims, how many have "Both", "Judge only", "People only" and "Neither", each with its share. |
+
+### Re-judging after a claims change
+
+A new claims version starts with no runs that have both verdicts. So that it
+does not wait for new runs, Spotlight judges past runs again under it. Each
+time a line changes, Spotlight looks at each station of the line whose judge
+has claims it can read. When no run of the station has a judge verdict under
+the station's current claims version, Spotlight takes the station's latest 200
+ended runs, keeps those that a person accepted or sent back, or whose pull
+request was merged or closed, and judges up to 50 of them again, as in
+[Judging](#judging), with the current claims and pass threshold. The judge's
+`sample` does not apply.
+
+These scores count toward [agreement](#agreement). They never ask people for a
+[grade](#grades), and never open a
+[judge disagreement](#judge-disagreements).
+
+### Claims revisions
+
+A claims revision drafts new claims for a station's judge, judges past runs
+again with them, and opens a pull request when they agree with people better
+than the current claims.
+
+Spotlight looks at whether to start one each time a
+[judge disagreement](#judge-disagreements) of the station's current claims
+version opens or gets an answer. It starts one when the station has no
+revision in progress, the last one ended at least 7 days before, and one of
+these is true, counting the answers on disagreements answered since the last
+revision started that are not withdrawn. A disagreement counts once each of
+its claims in dispute has an answer:
+
+| Trigger | When |
+| --- | --- |
+| `claim-wrong` | People answered at least 3 times that the same claim is wrong for a run. Where the judge passed a run, naming the claim that should have failed counts for that claim. |
+| `calibration-failed` | At least 10 runs have both verdicts, and Cohen's kappa is below `minAgreement`. |
+| `claim-missing` | At least 3 answers on runs the judge passed name no claim that should have failed. |
+
+At most one revision is worked on at a time. A revision:
+
+1. Ends as `judge-changed` when the station's claims or pass threshold
+   changed after it started.
+2. Takes the labelled runs: of the station's latest 500 judge verdicts under
+   the claims version, the newest of each run, the runs that also have
+   people's verdict as in [Agreement](#agreement), at most 50. About 30% of
+   them, chosen from each run's id, are held out. With fewer than 3 held-out
+   runs, it ends as `too-few-labelled-runs`.
+3. Asks a model for up to 3 new lists of claims, from every answered
+   disagreement of the claims version that is not withdrawn, with the note on
+   each claim's answer. Each list keeps the pass threshold. A
+   list that cannot be read, or that is the same as the current claims, is
+   dropped. With none left, it ends as `no-candidates`.
+4. Judges each labelled run again with each list, from the run's stored steps
+   and file changes. A revision makes at most 150 judge calls, so it tests
+   only as many lists as fit. With no room for one, it ends as
+   `judge-call-ceiling`. A run whose new judging fails, or whose reasons do not
+   cite what the judge read, does not count.
+5. Picks, of the lists that judged at least 3 held-out runs, the one with the
+   highest Cohen's kappa against people on the searched runs. Then it compares
+   that list with the current claims on the held-out runs only. When the list
+   does not do better there, it ends as `no-gain`.
+6. Asks for a pull request that changes the claims of the station's `judge`
+   block. The revision stays in progress until the pull request opens, and
+   then ends with it. When the pull request fails, it ends as
+   `pull-request-failed`, with the reason. When no pull request opens within
+   a day of the pick, Spotlight ends the revision at the end of that day as
+   `pull-request-failed` with
+   `Spotlight got no pull request within a day of the pick.`
+
+A revision whose judging fails too many times ends as `interrupted`.
+
+The pull request is opened apart from the judging, so trying it again judges
+nothing again. Its state is `opening`, then `opened` or `failed`. A problem
+with the line's source file, such as a missing file or an edit that cannot
+be made, fails it at once, with the reason.
+Another error is tried again, up to 4 attempts in all, 30 seconds, 1 minute
+and 2 minutes apart, and then fails it with
+`Spotlight could not open the pull request after several tries.`
+
+The pull request is opened against the default branch of the repository named
+by the line's [`source`](/docs/reference/terraform/line#source-fields), and
+edits the station's block as a
+[config pull request](/docs/reference/app/searches#the-pull-request) does.
+
+| | Value |
+| --- | --- |
+| Branch | `spotlight/claims-<line key>-<station key>-<first 8 characters of the revision id>`, each key in lower case, with each run of other characters than letters, digits and hyphens as one hyphen |
+| Title | `Revise the judge claims of the <station key> station` |
+| Commit message | The title, then `Drafted by a Spotlight claims revision of the <station key> station.` |
+
+The description is headed `Judge claims of the <line key> / <station key>
+station`. It gives the trigger, as one of these:
+
+| Trigger | Reads |
+| --- | --- |
+| `claim-wrong` | `People answered at least 3 times that one claim is wrong for a run.` |
+| `calibration-failed` | `The agreement of the judge with people is below the minimum agreement of the station.` |
+| `claim-missing` | `People found at least 3 problems in runs that the judge passed and that no claim checks.` |
+
+Then `Spotlight judged the stored evidence of labelled runs again with new
+claims. It picked the claims on the searched runs and checked them on
+held-out runs.`, and a table "Agreement with people (kappa)" with the columns
+"Searched runs" and "Held-out runs", and the rows "Runs", "Current claims" and
+"New claims". Each kappa has two decimals, or reads `not known`.
+
+"Changed claims" lists the claims "Removed:" and "Added:", then
+`Claims that stay the same: <n>.` "Runs where the judge and people disagree"
+lists up to 20 answered disagreements, each as `Run <run id> of task <task id>.`, then
+`The judge failed the run and a person passed it.` or
+`The judge passed the run and a person failed it.`, the wrong claims, and
+each note as `Note on "<claim>": "<note>"`, or `Note: "<note>"` for a note on
+no claim, then `And <n> more.` A claim or note there is cut at 300
+characters. The description ends with `This pull request changes only the
+claims of the judge. When you merge it, Spotlight judges the newest labelled
+runs again with the new claims.`
 
 ### Judge and alerts
 
@@ -648,18 +782,18 @@ Only people on the team, the workspace's owners and admins, and workspace
 tokens with the `read` scope can read the judge's agreement with people.
 Anyone else is answered `404`. See [Team outcomes](/docs/reference/roles-and-permissions#team-outcomes).
 
-A station with no judge reads "No judge" and `Only people score runs here.`
-Otherwise "Judge" shows `<sample>`, as a percentage, with "of runs judged".
-Then, when the agreement value and `minAgreement` are both known, the measure and its
-value on a bar marked at `minAgreement`; see [Agreement](#agreement). Under it, a qualified
-judge reads `Qualified above <minAgreement> over <n> runs`, and any other judge its
-calibration. When the agreement cannot be read, the part reads
-`Qualified from <minAgreement> agreement`. A judge with claims lists them under
-"Claims", numbered, then `A run passes when it meets every claim.`, or
-`A run passes when it meets at least <share> of its claims.` "Show rubric"
-opens the rubric, and "Hide rubric" closes it, when the judge has one. "How it
-agrees with people" opens the station's view on Insights at `#judge`; see
-[One station](/docs/reference/app/insights#one-station).
+A station with no judge reads `This station has no judge.`
+Otherwise "Judge" lists:
+
+| Row | Shows |
+| --- | --- |
+| Judged | `<sample> of runs`, the sample as a percentage. |
+| Passes when | `Every claim met`, or `At least <share> of claims met`. |
+| Agreement | Cohen's kappa with its reading. Hovering shows what the measure is. Below `minAgreement`, the value is red, with a warning mark labelled `Below the minimum` that reads `Below the minimum, <minAgreement>. Judge verdicts are hidden on runs.` on hover. While it is not measured, or the judge is hidden for another reason, `Not measured`; hovering shows `Agreement shows at 10 runs with a verdict from the judge and from people. Runs so far: <n>.` with too few runs, or else the calibration. See [Agreement](#agreement). |
+| Minimum agreement | `minAgreement`, to two decimals. |
+
+The judge's claims follow under "Claims". "Agreement details" opens the
+station's [Judge tab](#judge-tab).
 
 `Alert rules · <n>` lists the alerts in the order written, on a track that
 scrolls sideways. When they do not all fit, arrows and dots page through them.
@@ -698,24 +832,60 @@ station's runs on the inbox item. With `over` set to 1, the description ends
 with `from one run to the next` or `in a single run`, as on the slide. For
 example: `Alerts when the sent-back rate rises 20 points or more over 20 runs`.
 
-### Judge score
+### Judge verdict
 
-A judged run's score shows in the [task trace](/docs/reference/app/web-app#team-pages).
-The judge's score is `Yes`, `No`, `<n> of 5` or `<n> of <m> claims met`, and it
-is shown when the station's current rubric is qualified and the score was given
-under it. While it is shown, the run's row in the trace carries it. Selecting
-the row shows "Judge" in the run's details: "Score", the judge's score or
-`Hidden`, and "People", people's grades, with `(you)` beside the reader's
-own. While the judge is not qualified, its calibration is shown beneath. A
-shown score lists its reasons under it, each with the steps and hunks it
-cites, as `Step <n>` or the file's name and hunk header. Selecting a step shows
-`Step <n>` with its tool or kind, and its text; selecting a hunk shows its
-lines. On claims, each claim is listed with "Met" or "Not met" and its own
-reasons under it.
+A judged run's verdicts show in the [task trace](/docs/reference/app/web-app#team-pages).
+The judge's verdict is shown when the station's current claims version is
+qualified and the verdict was given under it.
 
-A run's judge score and people's grades can be read only by people on the
-team, the workspace's owners and admins, and workspace tokens with the `read`
-scope. Anyone else is answered `404`.
+A run's outcome is people's verdict on it, taken as in
+[Agreement](#agreement):
+
+| Source | Outcome |
+| --- | --- |
+| A grade | `Passed by people` or `Failed by people` |
+| The first human action | `Accepted` or `Sent back` |
+| The pull request | `Pull request merged` or `Pull request closed` |
+
+While the judge's verdict is shown, the run's row in the trace carries the
+outcome, or `Passed by the judge` or `Failed by the judge` when the run has no
+outcome. When the two differ, a warning mark sits beside it, labelled
+`The judge disagrees with people`.
+
+Selecting the row shows "Verdicts" in the run's details:
+
+| Row | Shows |
+| --- | --- |
+| A row per grade, named by its grader, or "You" | `Passed` or `Failed`. While the judge's verdict is hidden, hovering the row's mark shows the grade's `<n> of <m> claims met`. |
+| People | The outcome. Shown when the run has no grade but has an outcome. |
+| Judge | `Passed` or `Failed`, or `Hidden`. When the judge's verdict differs from people's, a warning mark sits beside it, labelled `The judge disagrees with people`. Hovering it shows `The judge and people give different verdicts on this run. Spotlight asks the person why, to improve the claims.` Hovering the mark beside `Hidden` shows the calibration. |
+
+Below the rows, a shown verdict lists the claims, numbered, each with a mark in
+a "Judge" column, met or not met, and in a column for the latest grade, named
+by the grader's first name, when the run has one. Hovering a mark reads `Met`
+or `Not met`. A claim with reasons opens to them; the claims the judge and the
+grade mark differently, or the claims the judge did not find met, start open.
+Each reason ends with its **See** links: `step <n>`, or a file's name and line
+as `<file>:<line>`, with the file's whole path on hover. **See** goes to the
+cited place where the page already shows it:
+
+| Where | `step <n>` | `<file>:<line>` |
+| --- | --- | --- |
+| The task trace | Selects the step's row, opening the rows it is folded under, and shows the step's details. | Selects the row of the last step of the run that changed the file, and shows its diff with the cited lines selected. |
+| The run page and an inbox item | Opens the run's steps, opens the step, marks it, and scrolls it to the middle of the page. | Opens the file's diff in a pane beside the conversation, with the cited lines selected, and marks the file in the list of changed files. |
+
+In the trace, the run's details then give way to the step's. To return to the
+verdicts, select the run's row. A **See** link the page cannot follow is grey,
+and hovering it shows why:
+
+| Reason | Reads |
+| --- | --- |
+| The run's journal no longer has the step | `The step is no longer in the run’s journal.` |
+| The run's changes no longer have the file | `The file is no longer in the run’s changes.` |
+
+A run's verdicts can be read only by people on the team, the workspace's
+owners and admins, and workspace tokens with the `read` scope. Anyone else is
+answered `404`.
 
 A run that was not judged shows none of this.
 
@@ -723,7 +893,7 @@ A run that was not judged shows none of this.
 
 A run on a push pool that names an egress records what its network did. The
 [task trace](/docs/reference/app/web-app#team-pages) shows it in the run's
-details, under the judge's score:
+details, under the verdicts:
 
 | Part | Shows |
 | --- | --- |
@@ -917,9 +1087,10 @@ the item's station, or `The task moved on to <Station>. Nothing is left to answe
 The station name links to the task's latest run at that station, or to the task
 if no run started there.
 
-[Grades](#grades), [memory reviews](#memory-reviews) and
-[station alerts](#station-alerts) are inbox requests: items on a task that are
-not its conversation. Nothing waits on an inbox request.
+[Grades](#grades), [judge disagreements](#judge-disagreements),
+[memory reviews](#memory-reviews) and [station alerts](#station-alerts) are
+inbox requests: items on a task that are not its conversation. Nothing waits
+on an inbox request.
 
 ### Running work
 
@@ -989,7 +1160,7 @@ the [searches](/docs/reference/app/searches#notices) of the team's stations. Not
 | A search that the reader requested a candidate of picks no candidate | `ended` | `Spotlight did not open a config pull request for the <station> station` | "Open the station" |
 | A search that the reader requested a candidate of opens a pull request for another candidate | `ended` | `Spotlight opened a config pull request for another candidate of the <station> station` | "Open the station" |
 | A search that the reader requested a candidate of stops before a result | `ended` | `The search of the <station> station stopped before a result` | "Open the station" |
-| Spotlight skips a search because the station has no judge and no check, the search ceiling is too low, no runner can start the search agent's harness, the replay set is noisy, the judge is unstable or the checks are flaky | `advice` | `Spotlight cannot search the <station> station` | "Open the station" |
+| Spotlight skips a search because the station has no judge and no check, the search ceiling is too low, no runner can start the search agent's harness, the replay set is noisy, the judge is unstable, the judge's verdicts do not agree with people's or the checks are flaky | `advice` | `Spotlight cannot search the <station> station` | "Open the station" |
 
 The first two go to the team, whatever started the search. The next three go
 only to a person who requested a candidate of the search. See
@@ -1027,38 +1198,195 @@ a team deletes its notices.
 
 ### Grades
 
-When a judge score is recorded, 1 in 5 judged runs is also put to people to
-grade, chosen from the run's id. The item reads
+When the judge checks a run, the run is also put to people to grade when both
+are true:
+
+- The run is one of 1 in 5, chosen from the run's id.
+- The station needs grades. Of the runs the judge checked in the last 30 days,
+  not counting re-judging, among the station's latest 500 judged runs, fewer than half have a verdict
+  from a person's accept or send back, or from a merged or closed pull
+  request. A station with no such runs needs grades.
+
+Scores from
+[re-judging after a claims change](#re-judging-after-a-claims-change) never
+ask for a grade. The item reads
 `A judged run needs your grade. Grades check the judge.` and, once graded,
 `Run graded.`
 
 It reaches the inbox of the task's assignee, or of everyone on the team when the
 task has no assignee. It never reaches a person who is neither on the team nor
 an owner or admin of the workspace. The item shows the run's conversation,
-then a card with the question, the judge's rubric when the station's judge
-has one, and the answers:
+then a card that asks "Does the run meet each claim?" with Yes and No beside
+each claim.
 
-| Scale | Question | Answers |
-| --- | --- | --- |
-| Yes or no, with a rubric | "Does this run meet the rubric?" | Yes, No |
-| Yes or no, without one | "Is this a good run?" | Yes, No |
-| 1 to 5, with a rubric | "How well does this run meet the rubric, from 1 to 5?" | 1 to 5 |
-| 1 to 5, without one | "How good is this run, from 1 to 5?" | 1 to 5 |
-| Claims | "Does the run meet each claim?" | Yes, No beside each claim |
-
-A grade saves as soon as it is chosen, and on claims once every claim is
-answered. While it saves, the card reads "Saving…". A claim whose words changed since the
-judge marked it reads `Claim <n>`. The judge's score is not shown on it.
+**Save grade** saves the grade once every claim has an answer. While it saves,
+the card reads "Saving…". When it cannot be saved, a message at the bottom of
+the page says why, and the card keeps the answers for another **Save grade**.
+While a claim has no
+answer, hovering **Save grade** reads `Answer every claim to save`; once the
+grade is saved, it reads `Change an answer to save again` until an answer
+changes. The card then reads "Graded by you" with the day. A claim whose words
+changed since the judge marked it reads `Claim <n>`. The judge's verdict is not
+shown on it.
 
 - Any person on the team, and any owner or admin of the workspace, can grade
   a run. Anyone else is answered `404`, and the card reads
   `Only team members can grade this run`. One grade resolves the item for
   everyone.
 - A person's later grade of the same run replaces their earlier one.
-- A run is graded on its judge's scale, else on the scale of its station's
-  rubric, else yes or no. On claims, a grade marks every claim met or not, and
-  counts as the share met.
+- A grade marks every claim met or not, on the claims of the run's judge
+  verdict, else on the station's claims. A run whose judge verdict and station
+  have no claims cannot be graded, and the card reads
+  `This run cannot be graded. Its station has no judge with claims.`
 - Nothing waits on a grade. The task moves on as it would without one.
+
+### Judge disagreements
+
+A judge disagreement asks people about a run where the judge's verdict and
+people's verdict differ. Spotlight looks for one each time the judge checks a
+run, a person grades or acts on it, or its task's pull request is merged or
+closed. It compares the run's latest judge verdict under the station's current
+claims version with people's verdict, taken as in [Agreement](#agreement).
+Verdicts from
+[re-judging after a claims change](#re-judging-after-a-claims-change) never
+open one. A run has at most one open disagreement, and at most one for each
+claims version.
+
+Spotlight withdraws an open disagreement when people's verdict changes so that
+it agrees with the judge's, or is gone, and when the station's claims version
+changes, its judge is removed, or its line is deleted. A withdrawn disagreement resolves its
+item, cannot be answered, and its answer, if it has one, never counts toward a
+[claims revision](#claims-revisions). Under a new claims version, the run can
+get a new disagreement.
+
+The item goes to the person who gave people's verdict: the person who graded
+the run, or the person who accepted it or sent it back. Only that person sees
+the item, while they can see the team. When the verdict comes from a merged
+or closed pull request, the item goes to the task's assignee, or to everyone
+who can see the team when the task has no assignee. It reads
+`The judge and people disagree on a run. Spotlight asks why.`, and is
+resolved, reading `Disagreement resolved.`, once each claim in dispute has an
+answer, or Spotlight withdraws it. Until then, the item stays open and shows
+"Waiting for you". The item shows the run's conversation, then one line, then
+one card for each claim in dispute, in claim order. Where no claim is in
+dispute, it shows one card. The claims in dispute are set when the
+disagreement opens, and a later grade does not change them.
+
+Above the cards, a line says who gave people's verdict and what the judge
+decided:
+
+| `labelFrom` | Reads |
+| --- | --- |
+| `grade` | `<Name> passed this run in a grade. The judge failed it.` or `<Name> failed this run in a grade. The judge passed it.` |
+| `accepted` | `<Name> accepted this run. The judge failed it.` |
+| `sent-back` | `<Name> sent this run back. The judge passed it.` |
+| `merged` | `The pull request was merged. The judge failed the run.` |
+| `closed` | `The pull request was closed without a merge. The judge passed the run.` |
+
+`<Name>` is `You` for your own verdict. While a card waits for your answer,
+the line ends with `Your answer helps Spotlight rewrite the claims.` Once
+Spotlight withdraws the disagreement, the line ends with why:
+
+| `withdrawnBecause` | Reads |
+| --- | --- |
+| `verdicts-agree`: people's verdict agrees with the judge's now | `The judge and people agree on this run now.` |
+| `claims-changed`: the station's claims version changed, or its judge or line was removed | `The station’s judge changed after this run.` |
+| `label-gone`: people's verdict on the run is gone | `This run no longer has that outcome.` |
+
+Each card has its own title, for its own claim:
+
+| State of the claim | Title |
+| --- | --- |
+| No answer, for you | `Waiting for your answer` |
+| No answer, asked of someone else | `Waiting for <name>`, or `Waiting for an answer` when the name is not known |
+| Answered | `Answered by <name>` or `Answered by you`, with the day of that answer |
+| Withdrawn | `Withdrawn`, with the day |
+
+When Spotlight withdraws the disagreement, every card reads `Withdrawn`. The
+binoculars icon at the right of each card's title, "Open the trace", opens the
+task's trace in every state.
+
+A card shows labels in one column and values in the next:
+
+| Row | Shows |
+| --- | --- |
+| "Claim" | The claim, numbered. |
+| "You", or the grader's name | Only when people's verdict comes from a grade: the grader's mark on the claim, "Met" or "Not met". |
+| "Judge" | The judge's mark, "Met" or "Not met", then its reasons and their **See** links. **See** opens the cited step in the run's steps above the cards, or the cited file in a pane beside them, with the cited lines selected, as in [Judge verdict](#judge-verdict). |
+| "Answer" | **The judge is right** or **The claim does not fit this run**. |
+| "Why" | A note on this answer, with `Tell Spotlight why (optional)`. |
+
+**Send answer** on a card sends the answer and the note of that claim only.
+The other cards keep what you wrote in them. While it cannot send, hovering it
+shows `Pick an answer to send`. While it sends, the card reads "Sending…".
+When the answer cannot be sent, a message at the bottom of the page says why,
+and the card keeps the answer for another **Send answer**. Once answered, the
+card stays in its place with the same rows: "Answer" shows the answer given,
+and "Why" shows the note, if there is one. Focus moves to that card.
+
+When no claim is in dispute, because the judge passed a run that people failed
+by an action, the one card has a "Claim not met" row that lists every claim
+and `No claim covers it`, and the person picks one. The "What was wrong" row
+takes a note, with `Tell Spotlight why (optional)`. With `No claim covers it`
+picked, the note is required, and the box reads
+`Tell Spotlight what the run did wrong`. While **Send answer** cannot send,
+hovering it shows why:
+
+| Reason | Reads |
+| --- | --- |
+| No claim is picked | `Pick a claim to send` |
+| `No claim covers it` is picked and the note is empty | `Say what the run did wrong to send` |
+
+Once answered, the card shows the claim picked, or `No claim covers it`, and
+"What was wrong" with the note.
+
+While a claim has no answer, a person who is not the one it was asked of sees
+its card without "Answer", and no note or button. A claim that has an answer
+shows its answer to everyone. After a withdrawal, a card shows its answer if
+the claim has one, and otherwise no "Answer" row. Where no claim is in
+dispute, a question asked of someone else and a withdrawn question show one
+"Claims" row with every claim. While the run's verdicts load, each card shows
+lines in place of the grader's marks and the judge's reasons. To a person who
+may not read it, the item reads `You cannot see this question`.
+
+A note is up to 2,000 characters. Each claim in dispute takes one answer.
+On a team item, different people can answer different claims.
+
+An answer never changes a verdict, a grade or the judge's agreement with
+people. Answers are what a [claims revision](#claims-revisions) learns from,
+once each claim in dispute has an answer.
+
+Only people on the team and the workspace's owners and admins can read or
+answer a disagreement. Anyone else is answered `404`. A disagreement is read
+with `GET /api/teams/{teamId}/judge-disagreements/{disagreementId}`: the claims,
+with the judge's result and reasons for each, the steps and hunks the reasons
+cite, the claims in dispute (`disputedClaims`), `direction`, what gave people's
+verdict (`labelFrom`: `grade`, `accepted`, `sent-back`, `merged` or `closed`),
+the answers to claims in dispute (`answers`: `claim`, `answer`, `note`,
+`answeredBy` and `answeredAt` for each), the answer where no claim is in
+dispute (`notMet`: `claim`, `note`, `answeredBy` and `answeredAt`, or `null`),
+when Spotlight withdrew it (`withdrawnAt`) and why (`withdrawnBecause`:
+`verdicts-agree`, `claims-changed` or `label-gone`), who
+can answer it (`askedOf`), and its `state`: `open` while a claim waits for an
+answer, `answered` once each claim in dispute, or the claim not met, has an
+answer, and `withdrawn` once Spotlight withdrew it, also after an answer.
+Claims are counted by their place, from 0.
+
+A claim in dispute is answered with
+`POST /api/teams/{teamId}/judge-disagreements/{disagreementId}/claims/{claim}/answer`
+and the body `{ answer, note }`: `answer` is `judge-right` or `claim-wrong`. A
+claim that is not in dispute is answered `422`. A claim that already has an
+answer, or a disagreement that Spotlight withdrew, is answered `409`. Where no
+claim is in dispute, the disagreement is answered with
+`POST /api/teams/{teamId}/judge-disagreements/{disagreementId}/answer` and the
+body `{ note, shouldHaveFailed }`: `shouldHaveFailed` is a claim's place, or
+`null` for `No claim covers it`. A disagreement with claims in dispute is
+answered `422` there, and one that already has this answer `409`.
+
+When the item goes to one person, only that person can answer it, and anyone
+else on the team is answered `403`. When it goes to the team, anyone on the
+team can answer it. See
+[Answering a judge disagreement](/docs/reference/errors-and-messages#answering-a-judge-disagreement).
 
 ### Memory reviews
 

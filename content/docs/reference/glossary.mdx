@@ -158,6 +158,22 @@ then has a [lease](#lease) on it. For a statement that the judge answers, see
 [Judge claim](#judge-claim). See
 [Run states](/docs/reference/app/tasks-runs-and-the-inbox#run-states).
 
+## Claims revision
+
+Spotlight's attempt to write better [claims](#judge-claim) for a station's
+judge, started by people's answers to
+[judge disagreements](#judge-disagreement) or by a judge that does not agree
+with people. It judges past runs again with new claims, and opens a pull
+request when they agree with people better on runs held out. See
+[Claims revisions](/docs/reference/app/tasks-runs-and-the-inbox#claims-revisions).
+
+## Claims version
+
+The SHA-256 of a [judge's](#judge) [claims](#judge-claim) and pass threshold
+together. A judge's verdicts and its agreement with people are kept per claims
+version, and a change to a claim or to the pass threshold starts a new one. See
+[Judge fields](/docs/reference/terraform/line#judge-fields).
+
 ## Cohort
 
 A group of layers in a change stack, of kind `change` or `incidental`, with a
@@ -304,10 +320,11 @@ config reads Better or Within noise can be on it. See [Frontier](/docs/reference
 
 ## Grade
 
-A person's score of a judged run, on the judge's scale, given from the inbox.
-On [claims](#judge-claim), a grade marks each claim met or not. The judge's
-score of a run is not a grade.
-The judge's agreement with people is measured against grades. See
+A person's verdict on a judged run, given from the inbox. A grade marks each of
+the judge's [claims](#judge-claim) met or not, and passes when it meets the
+judge's pass threshold. The judge's verdict on a run is not a grade.
+The judge's agreement with people is measured against grades, and against what
+people did with the run when it has no grade. See
 [Grades](/docs/reference/app/tasks-runs-and-the-inbox#grades).
 
 ## Guidance
@@ -433,9 +450,10 @@ setup chat. Spotlight shows the token value only once, when it issues it.
 
 ## Judge
 
-A model that scores a share of a work station's runs against the station's
-[rubric](#rubric) or [claims](#judge-claim), citing the steps and changes behind each reason. Its scores
-show only once they agree often enough with people's. A station sets one in
+A model that checks a share of a work station's runs against the station's
+[claims](#judge-claim), citing the steps and changes behind each reason. A run
+passes when it meets at least the judge's pass threshold of its claims. Its
+verdicts show only once they agree often enough with people's. A station sets one in
 its `judge` block. See [Judging](/docs/reference/app/tasks-runs-and-the-inbox#judging)
 and [Judge fields](/docs/reference/terraform/line#judge-fields).
 
@@ -443,8 +461,17 @@ and [Judge fields](/docs/reference/terraform/line#judge-fields).
 
 A statement that a good run makes true, such as `The change adds a test that
 fails without it.`, listed in the `claims` of a station's `judge` block. The
-[judge](#judge) answers each judge claim met or not, and scores a run as the
-share met. See [Judge fields](/docs/reference/terraform/line#judge-fields).
+[judge](#judge) answers each judge claim met or not, and passes a run that
+meets its pass threshold. See [Judge fields](/docs/reference/terraform/line#judge-fields).
+
+## Judge disagreement
+
+An inbox request about a run where the [judge](#judge) and people gave
+different verdicts. People answer each claim in dispute, the judge right or
+the claim wrong, or say what the judge missed. An answer never changes the judge's agreement with people;
+it feeds a [claims revision](#claims-revision). Not the same as a
+[dispute](#dispute) of a decision. See
+[Judge disagreements](/docs/reference/app/tasks-runs-and-the-inbox#judge-disagreements).
 
 ## Label
 
@@ -690,8 +717,8 @@ five causes. Only a cause the config can fix lets the search continue. See
 
 A task on which a replay did worse than the replay it is compared with,
 usually its set's [baseline](#baseline): the replay is clearly less likely to
-succeed on the task, or the judge clearly scored the replay's change lower,
-after the noise of both sides. A [search](#search) counts
+succeed on the task, or the judge found clearly fewer claims met on the
+replay's change, after the noise of both sides. A [search](#search) counts
 the regressions of each candidate against the live config it started from. See
 [Regressions](/docs/reference/app/replays#regressions) and
 [Regressions against the live config](/docs/reference/app/searches#regressions-against-the-live-config).
@@ -799,14 +826,6 @@ it. Only memories are retired; other things are deleted. See
 A counter on a task. It goes up each time the task moves to another station
 and when it is finished. A person's move must name the current revision. See
 [Tasks](/docs/reference/app/tasks-runs-and-the-inbox#tasks).
-
-## Rubric
-
-What a good run at a station looks like, in Markdown, written by the team for
-the station's [judge](#judge). Its first line can name its scale,
-`scores: yes-no` or `scores: 1-5`. A judge can have [claims](#judge-claim) in
-place of a rubric, or beside one. See
-[Judge fields](/docs/reference/terraform/line#judge-fields).
 
 ## Run
 
@@ -1049,8 +1068,8 @@ The result of a replay run that nothing could score: one that could not be
 replayed or started, was cut short by its replay's stop or ceiling, failed
 before its agent began or for another reason outside the candidate, or changed
 nothing for its checks to run on. Unscored runs are left out of a replay's
-success. One that the judge still scored can make a task regress through a
-lower judge score. See [Results](/docs/reference/app/replays#results).
+success. One that the judge still checked can make a task regress through
+fewer claims met. See [Results](/docs/reference/app/replays#results).
 
 ## Voice
 

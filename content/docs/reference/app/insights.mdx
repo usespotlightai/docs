@@ -549,15 +549,13 @@ station's runs, or its failed ones. Each row has the anchor
 `?tab=stations&stationId=<stationId>` shows one station, under the breadcrumb
 "Stations" and the station's name, with its line beside it. It is opened from
 a station's name under "By station", from judge links on this page, and from
-the station's page: "See in Insights", "History", and the judge's "How it
-agrees with people", which opens it at `#judge`.
+the station's page: "See in Insights" and "History".
 
 | Part | Shows |
 | --- | --- |
 | Over this period | The tiles of "The whole team", for the station's runs alone. "Runs" and "Failed" open the Traces tab at the station's runs, or its failed ones. With task failures and no runs, the tiles read 0. With neither in the period, `No runs at this station in this period.` |
 | Why runs failed | Shown when the station has failed runs or task failures in the period. See below. |
 | Runs by config | The station's latest 50 runs, whatever the period, grouped by config. See below. |
-| How far the judge agrees with people | Shown when the station has a judge, at `#judge`. See below. |
 
 "Why runs failed" lists the station's failed runs by reason, the reason or
 `No reason given`, with how many runs, most first; and its task failures by
@@ -582,15 +580,8 @@ it has changes (see [Impact](#impact)). Expanding it lists its runs, with
 "Run", "Visit", "Checks", "Human action", "Pull request", "Duration", "Cost" and "Ended". With
 no runs, the card reads "No runs yet".
 
-"How far the judge agrees with people" shows the judge's measure of agreement with
-people, with `Qualified. Minimum required: <minimum agreement>` or why its scores are hidden, then how
-many of the station's last runs have "Both scores", "Judge only", "People
-only" and "Neither". When the judge has judged runs under more than one rubric
-version, "Rubric" picks the version. Each version shows "Statistics"; "Score
-comparison" and "Distribution" when it has runs with both scores; "Trend over
-time" when it has a trend to draw; and "By claim" for a judge with claims. With no judged runs, it reads "No judged runs yet". See
-[Agreement](/docs/reference/app/tasks-runs-and-the-inbox#agreement) for how
-agreement is measured and when a judge is qualified.
+The judge's agreement with people shows on the station's
+[Judge tab](/docs/reference/app/tasks-runs-and-the-inbox#judge-tab).
 
 ### Config changes
 
@@ -638,7 +629,7 @@ started, or ended where it never started:
 | Failed rate | Runs that ended Failed, of runs. |
 | Merged rate | Tasks whose pull request merged, of the tasks of the runs whose pull request merged or closed unmerged. |
 | Cost per run | The cost of the priced runs, per priced run. |
-| Judge score | Only while the station's judge is qualified: the mean judge score on each side, or `–`. Hovering shows `Over <n> judged runs before and <m> after. Opens how often the judge agrees with people.`, and the label opens [the station's judge](#one-station). |
+| Judge pass rate | Only while the station's judge is qualified: the share of judged runs the judge passed on each side, or `–`. Hovering shows `The share of judged runs that the judge passed. Judged runs: <n> before, <m> after. Opens the judge’s agreement with people.`, and the label opens [the station's judge](#one-station). |
 
 Each row but "Runs" counts, on each side, the runs measured for it, as for
 [station alerts](/docs/reference/app/tasks-runs-and-the-inbox#station-alerts).
@@ -646,11 +637,10 @@ Each row but "Runs" counts, on each side, the runs measured for it, as for
 change is in points and cost per run's a whole percent; with none, it reads
 `No change`. It reads `Too few runs` when either side has fewer than 5 measured
 runs, and for cost per run when the two sides are priced in different
-currencies. The judge score's change is in points, green when it rose.
+currencies. The judge pass rate's change is in points, green when it rose.
 
-A judge score is the mean of the judge's scores on the station's current
-rubric, as a share of its scale: Yes is 100% and No 0%; on 1 to 5, 1 is 0% and
-5 is 100%; on claims, the share of claims met.
+A judge pass rate is the share of runs the judge passed on the station's current
+claims version.
 
 The panel ends with "Open the station" and "Improve". A change no longer in
 the period reads `This change is outside the period.`, with "Open the
@@ -668,7 +658,7 @@ applied.
 
 | Filter | Narrows to |
 | --- | --- |
-| Outcome | The outcome charted: "Accepted", the default, "Sent back", "Passed on", "Checks passed", "Merged", or "Judge score" when any agent config has judged runs. |
+| Outcome | The outcome charted: "Accepted", the default, "Sent back", "Passed on", "Checks passed", "Merged", or "Judge pass rate" when any agent config has judged runs. |
 | Station | "Every station", or the runs at one work station. |
 | Task size | "Every size", or the runs of one size. |
 
@@ -679,11 +669,11 @@ applied.
 | Passed on | Runs that passed their task to another station, of the runs with a first human action or that passed their task. |
 | Checks passed | Passed checks, of passed and failed checks. |
 | Merged | Tasks whose pull request merged, of the tasks of the runs whose pull request merged or closed unmerged. |
-| Judge score | The mean judge score, as under [Impact](#impact). |
+| Judge pass rate | The share of judged runs the judge passed, as under [Impact](#impact). |
 
-Judge scores are counted only with a station picked, and only while that
+Judge verdicts are counted only with a station picked, and only while that
 station's judge is qualified. With a station picked that has a judge and runs
-in the period, the card adds `Judge scores count only for judges that agree with people often enough.`
+in the period, the card adds `Judge verdicts count only for judges that agree with people often enough.`
 and names the station, linked to its judge, as `qualified` or `hidden`.
 
 An agent config's cost per run is the cost of its priced runs, per priced run, when
@@ -736,7 +726,7 @@ narrow replayed points, and they are not joined to the agent configs' frontier.
 
 | Note under the chart | When |
 | --- | --- |
-| `Replayed points show replay success on up to <n> runs of past tasks, not live outcomes. Each candidate's own checks and judge score it. The task-size filter doesn't apply.` | Replayed points are drawn. `<n>` is the most runs any of them was scored on. |
+| `Replayed points show replay success on up to <n> runs of past tasks, not live outcomes. Each candidate's own checks and judge decide whether it succeeded. The task-size filter doesn't apply.` | Replayed points are drawn. `<n>` is the most runs any of them was scored on. |
 | `Replayed points show success only. They're hidden while the chart shows Sent back.` | "Sent back" is charted. |
 | `Replayed candidates aren't drawn. No live agent config has a priced outcome. The table lists them.` | The station has replayed points to draw, and the agent configs have a currency, but no priced agent config has a value for the outcome charted. |
 | `The replayed candidates could not be loaded.`, with "Try again" | Reading them failed. The rest of the tab still shows. |
@@ -934,7 +924,7 @@ server reads `–` under "Server".
 
 "Runs with memories and without" sets the period's runs that were briefed or
 recalled a memory against its other runs, under "Without", "With" and "Change",
-with the rows of [Impact](#impact) but "Judge score". Only runs that ran are
+with the rows of [Impact](#impact) but "Judge pass rate". Only runs that ran are
 counted. "Change" reads as under Impact, `Too few runs` and `No change`
 included.
 

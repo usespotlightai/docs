@@ -82,10 +82,9 @@ agent saw: the next search can find the gain again on fresh tasks.
 
 ## What the agent learns from a failed run
 
-The judge's reasons say which part of the rubric, or which claim, a run did
-not meet. An agent that reads them can propose a config that answers those
-words. Its candidates then learn to pass the rubric, and do the work no
-better. This is the same fitting as above, aimed at the judge and not at the
+The judge's reasons say which claim a run did not meet. An agent that reads
+them can propose a config that answers those words. Its candidates then learn
+to pass the claims, and do the work no better. This is the same fitting as above, aimed at the judge and not at the
 tasks.
 
 So the search's agent never reads the judge's reasons, the claims or which
@@ -93,7 +92,7 @@ check failed. For each replay run it gets the verdict and a code for each
 reason the run failed. When the judge failed the run, it also gets the
 judge's `guidance` field: one sentence that says what the run should do
 differently, in terms of the task. Spotlight drops guidance that repeats
-the rubric or a claim, or that names a claim by its number or place, and gives a fixed
+a claim, or that names a claim by its number or place, and gives a fixed
 sentence in its place. See
 [Guidance](/docs/reference/app/replays#guidance).
 
@@ -137,7 +136,7 @@ candidate that changes anything else is rejected before it is replayed.
 What it may not change falls into three groups.
 
 - How it is scored. A replay scores a candidate by the station's own check and
-  judge. A search that could loosen the check or rewrite the judge's rubric
+  judge. A search that could loosen the check or rewrite the judge's claims
   could pass by lowering the bar. In the docs' view, a search must
   be measured against a bar it cannot move.
 - How tasks flow. Which stations a run may hand a task on to and whether it
@@ -154,7 +153,7 @@ every candidate is a change to that block.
 ## When the config is not the problem
 
 Some tasks fail for reasons no station config can reach: the task is unclear
-or requires something impossible, the judge's rubric fails good work, the
+or requires something impossible, the judge's claims fail good work, the
 check is flaky, or the run broke around the work. In the docs' view, more
 iterations against such tasks spend the budget and find nothing, and an agent
 pushed to beat them anyway is pushed to fit them.
