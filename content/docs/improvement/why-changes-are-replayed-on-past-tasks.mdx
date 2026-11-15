@@ -47,7 +47,11 @@ question in someone's inbox, a memory proposed to the team. So a replay is a run
 works on the task, and it leaves nothing behind but its own result:
 
 - Its git access is fetch-only. A push fails.
-- It has no tools and no MCP servers enabled, and so egress injects no secrets for it.
+- It has only the tools that change nothing: those of its station and of its
+  task's marks that are marked `readOnly` and need no approval. It calls them
+  as no person, so a tool that needs a person's connection fails. It has no MCP
+  servers or catalog tools enabled, and so egress injects no secrets for it. See
+  [Tools in a replay](/docs/reference/terraform/integration#tools-in-a-replay).
 - No hook runs for it.
 - It cannot reply to a pull request's review comments, propose a memory or
   read a task's trace.
