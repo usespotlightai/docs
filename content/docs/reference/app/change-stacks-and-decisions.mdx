@@ -11,7 +11,7 @@ its [station fields](/docs/reference/terraform/line#station-fields):
 
 | Station field | Effect |
 | --- | --- |
-| `diffs: true` | After each run, a change stack is generated for each checkout that changed. |
+| `diffs: true` | After each run, a change stack is generated for each checkout that changed. After a person pushes to the task's pull request, a new stack is generated for that repository. |
 | `check` | Each change stack generated at the station is checked with this command, so it has effect only with `diffs: true`. With both set, every repository of the line must have `setup`. |
 | `decisions: true` | After each completed run, decisions are generated from it. |
 
@@ -147,13 +147,14 @@ from the line's runner image, on a runner that meets the run's placement.
 | `queue-timeout` | No runner checked the layers in time. The check had waited more than 60 minutes, and no runner had a lease on it. |
 | `provision-failed` | Spotlight couldn't provision a runner to check the layers. |
 
-A push pool receives a check as provision work of kind `check`. See
-[Provision call](/docs/reference/events/provision-call).
+A push pool receives a check, and the diff of a person's push, as provision
+work of kind `check`. See [Provision call](/docs/reference/events/provision-call).
 
 ### Where a change stack is shown
 
-- The run's change stack page in the web app, reached from the task's
-  "Changes" property. See [Web app](/docs/reference/app/web-app).
+- The task's change stack page in the web app, reached from the task's
+  "Changes" property, with the newest stack of each repository. A run's own
+  stacks are on its page at `/changes`. See [Web app](/docs/reference/app/web-app).
 - A comment on each pull request of the task, kept up to date with the latest
   ready stack of that pull request's repository, when the workspace is
   connected to GitHub.

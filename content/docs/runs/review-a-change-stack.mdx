@@ -2,7 +2,7 @@
 type: how-to
 icon: SquarePen
 title: Review an agent's change stack
-description: Read a run's changes layer by layer, comment on lines, and post your review to the pull request.
+description: Read a task's changes layer by layer, answer questions on them, comment on lines, and post your review to the pull request.
 ---
 
 A change stack is generated only for runs at a station with `diffs` set, on a
@@ -16,9 +16,11 @@ work you want to review, such as Implementation, as in
 Open it in one of these ways:
 
 - On the task page, select **Changes** under **Properties**. It shows the lines
-  added and removed, and opens the newest stack for the task.
+  added and removed, and opens the task's change stack page, with the newest
+  stack of each repository.
 - On the task's pull request, open the **Change stack** comment and follow
-  **open the change stack in Spotlight**.
+  **open the change stack in Spotlight**. This opens the same page, on the
+  pull request's repository.
 - On a run's page, add `/changes` to the end of the address. This opens the
   stack of that run in particular.
 
@@ -27,8 +29,8 @@ while. If it reads **Sorry, the change stack couldn't be generated**, review the
 on the pull request instead; the message under it says why, or reads
 `Generation stopped before it finished.` when Spotlight has no reason.
 
-When the run changed more than one repository, pills at the top name each one.
-Select a repository to switch to its stack.
+When the task changed more than one repository, pills at the top name each
+one. Select a repository to switch to its stack.
 
 ## Read it in order
 
@@ -44,6 +46,45 @@ file. Files with more than 800 changed lines start collapsed; select a file's
 name to open or close it, or use **Collapse all** and **Expand all**. When you
 reach the end of a layer, the buttons at the bottom take you to the previous
 or next one.
+
+## Answer the questions
+
+Some layers end with **Check your understanding**: questions on what the layer
+does. Write your answer in **Your answer…** and select **Check**, or select
+**I don’t know**. Spotlight grades the answer **Right**, **Partly right** or
+**Missed**, says why, shows the **Expected answer**, and links the places in
+the code that answer the question.
+
+When an answer is not right, the layer is marked **Read again** in the left
+pane. You answer each question once for a task's repository: the answer stays
+with later stacks of that repository while the question and its expected
+answer stay the same.
+
+## After a push to the pull request
+
+When a person pushes to the task's pull request, Spotlight makes a new stack
+from the pull request's diff at the pushed commit. The page then shows
+**Pushed by** and the GitHub account of the person who pushed. Point at it to
+see the commit.
+
+The new stack is made from the stack before it:
+
+- A layer that changed is marked **Changed**, and a new layer **New**. Point at
+  the mark for what it means.
+- Layers that the new stack no longer has are listed under **Removed since the
+  previous stack**.
+- When a question's expected answer changed, your earlier answer stays under
+  it with the note `The code changed after you answered. Please answer again.`
+  Answer it again to have it graded.
+
+Spotlight makes a stack for a push only when the task already has a stack for
+that repository, and not for its own pushes: the agent's runs make those
+stacks. A runner of the line reads the push, so the line's runners must be
+able to reach the repository.
+
+After several pushes in a short time, the page ends on the stack of the latest
+push. When no runner reads a push within an hour, Spotlight makes no stack for
+that push.
 
 ## Check results
 
