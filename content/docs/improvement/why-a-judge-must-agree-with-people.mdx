@@ -39,7 +39,10 @@ give one in two ways.
 The first needs no extra work. What people already do with a run says whether
 it was good: accepting the run, by moving the task to the completed station
 after it, is a pass, and sending it back is a fail. Failing those, a merged
-pull request is a pass and one closed unmerged is a fail. Answering an approval
+pull request is a pass for the station's last completed run on the task, the
+run whose work the merge took. A pull request closed without a merge is no
+verdict: it can close because the feature is no longer wanted, or because
+another pull request took its place. Answering an approval
 counts as neither: it is the run asking a person, and a run that only paused
 for an approval would otherwise count as accepted.
 
@@ -52,7 +55,7 @@ verdict, whatever else happened to the run.
 
 Spotlight asks for grades only while the first source does not cover the
 station: when fewer than half of the runs the judge checked in the last 30
-days were accepted, sent back, merged or closed. In the docs' view, the first
+days have a verdict from an accept, a send-back or a merge. In the docs' view, the first
 source is what makes a judge usable on a busy station: its agreement can be
 measured from the work people do anyway, and grades fill the gaps without
 asking people for work they already did.
@@ -82,10 +85,9 @@ and the judge is hidden again until it has agreed with people under the new
 claims.
 
 To keep that wait short, Spotlight judges past runs again under the new
-claims, as soon as the line changes: up to 50 recent runs that people
-already accepted, sent back, merged or closed. Those runs already have
-people's verdict, so the new claims can be measured without waiting for new
-runs. See
+claims, as soon as the line changes: up to 50 recent runs that already have
+people's verdict from an accept, a send-back or a merge. So the new claims
+can be measured without waiting for new runs. See
 [Re-judging after a claims change](/docs/reference/app/tasks-runs-and-the-inbox#re-judging-after-a-claims-change).
 
 A changed judge is also a changed station config, so it shows under

@@ -561,7 +561,14 @@ A judged run's people's verdict comes from the first of these that the run has:
 | --- | --- | --- |
 | The latest grade a person gave it | The grade meets at least `passThreshold` of the claims. | The grade meets less. |
 | Its [first human action](#station-outcomes) | Accepted | Sent back |
-| Its pull request | Merged | Closed unmerged |
+| Its task's pull request | Merged | – |
+
+A merge passes only the station's last completed run on the task. A run that
+did not complete, and a run that a later completed run of the same station on
+the task followed, get no verdict from the pull request. A
+pull request closed without a merge gives no verdict: it can close for a
+reason that says nothing about the run, such as a feature that is no longer
+wanted, or another pull request that took its place.
 
 A grade counts only for the claims version it was given under: the version of
 the run's judge verdict, or else the station's at the time. Approving or
@@ -735,8 +742,8 @@ does not wait for new runs, Spotlight judges past runs again under it. Each
 time a line changes, Spotlight looks at each station of the line whose judge
 has claims it can read. When no run of the station has a judge verdict under
 the station's current claims version, Spotlight takes the station's latest 200
-ended runs, keeps those that a person accepted or sent back, or whose pull
-request was merged or closed, and judges up to 50 of them again, as in
+ended runs, keeps those that have people's verdict from an accept, a send-back
+or a merge, as in [Agreement](#agreement), and judges up to 50 of them again, as in
 [Judging](#judging), with the current claims and pass threshold. The judge's
 `sample` does not apply.
 
@@ -919,7 +926,7 @@ A run's outcome is people's verdict on it, taken as in
 | --- | --- |
 | A grade | `Passed by people` or `Failed by people` |
 | The first human action | `Accepted` or `Sent back` |
-| The pull request | `Pull request merged` or `Pull request closed` |
+| The task's pull request | `Pull request merged` |
 
 While the judge's verdict is shown, the run's row in the trace carries the
 outcome, or `Passed by the judge` or `Failed by the judge` when the run has no
@@ -1084,7 +1091,7 @@ Each run that ran has one resolution. The first rule that applies gives it:
 3. Failed: the run ended Failed.
 4. Other: the run ended Stopped, Exhausted or Superseded.
 5. Moved on: the run passed its task to another station, or its first human action was Started.
-6. Accepted: the pull request of the run's task merged.
+6. Accepted: the pull request of the run's task merged, and no later completed run of the same station on the task followed the run.
 7. Other: none of the above, for example when nobody has answered yet.
 
 A tally counts:
@@ -1271,8 +1278,8 @@ are true:
 - The run is one of 1 in 5, chosen from the run's id.
 - The station needs grades. Of the runs the judge checked in the last 30 days,
   not counting re-judging, among the station's latest 500 judged runs, fewer than half have a verdict
-  from a person's accept or send back, or from a merged or closed pull
-  request. A station with no such runs needs grades.
+  from a person's accept or send back, or from a merge, as in
+  [Agreement](#agreement). A station with no such runs needs grades.
 
 Scores from
 [re-judging after a claims change](#re-judging-after-a-claims-change) never
@@ -1311,13 +1318,16 @@ shown on it.
 
 A judge disagreement asks people about a run where the judge's verdict and
 people's verdict differ. Spotlight looks for one each time the judge checks a
-run, a person grades or acts on it, or its task's pull request is merged or
-closed. It compares the run's latest judge verdict under the station's current
-claims version with people's verdict, taken as in [Agreement](#agreement).
+run, a person grades it, a run of the same station on its task ends or its
+outcome changes, or its task's pull request is merged or closed. It compares
+the run's latest judge verdict under the station's current claims version with
+people's verdict, taken as in [Agreement](#agreement).
 Verdicts from
 [re-judging after a claims change](#re-judging-after-a-claims-change) never
 open one. A run has at most one open disagreement, and at most one for each
-claims version.
+claims version. Every 6 hours, Spotlight also does this check again for each
+disagreement that is not withdrawn and for each run that the judge checked in
+the last 30 days, not by re-judging.
 
 Spotlight withdraws an open disagreement when people's verdict changes so that
 it agrees with the judge's, or is gone, and when the station's claims version
@@ -1329,7 +1339,7 @@ get a new disagreement.
 The item goes to the person who gave people's verdict: the person who graded
 the run, or the person who accepted it or sent it back. Only that person sees
 the item, while they can see the team. When the verdict comes from a merged
-or closed pull request, the item goes to the task's assignee, or to everyone
+pull request, the item goes to the task's assignee, or to everyone
 who can see the team when the task has no assignee. It reads
 `The judge and people disagree on a run. Spotlight asks why.`, and is
 resolved, reading `Disagreement resolved.`, once each claim in dispute has an
@@ -1348,7 +1358,6 @@ decided:
 | `accepted` | `<Name> accepted this run. The judge failed it.` |
 | `sent-back` | `<Name> sent this run back. The judge passed it.` |
 | `merged` | `The pull request was merged. The judge failed the run.` |
-| `closed` | `The pull request was closed without a merge. The judge passed the run.` |
 
 `<Name>` is `You` for your own verdict. While a card waits for your answer,
 the line ends with `Your answer helps Spotlight rewrite the claims.` Once
@@ -1428,7 +1437,7 @@ answer a disagreement. Anyone else is answered `404`. A disagreement is read
 with `GET /api/teams/{teamId}/judge-disagreements/{disagreementId}`: the claims,
 with the judge's result and reasons for each, the steps and hunks the reasons
 cite, the claims in dispute (`disputedClaims`), `direction`, what gave people's
-verdict (`labelFrom`: `grade`, `accepted`, `sent-back`, `merged` or `closed`),
+verdict (`labelFrom`: `grade`, `accepted`, `sent-back` or `merged`),
 the answers to claims in dispute (`answers`: `claim`, `answer`, `note`,
 `answeredBy` and `answeredAt` for each), the answer where no claim is in
 dispute (`notMet`: `claim`, `note`, `answeredBy` and `answeredAt`, or `null`),
