@@ -46,6 +46,17 @@ every harness, and it describes the diff that was actually left instead of the
 agent's idea of what it changed. A review stack can also be generated for a pull
 request that no agent in Spotlight wrote.
 
+### Redrafted after a person's push
+
+A person can push to the task's pull request after the run, to fix something
+the agent got wrong. The stack then no longer shows what the pull request
+changes, and answers to its questions may no longer hold. So a person's push
+redrafts it: a runner diffs the pull request at the pushed commit against the
+point where it branched off, and Spotlight makes the new stack from the one
+before it. Layers that did not change keep their place, and an answer stays
+with a question as long as the question and its expected answer are the same.
+Spotlight's own pushes come from runs, which make their own stacks.
+
 ### Rules every stack follows
 
 An arrangement that reads well but is in the wrong order would mislead: a

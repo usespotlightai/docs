@@ -32,6 +32,7 @@ signing, with `provision.secret` as the secret.
     "kind": "run",
     "runId": "<run id>",
     "stackId": null,
+    "diffId": null,
     "taskId": "<task id>",
     "workspaceId": "<workspace id>",
     "pool": "<pool key>",
@@ -54,9 +55,10 @@ signing, with `provision.secret` as the secret.
 
 | Field | Description |
 | --- | --- |
-| `kind` | `run` or `check`. |
-| `runId` | The run. |
-| `stackId` | The change stack, for a `check`; otherwise null. |
+| `kind` | `run`, `check` or `diff`. A `diff` reads the diff of a push. |
+| `runId` | The run. Null for the check of a stack made from a push, and for a `diff`. |
+| `stackId` | For a `check`, the change stack; otherwise null. |
+| `diffId` | For a `diff`, the push to diff; otherwise null. |
 | `taskId` | The task, or null. |
 | `pool` | The pool's key. |
 | `labels` | The placement the work requires. |
