@@ -564,8 +564,8 @@ A judged run's people's verdict comes from the first of these that the run has:
 | Its task's pull request | Merged | – |
 
 A merge passes only the station's last completed run on the task. A run that
-failed, stopped or was cancelled, and a run that a later completed run of the
-same station on the task followed, get no verdict from the pull request. A
+did not complete, and a run that a later completed run of the same station on
+the task followed, get no verdict from the pull request. A
 pull request closed without a merge gives no verdict: it can close for a
 reason that says nothing about the run, such as a feature that is no longer
 wanted, or another pull request that took its place.
@@ -1091,7 +1091,7 @@ Each run that ran has one resolution. The first rule that applies gives it:
 3. Failed: the run ended Failed.
 4. Other: the run ended Stopped, Exhausted or Superseded.
 5. Moved on: the run passed its task to another station, or its first human action was Started.
-6. Accepted: the pull request of the run's task merged.
+6. Accepted: the pull request of the run's task merged, and no later completed run of the same station on the task followed the run.
 7. Other: none of the above, for example when nobody has answered yet.
 
 A tally counts:
@@ -1318,13 +1318,16 @@ shown on it.
 
 A judge disagreement asks people about a run where the judge's verdict and
 people's verdict differ. Spotlight looks for one each time the judge checks a
-run, a person grades or acts on it, a run of its task ends or is superseded,
-or its task's pull request is merged or closed. It compares the run's latest judge verdict under the station's current
-claims version with people's verdict, taken as in [Agreement](#agreement).
+run, a person grades it, a run of the same station on its task ends or its
+outcome changes, or its task's pull request is merged or closed. It compares
+the run's latest judge verdict under the station's current claims version with
+people's verdict, taken as in [Agreement](#agreement).
 Verdicts from
 [re-judging after a claims change](#re-judging-after-a-claims-change) never
 open one. A run has at most one open disagreement, and at most one for each
-claims version.
+claims version. Every 6 hours, Spotlight also does this check again for each
+disagreement that is not withdrawn and for each run that the judge checked in
+the last 30 days, not by re-judging.
 
 Spotlight withdraws an open disagreement when people's verdict changes so that
 it agrees with the judge's, or is gone, and when the station's claims version
