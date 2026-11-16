@@ -52,12 +52,13 @@ It writes:
 | `imports.tf` | An `import` block for everything in the workspace. Remove it after the first apply. |
 | `workspace.tf` | The workspace and its OIDC trusts |
 | `secrets.tf` | The secrets; left out when there are none |
+| `inference.tf` | The inference endpoint; left out when there is none |
 | `runners.tf` | Runner trusts, egresses, runner pools and the workspace's runners; left out when there are none |
 | `team-<team>.tf` | One file for each team |
 | `line-<team>-<line>.tf` | One file for each line |
 | `integration-<team>-<integration>.tf` | One file for each integration |
 | `skills-<team>.tf`, `hooks-<team>.tf`, `profiles-<team>.tf` | A team's skills, hooks and harness profiles; left out when the team has none |
-| `variables.tf` | A sensitive variable for each value Spotlight never returns, such as a secret's value; left out when there are none |
+| `variables.tf` | A sensitive variable for each value Spotlight never returns, such as a secret's value or the inference endpoint's API key; left out when there are none |
 | `prompts/` | Each station's prompt, as `prompts/<team>/<line>/<station>.md`, read with `file()` |
 | `judges/` | Each station judge's rubric, as `judges/<team>/<line>/<station>.md`, read with `file()`; left out when no judge has a rubric. Claims are written in the `judge` block. |
 | `skills/` | Each skill's files, as `skills/<team>/<skill>/`, read with `file()` |
@@ -126,6 +127,7 @@ control:
 
 ```hcl
 secret_linear_api_key = "<the secret's value>"
+inference_api_key     = "<the inference endpoint's API key>"
 ```
 
 A variable for a pull pool's token defaults to `null` and needs no value to

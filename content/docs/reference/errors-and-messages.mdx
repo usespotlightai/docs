@@ -532,6 +532,12 @@ slugs.
 | `was used before. Each egress token is single-use. Please use a new token` | An egress token rotated away, or used by an egress since deleted or replaced. | [Egress token](/docs/reference/terraform/egress#egress-token) |
 | `is not https. Runners send their proxy credential to it. A production deployment does not provision runners that use it` | A warning on an egress's `url`. | [Warnings](/docs/reference/terraform/egress#warnings) |
 | `Egress <key> is in use. Runner pools that name it: <pool keys>. Please remove provision.egress from these pools first.` | `409` `in-use`. A delete of an egress a runner pool names. | [Delete](/docs/reference/terraform/egress#delete) |
+| `The test request to the endpoint failed. Spotlight saved the change. <cause>` | A warning on a create or update of the inference endpoint. The change is saved. | [Test request](/docs/reference/terraform/inference-endpoint#test-request), [Set the workspace inference endpoint](/docs/administration/set-the-workspace-inference-endpoint) |
+| `is required, with a changed apiKeyWoVersion, when baseUrl changes` | On `api_key_wo`. An update of the inference endpoint changes `base_url` without a new key and key version, while a key is stored. | [The key](/docs/reference/terraform/inference-endpoint#the-key) |
+| `is required with apiKeyWo` | On `api_key_wo_version`. A write of the inference endpoint sends a key without a key version. | [The key](/docs/reference/terraform/inference-endpoint#the-key) |
+| `is required when apiKeyWoVersion is set`, `is required when apiKeyWoVersion changes` | On `api_key_wo`. A create with a key version and no key, or an update that changes the key version without a key. | [The key](/docs/reference/terraform/inference-endpoint#the-key) |
+| `Attribute "api_key_wo_version" must be specified when "api_key_wo" is specified`, and the reverse | At plan. A `spotlight_inference_endpoint` with one of the two. | [The key](/docs/reference/terraform/inference-endpoint#the-key) |
+| `is not allowed for this workspace. <reason>` | The inference endpoint's `base_url` is a host the workspace's egress rules do not allow. | [Requests](/docs/reference/terraform/inference-endpoint#requests), [Limit where sandboxes connect](/docs/security/limit-where-sandboxes-connect) |
 | `names <key>. Runner pool <key> doesn't exist in this workspace` | A warning on `spotlight_workspace_runners` `pools`. | [`spotlight_workspace_runners`](/docs/reference/terraform/workspace-runners#warnings) |
 | `names <key>. Runner trust <key> doesn't exist in this workspace` | A warning on `spotlight_workspace_runners` `trusts`. | [`spotlight_workspace_runners`](/docs/reference/terraform/workspace-runners#warnings) |
 | `must do something: a webhook, a poll, a schedule, an action to run, or an API spec or MCP server to provide tools from` | An integration definition with nothing to do. | [Top level](/docs/reference/terraform/integration#top-level) |
@@ -701,6 +707,16 @@ request and no such causes, and a skip for any other reason, send no notice.
 | --- | --- | --- |
 | `Spotlight couldn't generate the change stack.` | Every generation attempt failed. | [States](/docs/reference/app/change-stacks-and-decisions#states) |
 | `Generation was interrupted before it finished.` | Generation stopped without a reason. | [States](/docs/reference/app/change-stacks-and-decisions#states) |
+| `The inference endpoint has no credits left. Please add credits at your provider.` | The inference endpoint answered that the account has no credits left. | [Set the workspace inference endpoint](/docs/administration/set-the-workspace-inference-endpoint) |
+
+### Inference endpoint
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `This workspace has no inference endpoint.` | The workspace has no inference endpoint. It follows `Change stacks are off`, `Answer grading is off.` or `The judge is off.`, with a "Set up inference" link to the Inference page of Settings. Every member sees it. | [Set the workspace inference endpoint](/docs/administration/set-the-workspace-inference-endpoint) |
+| `Sorry, the inference endpoint has no credits left. Please add credits at your provider.` | Grading an answer failed because the endpoint has no credits left. A "Check endpoint" link opens the Inference page of Settings. | [Set the workspace inference endpoint](/docs/administration/set-the-workspace-inference-endpoint) |
+| `No inference endpoint` | The Inference page of Settings, in a workspace without an endpoint, with a "Set up in Terraform" link. | [`spotlight_inference_endpoint`](/docs/reference/terraform/inference-endpoint) |
+| `The endpoint check failed` | The label of the red warning icon on the Inference page of Settings. A test request to the endpoint failed; its tooltip gives the cause. Owners and admins only. | [See the endpoint in the web app](/docs/administration/set-the-workspace-inference-endpoint#see-the-endpoint-in-the-web-app) |
 
 ### Members, invites and GitHub
 

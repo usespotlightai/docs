@@ -11,10 +11,15 @@ draft memories and to run judges. The setting replaces the `LLM_*` and
 `*_MODEL` environment variables of the control plane. See
 [Self-hosted settings](/docs/reference/self-hosted-settings#models).
 
-Without an endpoint, none of these run. The web app shows `Add an inference endpoint in Settings`.
+Without an endpoint, none of these run. Where a feature needs one, the web app
+says so, as in `Answer grading is off. This workspace has no inference endpoint.`,
+and links to **Set up inference**.
 
-Only an owner or admin of the workspace can set the endpoint. You need:
+You set the endpoint with Terraform. You need:
 
+- Terraform 1.11 or later, set up with the Spotlight provider, using a token
+  that has the `secrets` scope. See
+  [Manage Spotlight with Terraform](/docs/configuration/manage-spotlight-with-terraform).
 - The base URL of an API that accepts OpenAI Chat Completions requests at
   `/chat/completions`, such as `https://api.openai.com/v1`.
 - The name of one model, as the endpoint names it.
@@ -25,53 +30,10 @@ network or on the loopback interface works only where the deployment already
 allows such addresses. See
 [Limit where sandboxes connect](/docs/security/limit-where-sandboxes-connect).
 
-<Tabs items={['Web app', 'Terraform']}>
-<Tab value="Web app">
-
 <Steps>
 <Step>
 
-Open **Settings** from the workspace menu, then **Workspace**, then
-**Inference**.
-
-</Step>
-<Step>
-
-Under **Base URL**, enter the base URL. Under **API key**, enter the key.
-Under **Model**, enter the model.
-
-</Step>
-<Step>
-
-Turn on **Supports reasoning effort** only if the model accepts the
-`reasoning_effort` field. A model that does not accept it refuses the request.
-
-</Step>
-<Step>
-
-Click **Save**. Then click **Test connection**. Spotlight sends one small
-request and shows the result. If the request fails, the page shows the cause in
-plain words, such as that the account has insufficient credits.
-
-</Step>
-</Steps>
-
-After you save, the page shows `Key is set` in place of the key. Spotlight
-never shows the key again. To replace it, enter a new key and click **Save**.
-
-When you change the base URL, Spotlight asks for the key again. It does not send
-a stored key to a new address. **Test connection** sends the stored key only to
-the saved base URL.
-
-To clear the key, or to stop all inference in the workspace, click **Remove**
-and confirm. This deletes the endpoint and its key.
-
-If the endpoint reports insufficient credits, a change stack fails with that
-reason, and the answer to a question shows the same message. Add credits at the
-provider and try again.
-
-</Tab>
-<Tab value="Terraform">
+Add the endpoint and a sensitive variable for its key:
 
 ```hcl
 variable "inference_api_key" {
@@ -89,12 +51,56 @@ resource "spotlight_inference_endpoint" "acme" {
 }
 ```
 
-`api_key_wo` is write-only and needs Terraform 1.11 or later. To rotate the
-key, give `api_key_wo` the new key and change `api_key_wo_version`. See
-[`spotlight_inference_endpoint`](/docs/reference/terraform/inference-endpoint).
+</Step>
+<Step>
 
-</Tab>
-</Tabs>
+Give `inference_api_key` its value, for example in a `terraform.tfvars` file
+that you keep out of version control. Then run `terraform apply`.
+
+</Step>
+<Step>
+
+Read the warnings of the apply. After Spotlight saves the endpoint, it sends one
+test request to it. If the test request fails, the apply shows the warning
+`The test request to the endpoint failed. Spotlight saved the change.`, followed
+by the cause. Spotlight keeps the change. Fix the cause, then apply the fix.
+
+</Step>
+</Steps>
+
+`api_key_wo` and `api_key_wo_version` go together: set both, or neither. A plan
+with one of them fails.
+
+To rotate the key, give `inference_api_key` the new key and raise
+`api_key_wo_version`.
+
+When you change `base_url`, give the key again and raise `api_key_wo_version`
+in the same apply. Spotlight does not send a stored key to a new address.
+
+For an endpoint without a key, such as a model server on your own network,
+remove both `api_key_wo` and `api_key_wo_version`. Spotlight removes the stored
+key and calls the endpoint without an `Authorization` header.
+
+To stop all inference in the workspace, remove the resource and apply. This
+deletes the endpoint and its key.
+
+If the endpoint has no credits left, a change stack fails with
+`The inference endpoint has no credits left. Please add credits at your provider.`
+Add credits at the provider and try again.
+
+See [`spotlight_inference_endpoint`](/docs/reference/terraform/inference-endpoint)
+for every field.
+
+## See the endpoint in the web app
+
+Open **Settings** from the workspace menu, then **Workspace**, then
+**Inference**. Every member of the workspace can open the page. It shows the
+model and the host of the base URL, and it changes nothing. A workspace without
+an endpoint shows `No inference endpoint` and a **Set up in Terraform** link.
+
+For an owner or admin, the page also sends a test request to the endpoint. If
+the test request fails, a red warning icon shows beside the model. Hover over it
+to read the cause.
 
 ## Where the key is kept
 
@@ -105,10 +111,10 @@ not show it.
 ## After you upgrade
 
 A deployment has no fallback to the old environment variables. If it set
-`LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`, `LLM_SUPPORTS_REASONING_EFFORT`,
-`CHANGE_STACK_MODEL`, `DECISIONS_MODEL`, `MEMORIES_MODEL` or `JUDGE_MODEL`,
-Spotlight ignores them. Set the endpoint of each workspace in Settings or with
-Terraform. Until then, the functions above are off.
+`LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`, `CHANGE_STACK_MODEL`,
+`DECISIONS_MODEL`, `MEMORIES_MODEL` or `JUDGE_MODEL`, Spotlight ignores them.
+Set the endpoint of each workspace with Terraform. Until then, the functions
+above are off.
 
 ## Related
 
