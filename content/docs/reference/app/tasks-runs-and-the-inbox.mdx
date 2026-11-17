@@ -911,24 +911,24 @@ A judged run's verdicts show in the [task trace](/docs/reference/app/web-app#tea
 The judge's verdict is shown when the station's current claims version is
 qualified and the verdict was given under it.
 
-A run's outcome is people's verdict on it, taken as in
+People's verdict on a run is taken as in
 [Agreement](#agreement):
 
-| Source | Outcome |
+| Source | People's verdict |
 | --- | --- |
 | The first human action | `Accepted`, `Sent back` or `Put on hold` |
 | The task's pull request | `Pull request merged` |
 
-While the judge's verdict is shown, the run's row in the trace carries the
-outcome, or `Passed by the judge` or `Failed by the judge` when the run has no
-outcome. When the two differ, a warning mark sits beside it, labelled
+While the judge's verdict is shown, the run's row in the trace carries
+people's verdict, or `Passed by the judge` or `Failed by the judge` when the run
+has none. When the two differ, a warning mark sits beside it, labelled
 `The judge disagrees with people`.
 
 Selecting the row shows "Verdicts" in the run's details:
 
 | Row | Shows |
 | --- | --- |
-| People | The outcome. Shown when the run has an outcome. |
+| People | People's verdict. Shown when the run has one. |
 | Judge | `Passed` or `Failed`, or `Hidden`. When the judge's verdict differs from people's, a warning mark sits beside it, labelled `The judge disagrees with people`. Hovering it shows `The judge and people give different verdicts on this run. Spotlight asks the person why, to improve the claims.` Hovering the mark beside `Hidden` shows the calibration. |
 
 Below the rows, a shown verdict lists the claims, numbered, each with the
@@ -1263,8 +1263,8 @@ a team deletes its notices.
 
 A judge disagreement asks people about a run where the judge's verdict and
 people's verdict differ. Spotlight looks for one each time the judge checks a
-run, a run of the same station on its task ends or its
-outcome changes, or its task's pull request is merged or closed. It compares
+run, a run of the same station on its task ends or people's verdict on
+it changes, or its task's pull request is merged or closed. It compares
 the run's latest judge verdict under the station's current claims version with
 people's verdict, taken as in [Agreement](#agreement).
 Verdicts from
@@ -1282,7 +1282,7 @@ item, cannot be answered, and its answer, if it has one, never counts toward a
 get a new disagreement.
 
 The item goes to the person who gave people's verdict: the person who
-accepted the run or sent it back. Only that person sees
+accepted the run, sent it back, or took the task over from it. Only that person sees
 the item, while they can see the team. When the verdict comes from a merged
 pull request, the item goes to the task's assignee, or to everyone
 who can see the team when the task has no assignee. It reads
@@ -1312,7 +1312,7 @@ Spotlight withdraws the disagreement, the line ends with why:
 | --- | --- |
 | `verdicts-agree`: people's verdict agrees with the judge's now | `The judge and people agree on this run now.` |
 | `claims-changed`: the station's claims version changed, or its judge or line was removed | `The station’s judge changed after this run.` |
-| `label-gone`: people's verdict on the run is gone | `This run no longer has that outcome.` |
+| `label-gone`: people's verdict on the run is gone | `People’s verdict on this run is gone.` |
 
 Each card has its own title, for its own claim:
 
