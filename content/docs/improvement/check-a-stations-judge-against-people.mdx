@@ -12,9 +12,11 @@ out why they are not. To give a station a judge, see
 Only people on the team and the workspace's owners and admins can see the
 judge's agreement.
 
-People's verdicts come from what people do with the station's runs: an accept
-or a merge passes a run. A send-back fails it, and so does taking the task over
-because the run was wrong. Nobody is asked to give a verdict.
+People's verdicts come from the first thing people do with each of the
+station's runs: an accept passes the run. A send-back fails it, and so does a
+hold on the task that ends with the reason **The line got it wrong**. When the
+first thing is none of those, a merged pull request passes the station's last
+completed run on the task. Nobody is asked to give a verdict.
 
 ## Read the judge's agreement with people
 
@@ -39,8 +41,10 @@ runs.** or **Judge verdicts are hidden on runs.** If the verdicts are hidden, ho
 over the line to see why:
 
 - If it reads **They show when 10 runs have a verdict from the judge and from
-  people.**, wait for people to accept, send back or merge more of the
-  station's runs. **Runs with both verdicts** shows how many have both.
+  people.**, wait for people to act on more of the station's runs: accept
+  them, send them back, put their tasks on hold, or merge their pull requests.
+  A hold counts only when it ends with the reason **The
+  line got it wrong**. **Runs with both verdicts** shows how many have both.
 - If it reads **Agreement cannot be measured while every verdict is the
   same.**, wait for more runs until both verdicts vary.
 - If it reads **Cohen’s kappa is below the minimum**, follow
@@ -56,11 +60,13 @@ agreement is measured.
 
 ## Answer judge disagreements
 
-When you accept a run, send it back or take the task over, and the judge gave
-the other verdict, your
-inbox gets **The judge and people disagree on a run. Spotlight asks why.** For
-a merged pull request, the item goes to the task's assignee, or to everyone on
-the team when the task has no assignee. Answer it as in
+When the first thing done with a run is your accept, your send-back, or your
+hold once it ends with the reason **The line got it wrong**, and the judge gave
+the other verdict, your inbox gets
+**The judge and people disagree on a run. Spotlight asks why.** When a merged
+pull request opened the disagreement, the item goes to the task's assignee, or
+to everyone who can see the team when the task has no assignee. It stays there
+when you act on the run later. Answer it as in
 [Say why the judge and people disagree](/docs/inbox/answer-the-inbox#say-why-the-judge-and-people-disagree).
 The answers do not change the judge's agreement with people. They go into a
 [claims revision](/docs/reference/app/tasks-runs-and-the-inbox#claims-revisions),
