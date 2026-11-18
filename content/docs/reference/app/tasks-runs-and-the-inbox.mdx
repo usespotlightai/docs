@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Tasks, runs and the inbox
-description: Task fields and states, notes, handovers and moves, run states, run endings, failure codes, configs, spend, a station's judge and alerts, station outcomes, the inbox and its notices, grades, memory reviews, station alerts, approvals, chats and attachments.
+description: Task fields and states, notes, handovers and moves, run states, run endings, failure codes, configs, spend, a station's judge and alerts, station outcomes, the inbox and its notices, judge disagreements, memory reviews, station alerts, approvals, chats and attachments.
 ---
 
 A task is at one station of a line. Runs work it; people answer it from the
@@ -555,12 +555,13 @@ A run whose judging failed shows no score.
 ### Agreement
 
 Agreement compares the judge's verdict with people's verdict on the same run.
-A judged run's people's verdict comes from the first of these that the run has:
+People's verdict comes from what people do with the run. Spotlight does not
+ask anyone for it. A judged run's people's verdict comes from the first of
+these that the run has:
 
 | Source | Passes | Fails |
 | --- | --- | --- |
-| The latest grade a person gave it | The grade meets at least `passThreshold` of the claims. | The grade meets less. |
-| Its [first human action](#station-outcomes) | Accepted | Sent back |
+| Its [first human action](#station-outcomes) | Accepted | Sent back or Put on hold |
 | Its task's pull request | Merged | – |
 
 A merge passes only the station's last completed run on the task. A run that
@@ -570,9 +571,7 @@ pull request closed without a merge gives no verdict: it can close for a
 reason that says nothing about the run, such as a feature that is no longer
 wanted, or another pull request that took its place.
 
-A grade counts only for the claims version it was given under: the version of
-the run's judge verdict, or else the station's at the time. Approving or
-dismissing an approval is never a human action. A verdict from
+Approving or dismissing an approval is never a human action. A verdict from
 [re-judging after a claims change](#re-judging-after-a-claims-change) is a
 judge's verdict like any other, so its run counts when it also has people's
 verdict.
@@ -589,15 +588,10 @@ shows it with two more statistics:
 | Same verdict | The share of runs where both verdicts are the same, agreement by chance included. |
 | F1 score | Twice the runs both passed, over the runs the judge passed plus the runs people passed. |
 
-Each claim also has its own Cohen's kappa, agreed share and count of runs. These
-come from grades only, because a grade is the one source that marks each claim.
-They show which claim the judge reads differently from people. They do not
-decide whether the judge is qualified.
-
 Statistics are shown to two decimals, and "Same verdict" as a percentage.
 A statistic that cannot be worked out reads `–`.
 
-Cohen's kappa and each claim's kappa carry a reading:
+Cohen's kappa carries a reading:
 
 | Cohen's kappa | Reads |
 | --- | --- |
@@ -730,7 +724,6 @@ The parts below the tiles:
 | Part | Shows |
 | --- | --- |
 | Agreement by claims version | When the judge has judged runs under more than one version: "Claims", "Cohen's kappa", "Same verdict" and "Runs" for each version, current first. "Claims" picks the version the tab shows. Under "Claims", a version with a [source commit](/docs/reference/terraform/line#source-commit) shows the commit's first 7 characters, followed by `Current` on the current version. The commit links to the pull request that merged it, else to the first pull request that has it, else to the commit itself, and opens in a new tab. A version without a source commit reads `Current claims`, or `Claims until <day>`. |
-| Agreement by claim | "Claim", "Cohen's kappa", "Same verdict" and "Runs" for each claim, from grades, with the claims numbered. On an earlier version, a claim reads `Claim <n>`. Shown when a run has a grade under the version. |
 | Judge compared with people | Runs counted by the judge's verdict, in rows, against people's, in columns: "Failed" and "Passed", with a "Total". Cells where the two agree are indigo, cells where they disagree are red. Shown when runs have both verdicts. |
 | Pass rate by day | `The share of runs that pass each day, by the judge and by people. Lines far apart mean they disagree.`, one line for the judge and one for people. Until at least 30 runs have both verdicts on more than one day, `No trend yet. It shows at 30 runs with both verdicts, on more than one day.` Shown when runs have both verdicts. |
 | `Verdicts on the last <n> runs` | Of the station's latest 200 ended runs, on any version of the claims, how many have "Both", "Judge only", "People only" and "Neither", each with its share. |
@@ -742,13 +735,12 @@ does not wait for new runs, Spotlight judges past runs again under it. Each
 time a line changes, Spotlight looks at each station of the line whose judge
 has claims it can read. When no run of the station has a judge verdict under
 the station's current claims version, Spotlight takes the station's latest 200
-ended runs, keeps those that have people's verdict from an accept, a send-back
-or a merge, as in [Agreement](#agreement), and judges up to 50 of them again, as in
+ended runs, keeps those that have people's verdict, as in
+[Agreement](#agreement), and judges up to 50 of them again, as in
 [Judging](#judging), with the current claims and pass threshold. The judge's
 `sample` does not apply.
 
-These scores count toward [agreement](#agreement). They never ask people for a
-[grade](#grades), and never open a
+These scores count toward [agreement](#agreement). They never open a
 [judge disagreement](#judge-disagreements).
 
 ### Claims revisions
@@ -775,7 +767,7 @@ At most one revision is worked on at a time. A revision:
 
 1. Ends as `judge-changed` when the station's claims or pass threshold
    changed after it started.
-2. Takes the labelled runs: of the station's latest 500 judge verdicts under
+2. Takes the runs with people's verdict: of the station's latest 500 judge verdicts under
    the claims version, the newest of each run, the runs that also have
    people's verdict as in [Agreement](#agreement), at most 50. About 30% of
    them, chosen from each run's id, are held out. With fewer than 3 held-out
@@ -785,7 +777,7 @@ At most one revision is worked on at a time. A revision:
    each claim's answer. Each list keeps the pass threshold. A
    list that cannot be read, or that is the same as the current claims, is
    dropped. With none left, it ends as `no-candidates`.
-4. Judges each labelled run again with each list, from the run's stored steps
+4. Judges each of those runs again with each list, from the run's stored steps
    and file changes. A revision makes at most 150 judge calls, so it tests
    only as many lists as fit. With no room for one, it ends as
    `judge-call-ceiling`. A run whose new judging fails, or whose reasons do not
@@ -832,7 +824,7 @@ station`. It gives the trigger, as one of these:
 | `calibration-failed` | `The agreement of the judge with people is below the minimum agreement of the station.` |
 | `claim-missing` | `People found at least 3 problems in runs that the judge passed and that no claim checks.` |
 
-Then `Spotlight judged the stored evidence of labelled runs again with new
+Then `Spotlight judged the stored evidence of runs with people’s verdict again with new
 claims. It picked the claims on the searched runs and checked them on
 held-out runs.`, and a table "Agreement with people (kappa)" with the columns
 "Searched runs" and "Held-out runs", and the rows "Runs", "Current claims" and
@@ -841,13 +833,13 @@ held-out runs.`, and a table "Agreement with people (kappa)" with the columns
 "Changed claims" lists the claims "Removed:" and "Added:", then
 `Claims that stay the same: <n>.` "Runs where the judge and people disagree"
 lists up to 20 answered disagreements, each as `Run <run id> of task <task id>.`, then
-`The judge failed the run and a person passed it.` or
-`The judge passed the run and a person failed it.`, the wrong claims, and
+`The judge failed the run and people passed it.` or
+`The judge passed the run and people failed it.`, the wrong claims, and
 each note as `Note on "<claim>": "<note>"`, or `Note: "<note>"` for a note on
 no claim, then `And <n> more.` A claim or note there is cut at 300
 characters. The description ends with `This pull request changes only the
-claims of the judge. When you merge it, Spotlight judges the newest labelled
-runs again with the new claims.`
+claims of the judge. When you merge it, Spotlight judges the newest runs with
+people’s verdict again with the new claims.`
 
 ### Judge and alerts
 
@@ -919,33 +911,30 @@ A judged run's verdicts show in the [task trace](/docs/reference/app/web-app#tea
 The judge's verdict is shown when the station's current claims version is
 qualified and the verdict was given under it.
 
-A run's outcome is people's verdict on it, taken as in
+People's verdict on a run is taken as in
 [Agreement](#agreement):
 
-| Source | Outcome |
+| Source | People's verdict |
 | --- | --- |
-| A grade | `Passed by people` or `Failed by people` |
-| The first human action | `Accepted` or `Sent back` |
+| The first human action | `Accepted`, `Sent back` or `Put on hold` |
 | The task's pull request | `Pull request merged` |
 
-While the judge's verdict is shown, the run's row in the trace carries the
-outcome, or `Passed by the judge` or `Failed by the judge` when the run has no
-outcome. When the two differ, a warning mark sits beside it, labelled
+While the judge's verdict is shown, the run's row in the trace carries
+people's verdict, or `Passed by the judge` or `Failed by the judge` when the run
+has none. When the two differ, a warning mark sits beside it, labelled
 `The judge disagrees with people`.
 
 Selecting the row shows "Verdicts" in the run's details:
 
 | Row | Shows |
 | --- | --- |
-| A row per grade, named by its grader, or "You" | `Passed` or `Failed`. While the judge's verdict is hidden, hovering the row's mark shows the grade's `<n> of <m> claims met`. |
-| People | The outcome. Shown when the run has no grade but has an outcome. |
-| Judge | `Passed` or `Failed`, or `Hidden`. When the judge's verdict differs from people's, a warning mark sits beside it, labelled `The judge disagrees with people`. Hovering it shows `The judge and people give different verdicts on this run. Spotlight asks the person why, to improve the claims.` Hovering the mark beside `Hidden` shows the calibration. |
+| People | People's verdict. Shown when the run has one. |
+| Judge | `Passed` or `Failed`, or `Hidden`. When the judge's verdict differs from people's, a warning mark sits beside it, labelled `The judge disagrees with people`. Hovering it shows `The judge and people give different verdicts on this run. Spotlight asks people why, to improve the claims.` Hovering the mark beside `Hidden` shows the calibration. |
 
-Below the rows, a shown verdict lists the claims, numbered, each with a mark in
-a "Judge" column, met or not met, and in a column for the latest grade, named
-by the grader's first name, when the run has one. Hovering a mark reads `Met`
-or `Not met`. A claim with reasons opens to them; the claims the judge and the
-grade mark differently, or the claims the judge did not find met, start open.
+Below the rows, a shown verdict lists the claims, numbered, each with the
+judge's mark, met or not met. Hovering a mark reads `Met` or `Not met`. A
+claim with reasons opens to them; the claims the judge did not find met start
+open.
 Each reason ends with its **See** links: `step <n>`, or a file's name and line
 as `<file>:<line>`, with the file's whole path on hover. **See** goes to the
 cited place where the page already shows it:
@@ -1066,7 +1055,7 @@ A run's outcome:
 | Failure | A [failure code](#failure-codes) | Shown beside an ending that has one: Failed, Exhausted, Cancelled or Superseded. |
 | Visit | 1, 2, … | The visit: 1 plus the number of the task's earlier runs at the station that completed or failed. |
 | Checks | Checks passed, Checks failed, Checks skipped | The station's check on the run's change. See [Checks](/docs/reference/app/change-stacks-and-decisions#checks). |
-| Human action | Started, Parked, Accepted, Answered, Sent back | The first human action: the first thing a person did with the task in answer to the run, or after it. See the table below. |
+| Human action | Started, Parked, Accepted, Answered, Sent back, Put on hold | The first human action: the first thing a person did with the task in answer to the run, or after it. See the table below. |
 | Pull request | PR open, Merged, PR closed | The state of the task's pull requests. With several: PR open while one is open, Merged when all merged, else PR closed. |
 | Duration, Cost | | How long the run took and what it cost, from its journal. |
 
@@ -1077,16 +1066,17 @@ A run's outcome:
 | Accepted | Moved the task to the completed station. |
 | Answered | Answered the conversation without a decision. |
 | Sent back | Sent a message to a run of the task while it had no current run, other than an answer to an open question that asks for no approval. |
+| Put on hold | Put the task on hold, in a hold that later ended with the reason **The line got it wrong**, whoever ended it. Every hold has that reason until you change it when you resume. So moving a task that is on hold by hand counts as Put on hold, not as the move. It counts from when the hold started. A hold resumed with **I want to try something** is no human action. |
 
 Approving or dismissing an approval is never a human action: it does not decide
 the run's [resolution](#run-resolution). When two actions come at the same moment, the first of
-Sent back, Accepted, Answered, Parked and Started counts.
+Put on hold, Sent back, Accepted, Answered, Parked and Started counts.
 
 #### Run resolution
 
 Each run that ran has one resolution. The first rule that applies gives it:
 
-1. Sent back: its first human action was Sent back.
+1. Sent back: its first human action was Sent back or Put on hold.
 2. Accepted: its first human action was Accepted.
 3. Failed: the run ended Failed.
 4. Other: the run ended Stopped, Exhausted or Superseded.
@@ -1161,7 +1151,7 @@ the item's station, or `The task moved on to <Station>. Nothing is left to answe
 The station name links to the task's latest run at that station, or to the task
 if no run started there.
 
-[Grades](#grades), [judge disagreements](#judge-disagreements),
+[Judge disagreements](#judge-disagreements),
 [memory reviews](#memory-reviews) and [station alerts](#station-alerts) are
 inbox requests: items on a task that are not its conversation. Nothing waits
 on an inbox request.
@@ -1270,112 +1260,74 @@ reads `No longer waiting for you.` Resolving is
 `204`, or `404` for a notice of a team the caller is not a member of. Deleting
 a team deletes its notices.
 
-### Grades
-
-When the judge checks a run, the run is also put to people to grade when both
-are true:
-
-- The run is one of 1 in 5, chosen from the run's id.
-- The station needs grades. Of the runs the judge checked in the last 30 days,
-  not counting re-judging, among the station's latest 500 judged runs, fewer than half have a verdict
-  from a person's accept or send back, or from a merge, as in
-  [Agreement](#agreement). A station with no such runs needs grades.
-
-Scores from
-[re-judging after a claims change](#re-judging-after-a-claims-change) never
-ask for a grade. The item reads
-`A judged run needs your grade. Grades check the judge.` and, once graded,
-`Run graded.`
-
-It reaches the inbox of the task's assignee, or of everyone on the team when the
-task has no assignee. It never reaches a person who is neither on the team nor
-an owner or admin of the workspace. The item shows the run's conversation,
-then a card that asks "Does the run meet each claim?" with Yes and No beside
-each claim.
-
-**Save grade** saves the grade once every claim has an answer. While it saves,
-the card reads "Saving…". When it cannot be saved, a message at the bottom of
-the page says why, and the card keeps the answers for another **Save grade**.
-While a claim has no
-answer, hovering **Save grade** reads `Answer every claim to save`; once the
-grade is saved, it reads `Change an answer to save again` until an answer
-changes. The card then reads "Graded by you" with the day. A claim whose words
-changed since the judge marked it reads `Claim <n>`. The judge's verdict is not
-shown on it.
-
-- Any person on the team, and any owner or admin of the workspace, can grade
-  a run. Anyone else is answered `404`, and the card reads
-  `Only team members can grade this run`. One grade resolves the item for
-  everyone.
-- A person's later grade of the same run replaces their earlier one.
-- A grade marks every claim met or not, on the claims of the run's judge
-  verdict, else on the station's claims. A run whose judge verdict and station
-  have no claims cannot be graded, and the card reads
-  `This run cannot be graded. Its station has no judge with claims.`
-- Nothing waits on a grade. The task moves on as it would without one.
-
 ### Judge disagreements
 
 A judge disagreement asks people about a run where the judge's verdict and
 people's verdict differ. Spotlight looks for one each time the judge checks a
-run, a person grades it, a run of the same station on its task ends or its
-outcome changes, or its task's pull request is merged or closed. It compares
+run, a run of the same station on its task ends or people's verdict on
+it changes, or its task's pull request is merged or closed. It compares
 the run's latest judge verdict under the station's current claims version with
 people's verdict, taken as in [Agreement](#agreement).
 Verdicts from
 [re-judging after a claims change](#re-judging-after-a-claims-change) never
-open one. A run has at most one open disagreement, and at most one for each
-claims version. Every 6 hours, Spotlight also does this check again for each
+open one. A run has at most one disagreement that is not withdrawn, answered
+or not, and at most one for each claims version. Every 6 hours, Spotlight also does this check again for each
 disagreement that is not withdrawn and for each run that the judge checked in
 the last 30 days, not by re-judging.
 
-Spotlight withdraws an open disagreement when people's verdict changes so that
+Spotlight withdraws a disagreement, answered or not, when people's verdict
+changes so that
 it agrees with the judge's, or is gone, and when the station's claims version
 changes, its judge is removed, or its line is deleted. A withdrawn disagreement resolves its
 item, cannot be answered, and its answer, if it has one, never counts toward a
-[claims revision](#claims-revisions). Under a new claims version, the run can
-get a new disagreement.
+[claims revision](#claims-revisions). While people's verdict stays a pass or
+stays a fail, the disagreement keeps the action that opened it and who it asks.
+For example, when a person accepts a run after its merged pull request opened a
+disagreement, the item stays with the task's assignee, or with the team when
+the task has no assignee, and anyone who can read it can still answer it.
+Under a new claims version, the run can get a new disagreement.
 
-The item goes to the person who gave people's verdict: the person who graded
-the run, or the person who accepted it or sent it back. Only that person sees
-the item, while they can see the team. When the verdict comes from a merged
-pull request, the item goes to the task's assignee, or to everyone
-who can see the team when the task has no assignee. It reads
+The item goes to the person who gave people's verdict when the disagreement
+opened: the person who accepted the run, sent it back, or put the task on hold,
+in a hold that ended with the reason **The line got it wrong**. Only that
+person sees the item, while they can see the team. When the verdict comes from
+a merged pull request, the item goes to the task's assignee, or to everyone who
+can see the team when the task has no assignee. It reads
 `The judge and people disagree on a run. Spotlight asks why.`, and is
 resolved, reading `Disagreement resolved.`, once each claim in dispute has an
-answer, or Spotlight withdraws it. Until then, the item stays open and shows
+answer, or, where no claim is in dispute, once what was not met has one, or
+when Spotlight withdraws it. Until then, the item stays open and shows
 "Waiting for you". The item shows the run's conversation, then one line, then
 one card for each claim in dispute, in claim order. Where no claim is in
 dispute, it shows one card. The claims in dispute are set when the
-disagreement opens, and a later grade does not change them.
+disagreement opens.
 
-Above the cards, a line says who gave people's verdict and what the judge
-decided:
+Above the cards, a line says who gave people's verdict when the disagreement
+opened, and what the judge decided:
 
 | `labelFrom` | Reads |
 | --- | --- |
-| `grade` | `<Name> passed this run in a grade. The judge failed it.` or `<Name> failed this run in a grade. The judge passed it.` |
-| `accepted` | `<Name> accepted this run. The judge failed it.` |
-| `sent-back` | `<Name> sent this run back. The judge passed it.` |
+| `accepted` | `You accepted this run. The judge failed it.` |
+| `sent-back` | `You sent this run back. The judge passed it.` |
+| `held` | `You put this run on hold. The judge passed it.` |
 | `merged` | `The pull request was merged. The judge failed the run.` |
 
-`<Name>` is `You` for your own verdict. While a card waits for your answer,
-the line ends with `Your answer helps Spotlight rewrite the claims.` Once
-Spotlight withdraws the disagreement, the line ends with why:
+While a card waits for your answer, the line ends with
+`Your answer helps Spotlight rewrite the claims.` Once Spotlight withdraws the
+disagreement, the line ends with why:
 
 | `withdrawnBecause` | Reads |
 | --- | --- |
 | `verdicts-agree`: people's verdict agrees with the judge's now | `The judge and people agree on this run now.` |
 | `claims-changed`: the station's claims version changed, or its judge or line was removed | `The station’s judge changed after this run.` |
-| `label-gone`: people's verdict on the run is gone | `This run no longer has that outcome.` |
+| `label-gone`: people's verdict on the run is gone | `People’s verdict on this run is gone.` |
 
 Each card has its own title, for its own claim:
 
 | State of the claim | Title |
 | --- | --- |
-| No answer, for you | `Waiting for your answer` |
-| No answer, asked of someone else | `Waiting for <name>`, or `Waiting for an answer` when the name is not known |
-| Answered | `Answered by <name>` or `Answered by you`, with the day of that answer |
+| No answer | `Waiting for your answer` |
+| Answered | `Answered by <name>`, `Answered by you`, or `Answered` when the name is not known, with the day of that answer |
 | Withdrawn | `Withdrawn`, with the day |
 
 When Spotlight withdraws the disagreement, every card reads `Withdrawn`. The
@@ -1387,7 +1339,6 @@ A card shows labels in one column and values in the next:
 | Row | Shows |
 | --- | --- |
 | "Claim" | The claim, numbered. |
-| "You", or the grader's name | Only when people's verdict comes from a grade: the grader's mark on the claim, "Met" or "Not met". |
 | "Judge" | The judge's mark, "Met" or "Not met", then its reasons and their **See** links. **See** opens the cited step in the run's steps above the cards, or the cited file in a pane beside them, with the cited lines selected, as in [Judge verdict](#judge-verdict). |
 | "Answer" | **The judge is right** or **The claim does not fit this run**. |
 | "Why" | A note on this answer, with `Tell Spotlight why (optional)`. |
@@ -1416,28 +1367,26 @@ hovering it shows why:
 Once answered, the card shows the claim picked, or `No claim covers it`, and
 "What was wrong" with the note.
 
-While a claim has no answer, a person who is not the one it was asked of sees
-its card without "Answer", and no note or button. A claim that has an answer
-shows its answer to everyone. After a withdrawal, a card shows its answer if
-the claim has one, and otherwise no "Answer" row. Where no claim is in
-dispute, a question asked of someone else and a withdrawn question show one
+A claim that has an answer shows its answer to everyone who sees the item.
+After a withdrawal, a card shows its answer if the claim has one, and otherwise
+no "Answer" row. Where no claim is in dispute, a withdrawn question shows one
 "Claims" row with every claim. While the run's verdicts load, each card shows
-lines in place of the grader's marks and the judge's reasons. To a person who
+lines in place of the judge's reasons. To a person who
 may not read it, the item reads `You cannot see this question`.
 
 A note is up to 2,000 characters. Each claim in dispute takes one answer.
 On a team item, different people can answer different claims.
 
-An answer never changes a verdict, a grade or the judge's agreement with
-people. Answers are what a [claims revision](#claims-revisions) learns from,
-once each claim in dispute has an answer.
+An answer never changes a verdict or the judge's agreement with people. Answers are what a [claims revision](#claims-revisions) learns from,
+once the disagreement is answered.
 
 Only people on the team and the workspace's owners and admins can read or
 answer a disagreement. Anyone else is answered `404`. A disagreement is read
 with `GET /api/teams/{teamId}/judge-disagreements/{disagreementId}`: the claims,
 with the judge's result and reasons for each, the steps and hunks the reasons
 cite, the claims in dispute (`disputedClaims`), `direction`, what gave people's
-verdict (`labelFrom`: `grade`, `accepted`, `sent-back` or `merged`),
+verdict when the disagreement opened (`labelFrom`: `accepted`, `sent-back`,
+`held` or `merged`),
 the answers to claims in dispute (`answers`: `claim`, `answer`, `note`,
 `answeredBy` and `answeredAt` for each), the answer where no claim is in
 dispute (`notMet`: `claim`, `note`, `answeredBy` and `answeredAt`, or `null`),
@@ -1459,9 +1408,10 @@ body `{ note, shouldHaveFailed }`: `shouldHaveFailed` is a claim's place, or
 `null` for `No claim covers it`. A disagreement with claims in dispute is
 answered `422` there, and one that already has this answer `409`.
 
-When the item goes to one person, only that person can answer it, and anyone
-else on the team is answered `403`. When it goes to the team, anyone on the
-team can answer it. See
+When the disagreement opened on one person's action, only that person can
+answer, and anyone else who can read it is answered `403`. For a merged pull
+request, anyone who can read it can answer, also when the item went only to
+the task's assignee. See
 [Answering a judge disagreement](/docs/reference/errors-and-messages#answering-a-judge-disagreement).
 
 ### Memory reviews

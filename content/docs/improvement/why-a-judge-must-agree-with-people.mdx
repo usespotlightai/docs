@@ -2,7 +2,7 @@
 type: concept
 icon: Lightbulb
 title: Why a judge must agree with people before its verdicts show
-description: Why a station's judge checks claims, why it stays hidden until its verdicts match people's, how that agreement is measured, how disagreements improve the claims, and why grading never stops work.
+description: Why a station's judge checks claims, why it stays hidden until its verdicts match people's, how that agreement is measured, how disagreements improve the claims, and why the judge never stops work.
 ---
 
 A station's [judge](/docs/reference/glossary#judge) is a model that reads a
@@ -33,32 +33,22 @@ people already do with a run can check the judge.
 
 ## Where people's verdicts come from
 
-Agreement needs runs that both the judge and people gave a verdict on. People
-give one in two ways.
-
-The first needs no extra work. What people already do with a run says whether
-it was good: accepting the run, by moving the task to the completed station
-after it, is a pass, and sending it back is a fail. Failing those, a merged
-pull request is a pass for the station's last completed run on the task, the
-run whose work the merge took. A pull request closed without a merge is no
+Agreement needs runs that both the judge and people gave a verdict on.
+People's verdict needs no extra work. What people already do with a run says
+whether it was good: accepting the run, by moving the task to the completed station
+after it, is a pass. Sending it back, or a hold on the task that ends with the
+reason "The line got it wrong", is a fail. When the first thing people did
+with the run is none of those, a merged pull request is a pass for the
+station's last completed run on the task, the run whose work the merge took. A pull request closed without a merge is no
 verdict: it can close because the feature is no longer wanted, or because
 another pull request took its place. Answering an approval
 counts as neither: it is the run asking a person, and a run that only paused
 for an approval would otherwise count as accepted.
 
-The second is a grade. One in five judged runs can be put in the inbox to be
-graded, with the run's last words and its changes. The person marks each claim
-met or not, and the grade passes when it meets the pass threshold. The item
-does not show the judge's verdict. Anyone on the team, or an owner or admin of
-the workspace, can grade it. When a run has a grade, the grade is its people's
-verdict, whatever else happened to the run.
-
-Spotlight asks for grades only while the first source does not cover the
-station: when fewer than half of the runs the judge checked in the last 30
-days have a verdict from an accept, a send-back or a merge. In the docs' view, the first
-source is what makes a judge usable on a busy station: its agreement can be
-measured from the work people do anyway, and grades fill the gaps without
-asking people for work they already did.
+Spotlight never asks a person for a verdict on a run. People already act on
+each run, and in the docs' view a second verdict would cost them time on every
+run. The cost is that a station whose runs people rarely act on gets few runs
+with both verdicts, so its judge can stay hidden longer.
 
 ## How agreement is measured
 
@@ -67,11 +57,6 @@ where both said the same. If most of a station's runs are good, a judge that
 passes everything agrees with people most of the time while telling them
 nothing. Kappa counts only the agreement beyond what chance would give, so
 such a judge gets a kappa near zero.
-
-Spotlight also measures each claim on its own, from grades, because a grade is
-the one source that marks each claim. A judge can read most claims as people do
-and one of them differently. The verdict's kappa says whether the judge is
-qualified, and the per-claim figures say which claim to reword.
 
 At least 10 runs need both verdicts before the measure counts. In the docs'
 view, with fewer, one or two runs would decide the result.
@@ -86,7 +71,7 @@ claims.
 
 To keep that wait short, Spotlight judges past runs again under the new
 claims, as soon as the line changes: up to 50 recent runs that already have
-people's verdict from an accept, a send-back or a merge. So the new claims
+people's verdict. So the new claims
 can be measured without waiting for new runs. See
 [Re-judging after a claims change](/docs/reference/app/tasks-runs-and-the-inbox#re-judging-after-a-claims-change).
 
@@ -107,7 +92,11 @@ would carry the same weight to a reader as the score it explains.
 
 A run where the judge's verdict and people's differ is the best evidence of
 what the claims get wrong. Spotlight puts such a run in the inbox as a
-[judge disagreement](/docs/reference/app/tasks-runs-and-the-inbox#judge-disagreements).
+[judge disagreement](/docs/reference/app/tasks-runs-and-the-inbox#judge-disagreements),
+for the person whose action gave people's verdict, or, for a merged pull
+request, for the task's assignee or the team. It is the only time
+Spotlight asks a person about the judge, and it asks only why the two verdicts
+differ.
 Each claim in dispute gets its own answer and its own reason: the person
 says whether the judge was right or the claim is wrong for this run, and why.
 Where no claim is in dispute, because the judge passed the run, the person
@@ -123,15 +112,15 @@ describes a disagreement under the claims the judge uses.
 An answer never changes the run's verdicts or the judge's agreement with
 people. In the docs' view, a person who is asked "was the judge wrong?" has
 already seen the judge's verdict, so the answer is not an independent verdict
-like an accept or a grade. Counting it would let the judge's verdict lean on
+like an accept or a send-back. Counting it would let the judge's verdict lean on
 the measure of its own agreement.
 
 The answers drive a
 [claims revision](/docs/reference/app/tasks-runs-and-the-inbox#claims-revisions)
 instead. When people say often enough that one claim is wrong, or name
 problems no claim checks, or when the judge's agreement falls below
-`min_agreement`, Spotlight drafts new claims and judges past labelled runs
-again with them, from what those runs stored. It picks the new claims on
+`min_agreement`, Spotlight drafts new claims and judges past runs with
+people's verdict again with them, from what those runs stored. It picks the new claims on
 some runs and checks them on runs it held out. In the docs' view, claims that
 only fit the runs they were picked on would agree with people there and
 nowhere else, the same overfitting a
@@ -150,7 +139,7 @@ judge that people do not trust cannot tell a better config from a worse one.
 
 The judge is told that its verdict is an early signal for the team, never a
 decision. Nothing is approved, moved or stopped by a score, and nothing
-waits on a grade: a task moves on as it would without either. Whether a run
+waits on a judge disagreement: a task moves on as it would without either. Whether a run
 was good enough is still decided by the people who answer the inbox.
 
 ## Related
