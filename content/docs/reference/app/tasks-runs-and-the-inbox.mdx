@@ -127,7 +127,7 @@ about a failed or stopped run has no files.
 | Handover | Allowed when | Effect |
 | --- | --- | --- |
 | a station key | The station is on the line, is not the current station, has a harness, and the current station passes to it. | The task moves to the back of that station with a `passed` note, its revision goes up, and a run starts there. |
-| `review` | Always. | An `asked` note is written and the task awaits review. An unassigned task is assigned to the person who raised it. |
+| `review` | Always. | An `asked` note is written and the task awaits review. An unassigned task is assigned to the person who raised it. With `--suggest done`, the note suggests closing the task. See [Suggested close](#suggested-close). |
 | `done` | The current station has `ends: true`. | The task is finished at its current station, with a `passed` note, and its revision goes up. |
 
 Any other ending is handled as `review`, with one of these notes:
@@ -1155,6 +1155,19 @@ if no run started there.
 [memory reviews](#memory-reviews) and [station alerts](#station-alerts) are
 inbox requests: items on a task that are not its conversation. Nothing waits
 on an inbox request.
+
+### Suggested close
+
+A run suggests closing the task with `spotlight handover --next review --suggest done`.
+While the conversation is open and its latest note is that `asked` note, a card
+shows under the note. The card reads `<Station> suggests closing the task` and
+has a **Close** button.
+
+The button moves the task to the line's completed station, as a person's
+[move](#moves) does. The task is finished and the conversation closes. The
+card shows only to a person who may make that move: it does not show while
+another person holds the task. An answer instead of the button lets the run
+carry on.
 
 ### Running work
 
