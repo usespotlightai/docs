@@ -132,6 +132,7 @@ when the sandbox drains.
 | --- | --- |
 | Idle grace | With no lease, the sandbox drains this long after its last lease ended. The control plane's `SPOTLIGHT_SANDBOX_GRACE`, default `10m`. See [Self-hosted settings](/docs/reference/self-hosted-settings#sandboxes). |
 | Replay | A replay's sandbox drains when its run ends. It gets no idle grace, because no later run or editor uses it. |
+| Completed task | When a task moves to Completed or is deleted, its sandbox drains as soon as no run and no editor holds it. It gets no idle grace. A task finished at another station can reopen, so its sandbox keeps the grace. A new run of the task that takes the sandbox first keeps it up. |
 | Editor limit | With only editor leases, the sandbox drains this long after its last run lease ended, or after it started when no run held it. `SPOTLIGHT_EDITOR_LIMIT`, default `12h`. |
 | Checked | Every 30 seconds. |
 | Lost | A sandbox that its host stops reporting, or whose host sends no heartbeat for 90 seconds, is `gone`. A sandbox that starts and is not reported within 60 seconds is `gone`. |
