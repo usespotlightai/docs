@@ -10,7 +10,7 @@ a server the runner starts on the loopback interface for that run. They work
 only inside a Spotlight run.
 
 ```text
-spotlight handover --next <where> [--note <text>] [--attach <file>]...
+spotlight handover --next <where> [--note <text>] [--suggest done] [--attach <file>]...
 spotlight reply --to <handle> [--body <text>] [--resolve]
 spotlight trace --task <id> [--out <path>]
 spotlight history --station <key> [--line <key>] [--fingerprint <fp>] [--outcome <word>] [--since <date>] [--last <n>] [--out <dir>]
@@ -94,7 +94,7 @@ When the word is an enabled tool, the line that follows names the call, as
 ## spotlight handover
 
 ```text
-spotlight handover --next <where> [--note <text>] [--attach <file>]...
+spotlight handover --next <where> [--note <text>] [--suggest done] [--attach <file>]...
 ```
 
 Says where the task goes when the run ends. The run carries on until the
@@ -104,6 +104,7 @@ agent's turn ends.
 | --- | --- | --- |
 | `--next` | yes | Where the task goes. Matched without regard to case. |
 | `--note` | no | What the next station or person needs to know. Omitted, `-` or `/dev/stdin`: read from standard input to end of file, with surrounding whitespace trimmed. |
+| `--suggest` | no | With `--next review`: `done` gives the person a "Close the task" button. Matched without regard to case. |
 | `--attach` | no | A file to attach to the note, such as a screenshot. Repeat for more than one. At most 10 files, each at most 25 MB. |
 
 `--next` takes one of the values the run is offered: the keys of the stations
@@ -111,6 +112,11 @@ a run at the current station may pass to, in line order, then `review`, then
 `done` where the current station ends the line. When each is offered, and what
 it does to the task, is in
 [Handover](/docs/reference/app/tasks-runs-and-the-inbox#handover).
+
+`--suggest done` is for a run that finds nothing left to do at a station that
+does not end the line. The task is put to a person as with `--next review`.
+The person can answer, or close the task with one click. See
+[Suggested close](/docs/reference/app/tasks-runs-and-the-inbox#suggested-close).
 
 Each attached file goes on the note that the handover writes: the note to the
 next station, to the person, or that closes the task. The runner uploads the
@@ -126,12 +132,14 @@ counts.
 | --- | --- |
 | `Passed to <next>.` | A station was named. |
 | `Put to a person. The task waits here until someone answers.` | `--next review` |
+| `Put to a person, with the choice to close the task. The task waits here until someone answers.` | `--next review --suggest done` |
 | `Closed at its current station.` | `--next done` |
 
 | Message | Cause |
 | --- | --- |
 | `--next is required` | No `--next`. The usage follows. |
 | `"<next>" is not one of: <options>` | `--next` names nothing on offer. The options are listed. |
+| `--suggest takes only "done", together with --next "review"` | `--suggest` names something other than `done`, or `--next` is not `review`. |
 | `unreadable handover` | The request body was not JSON. |
 | `read the note: <error>` | Standard input could not be read. |
 | `attach <file>: <error>` | The file is missing, is not a regular file, is larger than 25 MB, could not be read, or could not be uploaded. |
@@ -140,6 +148,7 @@ counts.
 ```bash
 spotlight handover --next code-review --note "Added retries to the webhook client."
 spotlight handover --next review < question.md
+spotlight handover --next review --suggest done --note "The retry already exists in webhook-client.ts."
 spotlight handover --next review --note "Added the theme selector." --attach light.png --attach open.png
 ```
 
