@@ -1791,7 +1791,7 @@ When the person asks for a small change, the agent of a chat that is not a
 setup chat may make it in the chat. It pushes a branch to one of the chat's
 repositories and opens the pull request with
 [`open-pull-request`](/docs/reference/built-ins/built-in-tools-and-skills#open-pull-request).
-The tool creates a task first, and the task then tracks the pull request:
+A task then tracks the pull request:
 
 - The task starts at the station of its line that has the `pull-request` tool,
   with the agent's branch, the title and body of the pull request, and the
@@ -1805,11 +1805,8 @@ The tool creates a task first, and the task then tracks the pull request:
 - When the pull request is merged, the hold ends and the task moves to its
   line's completed station. The chat hears of it, but no run starts.
 - When the person hands the task to the line, or moves it by hand, the hold
-  ends. The chat hears of it, but no run starts. The agent of the chat does
-  not push to the task's branch again.
-- When the chat is deleted, the hold ends and the line resumes at the task's
-  station, as when the person hands the task to the line. The note on the task
-  says that the chat was deleted. The notes held aside go to the line.
+  ends. The chat hears of it, but no run starts. Spotlight refuses the chat's
+  pushes to the task's branch from then on.
 - A hold for a chat never counts against the line.
 
 The pull request shows in the chat as a card:
@@ -1827,6 +1824,25 @@ the hold, and a run starts at the task's station: the station's agent goes on
 from the branch.
 
 On the task, the "On hold" pill links to the chat.
+
+#### What a chat may push
+
+Spotlight refuses a push from a chat when one of the refs it updates:
+
+- Is the repository's default branch.
+- Is not a branch, as with a tag.
+- Deletes a branch.
+- Is the branch of a task that the chat does not hold.
+
+Spotlight then refuses the whole push, and git shows the reason next to each
+ref, as in:
+
+```text
+ ! [remote rejected] fix/icons -> main (main is the default branch. Push the change to a new branch and open a pull request.)
+```
+
+When GitHub does not tell Spotlight the default branch, Spotlight refuses the
+push, and the reason asks the agent to push again a minute later.
 
 ## Attachments
 

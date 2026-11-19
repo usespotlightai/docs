@@ -157,6 +157,8 @@ opens a second pull request on the same task.
 
 The tool opens nothing from a branch that belongs to another task, or to a
 task that is completed or was handed to the line.
+Spotlight also refuses such a push, and a push to the default branch. See
+[What a chat may push](/docs/reference/app/tasks-runs-and-the-inbox#what-a-chat-may-push).
 
 | Input | Type | Required | Stdin | Description |
 | --- | --- | --- | --- | --- |
@@ -174,10 +176,11 @@ The tool opens nothing and creates no task when:
 - The branch has no changes from the repository's default branch, or GitHub
   does not know the branch.
 
-The tool creates the task first, then runs the `pull-request.opening`
-[hook](/docs/integrations/hooks), as for a pull request the line opens. When
-the hook denies the pull request, or GitHub does not open it, the tool removes
-the task it created. Call the tool again after you fix what the hook asks for.
+The tool runs the `pull-request.opening` [hook](/docs/integrations/hooks), as
+for a pull request the line opens, then opens the pull request, then creates
+the task. When the hook denies the pull request, or GitHub does not open it,
+the tool creates no task. Call the tool again after you fix what the hook asks
+for.
 
 ### setup-pull-request
 
