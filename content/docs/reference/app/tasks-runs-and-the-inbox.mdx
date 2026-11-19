@@ -1785,6 +1785,49 @@ An accepted proposal creates the task at the proposed station, with a copy of
 each file on the proposal. A task created at a station with a harness starts a
 run at once.
 
+### Pull requests from a chat
+
+When the person asks for a small change, the agent of a chat that is not a
+setup chat may make it in the chat. It pushes a branch to one of the chat's
+repositories and opens the pull request with
+[`open-pull-request`](/docs/reference/built-ins/built-in-tools-and-skills#open-pull-request).
+The tool creates a task first, and the task then tracks the pull request:
+
+- The task starts at the station of its line that has the `pull-request` tool,
+  with the agent's branch, the title and body of the pull request, and the
+  person who started the chat as its assignee.
+- The task is on hold for the chat. The line starts no run on it.
+- GitHub events about the pull request reach the task through its
+  `git.pull-request` mark, as for a pull request the line opened. Each event,
+  and each message a teammate writes on the task, is passed to the chat, and
+  the agent answers it there. A move that an event asks for waits until the
+  task goes back to the line.
+- When the pull request is merged, the hold ends and the task moves to its
+  line's completed station. The chat hears of it, but no run starts.
+- When the person hands the task to the line, or moves it by hand, the hold
+  ends. The chat hears of it, but no run starts. The agent of the chat does
+  not push to the task's branch again.
+- When the chat is deleted, the hold ends and the line resumes at the task's
+  station, as when the person hands the task to the line. The note on the task
+  says that the chat was deleted. The notes held aside go to the line.
+- A hold for a chat never counts against the line.
+
+The pull request shows in the chat as a card:
+
+| State | Card title | What the card offers |
+| --- | --- | --- |
+| On hold for the chat | On hold for this chat | "Open task", and "Hand to the line" |
+| The line has the task | Handed to the line | "Open task" |
+| The task completed | Task completed | "Open task" |
+| The task was deleted | Task deleted | Nothing |
+
+"Pull request" shows the title and `<owner>/<name>#<number>`, linked to the
+pull request. "Station" reads `<Line> › <Station>`. "Hand to the line" ends
+the hold, and a run starts at the task's station: the station's agent goes on
+from the branch.
+
+On the task, the "On hold" pill links to the chat.
+
 ## Attachments
 
 | Property | Value |
