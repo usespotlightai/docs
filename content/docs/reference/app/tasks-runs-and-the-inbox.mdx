@@ -360,8 +360,10 @@ run starts, the line goes away.
 The API sends a message to the task's current station with
 `POST /api/teams/{teamId}/tasks/{taskId}/messages`, and tries again with
 `POST /api/teams/{teamId}/tasks/{taskId}/start`. The task's `runNotStarted`
-holds the harness, and is `null` while nothing is wrong. Try again on a task
-that does not wait for its run to start answers `409`.
+holds the harness, and is `null` while nothing is wrong. Try again answers
+`409` when the task does not wait for its run to start, or while it waits on
+a person or is on hold. When the station no longer has a harness, Try again
+removes the line and starts no run.
 
 ### Failure codes
 
