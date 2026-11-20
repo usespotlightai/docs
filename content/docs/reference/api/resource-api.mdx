@@ -232,7 +232,7 @@ The export's files are ordered by path and are the same on every export:
 | `workspace.tf`, `secrets.tf`, `inference.tf`, `runners.tf` | The workspace and its OIDC trusts; the secrets; the inference endpoint; runner trusts, egresses, runner pools and the workspace's runners. |
 | `team-<team>.tf`, `line-<team>-<line>.tf`, `integration-<team>-<integration>.tf` | One file for each team, line and integration. |
 | `skills-<team>.tf`, `hooks-<team>.tf`, `profiles-<team>.tf` | A team's skills, hooks and harness profiles. |
-| `variables.tf` | A sensitive variable for each value Spotlight never returns, such as secret values, runner pool tokens, egress tokens and the inference endpoint's API key (`inference_api_key`). |
+| `variables.tf` | A sensitive variable for each value Spotlight never returns, such as the values of secrets that Terraform sets, runner pool tokens, egress tokens and the inference endpoint's API key (`inference_api_key`). A secret whose value is set outside Terraform is exported without `value_wo` and `value_wo_version`. |
 | `prompts/<team>/<line>/<station>.md` | Each station prompt, read with `file()`. |
 | `skills/<team>/<key>/<path>` | Each skill file, read with `file()`. |
 | `.gitignore` | `.terraform/`, state files and `*.tfvars`. |
@@ -273,7 +273,7 @@ anyone else the workspace is `404`.
 | `by.tokenId` | string or null | The workspace token. |
 | `by.trust` | string or null | The OIDC trust that issued the token. |
 | `client` | string or null | The client, from `Spotlight-Client`. |
-| `details` | object | What the kind records beyond the action. A secret records its value version and bound hosts, never its value. An egress update records `tokenRotated: true` when its token changed, never the token. A Terraform state records the version, serial and lineage it wrote, or the lock it released. |
+| `details` | object | What the kind records beyond the action. A secret records how its value changed (`valueChange`: `stored` or `handed-over`), where the value comes from after the change (`valueOrigin`), its value version and its bound hosts, never its value. An egress update records `tokenRotated: true` when its token changed, never the token. A Terraform state records the version, serial and lineage it wrote, or the lock it released. |
 | `at` | string | When, as an ISO 8601 time. |
 
 ## Expression checks

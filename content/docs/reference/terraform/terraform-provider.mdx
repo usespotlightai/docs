@@ -203,6 +203,10 @@ sends the value again.
 | `spotlight_egress` | `token` | `token_version` |
 | `spotlight_hook` | `signing.secret_wo` | `signing.secret_wo_version` |
 
+A `spotlight_secret` takes `value_wo` only together with `value_wo_version`.
+Without both, a person sets its value outside Terraform. See
+[Value](/docs/reference/terraform/secret#value).
+
 A pull pool created without `token` is issued one by Spotlight in the
 `Spotlight-Pool-Token` response header. The provider does not keep it, and
 warns. The same applies to an egress created without `token`, in the

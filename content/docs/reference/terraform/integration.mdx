@@ -790,14 +790,13 @@ one-time token:
 | --- | --- |
 | Key | The egress that sends the action makes a key for this action alone. |
 | Redeem | Egress gives the token and its public key to Spotlight, once. Spotlight accepts it only while the host that claimed the action has it, before `timeoutSeconds` ends. |
-| Seal | Spotlight seals the value of each secret that it stores to that key, bound to the action and the secret. For a secret in AWS Secrets Manager, Spotlight gives egress the reference, and egress reads the value with the host's AWS identity, only if the host's `SPOTLIGHT_EGRESS_SECRET_ALLOW` names it. That setting limits only which secrets egress reads; the host's egress allow-list limits where they go. |
+| Seal | Spotlight seals the value of each secret to that key, bound to the action and the secret. The host's egress allow-list limits where the values go. |
 | Inject | Egress replaces each stand-in with the secret's value, only on the request to a host that the secret is bound to. It asks that host for an uncompressed response. |
 | Redact | Egress replaces the secret's value with its stand-in in every response header and in the body, whatever its content type, before it returns the response. A compressed body is dropped. |
 
 If egress cannot inject a secret that the action names, it sends nothing.
-This happens when Spotlight denies egress the secret, when the host's egress
-allow-list does not allow the secret's bound host, or when the secret is in AWS
-Secrets Manager and `SPOTLIGHT_EGRESS_SECRET_ALLOW` does not name it. When
+This happens when Spotlight denies egress the secret, or when the host's
+egress allow-list does not allow the secret's bound host. When
 Spotlight queues the action, a secret that does not
 exist fails it with `Secret <NAME> not found. Please create it first.`, and a
 secret that is not bound to the request's host fails it with

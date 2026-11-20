@@ -50,6 +50,10 @@ resource "spotlight_secret" "acme_api_key" {
 ```
 
 To rotate the key later, give the new value and raise `value_wo_version`.
+To keep the key out of Terraform, leave out `value_wo` and
+`value_wo_version`, and set the value in the web app or with
+`spotlight secret set ACME_API_KEY`. See
+[Set the value outside Terraform](/docs/security/give-an-mcp-server-a-secret#set-the-value-outside-terraform).
 
 ### If the API reads the key from the query
 
@@ -197,12 +201,6 @@ list, so keep the entries it has:
 spotlight host config set egress-allow=api.anthropic.com,api.acme.internal
 ```
 
-If the secret is kept in AWS Secrets Manager, let egress read it:
-
-```bash
-spotlight host config set egress-secret-allow=acme/api-key
-```
-
 Set `from` on the action, and optionally `timeoutSeconds`, 1 to 60, default
 30:
 
@@ -235,8 +233,7 @@ Run `terraform apply`, then call the tool from a run. The host logs
 - With `Egress couldn't redeem the call's secrets`, check the host's log for the
   reason.
 - With `Egress couldn't inject secret <NAME>`, check that `egress-allow`
-  allows the secret's bound host, and for a secret in AWS Secrets Manager, that
-  `egress-secret-allow` names it.
+  allows the secret's bound host.
 
 For every rule and message, see
 [Sent from the network](/docs/reference/terraform/integration#sent-from-the-network).

@@ -152,17 +152,15 @@ intercepted request it could not pass on with only
 [`spotlight_secret`](/docs/reference/terraform/secret) and
 [Give an MCP server a secret](/docs/security/give-an-mcp-server-a-secret).
 
-| Secret source | How egress gets the value |
-| --- | --- |
-| Stored by Spotlight | Sealed to a key egress makes for the run (X25519, HKDF-SHA256, AES-256-GCM, bound to the run and the secret). |
-| AWS Secrets Manager | Read by egress with the host's AWS identity, from the default credential chain and `SPOTLIGHT_EGRESS_ENV`. Only a secret that `SPOTLIGHT_EGRESS_SECRET_ALLOW` allows. |
+Egress gets each value from Spotlight, sealed to a key egress makes for the
+run (X25519, HKDF-SHA256, AES-256-GCM, bound to the run and the secret).
+Egress reads no secret from any other store.
 
 Egress logs one of these reasons and sends the request without the run
 secret:
 
 - `the host has a key of its own for <host>`
 - `the host's allow-list does not allow <host>`
-- `the host does not let egress read <secret id>`
 - `another secret is already injected in <Header> for <host>`, or
   `in ?<parameter> for <host>` for a query parameter
 - `its location is neither a header nor a query parameter`
@@ -183,19 +181,6 @@ query-escaped, path-escaped and escaped with lowercase hex, each with and
 without the binding's prefix. A binary body, or one the host compressed, is
 passed on as it is. Egress requests an uncompressed answer from the bound host. A
 response it rewrites loses its `Content-Length` and is sent chunked.
-
-Reading a secret from AWS Secrets Manager fails with:
-
-| Message | Cause |
-| --- | --- |
-| `find the host's AWS identity: <error>` | No AWS identity. |
-| `AWS Secrets Manager answered <code>` | An AWS error. |
-| `could not call AWS Secrets Manager: <error>` | AWS not reached. |
-| `AWS Secrets Manager has no text for it` | No text value. |
-| `its value in AWS Secrets Manager is not JSON, so it has no <field> field` | `field` set, value not JSON. |
-| `its value in AWS Secrets Manager has no text at <field>` | `field` missing. |
-
-Egress logs each failure, and the request goes out without that secret.
 
 ### The run's Spotlight token
 
@@ -282,15 +267,11 @@ makes a key for the call, and gives the token and the key's public half to
 Spotlight at `POST /api/hosts/calls/<id>/secrets`, with no other credential.
 Spotlight answers once, while the host that claimed the call has it.
 
-| Secret source | How egress gets the value |
-| --- | --- |
-| Stored by Spotlight | Sealed to the key egress makes for the call (X25519, HKDF-SHA256, AES-256-GCM, bound to the call and the secret). |
-| AWS Secrets Manager | Read by egress with the host's AWS identity, from the default credential chain and `SPOTLIGHT_EGRESS_ENV`. Only a secret that `SPOTLIGHT_EGRESS_SECRET_ALLOW` allows. |
+Spotlight answers with each value sealed to the key egress makes for the
+call (X25519, HKDF-SHA256, AES-256-GCM, bound to the call and the secret).
 
 Egress injects each secret only on the request to the host the secret is bound
-to, and only if the host's allow-list allows that host.
-`SPOTLIGHT_EGRESS_SECRET_ALLOW` limits only which secrets in AWS Secrets
-Manager egress reads, not where they go. If egress cannot inject a secret that
+to, and only if the host's allow-list allows that host. If egress cannot inject a secret that
 the call names, it sends nothing, and the call's response is
 `Egress couldn't inject secret <NAME>, so it didn't send the call.`
 Egress refuses a `Host` header that differs from the host of the URL.
@@ -340,15 +321,13 @@ Spotlight's API, is never reserved for its runners.
 | `SPOTLIGHT_EGRESS_LISTEN` | `:3128` | The address egress listens on. |
 | `SPOTLIGHT_EGRESS_TLS_CERT`, `SPOTLIGHT_EGRESS_TLS_KEY` | none | A certificate and its key, as PEM files. With both, egress serves TLS 1.2 or later. Give both or neither. |
 | `SPOTLIGHT_EGRESS_ALLOW` | none | The allow-list for every run egress serves, as a host's. See [Allowed hosts](#allowed-hosts). |
-| `SPOTLIGHT_EGRESS_SECRET_ALLOW` | none | Comma-separated AWS Secrets Manager secret names or ARNs egress may read, or prefixes ending in `*`. |
 | `SPOTLIGHT_EGRESS_CA_BUNDLE` | none | A PEM file of certificate authorities egress trusts upstream, in addition to its image's system certificates. |
 | `SPOTLIGHT_EGRESS_RATE_LIMIT` | `50` | Requests each second for each workspace. `0` is no limit. See [Limits](#limits). |
 | `SPOTLIGHT_EGRESS_MAX_CONNECTIONS` | `200` | Open connections for each workspace. `0` is no limit. See [Limits](#limits). |
 | `SPOTLIGHT_HEALTH_ADDR` | none | Where egress answers `GET /healthz` and `GET /readyz`, apart from the proxy. See [Health checks](/docs/reference/observability#health-checks). |
 | `SPOTLIGHT_LOG_LEVEL` | `info` | `error`, `warn`, `info` or `debug`. |
 
-Egress reads AWS Secrets Manager with its own AWS identity, from the default
-credential chain. [Allowed hosts](#allowed-hosts) and
+[Allowed hosts](#allowed-hosts) and
 [Blocked addresses](#blocked-addresses) apply as above. The Spotlight address's
 host, and the storage hosts Spotlight names for the run, are always allowed.
 
