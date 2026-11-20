@@ -1222,6 +1222,10 @@ is one. The conversation then leaves the inboxes of the other members, unless
 they [follow](#following) the task. Once another person is the assignee, an
 answer or a resolve fails: with `409` for a member of the team who follows the
 task, with `403` for a follower who does not act on the team, else with `404`.
+While a person holds the task, and not an agent chat, every member who acts on
+the team can answer and resolve its conversations, as the assignee can. The
+person who holds the task stays the assignee, and an approval that names a
+person stays for that person to decide.
 The read state is shared: when one member opens the item, it is read for all of
 them.
 
@@ -1237,7 +1241,9 @@ conversations and its running work under "Following". Resolved conversations
 do not show to a follower. In place of the answer box, the item reads
 `You follow this task. Its assignee answers here.` A follower cannot answer or
 resolve the conversation; doing so fails with `409`, or with `403`
-when they do not act on the team. Opening the item does not read it for the
+when they do not act on the team. While a person holds the task, a follower who
+acts on the team gets the answer box, and can answer and resolve, as the
+assignee can. Opening the item does not read it for the
 assignee. A follower's items are never unread, so they send no
 [notifications](/docs/inbox/get-notified). The assignee stays the one person
 the task waits on.
