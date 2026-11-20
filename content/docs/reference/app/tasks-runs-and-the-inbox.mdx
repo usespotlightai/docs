@@ -344,6 +344,25 @@ runner has a lease on the run and the composer is empty, "Send" becomes "Stop".
 Once the task has left the run's station, the composer is replaced by
 `The task has moved to another station. Messages here reach no one.`
 
+### A run that did not start
+
+When a task reaches a station whose harness Spotlight does not know, or
+cannot prepare, no run starts. The task keeps the station and the harness.
+Its run page and its inbox item show
+`Spotlight cannot start <Harness> at <Station>. Change the station’s agent, then try again.`
+above the composer, with **Try again**. The composer reads `Message <Station>`.
+
+Try again, and every message to the task, try to start the run again. A
+message is kept at the station even when the run still does not start. While
+it does not start, the line reads `Spotlight still cannot start …`. When the
+run starts, the line goes away.
+
+The API sends a message to the task's current station with
+`POST /api/teams/{teamId}/tasks/{taskId}/messages`, and tries again with
+`POST /api/teams/{teamId}/tasks/{taskId}/start`. The task's `runNotStarted`
+holds the harness, and is `null` while nothing is wrong. Try again on a task
+that does not wait for its run to start answers `409`.
+
 ### Failure codes
 
 | Code | Cause | Retried |

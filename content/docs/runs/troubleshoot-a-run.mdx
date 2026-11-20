@@ -95,6 +95,23 @@ which:
 
 Refused runs are not retried. After changing the station, reply to the item.
 
+## The page says Spotlight cannot start the agent
+
+The run page or the inbox item reads `Spotlight cannot start <Harness> at
+<Station>.` No run started at the station: the station's `harness` is one
+that this Spotlight release does not know or cannot prepare. The control
+plane's [log](/docs/reference/observability#logs) has `Did not dispatch a run`
+with `station-has-no-harness` or `harness-not-prepared`.
+
+1. Change the station's `harness` in the line's Terraform to a harness from
+   [Harnesses](/docs/reference/hosts/harnesses), and apply it. Or update
+   Spotlight to a release that has the harness.
+2. Select **Try again**, or send a message to the task. Either one tries to
+   start the run again. Your message is kept even when the run still does not
+   start.
+
+See [A run that did not start](/docs/reference/app/tasks-runs-and-the-inbox#a-run-that-did-not-start).
+
 ## The run used all its attempts
 
 "The run did not finish after N attempts. Spotlight does not try it again."
