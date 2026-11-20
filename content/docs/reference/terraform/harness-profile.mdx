@@ -6,8 +6,8 @@ description: The fields of a harness profile, how each harness receives it, and 
 ---
 
 The `spotlight_harness_profile` resource, and the API's `harness-profile`
-kind: a team's set of permission rules, MCP servers and native harness
-settings. A station names one in its `profile`.
+kind: a team's set of permission rules, MCP servers, native harness settings
+and workspace secrets for its runs. A station names one in its `profile`.
 
 | Kind | Endpoint | Terraform | Address |
 | --- | --- | --- | --- |
@@ -42,6 +42,8 @@ resource "spotlight_harness_profile" "core_careful" {
     claude-code = { includeCoAuthoredBy = false }
     codex       = "model_verbosity = \"low\"\n"
   }
+
+  secrets = [spotlight_secret.staging_viewer.name]
 }
 ```
 
@@ -55,6 +57,7 @@ resource "spotlight_harness_profile" "core_careful" {
 | `permissions.deny` | array of strings | `[]` | Rules for what the agent may never do. |
 | `mcpServers` | array of objects | `[]` | Stdio [MCP servers](#mcp-servers), started in the sandbox. A remote server is named on an integration instead; see [MCP servers](/docs/reference/terraform/integration#mcp-servers). |
 | `native` | object | `{}` | Each harness's own settings, by harness id. See [native settings](#native-settings). |
+| `secrets` | array of strings | `[]` | Names of workspace secrets that the runs of this profile get. See [Secrets](#secrets). |
 
 `permissions` accepts no other keys.
 
@@ -108,6 +111,24 @@ workspace [secret](/docs/reference/terraform/secret) written `secret.<NAME>`, as
 
 Every harness gets the servers when its session starts. Cursor also gets them in
 `cursor/mcp.json`.
+
+## Secrets
+
+`secrets` names workspace [secrets](/docs/reference/terraform/secret) that the
+agent of each run can use in its own requests, as in `["STAGING_VIEWER"]`.
+
+- Each name must be a secret the workspace has, or the write fails with `422`
+  and `Secret <NAME> not found. Please create it first.`
+- Each name may appear once.
+- A secret a profile names cannot be deleted.
+- The agent never gets the value. The run's briefing tells it where to send the
+  stand-in `spotlight-egress:<NAME>` for each binding of the secret, as in
+  `authorization: Bearer spotlight-egress:STAGING_VIEWER`.
+  [Egress](/docs/reference/hosts/egress#run-secrets) puts the value in place
+  of the stand-in, in requests to the bound host.
+- A run of the profile goes only to a runner with an egress.
+
+See [Give agents a secret for an API](/docs/security/give-agents-a-secret-for-an-api).
 
 ## Native settings
 
@@ -169,7 +190,14 @@ OpenCode gets the MCP servers when its session starts.
 ## Warnings
 
 Where a harness cannot apply a rule as written, the profile's `warnings` name
-the approximation. The write succeeds. Warnings include:
+the approximation. The write succeeds.
+
+A secret the profile names, in `secrets` or in an MCP server's `env`, that
+awaits a value also gets a warning:
+`names secret <NAME>, which has no value. Runs with this profile do not start until a person sets it`
+See [Value](/docs/reference/terraform/secret#value).
+
+Harness warnings include:
 
 | Harness | Case | Effect |
 | --- | --- | --- |
@@ -195,5 +223,6 @@ A delete fails with `409` `in-use` while any station names the profile.
 A station that names a profile its team does not have is not rejected when the
 line is written; its runs fail with the code `refused`.
 
-See [Limit what agents may do](/docs/agents/limit-what-agents-may-do)
-and [Give an MCP server a secret](/docs/security/give-an-mcp-server-a-secret).
+See [Limit what agents may do](/docs/agents/limit-what-agents-may-do),
+[Give an MCP server a secret](/docs/security/give-an-mcp-server-a-secret) and
+[Give agents a secret for an API](/docs/security/give-agents-a-secret-for-an-api).
