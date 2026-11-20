@@ -13,7 +13,8 @@ A person or a CI job runs [`spotlight replay check`](/docs/reference/cli/replay-
 from anywhere to check the station changes in a Terraform plan. A person runs [`spotlight login`](#spotlight-login)
 so that `spotlight replay` and the Terraform provider act as them.
 [`spotlight token`](#spotlight-token) prints a token for Terraform's `http`
-backend. A person runs [`spotlight ssh setup`](#spotlight-ssh-setup) once so
+backend. [`spotlight secret`](#spotlight-secret) lists the workspace's secrets
+and sets the values that Terraform does not set. A person runs [`spotlight ssh setup`](#spotlight-ssh-setup) once so
 that `ssh`, VS Code and Cursor reach the sandbox of a task or chat through
 [`spotlight ssh proxy`](#spotlight-ssh-proxy).
 
@@ -43,6 +44,8 @@ spotlight replay <subcommand>
 spotlight login [--url <address>] [--no-browser]
 spotlight logout [--url <address>]
 spotlight token [--url <address>]
+spotlight secret list [--workspace <slug>] [--url <address>]
+spotlight secret set <NAME> [--workspace <slug>] [--url <address>]
 spotlight ssh setup [--url <address>] [--editor-timeout | --no-editor-timeout] [--print]
 spotlight ssh proxy [--url <address>] <task-or-chat>.<workspace>.spotlight
 spotlight version
@@ -55,7 +58,7 @@ The [agent commands](/docs/reference/cli/agent-commands) work inside a run.
 
 | Invocation | Output | Exit code |
 | --- | --- | --- |
-| `spotlight help`, `-h` or `--help` | The commands, by group, on standard output. Inside a run, the agent commands. Outside one, the commands by goal: the login, editors, hosts and replays. | `0` |
+| `spotlight help`, `-h` or `--help` | The commands, by group, on standard output. Inside a run, the agent commands. Outside one, the commands by goal: the login, secrets, editors, hosts and replays. | `0` |
 | `spotlight` | In a terminal outside a run, the [dashboard](#spotlight). In the terminal of a sandbox that an editor opened, a [note](#spotlight). Else the same as `spotlight help`. | `0` |
 | `spotlight help --all` | Every command, by group. | `0` |
 | `spotlight <command> --help`, `-h`, or `spotlight help <command>` | The command's usage, flags, environment, examples, exit codes and docs link. | `0` |
@@ -900,6 +903,101 @@ address. It takes the first of these that is set:
 Each error is printed after `spotlight token: ` on standard error. The exit
 codes are those of `spotlight login`.
 
+## spotlight secret
+
+```text
+spotlight secret <command> [flags]
+```
+
+Lists the workspace's [secrets](/docs/reference/terraform/secret), and sets
+the value of a secret that Terraform does not set. See
+[Values set outside Terraform](/docs/reference/terraform/secret#values-set-outside-terraform).
+With no command, or an unknown one, it prints its usage and exits `1`.
+
+Both commands take the same flags and environment:
+
+| Flag | Description |
+| --- | --- |
+| `--workspace <slug>` | The workspace. Without it, `SPOTLIGHT_WORKSPACE`. Else the one workspace the caller is in. |
+| `--url <address>` | The [Spotlight address](/docs/reference/glossary#spotlight-address). Without it, `SPOTLIGHT_URL`. Else the address of the one login in the [credentials file](#credentials-file). Else `https://app.usespotlight.ai`. |
+
+| Variable | Description |
+| --- | --- |
+| `SPOTLIGHT_URL` | The address, when `--url` is not given. |
+| `SPOTLIGHT_WORKSPACE` | The workspace slug, when `--workspace` is not given. |
+| `SPOTLIGHT_API_TOKEN` | A [workspace token](/docs/reference/api/workspace-token) with the `secrets` scope. Without it, the login for the address. |
+
+The address is checked as `spotlight login` checks it.
+
+| Error | Cause |
+| --- | --- |
+| `no login for <address>. Run spotlight login, or set SPOTLIGHT_API_TOKEN` | No token and no login for the address. For another address, the command is `spotlight login --url <address>`. |
+| `there are logins for <addresses>. Say which one with --url, or set SPOTLIGHT_URL` | More than one login, and no address. |
+| `you are in no workspace` | No `--workspace` or `SPOTLIGHT_WORKSPACE`, and the caller is in no workspace. |
+| `you are in the workspaces <slugs>. Say which one with --workspace, or set SPOTLIGHT_WORKSPACE` | No `--workspace` or `SPOTLIGHT_WORKSPACE`, and the caller is in more than one workspace. |
+| `<doing>: your login ended. Run spotlight login` | Spotlight answered `401`. |
+| `<doing>: you do not manage the workspace's secrets` | Spotlight answered `403`: the caller does not have the `secrets` permission. |
+| `<doing>: no such secret or workspace` | Spotlight answered `404`. |
+| `<doing>: <message>` | Another refusal, with Spotlight's message. |
+
+`<doing>` is `list the secrets` or `set <NAME>`. Each error is printed after
+`spotlight secret: ` on standard error.
+
+| Code | Meaning |
+| --- | --- |
+| `0` | Done. |
+| `1` | An error. |
+
+## spotlight secret list
+
+```text
+spotlight secret list [--workspace <slug>] [--url <address>]
+```
+
+Prints a table of the workspace's secrets, by name. It never shows a value.
+Every member can list them.
+
+| Column | Contents |
+| --- | --- |
+| `NAME` | The secret's name. |
+| `VALUE` | `Awaiting a value`, `Stored in Spotlight` or `Set by Terraform`. |
+| `SET AT` | When Spotlight last stored a value, in local time as `2006-01-02 15:04`, or `-` while the secret awaits a value. |
+| `HOSTS` | The bound hosts, joined with `, `. |
+
+A workspace without secrets prints
+`The workspace <slug> has no secrets. Terraform defines them with spotlight_secret.`
+
+## spotlight secret set
+
+```text
+spotlight secret set <NAME> [--workspace <slug>] [--url <address>]
+```
+
+Sets the value of the secret `<NAME>`. Spotlight encrypts it and sends it only
+to the secret's bound hosts. It needs the `secrets` permission.
+
+The value never comes from an argument. In a terminal, the command asks
+`Value of <NAME>: ` and does not show what is typed. Spaces at either end of a
+typed value are removed. Else it reads standard input to its end and removes
+one newline at the end:
+
+```sh
+op read op://staging/login/password | spotlight secret set STAGING_LOGIN_PASSWORD
+```
+
+| Message | When |
+| --- | --- |
+| `Spotlight stores the new value of <NAME>.` | Spotlight stored the value. |
+
+| Error | Cause |
+| --- | --- |
+| `the value is empty. Type it, or send it to stdin` | The value is empty. |
+| `set <NAME>: Terraform sets the value of secret <NAME> (value_wo_version <n>). Change the value in Terraform, or remove value_wo_version and value_wo there first.` | The secret has `value_wo_version`. |
+| `set <NAME>: Secret value must be one line, since Spotlight sends <NAME> in a request header or query parameter.` | The value has more than one line, and the secret is bound to a host. |
+
+A run that failed with `secret_awaiting_value` does not start again when the
+value is set. See [Run failure messages](/docs/reference/errors-and-messages#run-failure-messages).
+
 ## spotlight ssh
 
 ```text
@@ -1151,6 +1249,7 @@ The file is written in one rename. Other fields in the file are kept.
 | [`spotlight replay check`](/docs/reference/cli/replay-command#environment) | Neither `SPOTLIGHT_API_TOKEN` nor `SPOTLIGHT_OIDC_TRUST` is set. |
 | [The Terraform provider](/docs/reference/terraform/terraform-provider#credentials) | No token and no trust is set. |
 | [`spotlight token`](#spotlight-token) | Neither `SPOTLIGHT_API_TOKEN` nor `SPOTLIGHT_OIDC_TRUST` is set. |
+| [`spotlight secret`](#spotlight-secret) | `SPOTLIGHT_API_TOKEN` is not set. |
 | [`spotlight ssh proxy`](#spotlight-ssh-proxy) | Always. |
 
 Each takes the entry for the address of its `SPOTLIGHT_URL` or `url`.

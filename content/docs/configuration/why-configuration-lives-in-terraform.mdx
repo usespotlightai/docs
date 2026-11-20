@@ -68,14 +68,25 @@ Terraform run can do on a person's behalf.
 
 ## Secret values in Terraform
 
-Secret values stay in Terraform, though they are awkward there. Terraform keeps
-what it applies in its state file, and a secret value in a state file is a
-secret stored in one more place. The provider takes secret values as write-only
-attributes, which Terraform sends to Spotlight and never records in state, with
-a version number to change when the value should be written again. A secret stored
-in AWS Secrets Manager goes further: Terraform names it, and the value never
-passes through Terraform or Spotlight's control plane at all. The [`spotlight_secret`](/docs/reference/terraform/secret)
-reference has both forms.
+Terraform defines every secret: its name and the hosts it is bound to. The
+value is a different matter. Terraform keeps what it applies in its state
+file, and a secret value in a state file is a secret stored in one more place.
+The provider takes secret values as write-only attributes, which Terraform
+sends to Spotlight and never records in state, with a version number to change
+when the value should be written again. A team that keeps its values in AWS
+Secrets Manager or Vault reads them in its own Terraform and sends them this
+way.
+
+Some values should not pass through Terraform at all, such as a password that
+only one person knows. A secret defined without a value version gets its
+value from a person, in the web app or with `spotlight secret set`, and
+Terraform never sees it. The app writes the value, never the definition,
+so the single source of truth holds: Terraform still decides
+which secrets exist and where they go, and for each secret, the value comes
+from one place only. While a value version is set, the app refuses a value.
+Spotlight stores every value itself, encrypted, and never returns it. The
+[`spotlight_secret`](/docs/reference/terraform/secret#value) reference has
+both forms.
 
 ## Move an existing team to Terraform
 

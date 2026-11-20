@@ -80,10 +80,10 @@ write the stand-in and have the secret used for its host. What the binding
 and the stand-in together prevent is the value leaving the sandbox's reach and
 being sent anywhere else.
 
-The values also stay out of reach while they travel to egress. Values Spotlight
-stores are sealed to a key egress made, for that run or, on a shared egress,
-when the egress process started, so only that egress can open them. Values stored in AWS Secrets Manager are read by egress itself with
-the host's own identity, so the control plane never sees them. The
+The values also stay out of reach while they travel to egress. Spotlight
+stores every value, encrypted, and seals each one to a key egress made, for
+that run or, on a shared egress, when the egress process started, so only that
+egress can open it. The
 [`spotlight_secret`](/docs/reference/terraform/secret) reference and [Give an MCP server a secret](/docs/security/give-an-mcp-server-a-secret) have the details.
 
 Tools a team defines on an integration go further still. When an agent calls

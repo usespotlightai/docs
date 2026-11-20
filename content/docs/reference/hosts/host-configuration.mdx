@@ -52,7 +52,6 @@ going. A setting that applies at a restart waits until the host restarts.
 | `sandbox-hosts` | `SPOTLIGHT_SANDBOX_HOSTS` | live |
 | `egress-image` | `SPOTLIGHT_EGRESS_IMAGE` | live |
 | `egress-allow` | `SPOTLIGHT_EGRESS_ALLOW` | live |
-| `egress-secret-allow` | `SPOTLIGHT_EGRESS_SECRET_ALLOW` | live |
 | `egress-env` | `SPOTLIGHT_EGRESS_ENV` | live |
 | `egress-pass` | `SPOTLIGHT_EGRESS_PASS` | live |
 | `egress-ca-bundle` | `SPOTLIGHT_EGRESS_CA_BUNDLE` | live |
@@ -182,7 +181,6 @@ host. The host's own key is used.
 | Variable | Default | Description |
 | --- | --- | --- |
 | `SPOTLIGHT_EGRESS_ALLOW` | none | Comma-separated hosts sandboxes may reach. An entry is an exact host, or `*.example.com` for its subdomains. `*` alone is rejected. Without it, any host is allowed; see [Allowed hosts](/docs/reference/hosts/egress#allowed-hosts). |
-| `SPOTLIGHT_EGRESS_SECRET_ALLOW` | none | Comma-separated AWS Secrets Manager secret names or ARNs egress may read, or prefixes ending in `*`. |
 | `SPOTLIGHT_EGRESS_IMAGE` | `ghcr.io/usespotlightai/spotlight-runner:<release>`, or `:latest` for a binary built without a release | The image egress runs from. Entries in `SPOTLIGHT_RUNNER_IMAGE` do not change it. |
 | `SPOTLIGHT_EGRESS_ENV` | `egress.env` beside the config file | A file of variables only egress gets. |
 | `SPOTLIGHT_EGRESS_PASS` | none | Comma-separated names of the host's own variables to pass to egress only. |
