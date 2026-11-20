@@ -81,7 +81,7 @@ Glob syntax in `match.paths`:
 | `run.starting` | before | yes | | | `at` |
 | `run.ended` | after | yes | | | `at`, `outcome` |
 | `handover.submitting` | before | yes | | | `at`, `to`, `note` |
-| `pull-request.opening` | before | yes | | yes | `at`, `repository`, `branch`, `title`, `changed` |
+| `pull-request.opening` | before | yes, except from a chat | | yes | `at`, `repository`, `branch`, `title`, `changed` |
 | `pull-request.merged` | after | no | | yes | `at`, `url`, `repository`, `mergeCommit`, `changed` |
 | `task.opened` | after | no | | | `at` |
 | `task.moved` | after | no | | | `at`, `from`, `to` |
@@ -93,6 +93,10 @@ event has already happened; its hooks are queued and run afterwards.
 or `cancelled`. A stopped run reads `completed`. Expressions on an event in a run also see
 `run.id`. See [Hook values](/docs/reference/api/expressions#hook-values) for every
 value an expression sees.
+
+`pull-request.opening` also fires when an agent chat opens a pull request with
+[`open-pull-request`](/docs/reference/built-ins/built-in-tools-and-skills#open-pull-request).
+The chat's run is not a run of the task, so `run` is null there.
 
 ## Steps
 

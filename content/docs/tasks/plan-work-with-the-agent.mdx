@@ -2,7 +2,7 @@
 type: how-to
 icon: SquarePen
 title: Plan work with the agent
-description: Talk a piece of work through with an agent in a planning chat and turn its proposals into tasks.
+description: Talk a piece of work through with an agent in a planning chat, turn its proposals into tasks, or have it open a pull request for a small change.
 ---
 
 Chats are private: only the person who starts one sees it. To plan in one you
@@ -77,6 +77,47 @@ If **Station** reads "Station deleted", the station was removed from the line
 after the agent proposed it, and **Create task** is unavailable. See
 [Proposals](/docs/reference/app/tasks-runs-and-the-inbox#proposals) for each
 card title.
+
+## Have the agent make a small change
+
+For a change that one pull request can hold, the agent can make it in the chat
+and open the pull request itself. You need a line that works on the
+repository, with a station that has the `pull-request` tool. See
+[Station fields](/docs/reference/terraform/line#station-fields).
+
+<Steps>
+<Step>
+
+Start the chat with the repository ticked, and ask the agent to make the
+change. The agent is briefed to edit nothing before you ask.
+
+</Step>
+<Step>
+
+The agent pushes a branch and opens the pull request. A card titled **On hold
+for this chat** shows the pull request and the station where its task waits.
+
+</Step>
+<Step>
+
+Talk to the agent in the chat as before. When a check fails or someone reviews
+the pull request, the event shows in the thread and the agent answers it. It
+pushes fixes to the same branch.
+
+</Step>
+<Step>
+
+To let the line take over, select **Hand to the line**. The station's agent
+goes on from the branch, and the task moves along the line as usual. To keep
+the work in the chat, leave it: when the pull request is merged, the task
+completes.
+
+</Step>
+</Steps>
+
+Select **Open task** to see the task on the board. See
+[Pull requests from a chat](/docs/reference/app/tasks-runs-and-the-inbox#pull-requests-from-a-chat)
+for each card title.
 
 ## Related
 

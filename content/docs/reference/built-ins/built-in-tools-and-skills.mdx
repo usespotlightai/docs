@@ -19,6 +19,7 @@ Spotlight has tools and skills of its own. An agent calls a tool with
 | `review-comment` | Runs at a station that lists it in `tools`. | `spotlight-review` |
 | `review` | Runs at a station that lists it in `tools`. | `spotlight-review` |
 | `propose-task` | Every chat run. A station cannot enable it. | none |
+| `open-pull-request` | Every run of a chat that is not a setup chat. A station cannot enable it. | none |
 | `setup-pull-request` | Every run of a setup chat. A station cannot enable it. | none |
 | `test-station-change` | Every run of a chat that improves a station. A station cannot enable it. | none |
 
@@ -137,6 +138,49 @@ chat, or the tool proposes nothing. The proposal keeps its own copy of each file
 gets its own copy when the person accepts the proposal. The task's runs then
 find the files in the working copy, as described under
 [Attachments](/docs/reference/app/tasks-runs-and-the-inbox#attachments).
+
+### open-pull-request
+
+Opens a pull request from a branch the agent pushed in one of the chat's
+repositories, into the repository's default branch. A task on the line tracks
+it: the task starts at the station that has the
+[`pull-request`](#pull-request) tool, on hold for the chat, with the branch and
+the pull request's `git.pull-request` mark. It answers with the pull request
+`url`, the `task` id and what happens `next`. See
+[Pull requests from a chat](/docs/reference/app/tasks-runs-and-the-inbox#pull-requests-from-a-chat).
+
+Each branch has one task. A second call for the same branch and repository
+opens no other pull request, and answers the first. For more changes to the
+same work, push to the same branch. For new work, push a new branch and call
+the tool again. A call for the same branch in another repository of the line
+opens a second pull request on the same task.
+
+The tool opens nothing from a branch that belongs to another task, or to a
+task that is completed or was handed to the line.
+Spotlight also refuses such a push, and a push to the default branch. See
+[What a chat may push](/docs/reference/app/tasks-runs-and-the-inbox#what-a-chat-may-push).
+
+| Input | Type | Required | Stdin | Description |
+| --- | --- | --- | --- | --- |
+| `repository` | string | no | no | The repository, as `owner/name` or `name`. Required when the chat has more than one repository. |
+| `branch` | string | yes | no | The branch pushed, as in `fix/video-icons`. |
+| `title` | string | yes | no | What it does. It is also the task's title. |
+| `body` | string | no | yes | What changed and why, as Markdown. It is also the task's description. |
+| `line` | string | no | no | The key of the line to track it on. Required when more than one line works on the repository. |
+
+The tool opens nothing and creates no task when:
+
+- No line names the repository and has a station with the `pull-request` tool.
+- More than one line does, and `line` names none.
+- The line that `line` names does not work on the repository.
+- The branch has no changes from the repository's default branch, or GitHub
+  does not know the branch.
+
+The tool runs the `pull-request.opening` [hook](/docs/integrations/hooks), as
+for a pull request the line opens, then opens the pull request, then creates
+the task. When the hook denies the pull request, or GitHub does not open it,
+the tool creates no task. Call the tool again after you fix what the hook asks
+for.
 
 ### setup-pull-request
 
