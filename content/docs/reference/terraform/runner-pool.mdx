@@ -84,8 +84,8 @@ names a workspace's pools by key.
 
 ## Egress
 
-A push pool that names an egress gets runs that use secrets or Spotlight's
-API, and [setup chats](/docs/configuration/let-the-agent-write-your-first-terraform)
+A push pool that names an egress gets runs whose secrets egress injects, or
+that use Spotlight's API, and [setup chats](/docs/configuration/let-the-agent-write-your-first-terraform)
 can run on it. A push pool without `provision.egress` gets neither: those runs
 wait for a host, or for another pool that names an egress. For each runner,
 Spotlight puts the egress's URL and a run proxy credential in the
@@ -97,9 +97,9 @@ deployment names in `SPOTLIGHT_PLATFORM_EGRESS_URL` and
 having an egress only while the deployment sets both. See
 [Self-hosted Spotlight settings](/docs/reference/self-hosted-settings#platform-egress).
 
-A run that uses secrets or Spotlight's API fails with `unusable` if, when
+A run whose secrets egress injects, or that uses Spotlight's API, fails with `unusable` if, when
 Spotlight provisions its runner, the pool no longer names an egress:
-`The pool names no egress now. A run that uses secrets or the Spotlight API needs one.`
+`The pool names no egress now. A run whose secrets egress injects, or that uses the Spotlight API, needs one.`
 
 | Message | Cause |
 | --- | --- |

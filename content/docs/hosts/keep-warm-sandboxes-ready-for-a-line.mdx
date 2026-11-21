@@ -52,10 +52,11 @@ cannot warm it. The sandbox is `gone`, and the line gets no new warm sandbox for
 ## Check that a first run uses it
 
 Start a new task on the line. In the run's journal, the `setup` step reads
-`Skipped setup for <path>: the setup command and the dependency files did not change after the last setup in this sandbox.`
+`Skipped setup for <path>: the setup command, the dependency files and the secrets in its environment did not change after the last setup in this sandbox.`
 for each repository with a `setup`. If a dependency file changed on the default branch after
 the warm sandbox started, the setup runs in it, on top of what is already
-installed.
+installed. A warm sandbox runs its setup without secrets, so a run whose
+harness profile puts secrets in the sandbox with `env` runs the setup again.
 
 To stop, set `warm_sandboxes = 0` or remove the attribute. Spotlight drains the
 line's warm sandboxes.

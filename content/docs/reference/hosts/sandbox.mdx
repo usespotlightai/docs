@@ -103,6 +103,7 @@ with these changes:
 | Set for a run that uses Spotlight's API | `SPOTLIGHT_URL`, the runner's Spotlight address, and `SPOTLIGHT_API_TOKEN=spotlight-egress:spotlight-api`. See [The run's Spotlight token](/docs/reference/hosts/egress#the-runs-spotlight-token). |
 | Set by the harness | The harness's own variables. See [Harnesses](/docs/reference/hosts/harnesses). |
 | Set for each harness key the workspace holds | `<NAME>=spotlight-egress:<NAME>`, for the keys of the run's harness. See [Harness keys](/docs/reference/hosts/harnesses#harness-keys). |
+| Set for a harness profile with `env` | Each variable the profile's `env` names, holding the real value of its secret. See [Environment variables](/docs/reference/terraform/harness-profile#environment-variables). |
 | Set for tracing | `TRACEPARENT` |
 | Set on a host | `HTTP_PROXY`, `HTTPS_PROXY`, `http_proxy`, `https_proxy` to `http://127.0.0.1:3128`. See [The runner's proxy relay](/docs/reference/hosts/egress#the-runners-proxy-relay). |
 
@@ -235,6 +236,7 @@ has `exited`, and a harness that cannot resume or open a session has
 
 | Phase | What happens | Time limit | On failure |
 | --- | --- | --- | --- |
+| Sandbox env | For a run whose harness profile has `env`, the runner gets the value of each secret from Spotlight and checks it. From then on, it puts `spotlight-egress:<NAME>` in place of each value in what the run records. | | Fails the run: `The runner couldn't prepare the run. Error: Secret <NAME> could not be put in the sandbox: <reason>`, `The runner couldn't prepare the run. Error: Spotlight sent a value for <VARIABLE>, which the run did not ask for`, or `The runner couldn't prepare the run. Error: reveal the sandbox env: <error>` where the runner could not get the values from Spotlight. A run that is no longer leased to the runner does not start. See [Run failure messages](/docs/reference/app/tasks-runs-and-the-inbox#run-failure-messages). |
 | Restore | In a new sandbox, the newest working copy archive of the run's task is fetched and unpacked into `/workspace`, whichever station left it. A sandbox of a task or chat restores it once, when it starts, and each later run keeps the working copy as it is. A chat's run restores its chat's archive only when it carries on a conversation. A [replay run](/docs/reference/app/replays#replay-runs) restores exactly the archive the run it replays restored, or none. | 30 minutes to fetch | Starts with an empty working copy. A replay run fails instead: `The runner couldn't prepare the run. Error: the archive the replay starts from, <id>, is no longer stored`, or `The runner couldn't prepare the run. Error: restore the archive the replay starts from: <error>`. |
 | Outcome | `.spotlight/outcome.json` from an earlier run is removed. | | Fails the run: `The runner couldn't prepare the run. Error: clear an earlier run's outcome: <error>`. |
 | Checkout | Each repository is cloned into `/workspace/<repository>`, from the host's mirror when there is one, or fetched when the checkout already exists. The run's branch or ref is checked out; a ref the checkout already has is not fetched again. A replay run checks out the commit the run it replays started from, and may only fetch: a push fails with `this run may only fetch`. A branch the checkout already has is fast-forwarded to what was pushed to it, unless it has also moved in the working copy or uncommitted changes block it. Runs as root. | 10 minutes for all checkouts | Fails the run: `The runner couldn't prepare the run. Error: prepare: <error>`, or `The runner couldn't prepare the run. Error: prepare: preparing <path> did not finish within 10m0s`. |
@@ -284,11 +286,12 @@ A change stack check runs in a sandbox of its own, in place of a run. See
 
 ## Setup
 
-After a setup succeeds, the sandbox records its command and the content of the
-repository's dependency files. The next run in the same sandbox skips that
-setup when both are the same. A new sandbox, a restored working copy and a
-replay run record nothing, so their setup runs. A skip looks only at the
-command and the dependency files, so keep `setup` to what installs
+After a setup succeeds, the sandbox records its command, the content of the
+repository's dependency files, and a hash of the variables and values that
+the harness profile's `env` puts in its environment. The next run in the same
+sandbox skips that setup when all three are the same. A new sandbox, a
+restored working copy and a replay run record nothing, so their setup runs. A skip looks only at the command, the dependency files
+and the secrets in its environment, so keep `setup` to what installs
 dependencies: a build or code generation step in it is skipped with the install.
 
 The dependency files are the files with these names anywhere in the checkout
@@ -324,6 +327,7 @@ these parts, in this order, each only where it applies:
 | `## Remembering` | When to propose a memory with `spotlight remember`. |
 | `## Say what you decide` | At a station with `decisions: true`: the kinds of decision to say as they are made. |
 | `## The workspace` | The line's repositories and the directory each is checked out in, and that the task keeps the workspace from one run and station to the next. |
+| `## Secrets in your environment` | For a harness profile with `env`: each variable and the secret it holds, and how to keep the values out of what the run writes and sends. |
 | `## Skills` | For `cursor` and `codex`: each skill's `SKILL.md` path and description. |
 | `## Replying to review comments` | Review comments on the task's pull request that have no reply, with their handles for `spotlight reply`. |
 | `## When you are done` | How to run `spotlight handover`, and the keys of the stations the run may pass the task to. |
@@ -339,7 +343,7 @@ These phases record their output on the run under a step name:
 | `restore` | `Restored the workspace the last run left (<size>)`, `Kept the workspace this sandbox restored or the last run left in it`, `Started afresh: <error>`, `Restored the workspace the replayed run started from (<size>)` |
 | `start` | `Where the run started was not recorded: <error>` |
 | `prepare` | `reusing <path>`, `cloning <path> from the host's mirror`, `cloning <path>`, `caught <path> up with what was pushed to <branch>`, `left <path> as the last run left it: <branch> has moved on both here and on the remote`, `left <path> behind the remote's <branch>: uncommitted changes here block the fast-forward`, and git's output |
-| `setup` | The command's output, `Setup failed for <path>. Error: <error>` on failure, and `Skipped setup for <path>: the setup command and the dependency files did not change after the last setup in this sandbox.` |
+| `setup` | The command's output, `Setup failed for <path>. Error: <error>` on failure, and `Skipped setup for <path>: the setup command, the dependency files and the secrets in its environment did not change after the last setup in this sandbox.` |
 | `archive` | `Captured the workspace for the next run (<size>)`, `Coalesced: nothing changed since the workspace was last restored or archived`, `Skipped: <error>` |
 
 The `archive` step comes after the run's completion. The sandbox records it

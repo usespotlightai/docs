@@ -74,6 +74,15 @@ that was granted it, and only in place of its stand-in. A request to anywhere
 else contains nothing egress injected, and so does a request to the bound host
 that doesn't name the secret, such as a script the agent runs.
 
+Some credentials must be in the sandbox, such as a key that signs a token for
+a test server. A secret with `sandbox = "env"` is the one exception: a harness
+profile's `env` gives its runs the real value as an environment variable. The
+agent and every process in the sandbox can read it, and it needs no egress.
+Spotlight puts the stand-in in place of the value in what the run records, but
+not in files or commits. Give such a secret only a credential made for this,
+with the smallest access. See
+[Give a run a secret as an environment variable](/docs/security/give-a-run-a-secret-as-an-environment-variable).
+
 The stand-in only names a secret; it isn't a password. Everything in the
 sandbox can read the MCP server's environment, so anything there can still
 write the stand-in and have the secret used for its host. What the binding
@@ -102,8 +111,10 @@ Everything else goes to egress in tunnels it does not decrypt, and egress
 records each connection.
 
 Two credentials keep the secrets on the egress side. The egress token, which
-the egress keeps, is the only way to fetch a run's secrets, and it never
-enters a sandbox. The run proxy credential, which the runner keeps, lets the
+the egress keeps, is the only way to fetch the secrets that egress injects
+for a run, and it never enters a sandbox. The runner fetches the values that a
+harness profile's `env` names with its own credential, and puts them in the
+sandbox. The run proxy credential, which the runner keeps, lets the
 run send traffic through that one egress and nothing more. A sandbox that
 leaks its credential leaks nothing that opens a secret.
 
@@ -115,8 +126,8 @@ inside the sandbox, so it is evidence, not proof: an agent that took over the
 sandbox could report Enforced. Enforced means the sandbox
 could not connect around egress: the allow-list applies to every client, and
 every connection is on record. Not enforced means it could: a tool that
-ignores the proxy goes out directly, past both. The secrets are safe in both
-cases, since the sandbox only ever has stand-ins. Enforcement is about the
+ignores the proxy goes out directly, past both. The secrets that egress injects
+are safe in both cases, since the sandbox only has their stand-ins. Enforcement is about the
 allow-list and the record, and it comes from a firewall that lets the
 container connect only to egress.
 
@@ -192,8 +203,9 @@ runner checks and the trace reports it, but a run that reads Not enforced
 still runs. A shared egress keeps no harness keys of its own. It injects the
 ones the workspace holds as secrets, but a key that the push pool's
 provisioner puts in the runner's environment enters the sandbox as it is. A push pool that names no egress has nothing
-to inject a secret into requests, so a run that uses secrets is never offered to
-it, and waits for a host or for a pool that names an egress.
+to inject a secret into requests, so a run whose secrets egress injects is never
+offered to it, and waits for a host or for a pool that names an egress. A run
+whose only secrets are in a harness profile's `env` needs no egress.
 
 ## What enters a sandbox can be read
 

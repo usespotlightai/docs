@@ -92,8 +92,8 @@ repositories its own work names, and only while its runner still has the lease o
 A push pool can name a shared egress, which injects the secrets of many runs into
 their requests. Two credentials split that job so that neither is worth much
 alone. The egress process stores the egress token, and Spotlight stores it
-as a hash. It is the only credential that can fetch a run's secrets, and it
-never enters a sandbox. Like a pool token, it is single-use, and
+as a hash. It is the only credential that can fetch the secrets that egress
+injects for a run, and it never enters a sandbox. Like a pool token, it is single-use, and
 after a rotation the old one stops working at once.
 
 The run proxy credential is made for one runner, sent in the provision call,
