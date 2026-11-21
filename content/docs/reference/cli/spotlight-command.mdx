@@ -973,8 +973,10 @@ A workspace without secrets prints
 spotlight secret set <NAME> [--workspace <slug>] [--url <address>]
 ```
 
-Sets the value of the secret `<NAME>`. Spotlight encrypts it and sends it only
-to the secret's bound hosts. It needs the `secrets` permission.
+Sets the value of the secret `<NAME>`. Spotlight encrypts it and sends it to
+the secret's bound hosts. For a secret with
+[`sandbox = "env"`](/docs/reference/terraform/secret#sandbox), the runs whose
+harness profile names it in `env` also get it in their sandbox. It needs the `secrets` permission.
 
 The value never comes from an argument. In a terminal, the command asks
 `Value of <NAME>: ` and does not show what is typed. Spaces at either end of a
@@ -994,6 +996,7 @@ op read op://staging/login/password | spotlight secret set STAGING_LOGIN_PASSWOR
 | `the value is empty. Type it, or send it to stdin` | The value is empty. |
 | `set <NAME>: Terraform sets the value of secret <NAME> (value_wo_version <n>). Change the value in Terraform, or remove value_wo_version and value_wo there first.` | The secret has `value_wo_version`. |
 | `set <NAME>: Secret value must be one line, since Spotlight sends <NAME> in a request header or query parameter.` | The value has more than one line, and the secret is bound to a host. |
+| `set <NAME>: Secret value must have at least 8 characters that are not whitespace, and no NUL byte, since a run gets <NAME> in its sandbox.` | The secret has `sandbox = "env"`, and the value has fewer than 8 characters that are not whitespace, or a NUL byte. |
 
 A run that failed with `secret_awaiting_value` does not start again when the
 value is set. See [Run failure messages](/docs/reference/errors-and-messages#run-failure-messages).

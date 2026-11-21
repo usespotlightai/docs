@@ -298,8 +298,8 @@ A shared egress is `spotlight egress serve`: one long-lived process that
 serves the runs of every push pool that names it in
 [`provision.egress`](/docs/reference/terraform/runner-pool#egress). It keeps
 each run's secrets in memory while the run's runner has a lease on the run. A push pool
-without `provision.egress` has no egress: a run that uses secrets, or uses
-Spotlight's API, is never reserved for its runners.
+without `provision.egress` has no egress: a run whose secrets egress injects,
+or that uses Spotlight's API, is never reserved for its runners.
 
 | Egress | Run by | Named in `provision.egress` as |
 | --- | --- | --- |
@@ -357,7 +357,7 @@ records it still has, removes every run from its memory, and exits `0`.
 
 | Credential | Stored by | Lets its holder |
 | --- | --- | --- |
-| Egress token | The egress process. Spotlight stores only its hash. | Call Spotlight as the egress: authorize a runner, fetch the secrets of the runs it serves, check which runs are still active, and record their connections. No runner gets it, and only a holder of it can fetch a run's secrets. |
+| Egress token | The egress process. Spotlight stores only its hash. | Call Spotlight as the egress: authorize a runner, fetch the secrets of the runs it serves, check which runs are still active, and record their connections. No runner gets it, and only a holder of it can fetch the secrets that egress injects for a run. |
 | Run proxy credential | The runner, from `SPOTLIGHT_EGRESS_PROXY_CREDENTIAL`. Spotlight makes one for each runner, puts it in the [provision call](/docs/reference/events/provision-call#egress), and stores only its hash. | Send traffic through egress. It is not accepted by Spotlight's API. |
 
 Egress gives Spotlight the run proxy credential with its egress token.

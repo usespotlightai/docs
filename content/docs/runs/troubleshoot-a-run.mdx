@@ -93,9 +93,15 @@ which:
   a catalog item that does not exist, or names it as the wrong kind. Correct
   the reference on the station.
 - `secret_awaiting_value: Secret <NAME> has no value. Station: <station>`:
-  the station's harness profile injects a secret that has no value yet. Set
+  the station's harness profile injects a secret, or puts one in the sandbox,
+  that has no value yet. Set
   its value in Settings, then Secrets, or with `spotlight secret set <NAME>`.
   See [Give an MCP server a secret](/docs/security/give-an-mcp-server-a-secret#set-the-value-outside-terraform).
+- `secret_sandbox_not_allowed: Secret <NAME> does not allow its value in a sandbox. Set sandbox = "env" on the secret. Station: <station>`:
+  the station's harness profile puts the secret in the sandbox with `env`,
+  but the secret keeps its value out of sandboxes. Set `sandbox = "env"` on
+  the secret, or remove the variable from the profile's `env`. See
+  [Give a run a secret as an environment variable](/docs/security/give-a-run-a-secret-as-an-environment-variable).
 
 Refused runs are not retried. After changing the station or setting the value, reply to the item.
 
@@ -142,7 +148,7 @@ tables above and fix what it names before you reply again.
 On a push pool's run, the run's row in the task trace shows a warning mark, which reads **Egress not
 enforced** when you hover over it,
 and the run's details show **Not enforced** under **Egress**: the sandbox could connect to the Spotlight
-address without egress. The run's secrets still stayed out of the sandbox, but
+address without egress. The secrets that egress injects still stayed out of the sandbox, but
 a tool that ignores the proxy went out directly. Set the platform's firewall
 so that the pool's containers connect only to the egress host, as in
 [Limit the container to egress](/docs/security/send-push-pool-runs-through-an-egress#limit-the-container-to-egress).

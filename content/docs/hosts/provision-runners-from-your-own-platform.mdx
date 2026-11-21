@@ -13,8 +13,8 @@ demand, such as a job scheduler or a serverless container service.
 Two things work differently from a host, and they decide whether a push pool
 suits a line:
 
-- A push pool gets runs that use secrets, and setup chats, only when it names
-  an egress. Without one, a run whose harness profile gives an MCP server a
+- A push pool gets runs whose secrets egress injects, and setup chats, only
+  when it names an egress. Without one, a run whose harness profile gives an MCP server a
   secret waits for a host. To name one, see
   [Send push pool runs through an egress](/docs/security/send-push-pool-runs-through-an-egress).
 - The host's `sandbox.env` does not apply. Through an egress, the pool's runs
@@ -217,6 +217,6 @@ the cause:
 - [Run a line in your own runner image](/docs/hosts/run-a-line-in-your-own-image):
   build the image a push pool is requested to start.
 - [Send push pool runs through an egress](/docs/security/send-push-pool-runs-through-an-egress):
-  give the pool runs that use secrets.
+  give the pool runs whose secrets egress injects.
 - [Pools, trusts and tokens](/docs/administration/pools-trusts-and-tokens):
   when to choose a push pool over hosts.

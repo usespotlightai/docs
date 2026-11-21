@@ -2,11 +2,11 @@
 type: how-to
 icon: SquarePen
 title: Send push pool runs through an egress
-description: Give a push pool an egress, so that it can take runs that use secrets and setup chats, and check that each run's sandbox can connect only through it.
+description: Give a push pool an egress, so that it can take runs whose secrets egress injects and setup chats, and check that each run's sandbox can connect only through it.
 ---
 
-Use this page when a push pool must take runs that use secrets, or setup
-chats. A push pool without an egress never gets these runs; they wait for a
+Use this page when a push pool must take runs whose secrets egress injects,
+or setup chats. A push pool without an egress never gets these runs; they wait for a
 host. The egress is a proxy outside the sandbox. It injects each run's secrets into
 the requests to their hosts, so the sandbox has only stand-ins.
 
@@ -122,8 +122,8 @@ the egress host. Do not allow the Spotlight address: the runner reaches
 Spotlight through the egress. If the firewall also filters name lookups, let
 the containers look up the egress host.
 
-Without this limit, the run still works and its secrets stay out of the
-sandbox, but a tool that ignores the proxy connects directly, past the
+Without this limit, the run still works and the secrets that egress injects
+stay out of the sandbox, but a tool that ignores the proxy connects directly, past the
 allow-list and the egress's records.
 
 ## Check that it works

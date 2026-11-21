@@ -666,7 +666,7 @@ self-hosted deployment names it in `SPOTLIGHT_PLATFORM_EGRESS_URL` and
 A runner pool: a workspace resource that accepts runners. Hosts serve a pull
 pool and claim its runs with the pool's token. For a push pool, Spotlight calls
 a provision URL to start a runner for each run. A push pool that names an
-egress also takes runs that use secrets. See
+egress also takes runs whose secrets egress injects. See
 [`spotlight_runner_pool`](/docs/reference/terraform/runner-pool).
 
 ## Proposal
@@ -912,8 +912,10 @@ searched tasks; the others are [held-out tasks](#held-out-task). See
 ## Secret
 
 A named value a workspace stores, encrypted. Spotlight puts it in a request
-header or query parameter on requests to the hosts it is bound to; the value
-never enters a sandbox. Terraform defines each secret. Its value comes from
+header or query parameter on requests to the hosts it is bound to. With the
+default `sandbox = "stand-in"`, the value never enters a sandbox; with
+`sandbox = "env"`, a harness profile can give runs the value as an environment
+variable. Terraform defines each secret. Its value comes from
 Terraform, or from a person in the web app or with `spotlight secret set`. See
 [`spotlight_secret`](/docs/reference/terraform/secret).
 
