@@ -58,6 +58,7 @@ resource "spotlight_harness_profile" "core_careful" {
 | `mcpServers` | array of objects | `[]` | Stdio [MCP servers](#mcp-servers), started in the sandbox. A remote server is named on an integration instead; see [MCP servers](/docs/reference/terraform/integration#mcp-servers). |
 | `native` | object | `{}` | Each harness's own settings, by harness id. See [native settings](#native-settings). |
 | `secrets` | array of strings | `[]` | Names of workspace secrets that the runs of this profile get. See [Secrets](#secrets). |
+| `env` | map of strings | `{}` | Environment variables that the runs of this profile get, each set to the value of a workspace secret. See [Environment variables](#environment-variables). |
 
 `permissions` accepts no other keys.
 
@@ -130,6 +131,39 @@ agent of each run can use in its own requests, as in `["STAGING_VIEWER"]`.
 
 See [Give agents a secret for an API](/docs/security/give-agents-a-secret-for-an-api).
 
+## Environment variables
+
+`env` maps an environment variable to the name of a workspace
+[secret](/docs/reference/terraform/secret), as in
+`{ GITHUB_APP_PRIVATE_KEY = "DEV_GITHUB_APP_KEY" }`. The run gets the real
+value of the secret in the variable.
+
+- Each secret must be a secret the workspace has, with `sandbox = "env"`, or
+  the write fails with `422` and
+  `names secret <NAME>, which does not allow its value in a sandbox. Set sandbox = "env" on the secret`.
+- A variable name uses letters, digits and `_`, and does not start with a digit.
+- `PATH`, `HOME`, `USER`, `LOGNAME`, `SHELL`, `TERM`, `COLORTERM`, names that
+  start with `SPOTLIGHT_`, `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY`, `ALL_PROXY`,
+  `NODE_USE_ENV_PROXY`, `SSL_CERT_FILE`, `SSL_CERT_DIR`, `NODE_EXTRA_CA_CERTS`,
+  `REQUESTS_CA_BUNDLE`, `CURL_CA_BUNDLE` and `GIT_SSL_CAINFO` are rejected, in
+  any case, because the runner sets them.
+- A variable that a harness sets itself, such as `ANTHROPIC_API_KEY`, is
+  rejected with `422` and
+  `sets <VARIABLE>, which a harness sets itself: <harnesses>`.
+- A secret that `env` names cannot be deleted.
+- The runner gets the values when the run starts, before the repository setup
+  commands. The setup commands, the harness and the agent's `spotlight`
+  commands have the variables. Editor terminals and the setup commands of a
+  [warm sandbox](/docs/reference/hosts/sandbox#warm-sandboxes) do not.
+- The runner puts `spotlight-egress:<NAME>` in place of each value in the
+  run's journal, transcript and messages to Spotlight.
+- A run on a host or on a push pool can get the variables. They need no egress.
+- A run whose runner cannot get a value fails with
+  `Secret <NAME> could not be put in the sandbox: <reason>`.
+- A [replay](/docs/reference/app/replays) gets no variables.
+
+See [Give a run a secret as an environment variable](/docs/security/give-a-run-a-secret-as-an-environment-variable).
+
 ## Native settings
 
 | Key | Value | Read by the harness as |
@@ -192,7 +226,7 @@ OpenCode gets the MCP servers when its session starts.
 Where a harness cannot apply a rule as written, the profile's `warnings` name
 the approximation. The write succeeds.
 
-A secret the profile names, in `secrets` or in an MCP server's `env`, that
+A secret the profile names, in `secrets`, in `env` or in an MCP server's `env`, that
 awaits a value also gets a warning:
 `names secret <NAME>, which has no value. Runs with this profile do not start until a person sets it`
 See [Value](/docs/reference/terraform/secret#value).
