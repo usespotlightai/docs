@@ -468,14 +468,11 @@ spotlight hook post-tool-use < hook.json
 
 The harness runs this command after each tool call; an agent does not run it.
 For Claude Code, Spotlight adds it as a `PostToolUse` hook for `Read`, `Edit`,
-`MultiEdit`, `Write`, `NotebookEdit`, `Grep` and `Glob`, with a timeout of 10
-seconds.
+`MultiEdit`, `Write` and `NotebookEdit`, with a timeout of 10 seconds.
 
 It reads the hook input on standard input and takes the paths the tool used
-from `file_path`, `path` and `notebook_path`, and from the `*** Update File:`,
-`*** Add File:` and `*** Delete File:` lines of a patch. Where a memory of the
-team is about one of those paths, or a folder above it, it prints the hook
-answer, which shows the agent:
+from `file_path`, `path` and `notebook_path`. Where a memory of the team is
+about one of those paths, or a folder above it, it prints the hook answer, which shows the agent:
 
 ```text
 The team remembers this about `api/src/uploads/retry.ts`, which you just used:
