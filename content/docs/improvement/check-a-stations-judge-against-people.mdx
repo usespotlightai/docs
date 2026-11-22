@@ -12,11 +12,17 @@ out why they are not. To give a station a judge, see
 Only people on the team and the workspace's owners and admins can see the
 judge's agreement.
 
-People's verdicts come from the first thing people do with each of the
-station's runs: an accept passes the run. A send-back fails it, and so does a
-hold on the task that ends with the reason **The line got it wrong**. When the
-first thing is none of those, a merged pull request passes the station's last
-completed run on the task. Nobody is asked to give a verdict.
+People's verdicts come from each run's
+[deciding action](/docs/reference/glossary#deciding-action): the first start,
+park, accept or send-back after the run, or a hold on the task that ends with
+the reason **The line got it wrong**. An accept passes the run. A send-back or
+such a hold fails it. A hold resumed with **I want to try something** is no
+deciding action. When the deciding action is none of those, a merged pull
+request passes the station's last completed run on the task. An answer to the
+run is no verdict. Accepting a run that failed, ran out,
+was cancelled or was superseded gives no verdict either. The judge never judges
+such a run, so it never counts in agreement. Nobody is asked to give a
+verdict.
 
 ## Read the judge's agreement with people
 
@@ -60,7 +66,7 @@ agreement is measured.
 
 ## Answer judge disagreements
 
-When the first thing done with a run is your accept, your send-back, or your
+When the deciding action on a run is your accept, your send-back, or your
 hold once it ends with the reason **The line got it wrong**, and the judge gave
 the other verdict, your inbox gets
 **The judge and people disagree on a run. Spotlight asks why.** When a merged

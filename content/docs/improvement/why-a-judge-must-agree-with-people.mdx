@@ -35,15 +35,27 @@ people already do with a run can check the judge.
 
 Agreement needs runs that both the judge and people gave a verdict on.
 People's verdict needs no extra work. What people already do with a run says
-whether it was good: accepting the run, by moving the task to the completed station
-after it, is a pass. Sending it back, or a hold on the task that ends with the
-reason "The line got it wrong", is a fail. When the first thing people did
-with the run is none of those, a merged pull request is a pass for the
-station's last completed run on the task, the run whose work the merge took. A pull request closed without a merge is no
-verdict: it can close because the feature is no longer wanted, or because
+whether it was good. The run's
+[deciding action](/docs/reference/glossary#deciding-action) is the first start,
+park, accept or send-back after it, or a hold on the task that ends with the
+reason "The line got it wrong". An accept, by moving the task to the completed
+station after the run, is a pass. A send-back or such a hold is a fail. A hold
+resumed with "I want to try something" is no deciding action. When the deciding
+action is none of those, a merged pull request is a pass for the station's last
+completed run on the task, the run whose work the merge took. A pull request
+closed without a merge is no verdict: it can close because the feature is no longer wanted, or because
 another pull request took its place. Answering an approval
 counts as neither: it is the run asking a person, and a run that only paused
-for an approval would otherwise count as accepted.
+for an approval would otherwise count as accepted. Answering a question the run
+asked counts as neither too. Accepting a run that failed, ran out, was
+cancelled or was superseded is no verdict: moving the task to the completed
+station after a failure says nothing about the run's change. Sending such a run
+back is still a fail. The judge never judges such a run, so it never counts in
+agreement.
+
+The same verdict decides whether a run shows as Accepted or Sent back in a
+station's Outcomes, and how replays read the run. So the judge is measured
+against the verdict that the rest of Spotlight shows.
 
 Spotlight never asks a person for a verdict on a run. People already act on
 each run, and in the docs' view a second verdict would cost them time on every

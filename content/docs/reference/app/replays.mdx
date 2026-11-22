@@ -31,21 +31,21 @@ original run turned out decides which runs a
 
 ### Outcomes
 
-How an original run turned out comes from the first thing a person did on its
-task after it, other than answering an approval, and from how it ended. The
-first row that applies decides.
+How an original run turned out comes from
+[people's verdict](/docs/reference/app/tasks-runs-and-the-inbox#agreement) on
+it, from how it ended, and from whether a person answered it. The first row
+that applies decides.
 
 | Outcome | The run |
 | --- | --- |
-| Accepted | A person then closed the task. |
-| Sent back | A person then sent the task back, or ended a hold on it and said the line got it wrong. |
-| Failed | The run ended `failed`. A superseded run, or one that ended another way, goes on to the next rows. |
-| Asked a person | A person then answered it, it ended asking a person, or a person approved or dismissed a tool call it asked approval for. |
+| Accepted | People's verdict passes the run: its [deciding action](/docs/reference/glossary#deciding-action) is Accepted and the run completed or stopped, or its deciding action is none of Accepted, Sent back and Held as wrong in a hold that ended with the reason **The line got it wrong**, its task's pull requests all merged and the run is the station's last completed run on the task. |
+| Sent back | People's verdict fails the run: its [deciding action](/docs/reference/glossary#deciding-action) is Sent back, or Held as wrong in a hold that ended with the reason **The line got it wrong**. |
+| Failed | The run ended `failed`, even when a person accepted it. A superseded run, or one that ended another way, goes on to the next rows. |
+| Asked a person | A person answered it, also when they decided the run later, it ended asking a person, or a person approved or dismissed a tool call it asked approval for. |
 | Other | None of the above, such as a run no person has acted on since. |
 
-When people did two things on the task at the same moment, the first of
-holding as wrong, sending back, closing, answering, parking and starting
-counts.
+When people did two things that decide the run at the same moment, the first
+of holding as wrong, sending back, accepting, parking and starting counts.
 
 ## How Spotlight keeps the set
 
@@ -111,8 +111,8 @@ A run is scored by the candidate's own station block:
 | Its checks | The block sets `diffs: true` and a `check`. | The check passes on every layer of the run's change stack. |
 | Its judge | The block has a `judge`. Every replay run is judged, whatever the judge's `sample`. | At least the judge's `passThreshold` of its claims met. |
 
-With both, a run must pass both. When a person closed the original run's task
-as the first thing they did on it after the run, the judge is also given the
+With both, a run must pass both. When the original run's
+[outcome](#outcomes) is Accepted, the judge is also given the
 original's change, and judges the replay against it. The judge is told the run
 is a replay. It grades the work the run produced, its changes and the plan,
 findings or note in its steps, as if every effect the replay blocked had
@@ -276,8 +276,8 @@ with the same number, or else its first repeat, when all of these are true:
 
 - Both runs completed with a change of at least one line, and have their
   result.
-- People accepted the original run's change: the first thing a person did on
-  its task after it was closing the task.
+- People accepted the original run's change: its [outcome](#outcomes) is
+  Accepted.
 - Both replays are judged under the same claims version.
 
 The judge is given the claims of the replay's own candidate, the task's title and description, the two changes as hunks labelled
