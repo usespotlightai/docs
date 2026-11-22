@@ -187,10 +187,12 @@ in the toolbar. The toolbar shows once the run stops working, and the icon
 only when the run was supplied or proposed memories. The pane lists:
 
 - **Supplied to the agent**: the memories the run was briefed with before it
-  started, and the ones the agent looked up with `spotlight recall` or read
-  from `.spotlight/memory`. Each `spotlight recall` is also a
-  `spotlight.recall` span in the task's trace, with the words or handle it
-  searched for and how many it found.
+  started, the ones the agent looked up with `spotlight recall` or read
+  from `.spotlight/memory`, and the ones it was shown when it used a path they
+  are about. Each `spotlight recall` is also a `spotlight.recall` span in the
+  task's trace, with the words or handle it searched for and how many it found;
+  each time memories are shown at a path, a `spotlight.memory` span names their
+  handles and the paths.
 - **Proposed by this run**: what the run put to the team to keep, and the
   status of each.
 
@@ -200,9 +202,9 @@ Then read it against what went wrong:
 | --- | --- | --- |
 | The memory it needed is not in the pane, and not on the Memory page | Nobody approved it. | Write it on the team's Memory page, or turn on `memories` at the station. |
 | It is on the Memory page but not in the pane, and it applies to this run's line, station, repository and files | The briefing contains at most eight memories, or 3,000 characters, and memories that are more specific, closer to the task's words, or warnings filled it. The agent did not look it up in `.spotlight/memory`. | Retire memories that no longer help, narrow where others apply, or say the memory in words the task will use. |
-| It is on the Memory page but not in the pane, and it does not apply to this run | Its scope does not include this run's line, station, repository or files. | Correct it to apply more widely. |
+| It is on the Memory page but not in the pane, and it does not apply to this run | Its scope does not include this run's line, station, repository or files. A memory of another line or station about the same repository is only in `.spotlight/memory/elsewhere/`, and never shown at a path. | Correct it to apply more widely. |
 | It is under **Supplied to the agent** and the agent acted against it | The agent didn't follow it. | Say it more plainly in a correction, or in the station's prompt. |
-| A listed memory is itself wrong | The memory is wrong. | Select **This was wrong** beside it, say why it no longer applies, and select **Retire**. Later runs aren't told it. |
+| A listed memory is itself wrong | The memory is wrong. | Select **This was wrong** beside it, say why it no longer applies, and select **Retire**. Later runs aren't told it. An agent can propose the same with `spotlight forget`. |
 
 Each memory's handle links to it on the team's Memory page, which also shows
 how many runs were briefed with it or recalled it. A run counts as briefed once
