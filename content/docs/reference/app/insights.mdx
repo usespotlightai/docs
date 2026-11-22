@@ -69,23 +69,22 @@ Only task runs at a station are recorded; chat runs are not.
 | --- | --- |
 | p50 | The median. With an even count, the mean of the two middle values, rounded to a whole number, with a half rounded up. |
 | p75, p90, p95 | The nearest-rank 75th, 90th and 95th percentiles. |
-| First human action | The first thing a person did with the task after the run: the action names the run, or else it follows the task's last run at that station. It is one of Started, Parked, Accepted, Answered, Sent back and Put on hold. Of actions at the same moment, the first of Put on hold, Sent back, Accepted, Answered, Parked and Started counts. Approving or dismissing an approval is never a first human action. |
+| First human action | The first thing a person did with the task after the run: the action names the run, or else it follows the task's last run at that station. It is one of Started, Parked, Accepted, Answered, Sent back and Held as wrong. Of actions at the same moment, the first of Held as wrong, Sent back, Accepted, Answered, Parked and Started counts. Approving or dismissing an approval is never a first human action. |
 | Resolution | What came of a run: Accepted, Sent back, Failed, Moved on or Other. See [Run resolution](/docs/reference/app/tasks-runs-and-the-inbox#run-resolution). |
-| Accepted | A run whose resolution is Accepted: a person accepted it, or the pull request of its task merged while the task stayed at the station and no later completed run of the station on the task followed it. |
+| Accepted | A run whose resolution is Accepted: a person accepted it, or the pull requests of its task all merged while the task stayed at the station and no later completed run of the station on the task followed it. |
 | Sent back | A run whose resolution is Sent back. |
-| Human action | A person moving a task, answering, approving, dismissing or sending a run back. |
+| Human action | A person moving a task, accepting a run, answering, approving, dismissing, sending a run back or holding it as wrong. |
 | Activity | A person opening a task, acting on one, or starting an agent chat on the team. |
 
 Outcomes are recorded as runs end and as people act. Nothing that happened
 before recording began is counted. A deleted task's runs, pull request and human
 actions are removed.
 
-Overview and "Where work waits" count a task's pull request when the task had
-one of the team's runs that ended in the period, the period before, or the
-last 30 days where that reaches further. They also count the pull request of
-one of the team's tasks when it opened before the period ended and, in that
-time, it closed, or it is still open and it opened or had its first review by
-a person.
+Overview and "Where work waits" count each pull request a task of the team
+opened. They also count each pull request of a task that had one of the
+team's runs that ended in the period, the period before, or the last 30 days
+where that reaches further. A pull request counts when it opened, had its
+first review by a person, or closed in the period or the period before.
 
 A station that no longer exists shows as "A removed station", a person without
 an account as "A former member", and a task no person opened as "No one".
@@ -121,16 +120,18 @@ or narrow the Productivity tab's pull request list:
 | Figure | Counts | A rise is |
 | --- | --- | --- |
 | Spend | The cost of the runs, when every priced run is in one currency, with `Over <n> runs`. Otherwise it reads `–`, with `No priced runs` or `Prices in more than one currency`. | neither |
-| PRs merged | Task pull requests merged in the period, with `<n> closed unmerged`. | good |
-| Merge rate | Merged, of the task pull requests merged or closed unmerged in the period. Its change is in points. | good |
+| PRs merged | Pull requests that merged in the period, with `<n> closed unmerged`. Each pull request counts on its own, also when a task has several. | good |
+| Merge rate | Merged, of the pull requests that merged or closed unmerged in the period. Its change is in points. | good |
 | Cost per merged PR | Spend divided by PRs merged. | bad |
 | Task to merge | For pull requests merged in the period, the p50 time from the task opening to the merge, and the p90. | bad |
-| Human actions per task worked | Human actions in the period on the tasks the period's runs worked, per task, with `<actions> over <tasks> tasks`. | bad |
+| Actions per task | Human actions in the period on the tasks the period's runs worked, per task, with `Over <n> tasks`. | bad |
 | Active people | People with an activity in the period. | good |
 
-"Spend" and "PRs merged" each draw their figure day by day under it. A tile's
-figure opens the Runs, Cost or People tab, narrowed to what it counts where it
-can be.
+"Spend" and "PRs merged" each draw their figure day by day under it. Spend opens
+the Traces tab, Cost per merged PR the Cost tab, and Actions per task and
+Active people the People tab. PRs merged and Task to merge open the
+Traces tab at the tasks with a pull request merged in the period, when there
+are 1 to 200 of them. Merge rate opens nothing.
 
 "Output against cost" charts spend and merged pull requests per UTC day. Spend
 is charted only when every priced run in the period is in one currency;
@@ -213,7 +214,7 @@ harnesses report tokens.
 | --- | --- | --- |
 | Inbox asks per task | Times a station asked a person in the period, per task, with `<n> asks`. | bad |
 | Time to answer | The p50 time from an ask to its answer, with the p90 and `<n> unanswered`. | bad |
-| Sent-back rate | Runs whose resolution is Sent back, of runs, with `<n> runs sent back`. Its change is in points. | bad |
+| Sent-back rate | Runs whose resolution is Sent back, of runs, with `<n> runs`. It opens the Traces tab at the runs whose resolution is Sent back. Its change is in points. | bad |
 | Dismissed approvals | Approvals a person dismissed in the period, tool approvals and harness permissions alike. It opens the Traces tab at the tasks with a dismissal, when there are at most 200. | bad |
 
 "Who is using Spotlight":
@@ -248,7 +249,7 @@ the p50 of:
 Its table adds the p90 of each on hover, "Tasks" with its change, "Runs",
 "Asks" (times the station asked a person) and "Unanswered".
 
-"Past the last station" follows each task's pull request:
+"Past the last station" follows each pull request that Overview counts:
 
 | Figure | Counts | Time shown |
 | --- | --- | --- |
@@ -256,9 +257,9 @@ Its table adds the p90 of each on hover, "Tasks" with its change, "Runs",
 | First reviews | First reviews by a person in the period. Reviews by bots are not counted. | PR to review: from the pull request opening to its first review. |
 | PRs merged | Pull requests merged in the period. | Review to merge: from the first review, or from the opening where no person reviewed it, to the merge. |
 
-Times show as p50 and p90. A task with pull requests in several repositories
-is tracked on all of them together: open while one is open, merged when all
-merged, else closed. Its opening is the first opening.
+Times show as p50 and p90. Each pull request counts on its own, also when a
+task has pull requests in several repositories. "PRs merged" here and on
+Overview count the same pull requests.
 
 ### What the agents ship
 
@@ -350,7 +351,8 @@ Spotlight records every pull request in the repositories the GitHub App is
 installed on, as GitHub reports it opening, changing, being reviewed and
 closing. What a report says about a pull request is ignored when the pull
 request's address disagrees with the report's repository or number. The
-section counts the pull requests a task of the team opened, and those in a
+section counts the pull requests a task of the team opened, those of a task
+that had one of the team's runs in the same time as Overview, and those in a
 repository one of the team's lines names. With none, it reads "No pull requests in this period", with "Connect a repository".
 
 Each pull request is written by one of:
@@ -515,7 +517,7 @@ and "Candidates".
 | Failed | Runs that ended Failed, with `<share> of runs`, drawn day by day. | bad |
 | Accepted | Runs whose resolution is Accepted. Shown when above 0 in the period or the period before. Opens Traces narrowed to these runs. | good |
 | Sent back | Runs whose resolution is Sent back. Shown and opened in the same way. | bad |
-| Merged | Tasks among the runs whose pull request merged, at any time. Shown in the same way. | good |
+| Merged | Tasks among the runs whose pull requests all merged, at any time. Shown in the same way. | good |
 | Cost | The runs' cost, when all are in one currency. | neither |
 | Median run | The median time the runs took, with the p90. | bad |
 
@@ -535,7 +537,7 @@ runs per day, failures in red, beside the change in its runs. Then:
 | Accepted | Runs whose resolution is Accepted. |
 | Sent back | Runs whose resolution is Sent back. |
 | Passed on | Runs that passed their task to another station. |
-| Merged | Tasks among the runs whose pull request merged, at any time. |
+| Merged | Tasks among the runs whose pull requests all merged, at any time. |
 | Cancelled | Runs cancelled before they ran. |
 | Cost | The runs' cost, when all are in one currency. |
 | Median, p90 | The time the runs took. |
@@ -588,7 +590,7 @@ started, or ended where it never started:
 | Accepted rate | Runs whose resolution is Accepted, of the runs whose resolution is not Other. |
 | Checks-failed rate | Failed checks, of passed and failed checks. |
 | Failed rate | Runs that ended Failed, of runs. |
-| Merged rate | Tasks whose pull request merged, of the tasks of the runs whose pull request merged or closed unmerged. |
+| Merged rate | Tasks whose pull requests all merged, of the tasks of the runs whose pull requests are no longer open. |
 | Cost per run | The cost of the priced runs, per priced run. |
 | Judge pass rate | Only while the station's judge is qualified: the share of judged runs the judge passed on each side, or `–`. Hovering shows `The share of judged runs that the judge passed. Judged runs: <n> before, <m> after. Opens the judge’s agreement with people.`, and the label opens the station's [Judge tab](/docs/reference/app/tasks-runs-and-the-inbox#judge-tab). |
 
@@ -629,7 +631,7 @@ applied.
 | Sent back | Runs whose resolution is Sent back, of the runs whose resolution is not Other. Lower is better. |
 | Passed on | Runs that passed their task to another station, of the runs with a first human action or that passed their task. |
 | Checks passed | Passed checks, of passed and failed checks. |
-| Merged | Tasks whose pull request merged, of the tasks of the runs whose pull request merged or closed unmerged. |
+| Merged | Tasks whose pull requests all merged, of the tasks of the runs whose pull requests are no longer open. |
 | Judge pass rate | The share of judged runs the judge passed, as under [Impact](#impact). |
 
 Judge verdicts are counted only with a station picked, and only while that
@@ -942,8 +944,8 @@ further, shown as a pill that can be removed:
 | Pill | Narrows to runs |
 | --- | --- |
 | Line | On the line. |
-| Pull request | Whose task's pull request is now Merged, Closed unmerged or Open. |
-| Then | Whose first human action was Started, Parked, Accepted, Answered, Sent back or Put on hold. |
+| Pull request | Whose task's pull requests are now Open (one is open), All merged, or Not all merged (none open, at least one closed unmerged). |
+| Then | Whose first human action was Started, Parked, Accepted, Answered, Sent back or Held as wrong. |
 | Resolution | That ran and whose [resolution](/docs/reference/app/tasks-runs-and-the-inbox#run-resolution) is Accepted, Sent back, Moved on, Failed, no answer, or Other. |
 | Asked a person | Of tasks that asked a person in the period. |
 | Harness | Run by the harness. |

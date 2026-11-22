@@ -587,8 +587,8 @@ these that the run has:
 
 | Source | Passes | Fails |
 | --- | --- | --- |
-| Its [first human action](#station-outcomes) | Accepted | Sent back or Put on hold |
-| Its task's pull request | Merged | – |
+| Its [first human action](#station-outcomes) | Accepted | Sent back or Held as wrong |
+| Its task's pull requests | All merged | – |
 
 A merge passes only the station's last completed run on the task. A run that
 did not complete, and a run that a later completed run of the same station on
@@ -942,8 +942,8 @@ People's verdict on a run is taken as in
 
 | Source | People's verdict |
 | --- | --- |
-| The first human action | `Accepted`, `Sent back` or `Put on hold` |
-| The task's pull request | `Pull request merged` |
+| The first human action | `Accepted`, `Sent back` or `Held as wrong` |
+| The task's pull requests, all merged | `Pull request merged` |
 
 While the judge's verdict is shown, the run's row in the trace carries
 people's verdict, or `Passed by the judge` or `Failed by the judge` when the run
@@ -1079,10 +1079,10 @@ A run's outcome:
 | --- | --- | --- |
 | Ending | Completed, Failed, Stopped, Exhausted, Cancelled, Superseded | How the run ended. See [Run endings](#run-endings). |
 | Failure | A [failure code](#failure-codes) | Shown beside an ending that has one: Failed, Exhausted, Cancelled or Superseded. |
-| Visit | 1, 2, … | The visit: 1 plus the number of the task's earlier runs at the station that completed or failed. |
+| Run number | 1, 2, … | 1 plus the number of the task's earlier runs at the station that completed or failed. Runs from every stay at the station count, so a failed run and the next run there are runs 1 and 2. |
 | Checks | Checks passed, Checks failed, Checks skipped | The station's check on the run's change. See [Checks](/docs/reference/app/change-stacks-and-decisions#checks). |
-| Human action | Started, Parked, Accepted, Answered, Sent back, Put on hold | The first human action: the first thing a person did with the task in answer to the run, or after it. See the table below. |
-| Pull request | PR open, Merged, PR closed | The state of the task's pull requests. With several: PR open while one is open, Merged when all merged, else PR closed. |
+| Human action | Started, Parked, Accepted, Answered, Sent back, Held as wrong | The first human action: the first thing a person did with the task in answer to the run, or after it. See the table below. |
+| Pull request | Open, All merged, Not all merged | The state of the task's pull requests: Open while one is open, All merged when all merged, else Not all merged. |
 | Duration, Cost | | How long the run took and what it cost, from its journal. |
 
 | Human action | The person |
@@ -1092,22 +1092,22 @@ A run's outcome:
 | Accepted | Moved the task to the completed station. |
 | Answered | Answered the conversation without a decision. |
 | Sent back | Sent a message to a run of the task while it had no current run, other than an answer to an open question that asks for no approval. |
-| Put on hold | Put the task on hold, in a hold that later ended with the reason **The line got it wrong**, whoever ended it. Every hold has that reason until you change it when you resume. So moving a task that is on hold by hand counts as Put on hold, not as the move. It counts from when the hold started. A hold resumed with **I want to try something** is no human action. |
+| Held as wrong | Put the task on hold, in a hold that later ended with the reason **The line got it wrong**, whoever ended it. Every hold has that reason until you change it when you resume. So moving a task that is on hold by hand counts as Held as wrong, not as the move. It counts from when the hold started. A hold resumed with **I want to try something** is no human action. |
 
 Approving or dismissing an approval is never a human action: it does not decide
 the run's [resolution](#run-resolution). When two actions come at the same moment, the first of
-Put on hold, Sent back, Accepted, Answered, Parked and Started counts.
+Held as wrong, Sent back, Accepted, Answered, Parked and Started counts.
 
 #### Run resolution
 
 Each run that ran has one resolution. The first rule that applies gives it:
 
-1. Sent back: its first human action was Sent back or Put on hold.
+1. Sent back: its first human action was Sent back or Held as wrong.
 2. Accepted: its first human action was Accepted.
 3. Failed: the run ended Failed.
 4. Other: the run ended Stopped, Exhausted or Superseded.
 5. Moved on: the run passed its task to another station, or its first human action was Started.
-6. Accepted: the pull request of the run's task merged, and no later completed run of the same station on the task followed the run.
+6. Accepted: the pull requests of the run's task all merged, and no later completed run of the same station on the task followed the run.
 7. Other: none of the above, for example when nobody has answered yet.
 
 A tally counts:
@@ -1122,7 +1122,7 @@ A tally counts:
 | Sent back | Runs whose resolution is Sent back. |
 | Resolutions | Runs by resolution, each with its share of Runs and, on the Insights Stations tab, its change against the period before. The resolutions add up to Runs. |
 | Passed on | Runs that passed their task to another station. |
-| Merged | Tasks the group's runs worked whose pull request merged. |
+| Merged | Tasks the group's runs worked whose pull requests all merged. |
 | Cancelled | Runs that ended without running. |
 | Cost | The runs' cost together, when all are in one currency. |
 | Median, p90 | The time the runs took. |
@@ -1134,7 +1134,7 @@ Insights [Stations tab](/docs/reference/app/insights#runs)
 counts them in the same way.
 
 Each row of "Recent runs" shows the run's resolution, linked to the run, with
-the failure on hover, then "Visit", "Checks", "Human action", "Pull request",
+the failure on hover, then "Run number", "Checks", "Human action", "Pull request",
 "Duration", "Cost" and "Ended". A resolution of Other shows the ending in its
 place. A part with no value shows `–`.
 
@@ -1354,7 +1354,7 @@ opened, and what the judge decided:
 | --- | --- |
 | `accepted` | `You accepted this run. The judge failed it.` |
 | `sent-back` | `You sent this run back. The judge passed it.` |
-| `held` | `You put this run on hold. The judge passed it.` |
+| `held-as-wrong` | `You held this run as wrong. The judge passed it.` |
 | `merged` | `The pull request was merged. The judge failed the run.` |
 
 While a card waits for your answer, the line ends with
@@ -1431,7 +1431,7 @@ with `GET /api/teams/{teamId}/judge-disagreements/{disagreementId}`: the claims,
 with the judge's result and reasons for each, the steps and hunks the reasons
 cite, the claims in dispute (`disputedClaims`), `direction`, what gave people's
 verdict when the disagreement opened (`labelFrom`: `accepted`, `sent-back`,
-`held` or `merged`),
+`held-as-wrong` or `merged`),
 the answers to claims in dispute (`answers`: `claim`, `answer`, `note`,
 `answeredBy` and `answeredAt` for each), the answer where no claim is in
 dispute (`notMet`: `claim`, `note`, `answeredBy` and `answeredAt`, or `null`),
@@ -1525,7 +1525,7 @@ known:
 | `sent_back_rate`, `accepted_rate` | Its [resolution](#run-resolution) is not Other. |
 | `checks_failed_rate` | Its check passed or failed. |
 | `failed_rate` | It ended. |
-| `merged_rate` | Its task's pull request merged or closed unmerged. |
+| `merged_rate` | Its task has a pull request, and none of them is open. |
 | `cost_per_run` | Its cost was worked out. |
 
 Only runs that ran count, ordered by when they ended. An alert reads its
