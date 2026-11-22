@@ -2,7 +2,7 @@
 type: reference
 icon: BookText
 title: Agent commands
-description: The spotlight commands an agent runs inside its sandbox to hand a task over, reply to a review comment, read a trace or a station's history, recall and propose team memories, propose a search candidate, record why a stalled search's tasks fail, and find, read and use tools.
+description: The spotlight commands an agent runs inside its sandbox to hand a task over, reply to a review comment, read a trace or a station's history, recall, propose and retire team memories, see memories about the paths it uses, propose a search candidate, record why a stalled search's tasks fail, and find, read and use tools.
 ---
 
 An agent runs these commands from anywhere in its sandbox. Each one talks to
@@ -16,6 +16,8 @@ spotlight trace --task <id> [--out <path>]
 spotlight history --station <key> [--line <key>] [--fingerprint <fp>] [--outcome <word>] [--since <date>] [--last <n>] [--out <dir>]
 spotlight recall "<words>" | <handle>
 spotlight remember --kind <kind> --body <text> [--path <path>]... [--scope <scope>] [--supersedes <handle>]
+spotlight forget <handle> --because <text>
+spotlight hook post-tool-use
 spotlight candidate --name <name> --hypothesis <text | @file> <station.json | ->
 spotlight cause --task <task> --cause config|task|judge|check|infra --evidence <text | @file> [--suggestion <text | @file>]
 spotlight tools
@@ -27,6 +29,9 @@ spotlight tools call <tool> [--<input> <value>...] [--json <object> | --json -]
 In a [search's](/docs/reference/app/searches#the-searchs-agent-run) agent run,
 `reply`, `recall` and `remember` are rejected with
 `a search may not <reply to a review comment, recall what the team remembers or propose a memory>: it studies the station's history and proposes station configs, nothing more`.
+`forget` is rejected in a search's run with
+`a search may not propose to retire a memory: …`, and in a replay with
+`a replay may not forget: …`.
 
 The tools Spotlight itself adds are listed in
 [Built-in tools and skills](/docs/reference/built-ins/built-in-tools-and-skills).
@@ -55,6 +60,8 @@ fails:
 | `history` | `no run to read history from: spotlight runs inside a Spotlight workspace` |
 | `recall` | `no run to recall from: spotlight runs inside a Spotlight workspace` |
 | `remember` | `no run to remember from: spotlight runs inside a Spotlight workspace` |
+| `forget` | `no run to forget from: spotlight runs inside a Spotlight workspace` |
+| `hook post-tool-use` | Nothing. It prints nothing and ends with success. |
 | `candidate` | `no run to propose a candidate from: spotlight runs inside a Spotlight workspace` |
 | `cause` | `no run to record a cause from: spotlight runs inside a Spotlight workspace` |
 | `tools`, `tools search`, `tools describe` | `no run to get tools from: spotlight runs inside a Spotlight workspace` |
@@ -393,7 +400,7 @@ memory from a task that came from outside the team cannot be approved together w
 | `--kind` | yes | `rationale`, `rejected-approach`, `failure`, `environment`, `preference` or `correction`. |
 | `--body` | yes | What to remember, at most 1,000 characters. Omitted, `-` or `/dev/stdin`: read from standard input. |
 | `--path` | no | A file or folder the memory is about, relative to the current directory or absolute. It must be inside one of the run's checkouts, and every `--path` in one repository. Within its repository, at most 500 characters. Repeat for more, up to 20 different paths. |
-| `--scope` | no | Where it applies: `team`, `line` or `station`. Default: `line`. |
+| `--scope` | no | Where it applies: `team`, `line` or `station`. Default: `line`. Choose the widest that is still true. |
 | `--supersedes` | no | The handle of an active memory of the team that this one corrects. Approving it retires that one. |
 
 On success it prints `Proposed <kind> for the <scope>: <body>`, and that the
@@ -419,6 +426,69 @@ memory waits for a person's approval.
 spotlight remember --kind rationale --body "Uploads retry in the request, not from a queue." --path src/uploads
 spotlight remember --kind correction --supersedes M-7 < correction.md
 ```
+
+## spotlight forget
+
+```text
+spotlight forget <handle> --because <text>
+```
+
+Proposes to retire a memory that no longer applies, where no new memory
+replaces it. Where one does, use `spotlight remember` with `--supersedes`. The
+proposal cites the step the agent ran the command from. It waits in the inbox
+beside the run, like a proposed memory. The team keeps the memory until a
+teammate approves the proposal; approving it retires the memory with the
+reason.
+
+| Flag | Required | Description |
+| --- | --- | --- |
+| `--because` | yes | Why the memory no longer applies, at most 500 characters. `-` reads it from standard input. |
+
+On success it prints `Proposed to retire <handle>: <body>`, and that the team
+keeps the memory until a person approves.
+
+| Message | Cause |
+| --- | --- |
+| `say which memory, like M-12` | No handle, or a handle that is not like `M-12`. The usage follows. |
+| `name one memory, not "<word>"` | A second word outside any flag. |
+| `--because is required` | No reason, and nothing on standard input. |
+| `Memory <handle> not found.` | The handle names no memory of the run's team. |
+| `A memory retires only an active memory in the run's team, and <handle> is not one.` | The memory is already retired. |
+| `A memory is remembered only from a task's run; in a chat, ask the person to write it on the team's Memory page.` | The run is a chat's. |
+
+```bash
+spotlight forget M-12 --because "The uploads queue was removed in October."
+```
+
+## spotlight hook post-tool-use
+
+```text
+spotlight hook post-tool-use < hook.json
+```
+
+The harness runs this command after each tool call; an agent does not run it.
+For Claude Code, Spotlight adds it as a `PostToolUse` hook for `Read`, `Edit`,
+`MultiEdit`, `Write`, `NotebookEdit`, `Grep` and `Glob`, with a timeout of 10
+seconds.
+
+It reads the hook input on standard input and takes the paths the tool used
+from `file_path`, `path` and `notebook_path`, and from the `*** Update File:`,
+`*** Add File:` and `*** Delete File:` lines of a patch. Where a memory of the
+team is about one of those paths, or a folder above it, it prints the hook
+answer, which shows the agent:
+
+```text
+The team remembers this about `api/src/uploads/retry.ts`, which you just used:
+- **M-18** · rejected approach: Uploads retry in the request, not from a queue.
+```
+
+It shows each memory at most once in a run, and at most 5 at a time; the rest come at the agent's next prompt. It never
+shows a memory that the briefing lists, or one that was learned at another line
+or station. It counts each memory it shows as used by the run. On any error it
+prints nothing, so the tool call goes on.
+
+Every other harness, Codex included, gets the same text at the start of its
+next prompt, from the tool calls it reported.
 
 ## spotlight candidate
 

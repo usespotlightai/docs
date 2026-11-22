@@ -1620,6 +1620,63 @@ the copy icon, with "Reject" and "Approve" off.
   proposes any itself. Memories proposed with `spotlight remember` stay.
 - Nothing waits on a review. The task moves on as it would without one.
 
+A memory proposed with
+[`spotlight forget`](/docs/reference/cli/agent-commands#spotlight-forget)
+retires a memory. Its card shows "Retires", the handle of the memory, and
+"Reason", why it no longer applies, above the memory itself, and it has no edit
+icon. Approving it retires the memory with that reason; rejecting it keeps the
+memory. When the memory was retired or replaced first, the card reads
+`<handle> is no longer active, so this retirement no longer applies.`, and only
+"Reject" is on.
+When the memory is retired or replaced after the approval but before it is
+retired, nothing changes and the card reads "No longer applies".
+
+### Memory upkeep
+
+Once a week from a team's first memory, or sooner after 20 more memories
+are added, Spotlight checks the team's active memories and proposes changes. A memory is proposed
+for retirement when:
+
+- the team no longer works in the repository it is about;
+- every path it names is gone from that repository;
+- it was approved at least 90 days ago and no run used it in the last 90 days.
+
+Where the team has an inference endpoint, Spotlight also reads up to 200
+memories, grouped by where they apply, and proposes to retire one that a newer or more exact
+memory contradicts, or to merge memories of the same kind that apply in the
+same place and say the same thing into one. A memory with a change waiting for a decision is left out of the
+next check, and so is one with a change approved but not yet made. A memory that replaces another, edited on the Memory page or approved from a
+run, and a memory that a merge writes do not count toward the 20. A team that
+had memories before upkeep existed has its first check when Spotlight is updated. After a person keeps a memory, the same finding is not proposed for
+it again for 90 days; a different finding still is.
+
+When it proposes at least one change, a notice
+`Some of what the team remembers may be out of date` reaches the team, with how
+many memories to retire and how many sets to merge, and "Review the changes".
+That opens Upkeep under the team's Memory page. It lists each change as a card
+titled `Retire <handle>` or `Merge <handles> into one`, then `Retired <handle>`,
+`Merged <handles>` or `Kept <handle>`, with `by <name>` when the person who
+decided is known, or `No longer applies to <handles>`:
+
+| Row | Shows |
+| --- | --- |
+| Found | Why it was proposed: `The paths it names are gone`, `The team no longer works in its repository`, `No run used it in 90 days`, `Another memory says otherwise` or `These memories say the same thing`. |
+| Reason | The reason in full. |
+| `<handle>` | Each memory, linked to it on the Memory page, with its kind and text. |
+| Merged | The one memory a merge writes. Only for a merge. |
+
+An undecided card has "Keep" and "Retire", or "Keep" and "Merge". Approving a
+retirement retires the memory with the reason. Approving a merge writes the new
+memory, and each memory it merges is retired as replaced by it. When one of its memories was retired after the sweep, the
+card reads `<handle> was retired after the sweep, so this change no longer
+applies.`, and only "Keep" is on. When a memory is retired after a person approves
+but before the change is made, nothing changes and the card reads
+`No longer applies to <handles>`. When one of the memories of a merge is retired
+or replaced after the new memory is written, the new memory is retired with the
+reason `<handles> changed before the merge was made, so the merge no longer
+applies.`, and the other memories stay as they were. "Keep" leaves every memory
+as it is. Once every change is decided or no longer applies, the notice closes.
+
 ### Station alerts
 
 Spotlight checks a work station's [alerts](/docs/reference/terraform/line#alert-fields)
