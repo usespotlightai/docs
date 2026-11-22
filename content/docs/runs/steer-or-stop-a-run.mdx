@@ -5,10 +5,13 @@ title: Steer or stop a run
 description: Tell an agent something while its run works, or stop the run and take the task back.
 ---
 
-Only the task's assignee can talk to a run or stop it. If the task isn't yours,
-assign it to yourself first with the assignee control under **Properties** on
-the task page (it reads **Assign this task** or `Assigned to <name>`). Anyone
-else can type in the composer, but their message or stop is not delivered.
+The members of the task's team, and the owners and admins of the workspace,
+can stop a run. They can talk to it too, but a message that puts the task on
+hold comes only from a member of the team. Only a person the run waits for can
+answer its question, or, while a person holds the task, anybody who acts on
+the team. To answer for a task assigned to someone else, assign it to yourself
+first with the assignee control under **Properties** on the task page (it reads
+**Assign this task** or `Assigned to <name>`).
 
 ## Open the run
 
@@ -29,21 +32,44 @@ The agent gets your message within a few seconds, in the middle of what it is
 doing: its current turn is interrupted and your words become the next thing
 it reads. Its reply and the steps that follow appear on the same page.
 
-While the run reads **Waiting for you**, the box reads **Answer the question
-to continue the run…**, and what you send answers the agent's question and the
-run carries on. When the question is an approval, select **Approve** or
-**Dismiss** on its card, or select **Open in the inbox**.
+When the run waits for your answer, it reads **Waiting for you** and the box
+reads **Answer the question to continue the run…**. What you send answers the
+agent's question and the run carries on. The answer is yours when you are the
+task's assignee, the question asks you by name, or the task has no assignee
+and you are a member of its team. While a person holds the task, everyone who
+acts on the team can answer.
 
-If the page says "The task has moved to another station. Messages here reach
-no one.", the task has left this station. Open the task to find its
-current run.
+While the run waits for someone else's answer, the box is closed and reads
+`It waits for another person to answer.`
+
+At a station with an agent, while nobody holds the task, a message to a run
+at the task's station that answers no question puts the task on hold, and the
+task is assigned to you. This is so for an older run at the station too, and a
+run that works there stops. Then the box reads **Your message puts the task on
+hold…**. Only members of the team can be assigned, so for an
+owner or admin of the workspace who is not on the team, the box is closed and
+reads `Your message would put the task on hold, and a hold assigns the task to
+you. Only members of the team can do that.`
+
+While a person holds the task, your message tells the agent what to do next,
+and the box reads **Tell the agent what to do next…**.
+
+A message does not answer an approval, so the box does not read **Answer the
+question to continue the run…** for one. What you send is a message that
+answers no question, as above. To decide the approval, select **Approve** or **Dismiss** on its card,
+or select **Open in the inbox**.
+
+Once the task has left this station, the box talks to the newest run at the
+task's new station, and its label names that station. If no run is there
+yet, the box is closed and reads `The task has moved to <Station>. Messages
+here reach no one.`
 
 ## Send work back to a station
 
-When the task has finished at a station or is there with nothing running,
-the box on a run at that station reads **Say what to change. &lt;Station&gt;
-starts again…**.
-Say what to change and press Enter. A new run starts at the station and picks
+When the task has finished at a station that is not Completed, the box on a
+run at that station reads **Say what to change…**.
+Say what to change and press Enter. The task is no longer finished. If an
+agent works at the station, a new run starts there and picks
 up its earlier conversation with your message, and its agent passes the task
 on from there. To have an earlier station redo work, tell the current
 station's agent where to pass it: Code Review can pass it to Implementation or
@@ -53,11 +79,14 @@ Spec.
 
 While a runner is working the run, and with the composer empty and nothing
 attached, the send button becomes a square **Stop** button. Select it. The
-Run page does not offer it while the run is **Queued**.
+Run page does not offer it while the run is **Queued**. When the box is
+closed for an owner or admin of the workspace who is not on the team, **Stop**
+is still there.
 
-The agent is stopped where it is and the task comes back to you. An item
-opens in your inbox with "A person stopped the run. The task is back with you." The
-task stays at the same station. To carry on there, reply to the item, which
+The agent is stopped where it is. An item opens in the inbox of the task's
+assignee, or of its team when the task has no assignee, with "A person stopped
+the run. The task is back with you." Stopping a run does not assign the task
+to you. The task stays at the same station. To carry on there, reply to the item, which
 starts a new run at that station; see
 [Answer the inbox](/docs/inbox/answer-the-inbox).
 
