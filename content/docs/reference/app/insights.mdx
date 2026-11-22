@@ -69,15 +69,15 @@ Only task runs at a station are recorded; chat runs are not.
 | --- | --- |
 | p50 | The median. With an even count, the mean of the two middle values, rounded to a whole number, with a half rounded up. |
 | p75, p90, p95 | The nearest-rank 75th, 90th and 95th percentiles. |
-| First human action | The first thing a person did with the task after the run: the action names the run, or else it follows the task's last run at that station. It is one of Started, Parked, Accepted, Answered, Sent back and Held as wrong. Of actions at the same moment, the first of Held as wrong, Sent back, Accepted, Answered, Parked and Started counts. Approving or dismissing an approval is never a first human action. |
+| Human action | The run's [deciding action](/docs/reference/glossary#deciding-action): the first start, park, accept, send back, or hold that ended with the reason **The line got it wrong**, credited to the run; or else the first answer to it. The action names the run, or else it follows the task's last run at that station. It is one of Started, Parked, Accepted, Answered, Sent back and Held as wrong. A deciding action takes the place of Answered, even a later one, and Spotlight keeps the first answer as well. Of deciding actions at the same moment, the first of Held as wrong, Sent back, Accepted, Parked and Started counts. Approving or dismissing an approval is an [action](/docs/reference/glossary#action), but never the human action of a run. |
 | Resolution | What came of a run: Accepted, Sent back, Failed, Moved on or Other. See [Run resolution](/docs/reference/app/tasks-runs-and-the-inbox#run-resolution). |
-| Accepted | A run whose resolution is Accepted: a person accepted it, or the pull requests of its task all merged while the task stayed at the station and no later completed run of the station on the task followed it. |
+| Accepted | A run whose resolution is Accepted: [people's verdict](/docs/reference/app/tasks-runs-and-the-inbox#agreement) passes it, and its task was neither passed to another station nor started, or a person accepted it. A person accepting a run that failed, ran out, was cancelled or was superseded does not make it Accepted. |
 | Sent back | A run whose resolution is Sent back. |
-| Human action | A person moving a task, accepting a run, answering, approving, dismissing, sending a run back or holding it as wrong. |
+| Actions | Counts of a person moving a task, answering, approving, dismissing, sending a run back or putting a task on hold in a hold that ends with the reason **The line got it wrong**. See [Action](/docs/reference/glossary#action). |
 | Activity | A person opening a task, acting on one, or starting an agent chat on the team. |
 
 Outcomes are recorded as runs end and as people act. Nothing that happened
-before recording began is counted. A deleted task's runs, pull request and human
+before recording began is counted. A deleted task's runs, pull request and
 actions are removed.
 
 Overview and "Where work waits" count each pull request a task of the team
@@ -124,7 +124,7 @@ or narrow the Productivity tab's pull request list:
 | Merge rate | Merged, of the pull requests that merged or closed unmerged in the period. Its change is in points. | good |
 | Cost per merged PR | Spend divided by PRs merged. | bad |
 | Task to merge | For pull requests merged in the period, the p50 time from the task opening to the merge, and the p90. | bad |
-| Actions per task | Human actions in the period on the tasks the period's runs worked, per task, with `Over <n> tasks`. | bad |
+| Actions per task | Actions in the period on the tasks the period's runs worked, per task, with `Over <tasks> tasks`. | bad |
 | Active people | People with an activity in the period. | good |
 
 "Spend" and "PRs merged" each draw their figure day by day under it. Spend opens
@@ -244,7 +244,7 @@ the p50 of:
 | --- | --- | --- |
 | Queued | A run is queued. | The run starts in its image on a runner. |
 | Running | The run starts in its image on a runner. | The run ends. |
-| In the inbox | The station asks a person. | The first human action on the task after the ask, at any station, before the task's next ask. |
+| In the inbox | The station asks a person. | The first thing a person did with the task after the ask, at any station, before the task's next ask. |
 
 Its table adds the p90 of each on hover, "Tasks" with its change, "Runs",
 "Asks" (times the station asked a person) and "Unanswered".
@@ -629,7 +629,7 @@ applied.
 | --- | --- |
 | Accepted | Runs whose resolution is Accepted, of the runs whose resolution is not Other. |
 | Sent back | Runs whose resolution is Sent back, of the runs whose resolution is not Other. Lower is better. |
-| Passed on | Runs that passed their task to another station, of the runs with a first human action or that passed their task. |
+| Passed on | Runs that passed their task to another station, of the runs with a human action or that passed their task. |
 | Checks passed | Passed checks, of passed and failed checks. |
 | Merged | Tasks whose pull requests all merged, of the tasks of the runs whose pull requests are no longer open. |
 | Judge pass rate | The share of judged runs the judge passed, as under [Impact](#impact). |
@@ -945,8 +945,8 @@ further, shown as a pill that can be removed:
 | --- | --- |
 | Line | On the line. |
 | Pull request | Whose task's pull requests are now Open (one is open), All merged, or Not all merged (none open, at least one closed unmerged). |
-| Then | Whose first human action was Started, Parked, Accepted, Answered, Sent back or Held as wrong. |
-| Resolution | That ran and whose [resolution](/docs/reference/app/tasks-runs-and-the-inbox#run-resolution) is Accepted, Sent back, Moved on, Failed, no answer, or Other. |
+| Then | Whose human action was Started, Parked, Accepted, Sent back or Held as wrong, or, for Answered, that a person answered and did not decide. |
+| Resolution | That ran and whose [resolution](/docs/reference/app/tasks-runs-and-the-inbox#run-resolution) is Accepted, Sent back, Moved on, Failed, or Other. |
 | Asked a person | Of tasks that asked a person in the period. |
 | Harness | Run by the harness. |
 | Model | Run with the model. "Harness default" is a run with no model set. |

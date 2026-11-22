@@ -77,9 +77,13 @@ hosts the host's allow-list allows, as for any run; see
 A replay is scored by what the candidate itself requires. If the candidate's
 station generates change stacks (`diffs: true`) and has a `check`, its change must
 pass that check. If it has a judge, the judge checks the change against its
-claims. Where people accepted the original's change, by moving the task to the completed station as
-the first thing they did on it after the run, the judge is also shown that
-change and scores the replay against it. A run passes the judge when it meets at least the judge's pass
+claims. Where people accepted the original's change, the judge is also shown
+that change and scores the replay against it. People accepted it when the original's
+[deciding action](/docs/reference/glossary#deciding-action) moved the task to
+the completed station after a run that completed or stopped. They also accepted
+it when the task's pull requests all merged, the original is the station's last completed
+run on the task, and its deciding action is not a send back or a hold with the
+reason "The line got it wrong". A run passes the judge when it meets at least the judge's pass
 threshold of its claims. With both a check and a judge, a run must pass both.
 
 A replay's judge verdicts never count in the judge's agreement with people,

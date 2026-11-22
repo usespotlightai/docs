@@ -5,6 +5,14 @@ title: Glossary
 description: The terms Spotlight uses, in alphabetical order, with a link to each term's reference page.
 ---
 
+## Action
+
+Something a person does with a task: start it, park it, accept it, answer it,
+approve or dismiss an approval, send it back, or put it on hold in a hold that
+ends with the reason **The line got it wrong**. A run takes one of them as its
+[human action](#human-action). Insights counts every action. See
+[Insights](/docs/reference/app/insights).
+
 ## Acts as
 
 The rule in an integration's `connection.actsAs` that says whose connection
@@ -233,6 +241,13 @@ through its token, a push pool through the credential it gave its runner, or a
 runner trust through an OIDC token. See
 [Pools, trusts and tokens](/docs/administration/pools-trusts-and-tokens).
 
+## Deciding action
+
+What a person did with a task that decides a run: Started, Parked, Accepted,
+Sent back or Held as wrong. A run keeps the first of these, and the first answer
+apart from it. See
+[Station outcomes](/docs/reference/app/tasks-runs-and-the-inbox#station-outcomes).
+
 ## Decision
 
 A trade-off, assumption, limitation, rejected approach or deviation that
@@ -388,9 +403,11 @@ runner trust. See [Host settings](/docs/reference/hosts/host-configuration).
 
 ## Human action
 
-The first thing that a person did with a task in answer to a run, or after it:
-Started, Parked, Accepted, Answered, Sent back or Held as wrong. Spotlight records an answer
-to an approval separately. It is never the human action of a run. See
+The [action](#action) that a person took with a task in answer to a run, or
+after it: the run's [deciding action](#deciding-action), or else their first
+answer, Answered. Spotlight keeps the first answer after the run is decided too.
+It records an answer to an approval separately. That is never the human action
+of a run. See
 [Station outcomes](/docs/reference/app/tasks-runs-and-the-inbox#station-outcomes).
 
 ## Hunk
@@ -638,6 +655,17 @@ To move a task back to the backlog. A run of the task that works is stopped, a
 run that waits for an answer is ended, and a queued run is cancelled. For a run
 that waits for a person, see [Suspend](#suspend). See
 [Moves](/docs/reference/app/tasks-runs-and-the-inbox#moves).
+
+## People's verdict
+
+Whether people passed or failed a run's work, from the run's
+[deciding action](#deciding-action). A deciding action of Accepted passes the
+run when it completed or stopped. A deciding action of Sent back fails the run,
+and so does a hold that ends with the reason **The line got it wrong**. When the
+deciding action is none of these, a merge of all of the task's pull requests passes the
+run if it is the station's last completed run on the task. The station's
+Outcomes, replays and the judge's agreement all read this one verdict. See
+[Agreement](/docs/reference/app/tasks-runs-and-the-inbox#agreement).
 
 ## Placement
 

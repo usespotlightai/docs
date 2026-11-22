@@ -657,13 +657,20 @@ A run whose judging failed shows no score.
 
 Agreement compares the judge's verdict with people's verdict on the same run.
 People's verdict comes from what people do with the run. Spotlight does not
-ask anyone for it. A judged run's people's verdict comes from the first of
-these that the run has:
+ask anyone for it. The same verdict gives a run's
+[resolution](#run-resolution) and its
+[outcome in replays](/docs/reference/app/replays#outcomes). A run's people's
+verdict comes from its deciding action when that is Accepted (on a run that
+ended Completed or Stopped), Sent back or Held as wrong. Otherwise it comes from
+its task's pull requests:
 
 | Source | Passes | Fails |
 | --- | --- | --- |
-| Its [first human action](#station-outcomes) | Accepted | Sent back or Held as wrong |
+| Its [deciding action](/docs/reference/glossary#deciding-action) | Accepted, when the run ended Completed or Stopped | Sent back or Held as wrong, however the run ended |
 | Its task's pull requests | All merged | – |
+
+Accepting a run that failed, ran out, was cancelled or was superseded gives no
+verdict: such a run left no work to pass, and the judge never judges it.
 
 A merge passes only the station's last completed run on the task. A run that
 did not complete, and a run that a later completed run of the same station on
@@ -672,7 +679,7 @@ pull request closed without a merge gives no verdict: it can close for a
 reason that says nothing about the run, such as a feature that is no longer
 wanted, or another pull request that took its place.
 
-Approving or dismissing an approval is never a human action. A verdict from
+Approving or dismissing an approval is never the human action of a run. A verdict from
 [re-judging after a claims change](#re-judging-after-a-claims-change) is a
 judge's verdict like any other, so its run counts when it also has people's
 verdict.
@@ -836,8 +843,8 @@ does not wait for new runs, Spotlight judges past runs again under it. Each
 time a line changes, Spotlight looks at each station of the line whose judge
 has claims it can read. When no run of the station has a judge verdict under
 the station's current claims version, Spotlight takes the station's latest 200
-ended runs, keeps those that have people's verdict, as in
-[Agreement](#agreement), and judges up to 50 of them again, as in
+ended runs, keeps those that ended Completed or Stopped and have people's
+verdict, as in [Agreement](#agreement), and judges up to 50 of them again, as in
 [Judging](#judging), with the current claims and pass threshold. The judge's
 `sample` does not apply.
 
@@ -1017,7 +1024,7 @@ People's verdict on a run is taken as in
 
 | Source | People's verdict |
 | --- | --- |
-| The first human action | `Accepted`, `Sent back` or `Held as wrong` |
+| The deciding action | `Accepted`, `Sent back` or `Held as wrong` |
 | The task's pull requests, all merged | `Pull request merged` |
 
 While the judge's verdict is shown, the run's row in the trace carries
@@ -1139,7 +1146,7 @@ are shown in these places:
 
 | Where | Shows |
 | --- | --- |
-| "Latest runs on this config", on the station's [Activity tab](#activity-tab) | Tiles for "Runs", "Outcomes", "Cost" and "Median run", over the live config: the newest config that ran, in its newest group and in earlier groups of it that only groups that never started separate from it. The newest group of another config that ran ends it and is not counted. "Outcomes" reads `<share> accepted`, with a bar of each [resolution](#run-resolution)'s share; hovering it shows each resolution as `<n> of <runs> runs`, with Failed as "Failed, no answer", and the merged tasks as `<n> tasks`. "Runs" draws the resolutions of the newest group with a recorded config as a strip, oldest first; "Cost" and "Median run" draw that group's costs and durations run by run, when they vary. Before a run has run a recorded config, `No run on a config yet.` When the outcomes cannot be read, the tiles are not shown. |
+| "Latest runs on this config", on the station's [Activity tab](#activity-tab) | Tiles for "Runs", "Outcomes", "Cost" and "Median run", over the live config: the newest config that ran, in its newest group and in earlier groups of it that only groups that never started separate from it. The newest group of another config that ran ends it and is not counted. "Outcomes" reads `<share> accepted`, with a bar of each [resolution](#run-resolution)'s share; hovering it shows each resolution as `<n> of <runs> runs`, and the merged tasks as `<n> tasks`. "Runs" draws the resolutions of the newest group with a recorded config as a strip, oldest first; "Cost" and "Median run" draw that group's costs and durations run by run, when they vary. Before a run has run a recorded config, `No run on a config yet.` When the outcomes cannot be read, the tiles are not shown. |
 | "Recent runs", on the station's [Activity tab](#activity-tab) | The latest 8 runs of the newest group with a recorded config, whether its runs started or not, one row each. With none, "No runs on this config yet" and `Runs on earlier configs are under All runs.`, or, when the station has no runs, "No runs yet" and `Latest runs show here once tasks reach this station.` To a person who may not read the outcomes, `Only team members can see this station's runs`. "All runs" opens the Insights Traces tab at the station. |
 | "Live config", on the station's [Config tab](#config-tab) | The newest group with a recorded config, whether its runs started or not, and the day its first run ended. |
 
@@ -1156,7 +1163,7 @@ A run's outcome:
 | Failure | A [failure code](#failure-codes) | Shown beside an ending that has one: Failed, Exhausted, Cancelled or Superseded. |
 | Run number | 1, 2, … | 1 plus the number of the task's earlier runs at the station that completed or failed. Runs from every stay at the station count, so a failed run and the next run there are runs 1 and 2. |
 | Checks | Checks passed, Checks failed, Checks skipped | The station's check on the run's change. See [Checks](/docs/reference/app/change-stacks-and-decisions#checks). |
-| Human action | Started, Parked, Accepted, Answered, Sent back, Held as wrong | The first human action: the first thing a person did with the task in answer to the run, or after it. See the table below. |
+| Human action | Started, Parked, Accepted, Answered, Sent back, Held as wrong | The human action: the run's [deciding action](/docs/reference/glossary#deciding-action), what a person did with the task in answer to the run or after it that decides the run, or else their first answer to it. See the table below. |
 | Pull request | Open, All merged, Not all merged | The state of the task's pull requests: Open while one is open, All merged when all merged, else Not all merged. |
 | Duration, Cost | | How long the run took and what it cost, from its journal. |
 
@@ -1165,25 +1172,33 @@ A run's outcome:
 | Started | Moved the task to a work station. |
 | Parked | Moved the task to the backlog. |
 | Accepted | Moved the task to the completed station. |
-| Answered | Answered the conversation without a decision. |
+| Answered | Answered the conversation without a [deciding action](/docs/reference/glossary#deciding-action). |
 | Sent back | Sent a message to a run of the task while it had no current run, other than an answer to an open question that asks for no approval. |
 | Held as wrong | Put the task on hold, in a hold that later ended with the reason **The line got it wrong**, whoever ended it. Every hold has that reason until you change it when you resume. So moving a task that is on hold by hand counts as Held as wrong, not as the move. It counts from when the hold started. A hold resumed with **I want to try something** is no human action. |
 
-Approving or dismissing an approval is never a human action: it does not decide
-the run's [resolution](#run-resolution). When two actions come at the same moment, the first of
-Held as wrong, Sent back, Accepted, Answered, Parked and Started counts.
+Approving or dismissing an approval is never the human action of a run: it
+does not decide the run's [resolution](#run-resolution). Started, Parked,
+Accepted, Sent back and Held as wrong decide the run. Answered shows only until
+one of them does, even one received later. Spotlight keeps the first answer as
+well, so a run that gets an answer and is then started still shows as Asked a
+person in [replays](/docs/reference/app/replays). When two actions that decide
+the run come at the same moment, the first of Held as wrong, Sent back, Accepted,
+Parked and Started counts.
 
 #### Run resolution
 
 Each run that ran has one resolution. The first rule that applies gives it:
 
-1. Sent back: its first human action was Sent back or Held as wrong.
-2. Accepted: its first human action was Accepted.
-3. Failed: the run ended Failed.
+1. Sent back: [people's verdict](#agreement) fails the run.
+2. Accepted: people's verdict passes the run from its human action, Accepted.
+3. Failed: the run ended Failed. A person accepting a failed run does not change this.
 4. Other: the run ended Stopped, Exhausted or Superseded.
-5. Moved on: the run passed its task to another station, or its first human action was Started.
-6. Accepted: the pull requests of the run's task all merged, and no later completed run of the same station on the task followed the run.
-7. Other: none of the above, for example when nobody has answered yet.
+5. Moved on: the run passed its task to another station, or its human action was Started.
+6. Accepted: people's verdict passes the run because all of its task's pull requests merged.
+7. Other: none of the above, for example when nobody has decided the run yet.
+
+So a run is Sent back exactly when people's verdict fails it, and Accepted only
+when people's verdict passes it.
 
 A tally counts:
 
