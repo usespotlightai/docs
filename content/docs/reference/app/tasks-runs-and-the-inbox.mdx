@@ -37,7 +37,7 @@ whether it is finished.
 
 | State | Condition | Board label |
 | --- | --- | --- |
-| Awaiting review | The latest `asked` note has no later `answered` or `passed` note. | Waiting for you |
+| Awaiting review | The latest `asked` note has no later `answered` or `passed` note. | Waiting for you, only to a person the task [waits for](#waiting-for-you) |
 | Running | The task has a current run, queued or claimed. | In progress |
 | Finished | The task was moved to the completed station, or its run handed it over as `done`. | none |
 | Idle | None of the above. | none |
@@ -268,21 +268,74 @@ Neither shows in the app.
 
 On the Runs list and on a task's "Activity", a queued run reads "Queued", a
 cancelled run "Cancelled", a superseded run "Superseded", and a claimed run
-shows that it is in progress. A run reads "Waiting for you" while it is
-suspended, and while the
-`asked` note it wrote has no later `answered` or `passed` note. On the Runs
-list, that label links to the run's inbox item. On a task's "Activity", such a
-run is led by a row that reads "Waiting for you", or "Answered" once a later
-`answered` or `passed` note is written, linked to the inbox item. The Runs
-list's "Waiting for you" view shows only the runs that read "Waiting for you";
+shows that it is in progress. A run reads "Waiting for you" while it
+[waits for you](#waiting-for-you). On the Runs
+list, that label links to the run's inbox item. On a task's "Activity", a run
+whose `asked` note has no later `answered` or `passed` note is led by a row
+that reads "Waiting for you" when it waits for you. Once a later `answered` or
+`passed` note is written, the row reads "Answered" for everyone. The row links
+to the inbox item. The Runs
+list's "Waiting for you" view shows only the runs that wait for you;
 with none, it reads `Nothing is waiting for you. Switch to All to see every run.`
 
-The Run page of a suspended run shows "Waiting for you" with "Answer
-in the inbox", or "Open in the inbox" when the open question is an approval.
+The Run page of a run that waits for you shows "Waiting for you" with
+"Answer in the inbox", or "Open in the inbox" when a message does not answer
+the open question, as for an approval. This is a suspended run, or a run that
+ended while its question is still open.
 An approval can also be decided on the Run page itself, on the same card as
 in the inbox: copy the call, edit a tool call's inputs, "Approve", or
 "Dismiss", which first asks for a reason to tell the agent, `Tell the agent
 why (optional)`. See [Approvals](#approvals).
+
+### Waiting for you
+
+"Waiting for you" means that you owe the answer. Spotlight decides it for each
+person who looks. A task or a run waits for you when all of these are true:
+
+- It waits for a person: the task has an open question. For a run, the run
+  must also be the task's current run, suspended with nothing working on it,
+  or the run that asked the question. An older suspended run does not wait.
+- You [act on the task's team](/docs/reference/roles-and-permissions#team-access).
+- You are the task's assignee, the open question asks you by name (an approval
+  or a connection ask for you), or the task has no assignee and you are a
+  member of its team.
+
+This is the same rule as for the [inbox](#the-inbox). When a task is assigned
+to a person, only that person sees "Waiting for you" for it on the board, on
+its runs, on the Run page and in the Runs list's "Waiting for you" view, and
+only to that person does the board link the task to its inbox item. The
+exception is an approval or a connection ask that names another person: then
+that person sees it too. A task with no assignee waits for every member of its
+team, and not for an owner or admin of the workspace who is not a member.
+
+In the API, `waitingForYou` gives this rule for the caller: on a task, on a
+run, and on the `latestRun` of the run notes. A task's `awaitingReview` names
+the conversation of its open question, and a run's `review` the conversation
+of the question the run asked, for everyone who can see the task.
+
+`yourMessage` tells the caller what a message from them does: on a run and on
+the `latestRun` of the run notes, a message to that run; on a task, a message
+to the task itself, which puts nothing on hold.
+
+`stoppableByYou` tells the caller whether they may stop the run: on a run, on
+the `latestRun` of the run notes, and on an inbox run or item, for the run
+that works on it. It is true when the run works at a station of its task and
+the caller [acts on the team](/docs/reference/roles-and-permissions#team-access).
+The web app offers **Stop** while the run is in progress and `stoppableByYou`
+is true.
+
+| Value | A message from you |
+| --- | --- |
+| `answer` | Answers the task's open question. The message goes to the task's current run, to a run at the task's station while nothing runs, or to the task itself while nothing runs, and the question waits for you, or you drive the task's hold. |
+| `drives` | Drives the next turn of the task's hold: a person holds the task, and you [act on the team](/docs/reference/roles-and-permissions#team-access). The agent reads the message in the turn that works, or a new turn starts with it. |
+| `holds` | Puts the task on hold and assigns it to you, and stops a run that works. The message goes to a run at the task's station, the station has a harness, the task is not finished and not on hold, and no question waits for a message: nothing is asked, or an approval waits (an approval takes a decision, not a message). |
+| `reopens` | Sends the finished task back to its station, and a run starts there if the station has a harness. The task finished at a station that is not the completed station, and the message goes to that station. |
+| `waits-for-chat` | Goes to the agent chat that holds the task, and the chat takes it up at once. The station's agent reads it after the task is handed back to the line. |
+| `message` | Is added as a message: the message goes to the task itself while it runs or while nothing is asked, or to an earlier run while a question waits on the task's current run, or the task's station has no harness, or the task finished at the completed station. |
+| `awaits-another` | Is refused, because the question waits for another person's answer. |
+| `moved-on` | Is refused, because the task has left the station of the run. |
+| `not-acting` | Is refused, because you do not [act on the team](/docs/reference/roles-and-permissions#team-access). |
+| `not-on-team` | Is refused, because it would put the task on hold, and only a member of the team can be assigned. |
 
 ### Transitions
 
@@ -301,14 +354,15 @@ why (optional)`. See [Approvals](#approvals).
 | `claimed` | `failed` | The harness failed (`exited`), or the run failed before its harness could work (`unprepared`). A hook on `run.starting` denied it (`refused`). Its hooks could not be called after the last requeue (`hooks-unanswered`). Its lease expired on the last attempt, and no stop was requested (`runner-lost`). Its runner stopped it at its run timeout on the last attempt, and no stop was requested (`timed-out`). |
 | `failed` | `superseded` | The run's task has moved on. |
 
-Messages sent to a run at the station where its task is idle, when that
-station has a harness, start a new run there that resumes the station's
-session. Messages sent to a run whose task has left its station fail with
-`409`, and messages from anyone but the task's assignee with `404`.
-Only a claimed or suspended run can be stopped. The web app offers Stop
-only while a run is claimed. Attempts a run spent suspended do not count in
-the 3. Only the task's assignee may stop a run or say
-something to it. See [Steer or stop a run](/docs/runs/steer-or-stop-a-run).
+A message to a run at the station where its task is idle, when that station
+has a harness, puts the task on hold and starts a new run there that resumes
+the station's session. A message to a run whose task has left its station
+fails with `409`. `yourMessage` says what a message from you does, and which
+messages are refused. Only a claimed or suspended run can be stopped. Anybody
+who [acts on the team](/docs/reference/roles-and-permissions#team-access) may
+stop a run, and `stoppableByYou` says so. The web app offers Stop only while a
+run is claimed. Attempts a run spent suspended do not count in the 3. See
+[Steer or stop a run](/docs/runs/steer-or-stop-a-run).
 
 ### Run endings
 
@@ -331,8 +385,11 @@ Counts of runs that ran leave out cancelled runs.
 
 | When | Placeholder | Accessible name |
 | --- | --- | --- |
-| The run waits on a person's answer to a question that is not an approval. | `Answer the question to continue the run…` | `Answer <Station>` |
-| The task is at the run's station with nothing running and no open question, and the station has a harness. Words start a new run there. | `Say what to change. <Station> starts again…` | `Send it back to <Station>` |
+| A message from you answers the question the run waits on: it [waits for you](#waiting-for-you), or you drive the task's hold, and the question is not an approval. | `Answer the question to continue the run…` | `Answer <Station>` |
+| A message from you drives the next turn of the task's hold (`yourMessage` is `drives`). | `Tell the agent what to do next…` | `Message <Station>` |
+| A message from you sends the finished task back to its station (`yourMessage` is `reopens`). | `Say what to change…` | `Send it back to <Station>` |
+| An agent chat holds the task (`yourMessage` is `waits-for-chat`). | `Your message goes to the agent chat that holds the task…` | `Message <Station>` |
+| A message from you puts the task on hold (`yourMessage` is `holds`). | `Your message puts the task on hold…`, or `Your message stops the run and puts the task on hold…` while the run works | `Message <Station>` |
 | Otherwise. | `Write a message…` | `Message <Station>` |
 
 The "+" button, "Attach files", adds files, and so does dropping or pasting
@@ -341,8 +398,21 @@ in the text. The composer shows the station's harness, model and effort and
 the line's repositories, and none of them can be changed there. While a
 runner has a lease on the run and the composer is empty, "Send" becomes "Stop".
 
-Once the task has left the run's station, the composer is replaced by
-`The task has moved to another station. Messages here reach no one.`
+Once the task has left the run's station, the composer talks to the newest
+run at the task's new station, and its label names that station. If no run
+is there yet, the composer is closed and reads `The task has moved to
+<Station>. Messages here reach no one.` Until the page knows the task's new
+station, it reads `The task has moved on from this station. Messages here
+reach no one.`
+
+Where a message from you would be refused, the composer is closed and says
+why:
+
+| When | Text |
+| --- | --- |
+| The run waits for another person's answer. | `It waits for another person to answer.` |
+| You do not [act on the team](/docs/reference/roles-and-permissions#team-access). | `You do not act on the tasks of this team, so you cannot message it.` |
+| The message would put the task on hold, and you are not a member of the team. | `Your message would put the task on hold, and a hold assigns the task to you. Only members of the team can do that.` |
 
 ### A run that did not start
 
@@ -353,7 +423,12 @@ Its run page and its inbox item show
 above the composer, with **Try again**. The composer reads `Message <Station>`.
 
 Try again, and every message to the task, try to start the run again. A
-message is kept at the station even when the run still does not start. While
+message to the task puts nothing on hold. Anybody who
+[acts on the team](/docs/reference/roles-and-permissions#team-access) can send
+one. While the task has an open question, the message answers it, as a message
+to its current run does. On a task with no assignee, that answer assigns the
+task to you, so only a member of the team can send it.
+A message is kept at the station even when the run still does not start. While
 it does not start, the line reads `Spotlight still cannot start …`. When the
 run starts, the line goes away.
 
@@ -1166,8 +1241,10 @@ collapsed or expanded are kept in the browser.
 | unread | An `asked` note in the conversation has not been read. Opening the item reads it. Never set on an item of a task the person [follows](#following). |
 | failure | The conversation contains a failure. Shown as `×N` once it has occurred N times, N being 2 or more. |
 
-Only the task's assignee can answer an item, or a member of the task's team
-when the task has no assignee, and only an open conversation can be answered. An answer writes an `answered` note. The run that asked carries
+An item can be answered by the person it [waits for](#waiting-for-you): the
+task's assignee, the person an approval or a connection asks, or a member of
+the task's team when the task has no assignee. A person who drives the task's
+hold can answer it too. Only an open conversation can be answered. An answer writes an `answered` note. The run that asked carries
 on; if the task has no current run and the station has a harness, a run starts there,
 taking up the harness session where the last run left it.
 
@@ -1212,22 +1289,37 @@ shows under "Open".
 A conversation on a task with no assignee reaches the inbox of every member of
 the task's team who can act on it. A person who can see the team but is not a
 member of it does not get it, and neither does an owner or admin of the
-workspace who is not a member. A task created by a person has no such conversation: its question
+workspace who is not a member. The task [waits for](#waiting-for-you) the
+same people. A task created by a person has no such conversation: its question
 assigns it to that person.
 
 The row and the item look the same as for the assignee. The first member who
-answers the conversation or resolves it becomes the task's assignee. A message
+answers the conversation or resolves it becomes the task's assignee. Only a
+member of the team can be assigned, so an answer or a resolve from anyone else
+fails with `403`, `Task <id> waits for its team. The first answer assigns the
+task, so only a member of the team can answer it. Workspace admins who are not
+on the team cannot.` A resolve says `Resolving it assigns the task, so only a
+member of the team can resolve it.` in place of the middle sentence. An owner or admin of the workspace who is not on the team
+can still message the task's runs, move the task, assign it to a member, and
+drive or resume a hold (see
+[Team access](/docs/reference/roles-and-permissions#team-access)). A message
+that would put the task on hold assigns it too, so from them it fails with
+`403`, `Task <id> goes on hold when you message it. A hold assigns the task, so only a member of the team can message it. Workspace admins who are not on the team cannot.` A message
 on the run page that answers the conversation counts as an answer, under the
-same rules: it fails with `403` from a person who is not a member of the team,
-such as an owner or admin of the workspace who is not on it, and with `409` once
-another person is the assignee. A reply in the task's Slack thread that answers
+same rules: on a task with no assignee it fails from a person who is not a
+member of the team with `403`, `Task <id> waits for its team. The first answer assigns the task, so only a member of the team can answer it. Workspace admins who are not on the team cannot.`,
+and it fails with `409` once another person is the assignee. A reply in the task's Slack thread that answers
 it assigns the task to the member that Spotlight matches to the reply, if there
 is one. The conversation then leaves the inboxes of the other members, unless
 they [follow](#following) the task. Once another person is the assignee, an
-answer or a resolve fails: with `409` for a member of the team who follows the
-task, with `403` for a follower who does not act on the team, else with `404`.
-While a person holds the task, and not an agent chat, every member who acts on
-the team can answer and resolve its conversations, as the assignee can. The
+answer or a resolve fails: with `409` for anyone else who acts on the team,
+with `403` for a person who can only see the team, and with `404` for a person
+outside the workspace. A person whom an approval or a connection ask names can
+still answer it.
+While a person holds the task, and not an agent chat, everybody who acts on
+the team can answer and resolve its conversations, as the assignee can. A
+workspace owner or admin who is not on the team has the item once they write
+in the task. The
 person who holds the task stays the assignee, and an approval that names a
 person stays for that person to decide.
 The read state is shared: when one member opens the item, it is read for all of
