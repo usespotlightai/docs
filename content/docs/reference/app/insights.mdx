@@ -246,6 +246,10 @@ the p50 of:
 | Running | The run starts in its image on a runner. | The run ends. |
 | In the inbox | The station asks a person. | The first thing a person did with the task after the ask, at any station, before the task's next ask. |
 
+A run's Queued and Running times add up all its attempts: after a lost lease,
+after a runner gives it back, and after it waits for a person and resumes. They
+do not include the time it waited for a person.
+
 Its table adds the p90 of each on hover, "Tasks" with its change, "Runs",
 "Asks" (times the station asked a person) and "Unanswered".
 
@@ -420,10 +424,11 @@ against people" and "Review depth".
 
 A pull request's type is the first of these that gives one:
 
-1. For Spotlight's, its task's latest change stack: each `change` cohort is
-   typed by its title, or else its intent, by the title rules below, and the
-   most common type wins. A tie goes to the earlier of Feature, Fix,
-   Refactor, Tests, Chore and Other.
+1. For Spotlight's, its task's latest change stack in the pull request's
+   repository, or else its latest stack that names no repository: each
+   `change` cohort is typed by its title, or else its intent, by the title
+   rules below, and the most common type wins. A tie goes to the
+   earlier of Feature, Fix, Refactor, Tests, Chore and Other.
 2. Its title, by a conventional prefix such as `fix:` or `feat(api)!:`:
 
    | Prefix | Type |
@@ -533,7 +538,7 @@ runs per day, failures in red, beside the change in its runs. Then:
 | Runs | Runs that ran. |
 | Failed | Runs that ended Failed. |
 | Stopped | Runs a person stopped. |
-| Checks passed, Checks failed | Runs whose check passed or failed. |
+| Checks passed, Checks failed | Runs whose Checks outcome is Checks passed or Checks failed. See [Station outcomes](/docs/reference/app/tasks-runs-and-the-inbox#station-outcomes). |
 | Accepted | Runs whose resolution is Accepted. |
 | Sent back | Runs whose resolution is Sent back. |
 | Passed on | Runs that passed their task to another station. |

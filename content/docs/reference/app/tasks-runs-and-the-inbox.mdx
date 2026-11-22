@@ -633,7 +633,9 @@ The judge is told how many steps and hunks were left out.
 
 The judge answers each claim, in order, met or not, with 1 to 3 reasons of its
 own. Each reason is up to 1,000 characters and cites 1 to 10 steps, by their
-place in the run's journal, or hunks, by name. A reason citing a step or hunk
+number in the run's journal, or hunks, by name. A step's number is
+(attempt − 1) × 1,000,000 + its position in that attempt's journal, as for
+[decisions](/docs/reference/app/change-stacks-and-decisions#fields). A reason citing a step or hunk
 the judge did not read is dropped. The judge is told that a claim the steps and
 hunks do not show to be true is not met.
 
@@ -1043,11 +1045,15 @@ Below the rows, a shown verdict lists the claims, numbered, each with the
 judge's mark, met or not met. Hovering a mark reads `Met` or `Not met`. A
 claim with reasons opens to them; the claims the judge did not find met start
 open.
-Each reason ends with its **See** links: `step <n>`, or a file's name and line
-as `<file>:<line>`, with the file's whole path on hover. **See** goes to the
+Each reason ends with its **See** links: `<tool> step` for a step, such as
+`read step` (the step's kind, such as `message step`, when it ran no tool, or
+`step` when the judge's copy of it is gone), with the step's text on hover
+when the page can follow it; or
+a file's name and line as `<file>:<line>`, with the file's whole path on
+hover. **See** goes to the
 cited place where the page already shows it:
 
-| Where | `step <n>` | `<file>:<line>` |
+| Where | `<tool> step` | `<file>:<line>` |
 | --- | --- | --- |
 | The task trace | Selects the step's row, opening the rows it is folded under, and shows the step's details. | Selects the row of the last step of the run that changed the file, and shows its diff with the cited lines selected. |
 | The run page and an inbox item | Opens the run's steps, opens the step, marks it, and scrolls it to the middle of the page. | Opens the file's diff in a pane beside the conversation, with the cited lines selected, and marks the file in the list of changed files. |
@@ -1162,7 +1168,7 @@ A run's outcome:
 | Ending | Completed, Failed, Stopped, Exhausted, Cancelled, Superseded | How the run ended. See [Run endings](#run-endings). |
 | Failure | A [failure code](#failure-codes) | Shown beside an ending that has one: Failed, Exhausted, Cancelled or Superseded. |
 | Run number | 1, 2, … | 1 plus the number of the task's earlier runs at the station that completed or failed. Runs from every stay at the station count, so a failed run and the next run there are runs 1 and 2. |
-| Checks | Checks passed, Checks failed, Checks skipped | The station's check on the run's change. See [Checks](/docs/reference/app/change-stacks-and-decisions#checks). |
+| Checks | Checks passed, Checks failed, Checks skipped | The station's check on the run's change. Each repository counts the check of its latest change stack. Checks failed when one repository failed, else Checks passed when one passed, else Checks skipped. See [Checks](/docs/reference/app/change-stacks-and-decisions#checks). |
 | Human action | Started, Parked, Accepted, Answered, Sent back, Held as wrong | The human action: the run's [deciding action](/docs/reference/glossary#deciding-action), what a person did with the task in answer to the run or after it that decides the run, or else their first answer to it. See the table below. |
 | Pull request | Open, All merged, Not all merged | The state of the task's pull requests: Open while one is open, All merged when all merged, else Not all merged. |
 | Duration, Cost | | How long the run took and what it cost, from its journal. |
@@ -1207,7 +1213,7 @@ A tally counts:
 | Runs | The group's runs that ran. The other figures, except Cancelled, count only these. |
 | Failed | Runs that ended Failed. |
 | Stopped | Runs that ended Stopped. |
-| Checks passed, Checks failed | Runs whose check passed or failed. |
+| Checks passed, Checks failed | Runs whose Checks outcome is Checks passed or Checks failed. See [Station outcomes](#station-outcomes). |
 | Accepted | Runs whose resolution is Accepted. |
 | Sent back | Runs whose resolution is Sent back. |
 | Resolutions | Runs by resolution, each with its share of Runs and, on the Insights Stations tab, its change against the period before. The resolutions add up to Runs. |
@@ -1569,12 +1575,13 @@ the task's assignee. See
 ### Memory reviews
 
 An item is raised for a run when it proposes at least one
-[memory](/docs/reference/glossary#memory): drafted after the run at a station
-with `memories: true`, or proposed by the agent with
+[memory](/docs/reference/glossary#memory): drafted after the run, or each time
+it waits for a person, at a station with `memories: true`, or proposed by the
+agent with
 [`spotlight remember`](/docs/reference/cli/agent-commands#spotlight-remember).
 The item reads `A run proposed memories for the team.` It is resolved, and reads
 `Proposed memories decided.`, once no memory of the run is left to decide:
-every one is approved or rejected, or a later run's drafting has dropped the
+every one is approved or rejected, or a later drafting has dropped the
 undecided ones.
 
 It reaches the inbox of the task's assignee, or of everyone who can see the

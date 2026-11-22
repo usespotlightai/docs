@@ -103,13 +103,17 @@ inputs, or tried one approach and dropped it. Those are the things a reviewer
 most needs to question, and they live in the agent's own account of its work:
 what it said, thought and planned during the run.
 
-A station with `decisions: true` has these drawn out after each run and stored
-with the task. By default that is Delivery's implementation station. Each
-decision is one of a few kinds (a trade-off, an assumption, a limitation, a
-rejected approach, or a deviation from what was asked), and each has to point
+A station with `decisions: true` has these drawn out after each completed run,
+and each time a run waits for a person, and stored with the task. By default
+that is Delivery's implementation station. A turn that failed, the end of a run
+that ends Stopped, or a run that a person drove, gets none. Decisions drawn while the run waited for a person stay.
+Each decision is one of a few kinds (a trade-off, an assumption, a limitation,
+a rejected approach, or a deviation from what was asked), and each has to point
 to the steps of the run it rests on and to files the run changed. A decision
 that cannot is dropped, so every decision shown can be traced to something the
-agent did. A newer run's decisions replace the earlier ones.
+agent did. Each later generation replaces the earlier decisions, also when the
+same run waits for a person again. Decisions of a later run of the task, or of
+a later wait of the same run, are never replaced by those of an earlier one.
 
 Decisions are recorded for two readers. A reviewer sees the why beside the diff,
 during review, when it can still change the outcome. And later, when something
