@@ -82,11 +82,20 @@ whatever the earlier agent left lying there.
 A shared working copy could also hand a station things meant for another, so the
 runner clears them at the start of every run: the skills an earlier station was
 given, the files a harness profile laid, and an outcome file an earlier agent
-left. It also brings the checkout's branch up to date with what was pushed to
-it since, for example a fix a person committed on the pull request. If the
-branch has moved both in the working copy and on GitHub, or uncommitted changes
-block it, the runner leaves the working copy as it is and says so in the run's `prepare` step. [Inside a
-sandbox](/docs/reference/hosts/sandbox#run-phases) lists each phase.
+left. It also puts each checkout back on the task's branch, in case the last
+agent left it on another, and brings that branch up to date with what was
+pushed to it since, for example a fix a person committed on the pull request.
+When the branch has moved both in the working copy and on GitHub, the runner
+rebases the last run's commits onto what was pushed. When they do not rebase
+cleanly, it keeps them under a ref of their own and resets the branch to
+GitHub's. Uncommitted changes block both, and the runner then leaves the
+working copy as it is.
+
+A rebase or merge that the last run left unfinished is stopped, and a restored
+checkout that git can no longer use is moved aside and cloned again. The agent
+is told what the runner changed at the start of its first prompt. [Inside a
+sandbox](/docs/reference/hosts/sandbox#run-phases) lists each phase, and
+[Checkout notes](/docs/reference/hosts/sandbox#checkout-notes) each note.
 
 ## Why the working copy is always at /workspace
 

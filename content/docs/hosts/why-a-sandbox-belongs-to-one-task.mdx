@@ -30,7 +30,9 @@ filesystem, processes and keys.
 
 Spotlight's sandboxes remove exactly this: leftover files, harness state and
 credentials passing from one task to another. Two tasks share no writable
-filesystem, no process and no credential.
+filesystem, no process and no credential. Their pushes stay apart as well: a
+task's run may push only the task's own branch (see [What a task's run may
+push](/docs/reference/app/tasks-runs-and-the-inbox#what-a-tasks-run-may-push)).
 
 Within one task the line is drawn differently, on purpose. A task carries its
 working copy from run to run and from station to station, with the checkout as the
@@ -193,6 +195,8 @@ Working copy archives carry a task's work from one sandbox to the next. After
 each turn is reported, and when its sandbox drains, the runner packs the task's
 working copy (its checkout and the harness's conversation) and stores it. A new
 sandbox restores the newest archive of its task before its first run starts.
+A restored checkout that git can no longer use is moved aside to
+`<path>.unusable` and cloned again, and the agent is told so.
 [How a conversation survives between
 runs](/docs/runs/how-a-conversation-survives-between-runs) explains why the
 whole working copy moves with the conversation.

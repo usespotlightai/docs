@@ -29,7 +29,8 @@ under [spotlight tools call](/docs/reference/cli/agent-commands#spotlight-tools-
 ### pull-request
 
 Opens a pull request for the [task's branch](/docs/reference/app/tasks-runs-and-the-inbox#task-branches) in one
-repository, into the repository's default branch (`main` if GitHub names none).
+repository, into the task's [base branch](/docs/reference/app/tasks-runs-and-the-inbox#base-branch),
+or, for a task with no base, into the repository's default branch (`main` if GitHub names none).
 It answers with `{"url": "<address>"}`. The task then has a `git.pull-request`
 [mark](/docs/reference/events/github-events#marks) with that address.
 
@@ -131,6 +132,7 @@ the `line` and `station` keys it was given, and what happens `next`. See
 | `station` | string | yes | no | The key of the station on that line to start it at. |
 | `title` | string | yes | no | What the task is, in a line. |
 | `description` | string | no | yes | What whoever works it needs to know, as Markdown. |
+| `base` | string | no | no | The branch the task starts from and opens its pull request into, as in `release/1.x` or the branch of the task it builds on. Left out for the default branch. See [Base branch](/docs/reference/app/tasks-runs-and-the-inbox#base-branch). |
 | `attach` | list of text | no | no | A file attached to the chat that the task needs, by its path, as in `.spotlight/attachments/<id>/<name>`, or by its id. Give `--attach` once for each file. |
 
 Each file in `attach` must be attached to a message a person sent in the
@@ -142,7 +144,8 @@ find the files in the working copy, as described under
 ### open-pull-request
 
 Opens a pull request from a branch the agent pushed in one of the chat's
-repositories, into the repository's default branch. A task on the line tracks
+repositories, into `base`, or into the repository's default branch when `base`
+is left out. A task on the line tracks
 it: the task starts at the station that has the
 [`pull-request`](#pull-request) tool, on hold for the chat, with the branch and
 the pull request's `git.pull-request` mark. It answers with the pull request
@@ -156,7 +159,10 @@ the tool again. A call for the same branch in another repository of the line
 opens a second pull request on the same task.
 
 The tool opens nothing from a branch that belongs to another task, or to a
-task that is completed or was handed to the line.
+task that is completed or was handed to the line. On the branch of a task the
+chat holds, `base` must be left out or name the task's own
+[base](/docs/reference/app/tasks-runs-and-the-inbox#base-branch): a chat cannot
+open a pull request into another base than its task's.
 Spotlight also refuses such a push, and a push to the default branch. See
 [What a chat may push](/docs/reference/app/tasks-runs-and-the-inbox#what-a-chat-may-push).
 
@@ -164,6 +170,7 @@ Spotlight also refuses such a push, and a push to the default branch. See
 | --- | --- | --- | --- | --- |
 | `repository` | string | no | no | The repository, as `owner/name` or `name`. Required when the chat has more than one repository. |
 | `branch` | string | yes | no | The branch pushed, as in `fix/video-icons`. |
+| `base` | string | no | no | The branch the change goes into, as in `release/1.x`. Left out for the default branch. It is also the task's [base](/docs/reference/app/tasks-runs-and-the-inbox#base-branch). |
 | `title` | string | yes | no | What it does. It is also the task's title. |
 | `body` | string | no | yes | What changed and why, as Markdown. It is also the task's description. |
 | `line` | string | no | no | The key of the line to track it on. Required when more than one line works on the repository. |
@@ -173,8 +180,9 @@ The tool opens nothing and creates no task when:
 - No line names the repository and has a station with the `pull-request` tool.
 - More than one line does, and `line` names none.
 - The line that `line` names does not work on the repository.
-- The branch has no changes from the repository's default branch, or GitHub
-  does not know the branch.
+- The branch is the repository's default branch.
+- The branch has no changes from `base`, or from the repository's default
+  branch when `base` is left out, or GitHub does not know the branch.
 
 The tool runs the `pull-request.opening` [hook](/docs/integrations/hooks), as
 for a pull request the line opens, then opens the pull request, then creates
