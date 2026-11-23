@@ -110,6 +110,8 @@ reason, the reasons are joined with `; `.
 | `The sandbox's egress didn't start. Error: <error>` | Egress did not start. The error is one of the [egress start failures](#egress-start-failures). Code `unprepared`. | [Egress start failures](/docs/reference/hosts/egress#egress-start-failures) |
 | `The runner couldn't prepare the run. Error: prepare: git clone <path>: <error>: <output>` | A repository could not be cloned. Code `unprepared`. | [Run phases](/docs/reference/hosts/sandbox#run-phases), [Point a line at your repositories](/docs/lines/point-a-line-at-your-repositories) |
 | `The runner couldn't prepare the run. Error: prepare: preparing <path> did not finish within 10m0s` | The checkouts took longer than their time limit. Code `unprepared`. | [Run phases](/docs/reference/hosts/sandbox#run-phases), [Limits and timeouts](/docs/reference/limits-and-timeouts) |
+| `The runner couldn't prepare the run. Error: prepare: the base branch <base> of <path> is not on the remote: push it first, or start the task from another branch` | The task's [base branch](/docs/reference/app/tasks-runs-and-the-inbox#base-branch) is not on GitHub, and the task's branch does not exist yet. Code `unprepared`. | [Run phases](/docs/reference/hosts/sandbox#run-phases) |
+| `The runner couldn't prepare the run. Error: prepare: "<base>" is not a branch name <path> can start from` | The task's base is not a valid branch name. Code `unprepared`. | [Base branch](/docs/reference/app/tasks-runs-and-the-inbox#base-branch) |
 | `The runner couldn't prepare the run. Error: clear an earlier run's outcome: <error>` | `.spotlight/outcome.json` from an earlier run could not be removed. Code `unprepared`. | [Run phases](/docs/reference/hosts/sandbox#run-phases) |
 | `The runner couldn't prepare the run. Error: fetch attachment <id>: <error>` | An attachment could not be written into the working copy. Code `unprepared`. | [Run phases](/docs/reference/hosts/sandbox#run-phases) |
 | `The runner couldn't prepare the run. Error: hand over workspace: <error>` | `/workspace` could not be given to the agent user. Code `unprepared`. | [Run phases](/docs/reference/hosts/sandbox#run-phases) |
@@ -147,6 +149,7 @@ Each follows `The sandbox's egress didn't start. Error: `.
 | `Started afresh: <error>` | The previous run's working copy could not be restored. The run starts with an empty working copy. | [Journal steps](/docs/reference/hosts/sandbox#journal-steps) |
 | `Setup failed for <path>. Error: <error>` | A repository's `setup` command failed. The run continues without it. | [Journal steps](/docs/reference/hosts/sandbox#journal-steps), [Troubleshoot a run](/docs/runs/troubleshoot-a-run#the-agent-worked-without-the-repositorys-setup) |
 | `Skipped: <error>` | The working copy could not be archived for the next run. | [Journal steps](/docs/reference/hosts/sandbox#journal-steps) |
+| `The run ended with <path> on <where>, not on <branch>, the branch of this task. Commits that are not on <branch> are not part of the change of this task. The next run switches <path> back to <branch>.` | At handover, a checkout was on another branch than the task's. `<where>` is `the branch <name>` or `a detached HEAD`. | [Journal steps](/docs/reference/hosts/sandbox#journal-steps) |
 
 ## Host log and install script
 
@@ -364,6 +367,32 @@ Each command exits `1` and prints its message on standard error.
 | `this run cannot record a cause: only a search's runs do` | `spotlight cause` in a run that is not a search's. | [spotlight cause](/docs/reference/cli/agent-commands#spotlight-cause) |
 | `This search iteration proposes candidates; only an iteration that looks into why the search stalled records causes` | `spotlight cause` in a run whose iteration proposes candidates. | [spotlight cause](/docs/reference/cli/agent-commands#spotlight-cause) |
 | `No failing task <task> among the tasks this reflection looks into; record causes only for the tasks its briefing lists` | `spotlight cause` for a task the briefing does not list. | [spotlight cause](/docs/reference/cli/agent-commands#spotlight-cause) |
+
+### Git pushes
+
+Spotlight refuses the whole push, and git shows the message next to each ref.
+See [What a task's run may push](/docs/reference/app/tasks-runs-and-the-inbox#what-a-tasks-run-may-push)
+and [What a chat may push](/docs/reference/app/tasks-runs-and-the-inbox#what-a-chat-may-push).
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `Spotlight pushes only branches, and <ref> is not a branch.` | A push to a tag or another ref that is not a branch, from a task's run or a chat. | [What a task's run may push](/docs/reference/app/tasks-runs-and-the-inbox#what-a-tasks-run-may-push) |
+| `Spotlight does not delete branches. Branch <branch> stays.` | A push that deletes a branch, from a task's run or a chat. | [What a task's run may push](/docs/reference/app/tasks-runs-and-the-inbox#what-a-tasks-run-may-push) |
+| `This task pushes only its own branch, <task branch>, not <branch>. Push the change to <task branch>.` | A task's run pushed to another branch. | [What a task's run may push](/docs/reference/app/tasks-runs-and-the-inbox#what-a-tasks-run-may-push) |
+| `The push replaces commits on <branch> that Spotlight did not push, or Spotlight could not check it. Fetch the branch, put your commits on top of it with git rebase origin/<branch>, and push again without --force. Push from the checkout of the repository in the workspace: Spotlight checks a push against that checkout, not against another clone.` | A task's run replaced commits on its branch over a commit Spotlight did not last push, on a branch that holds someone else's commits, or from another clone. | [What a task's run may push](/docs/reference/app/tasks-runs-and-the-inbox#what-a-tasks-run-may-push) |
+| `Spotlight takes one command for each ref in a push. Push each ref once.` | `400`. A push that names the same ref twice. | [What a task's run may push](/docs/reference/app/tasks-runs-and-the-inbox#what-a-tasks-run-may-push) |
+| `<branch> is the default branch. Push the change to a new branch and open a pull request.` | A chat pushed to the default branch. | [What a chat may push](/docs/reference/app/tasks-runs-and-the-inbox#what-a-chat-may-push) |
+| `Branch <branch> belongs to another task. Push the change to a new branch.` | A chat pushed to the branch of a task it does not hold. | [What a chat may push](/docs/reference/app/tasks-runs-and-the-inbox#what-a-chat-may-push) |
+| `The task of branch <branch> is completed. Push the change to a new branch.` | A chat pushed to the branch of a completed task. `was handed to the line` in place of `is completed` for a task the person handed to the line. | [What a chat may push](/docs/reference/app/tasks-runs-and-the-inbox#what-a-chat-may-push) |
+
+The chat tool [`open-pull-request`](/docs/reference/built-ins/built-in-tools-and-skills#open-pull-request)
+gives the same messages for the branch of another task and of a completed task,
+and these for the branch of a task the chat holds:
+
+| Message | Cause |
+| --- | --- |
+| `The task of branch <branch> starts from branch <base>, and its pull request goes there. Open the pull request without a base, or push the change to a new branch.` | `base` differs from the task's base. For a task with no base, `the default branch` takes the place of `branch <base>`. |
+| `The task of branch <branch> is on <line>, which does not work on <repository>. Push the change in <repository> to a branch with another name.` | The task's line does not work on the repository. |
 
 ### Tool calls and integration requests
 

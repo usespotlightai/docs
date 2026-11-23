@@ -85,7 +85,10 @@ Code travels with the task too. A task keeps one set of working files from its
 first station to its last: the line's repositories with the task's own branch
 checked out. Each station's agent finds them as the last agent left them,
 including changes that were never committed. The branch is how the code reaches
-GitHub. On Delivery, Implementation pushes the branch before it passes the task on. On
+GitHub, and it is the only branch a task's agents may push. It starts from the
+default branch, or from a base branch that the task names, such as a release
+branch or the branch of another task it builds on. On Delivery, Implementation
+pushes the branch before it passes the task on. On
 Review, the files are the pull request under review, not a branch of the task's
 own.
 

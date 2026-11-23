@@ -25,6 +25,7 @@ inbox. The terms are defined in the [glossary](/docs/reference/glossary).
 | Marks | The handles the task is known by outside Spotlight. See [GitHub events](/docs/reference/events/github-events#marks). |
 | Revision | A counter. It goes up when the task moves to another station and when it is finished. |
 | Branch | The branch a run pushes the task's work to. See [Task branches](#task-branches). |
+| Base | The branch the task starts from and opens its pull requests into. Empty for the default branch of each repository. See [Base branch](#base-branch). |
 
 A task created on the board is placed at the back of the station it is created
 at. A task created at a station with a harness starts a run at once. A task
@@ -95,6 +96,71 @@ give `fix`.
 | Doc, Docs, Document | `docs` |
 | Revert, Bump, Chore, Upgrade, Update dependencies, Update deps, Update lock | `chore` |
 | Anything else | `feat` |
+
+### Base branch
+
+A task starts from its base branch. A task with no base starts from the default
+branch of each repository of its line. The base is a branch such as
+`release/1.x`, or the branch of another task, so that the new task stacks on
+that task's change.
+
+| Set with | Input |
+| --- | --- |
+| The add-task API, `POST /api/teams/{teamId}/lines/{lineId}/stations/{stationId}/tasks` | `base`. Left out or blank for the default branch of each repository. |
+| The chat tool [`propose-task`](/docs/reference/built-ins/built-in-tools-and-skills#propose-task) | `base`. The task that the accepted proposal creates takes it. |
+| The chat tool [`open-pull-request`](/docs/reference/built-ins/built-in-tools-and-skills#open-pull-request) | `base`. The task that tracks the pull request takes it. |
+
+The base sets these:
+
+| What | With a base |
+| --- | --- |
+| The task's branch | A run that finds no task branch, in the checkout or on the remote, creates it from the base as the remote has it. When the remote has no such branch, the run fails: see [Run failure messages](/docs/reference/errors-and-messages#run-failure-messages). |
+| The pull request | Opens into the base. |
+| The change | Everything since the task's branch forked from the base. [Change stacks](/docs/reference/app/change-stacks-and-decisions) and the built-in code review read this change. |
+
+A task never works on the default branch itself, and its base is never its own
+branch. Spotlight refuses to add a task whose base is its own branch, with
+`409` and
+`A task cannot start from its own branch <branch>. Give it another base branch.`
+
+When the pull request of a task merges, Spotlight moves the open pull requests,
+in that repository, of each task that starts from the merged task's branch.
+They then go into the merged task's base, or the default branch when it has
+none. Once the merged task has no open pull request left, each of those tasks
+takes that base.
+
+### What a task's run may push
+
+A task's run pushes only the task's own branch. Spotlight refuses the whole push
+when one of the refs it updates:
+
+- Is not a branch, as with a tag.
+- Deletes a branch.
+- Is a branch other than the task's.
+- Replaces commits on the task's branch, as `git push --force` does, other than
+  where Spotlight allows it.
+
+A push replaces commits when the commit it replaces is not in the history of the
+pushed commit. Spotlight allows it only when both of these are true:
+
+- The commit it replaces is the commit Spotlight last pushed for the task in
+  that repository.
+- The branch holds no commit that someone else pushed.
+
+Spotlight checks each push against the run's checkout of the repository in the
+working copy, at `/workspace/<repository>`. A push from another clone cannot be
+checked, so Spotlight takes it as replacing commits. A push that names the same
+ref twice is refused. Spotlight records the commit it pushed only for the refs
+that GitHub accepted.
+
+git shows the reason next to each ref, as in:
+
+```text
+ ! [remote rejected] main -> main (This task pushes only its own branch, fix/icons-1a2b3c4d, not main. Push the change to fix/icons-1a2b3c4d.)
+```
+
+Every reason is listed under [Git pushes](/docs/reference/errors-and-messages#git-pushes).
+A chat's run has rules of its own: see [What a chat may push](#what-a-chat-may-push).
 
 ### Notes
 
@@ -1986,7 +2052,7 @@ only on an open proposal, and "Create task" is off while the station is
 deleted. `Copy <title>` copies the title and the description.
 
 An accepted proposal creates the task at the proposed station, with a copy of
-each file on the proposal. A task created at a station with a harness starts a
+each file on the proposal and the proposal's `base`, if it has one. A task created at a station with a harness starts a
 run at once.
 
 ### Pull requests from a chat
@@ -1999,7 +2065,9 @@ A task then tracks the pull request:
 
 - The task starts at the station of its line that has the `pull-request` tool,
   with the agent's branch, the title and body of the pull request, and the
-  person who started the chat as its assignee.
+  person who started the chat as its assignee. The task's
+  [base](#base-branch) is the tool's `base`, if it names a branch other than
+  the default branch, and the pull request opens into it.
 - The task is on hold for the chat. The line starts no run on it.
 - GitHub events about the pull request reach the task through its
   `git.pull-request` mark, as for a pull request the line opened. Each event,
