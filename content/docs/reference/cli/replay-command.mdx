@@ -110,7 +110,7 @@ A station is reported `UNDECIDED` without being checked when:
 | `not checked, since the plan replaces its line, so it starts with no live config to check it against` | The plan replaces its line. |
 | `not checked, since the plan removes <keys> and adds this station, which may be a station renamed; a renamed station starts with no live config to check it against` | The plan removes a work station of the line and adds this one. A changed station key is planned this way. |
 | `not checked, since Terraform knows its <attributes> only after apply` | Part of the station, or the line's repositories, is known only after apply. |
-| `not checked, since the plan also changes the <resources> its runs depend on, which a check cannot replay before apply` | The plan also changes a `spotlight_skill` it names, the `spotlight_harness_profile` it names, a `spotlight_integration` whose tools it uses, a `spotlight_hook` that matches it, or any `spotlight_secret`. A changed secret makes every work station of the lines in the plan undecided. |
+| `not checked, since the plan also changes the <resources> its runs depend on, which a check cannot replay before apply` | The plan also changes a `spotlight_skill` it names, the `spotlight_harness_profile` it names, a `spotlight_integration` whose tools it uses, a `spotlight_hook` that matches it, or a `spotlight_secret` that one of these names. A deleted secret makes no station undecided. A secret whose name Terraform knows only after apply makes every work station of the lines in the plan undecided. |
 
 Each check is started with an `Idempotency-Key` made from the line, the
 station, its planned block, the planned repositories, `--commit`,

@@ -196,7 +196,10 @@ nothing runs. A station is undecided, exit code `3`, when its line is
 replaced, when the plan removes a work station and adds another (which may be
 a renamed station), when Terraform knows part of it only after apply, or when
 the plan also changes a skill, harness profile, integration, hook or secret
-it depends on. A changed secret makes every work station undecided.
+it depends on. A secret reaches a station through the harness profile it
+names, an integration whose tools it uses, or a hook that matches it. A
+deleted secret makes no station undecided, and a secret whose name Terraform
+knows only after apply makes every work station undecided.
 
 Running the check again on the same change, against the same live config,
 the same runs of the set, the same threshold and the same scoring, answers
