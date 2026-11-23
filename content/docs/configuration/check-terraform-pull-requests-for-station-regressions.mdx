@@ -216,7 +216,9 @@ of them the station depends on:
 
 When Terraform knows the key, name or team of a changed resource, the match of
 a changed hook or the definition of a changed integration only after apply, the check cannot send it, so every work
-station it may reach is undecided.
+station it may reach is undecided. The check also does not send a changed
+integration's planned definition when it holds sensitive values or is larger
+than 16 KiB as JSON, so every work station of the team is undecided.
 
 Running the check again on the same change, against the same live config,
 the same runs of the set, the same threshold and the same scoring, answers

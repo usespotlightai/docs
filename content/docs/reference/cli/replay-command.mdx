@@ -111,6 +111,8 @@ A station is reported `UNDECIDED` without being checked when:
 | `not checked, since the plan removes <keys> and adds this station, which may be a station renamed; a renamed station starts with no live config to check it against` | The plan removes a work station of the line and adds this one. A changed station key is planned this way. |
 | `not checked, since Terraform knows its <attributes> only after apply` | Part of the station, or the line's repositories, is known only after apply. |
 | `not checked, since the plan also changes the <resources>, which Terraform names only after apply, so Spotlight cannot tell whether its runs depend on it` | The plan changes a `spotlight_skill`, `spotlight_harness_profile`, `spotlight_integration` or `spotlight_hook` of the station's team, or a `spotlight_secret`, whose key, name or team, a hook's match or an integration's definition, Terraform knows only after apply. |
+| `not checked, since the plan also changes the <integration>, which the CLI does not send to Spotlight since its planned definition holds sensitive values, so Spotlight cannot tell whether its runs depend on it` | The plan changes a `spotlight_integration` of the station's team whose planned definition holds sensitive values. The message says `is larger than 16 KiB` instead when the definition is larger than 16 KiB as JSON. |
+| `not checked, since the planned changes are too large to send to Spotlight` | Spotlight answered `413` to the check request. |
 
 Each check is started with an `Idempotency-Key` made from the line, the
 station, its planned block, the planned repositories, the other changes it sends, `--commit`,
