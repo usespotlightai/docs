@@ -110,10 +110,10 @@ A station is reported `UNDECIDED` without being checked when:
 | `not checked, since the plan replaces its line, so it starts with no live config to check it against` | The plan replaces its line. |
 | `not checked, since the plan removes <keys> and adds this station, which may be a station renamed; a renamed station starts with no live config to check it against` | The plan removes a work station of the line and adds this one. A changed station key is planned this way. |
 | `not checked, since Terraform knows its <attributes> only after apply` | Part of the station, or the line's repositories, is known only after apply. |
-| `not checked, since the plan also changes the <resources> its runs depend on, which a check cannot replay before apply` | The plan also changes a `spotlight_skill` it names, the `spotlight_harness_profile` it names, a `spotlight_integration` whose tools it uses, a `spotlight_hook` that matches it, or a `spotlight_secret` that one of these names. A deleted secret makes no station undecided. A secret whose name Terraform knows only after apply makes every work station of the lines in the plan undecided. |
+| `not checked, since the plan also changes the <resources>, which Terraform names only after apply, so Spotlight cannot tell whether its runs depend on it` | The plan changes a `spotlight_skill`, `spotlight_harness_profile`, `spotlight_integration` or `spotlight_hook` of the station's team, or a `spotlight_secret`, whose key, name or team, a hook's match or an integration's definition, Terraform knows only after apply. |
 
 Each check is started with an `Idempotency-Key` made from the line, the
-station, its planned block, the planned repositories, `--commit`,
+station, its planned block, the planned repositories, the other changes it sends, `--commit`,
 `--pull-request` and `--repeats`, so running the job again on the same plan answers the same
 check. Starting and reading are tried again when Spotlight cannot be reached or
 answers with a `5xx` status, waiting twice `--every` after the first failure
@@ -127,7 +127,7 @@ Each station ends with one status:
 | --- | --- |
 | `PASSED` | The change regressed on no more tasks than the line allows, and enough tasks were scored. |
 | `FAILED` | It regressed on more tasks than the line allows, or the verdicts of the station's judge do not agree with people's well enough. |
-| `UNDECIDED` | The check could not decide, or the station was not checked. |
+| `UNDECIDED` | The check could not decide, or the station was not checked. When the plan also changes a skill, harness profile, integration, hook or secret that the station depends on, Spotlight starts no replay and the message says which: `Spotlight cannot decide this change. The plan also changes <changes>, which the station depends on, and a replay uses only the live ones.` See [Check Terraform pull requests for station regressions](/docs/configuration/check-terraform-pull-requests-for-station-regressions). |
 | `RUNNING` | The check was still running at `--timeout`: `still running after <timeout>. The check keeps running in Spotlight.` |
 | `UNCHANGED` | The plan changes nothing that changes how the station's runs go, so there is nothing to replay. |
 | `ERRORED` | The check could not start, or reading it failed. The message says why. See [Errors](/docs/reference/api/replay-checks#errors). |

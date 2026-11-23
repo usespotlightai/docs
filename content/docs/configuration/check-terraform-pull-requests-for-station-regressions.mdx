@@ -195,11 +195,28 @@ that is removed, a station that is added or removed, or a station where
 nothing runs. A station is undecided, exit code `3`, when its line is
 replaced, when the plan removes a work station and adds another (which may be
 a renamed station), when Terraform knows part of it only after apply, or when
-the plan also changes a skill, harness profile, integration, hook or secret
-it depends on. A secret reaches a station through the harness profile it
-names, an integration whose tools it uses, or a hook that matches it. A
-deleted secret makes no station undecided, and a secret whose name Terraform
-knows only after apply makes every work station undecided.
+the plan also changes something the station depends on. A replay uses only
+what is live, so it cannot replay a changed skill, harness profile,
+integration, hook or secret before apply. The check sends Spotlight the keys
+of the skills, harness profiles, integrations and hooks the plan changes for
+the station's team, the lines and stations each changed hook matches as
+planned, each changed integration's planned definition, and the names of the
+secrets the plan changes. Spotlight finds which
+of them the station depends on:
+
+- the harness profile the station names
+- a skill the station names
+- an integration whose tools the station's runs get, through the station, a
+  skill it names or a mark
+- a hook that may fire at the station, as it is live or as planned
+- an integration that such a hook calls
+- an integration that, as planned, enables tools on marks, since those reach
+  every station of the team
+- a secret that one of these uses
+
+When Terraform knows the key, name or team of a changed resource, the match of
+a changed hook or the definition of a changed integration only after apply, the check cannot send it, so every work
+station it may reach is undecided.
 
 Running the check again on the same change, against the same live config,
 the same runs of the set, the same threshold and the same scoring, answers

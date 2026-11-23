@@ -49,6 +49,11 @@ JSON, and answer errors as `application/problem+json`, as on the
 | `stationKey` | string | required | The station the change plans, by its key. |
 | `station` | object | required | The station block as the plan would apply it, in the shape of one entry of a line's `stations`. |
 | `line` | object | none | The line's repositories as the plan would apply them, each with its `image` and `setup`, as `{ "repositories": [...] }`. At most 64,000 characters. Without it, the live line's. |
+| `changed.secrets` | string[] | none | The names of the workspace secrets the plan creates, changes or deletes. |
+| `changed.skills` | string[] | none | The keys of the team's skills the plan changes. |
+| `changed.harnessProfiles` | string[] | none | The keys of the team's harness profiles the plan changes. |
+| `changed.integrations` | object[] | none | The team's integrations the plan changes, each as `{ "key", "definition" }`: its key and its definition as planned, or `null` when the plan deletes it. |
+| `changed.hooks` | object[] | none | The team's hooks the plan changes, each as `{ "key", "lines", "stations" }`: its key and the lines and stations it matches as planned. An empty list matches every line or station. |
 | `reference.commit` | string | none | The commit that plans the change, a hex sha of 7 to 64 characters. |
 | `reference.pullRequest` | number | none | The pull request that plans the change. |
 | `repeats` | number | `1` | How many times the check replays each run of the set, 1 to 5. The line's ceiling covers every repeat. |
@@ -72,6 +77,16 @@ The check:
 
 A change that changes nothing about how the station's runs go fails with
 `409` and the type `urn:spotlight:problem:nothing-to-replay`.
+
+When the station depends on something in `changed`, the check starts no
+replay and fails with `409` and the type
+`urn:spotlight:problem:dependency-changed`, since a replay uses only what is
+live. A station depends on the harness profile and the skills it names, on an
+integration whose tools its runs get (through the station, a skill it names or
+a mark), on a hook that may fire at it as live or as planned, on an
+integration such a hook calls, on an integration whose planned definition
+enables tools on marks or cannot be read, and on a secret that any of these use. Both the
+live station and the planned one count.
 
 A change already checked is answered with that check, `200` and `reused:
 true`, while the earlier check is running, passed or failed, and only if it
@@ -244,5 +259,5 @@ of the kind `replay-check`.
 | `401` | No session or token, or an unknown token. |
 | `403` | A change by a caller who may read the team but not plan. |
 | `404` | The team, line, station or check is not one the caller may see, as in `Replay check <checkId> not found.` |
-| `409` | A line with no `replay_check` (`Line <lineKey> has no replay_check block. Please add one with max_regressions, ceiling and currency.`). A station with no replay set yet, or whose set's station has left its line (`Station <stationKey> has no replay set yet. Spotlight keeps one after a run of the station ends.`). A station whose set has no runs (`Station <stationKey> has no runs in its replay set yet.`). A change with nothing to replay, `nothing-to-replay`: `There is nothing to replay. The plan changes nothing that affects how the station's runs go.`, or `There is nothing to replay. A check pins these changed fields to their live values: <fields>`. |
-| `422` | The planned block is not one the line takes, each problem at its path under `station`. A missing `lineId` (`Line ID must name the line of the station.`) or `stationKey` (`Station key must be the key of the planned station.`), or a `reference` or `line` not in its form. `repeats` not a number (`Repeats must be a number.`) or out of range (`Replay check repeats must be from 1 to 5.`). The `409` causes are checked first, so a check of a line with no `replay_check`, of a station with no set or an empty set, or with nothing to replay answers `409` whatever its `repeats`. |
+| `409` | A line with no `replay_check` (`Line <lineKey> has no replay_check block. Please add one with max_regressions, ceiling and currency.`). A station with no replay set yet, or whose set's station has left its line (`Station <stationKey> has no replay set yet. Spotlight keeps one after a run of the station ends.`). A station whose set has no runs (`Station <stationKey> has no runs in its replay set yet.`). A change with nothing to replay, `nothing-to-replay`: `There is nothing to replay. The plan changes nothing that affects how the station's runs go.`, or `There is nothing to replay. A check pins these changed fields to their live values: <fields>`. A change of something the station depends on, `dependency-changed`: `Spotlight cannot decide this change. The plan also changes <changes>, which the station depends on, and a replay uses only the live ones.` |
+| `422` | The planned block is not one the line takes, each problem at its path under `station`. A missing `lineId` (`Line ID must name the line of the station.`) or `stationKey` (`Station key must be the key of the planned station.`), or a `reference`, `line` or `changed` not in its form (each list under `changed`: `Must be a list of keys.`; a hook with no `key`: `Must be the key of the hook.`). `repeats` not a number (`Repeats must be a number.`) or out of range (`Replay check repeats must be from 1 to 5.`). The `409` causes are checked first, so a check of a line with no `replay_check`, of a station with no set or an empty set, or with nothing to replay answers `409` whatever its `repeats`. |
