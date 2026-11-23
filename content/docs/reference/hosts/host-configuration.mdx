@@ -42,6 +42,7 @@ going. A setting that applies at a restart waits until the host restarts.
 | `name` | `SPOTLIGHT_HOST_NAME` | live |
 | `capacity` | `SPOTLIGHT_CAPACITY` | live |
 | `sandbox-memory` | `SPOTLIGHT_SANDBOX_MEMORY` | live |
+| `sandbox-runtime` | `SPOTLIGHT_SANDBOX_RUNTIME` | at a restart |
 | `image` | `SPOTLIGHT_RUNNER_IMAGE` | live |
 | `registry-config` | `SPOTLIGHT_REGISTRY_CONFIG` | at a restart |
 | `run-timeout` | `SPOTLIGHT_RUN_TIMEOUT` | live |
@@ -88,6 +89,7 @@ Exactly one of `SPOTLIGHT_POOL_TOKEN`, or `SPOTLIGHT_TRUST` with
 | --- | --- | --- |
 | `SPOTLIGHT_CAPACITY` | `1` | Sandboxes the host runs at once. At least `1`. A sandbox takes its place for as long as it lives, with or without a run in it. See [Sandbox lifetime](/docs/reference/hosts/sandbox#sandbox-lifetime). |
 | `SPOTLIGHT_SANDBOX_MEMORY` | none | The memory limit of each sandbox: a whole number of bytes, or of binary units such as `512m`, `6g` or `6GiB`. At least `6m`. `none` sets no limit. A sandbox gets no swap above the limit. With no limit, a sandbox can use all of the machine's memory. A reload applies it to the sandboxes started after it. Egress has no limit. See [Memory](/docs/reference/hosts/sandbox#memory). |
+| `SPOTLIGHT_SANDBOX_RUNTIME` | none | The Docker runtime each sandbox runs under, such as `sysbox-runc`. With none, Docker's default runtime. A runtime such as Sysbox (`sysbox-runc`) lets a sandbox run its own Docker daemon, for example to start a repository's Docker Compose services in its `setup`. The runtime must be installed in Docker. The image probe uses it too. Egress does not. |
 | `SPOTLIGHT_RUNNER_IMAGE` | `ghcr.io/usespotlightai/spotlight-runner:<release>`, or `:latest` for a binary built without a release | Comma-separated images the host serves. Each entry is an exact image reference, or a prefix ending in `*` such as `ghcr.io/acme/*`. The first exact entry is the default image, used by every line that names none. If no entry is exact, the built-in default is added. |
 | `SPOTLIGHT_REGISTRY_CONFIG` | `$DOCKER_CONFIG/config.json`, else `~/.docker/config.json` | A Docker config file whose `auths` the host pulls with. Read on every pull. See [registry credentials](#registry-credentials). |
 | `SPOTLIGHT_RUN_TIMEOUT` | `6h` | A Go duration. Applies to each run on its own: a run that works longer is stopped and reported `timed-out`, and its sandbox stays up. A change stack check's sandbox running longer is stopped and destroyed. A reload applies it to the sandboxes started after it. |
@@ -262,6 +264,9 @@ variable. Messages include:
 The same two problems in the egress environment are prefixed `egress: `.
 A host that finds another host already using its state directory stops with
 `another spotlight host already serves from <state>: <error>`.
+A host whose `SPOTLIGHT_SANDBOX_RUNTIME` names a runtime that Docker does not
+have stops when it reaches the container runtime, with
+`SPOTLIGHT_SANDBOX_RUNTIME: the container runtime has no runtime "<name>", only <runtimes>. Install it, or unset SPOTLIGHT_SANDBOX_RUNTIME for the default runtime`.
 
 ## Exit codes
 
