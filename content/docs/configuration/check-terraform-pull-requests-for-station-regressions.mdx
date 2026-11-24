@@ -44,7 +44,7 @@ images your hosts run with `SPOTLIGHT_RUNNER_IMAGE`. See
 A check of a station replays the replay set that Spotlight keeps for it. The
 set holds up to 30 of the station's recent runs, one for each task, and
 Spotlight refreshes it from new runs. A station with no set yet, or with no runs
-in its set, fails its check.
+in its set, has nothing to replay, so its check is undecided.
 
 Nobody chooses the runs by hand. A task that a search of the station found
 to be the cause of its own failure, such as a task that cannot be done as
@@ -178,9 +178,9 @@ job ends with exit code `3`.
 | Exit code | Meaning |
 | --- | --- |
 | `0` | Every changed station passed, or the plan changes nothing a check replays. |
-| `1` | A check could not start or failed to run, such as for a line with no `replay_check`, or a station with no replay set yet or no runs in it. |
+| `1` | A check could not start or failed to run, such as for a line with no `replay_check`. |
 | `2` | A change regressed on more tasks than its line allows. |
-| `3` | A check is undecided, or still running at the timeout. |
+| `3` | A check is undecided, such as for a station with no replay set yet or no runs in it, or still running at the timeout. |
 
 The job's summary gets a table with one row per station: its result, how many
 tasks regressed, how the change and the live config did, each with its range,
