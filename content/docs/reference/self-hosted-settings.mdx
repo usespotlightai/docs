@@ -287,6 +287,75 @@ but no cost.
 
 See [Error reporting](/docs/reference/error-reporting) for what a report contains.
 
+## Custom settings pages
+
+A deployment can add its own pages to the settings of the web app, such as a
+handbook for its people. Each of these custom settings pages is a
+[custom element](https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_custom_elements)
+that a JavaScript module on the address of the web app defines. Spotlight loads
+the module when a person opens the page.
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `SPOTLIGHT_CUSTOM_SETTINGS_PAGES` | empty | The pages, as a JSON array. Empty adds no page. |
+
+```bash
+SPOTLIGHT_CUSTOM_SETTINGS_PAGES='[{"id":"handbook","label":"Handbook","roles":["owner"],"script":"/handbook/element.js","element":"x-handbook-page"}]'
+```
+
+| Field | Default | Description |
+| --- | --- | --- |
+| `id` | required | Up to 32 lowercase letters and digits, in groups joined by single hyphens, as `handbook` or `team-handbook`. The page opens at `/w/<slug>/settings/custom/<id>`. Each page has its own `id`. |
+| `label` | required | 1 to 40 characters: the text in the sidebar and the title of the page. |
+| `group` | `workspace` | The sidebar group of the page: `workspace` or `account`. The page comes after the pages of Spotlight in that group. |
+| `roles` | `["owner", "admin"]` | The [roles](/docs/reference/roles-and-permissions) that see the page: `owner`, `admin` and `member`. At least one. |
+| `script` | required | The path of the module on the address of the web app, as `/handbook/element.js`. Route that path to your own service, for example with a rule in your reverse proxy. A URL, a path that starts with `//`, and a path with a backslash, a `.` or `..` segment, `?`, `#`, `%` or a space are refused. |
+| `element` | required | The name of the custom element that the module defines, as `x-handbook-page`. Each page has its own element. A name that HTML keeps for its own elements, such as `font-face`, is refused. |
+
+There are at most 8 pages. Spotlight checks the pages when it starts, as in
+[Validation](#validation). A script on another address gives
+`SPOTLIGHT_CUSTOM_SETTINGS_PAGES.0.script: is a path on this origin, as in /handbook/element.js`.
+
+### What the element gets
+
+Spotlight shows the element under the title of the page, with these
+attributes:
+
+| Attribute | Value |
+| --- | --- |
+| `workspace` | The slug of the workspace. |
+| `workspace-role` | The role of the person in the workspace: `owner`, `admin` or `member`. |
+| `theme` | `light` or `dark`: the theme that the app shows. It changes when the person changes the theme. |
+| `contract-version` | `1`. Spotlight changes it when what the element gets changes. |
+
+To open another page of the app, the element sends a `spotlight-navigate`
+event with the path in `detail.to`, as in `/w/acme/settings/members`. Send it
+with `bubbles` and `composed` set. Spotlight opens only paths on its own
+address. It ignores a URL on another address.
+
+The theme variables of the app, such as `--background`, `--foreground`,
+`--primary`, `--border` and `--radius`, also apply inside a shadow root. Put
+the content of the element in a shadow root, so that the styles of the app and
+of the element do not change each other.
+
+When the module fails to load, or does not define the element within 10
+seconds, the page shows "The &lt;label&gt; page could not be loaded." with
+"Try again". A page that
+`SPOTLIGHT_CUSTOM_SETTINGS_PAGES` does not add, or that is not for the person's role,
+opens the General settings.
+
+### Security
+
+- The module runs in the web app as the person who opens the page, and can do
+  what that person can do. Add only modules that you control.
+- Only `SPOTLIGHT_CUSTOM_SETTINGS_PAGES` adds pages. A workspace cannot.
+- `roles` only hides the page from the other roles. The service behind the
+  page must check who the person is, and their role, itself. The browser sends
+  the Spotlight session cookie with each request to the address of the web app.
+- The content security policy of the web app does not change. A page cannot
+  load a script from another address or show a frame. To send a person to
+  another site, use a link or a redirect.
+
 ## Traces and metrics
 
 Spotlight exports traces and metrics only when an `OTEL_*` exporter is set.
