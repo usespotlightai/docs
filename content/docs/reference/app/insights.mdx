@@ -193,14 +193,19 @@ card reads `No station needs attention this period.`
 
 | Figure | Counts |
 | --- | --- |
-| Spend | The cost of the runs, when every priced run is in one currency. Otherwise `–`, with `No priced runs` or `Prices in more than one currency`. |
-| Runs with no price | Runs whose harness reported no cost. |
+| Spend | The cost of the runs, when every priced run is in one currency. Otherwise `–`, with `No priced runs` or `Prices in more than one currency`. It includes what tools reported for the models they called in the runs, with [`usage`](/docs/reference/terraform/integration#usage). |
+| Tool models | The part of "Spend" that tools reported for the models they called. Only when it is more than zero, with `Models that tools called, part of spend`. |
+| Runs with no price | Runs with no cost: the harness did not price its turns, the costs are in more than one currency, or a metered tool call is unpriced. See [Spend](/docs/reference/app/tasks-runs-and-the-inbox#spend). |
 | Cache share | Cache-read tokens, of input, cache-read and cache-write tokens together, over the runs whose harness reported input and cache-read tokens. Otherwise `not reported`. |
 
 While the spend is in one currency, "By harness", "By model", "By station" and
 "By repository" split it, highest first, and "Where the spend goes" follows it
-from model to station to repository. A run on several repositories splits its
-cost evenly among them. "Read from cache" gives each station's "Cache share",
+from model to station to repository. "By harness" and "By model" count only
+what the harness spent. Each of them has its own "Tool models" slice for what
+tools reported for the models they called, and "Where the spend goes" has a
+"Tool models" node beside the models, which flows to the stations. The "Tool
+models" slice does not open the Traces tab. A run on several repositories
+splits its cost evenly among them. "Read from cache" gives each station's "Cache share",
 "Cache read", "Cache write" and "Input" tokens, or reads
 `No station reported tokens in this period.` See
 [Spend](/docs/reference/app/tasks-runs-and-the-inbox#spend) for which
@@ -764,7 +769,7 @@ candidate, which opens it on GitHub in a new tab:
 | Replay success | A bar from 0% to 100%: the candidate's success, with its 95% range on hover, against a mark for the live config's, coloured by the significance of the gain over live. |
 | Candidate, Live | The candidate's success and the live config's, as percentages. |
 | Against live | Its [gain](/docs/reference/app/replays#gains) over the live config in points, as in `+16 pts`, with the significance and the set's minimum real gain on hover; or "Not compared". |
-| Cost per run, Live cost | What each spent per run. When the live config is priced in another currency, the candidate's cost is over all its scored runs, as its hover says, and "Live cost" reads `–`. |
+| Cost per run, Live cost | What each spent per run. When the live config is priced in another currency, the candidate's cost is over all its scored runs, as its hover says, and "Live cost" reads `–`. Once the candidate has runs compared with the baseline, hovering "Cost per run" shows `Mean of <n> compared runs`, and a table with "Candidate", "Live" and "Change" for "Cost", "Tool models", "Harness tokens" and "Wall time". "Tool models" shows only when a side spent on tool models. A value that is not known reads `–`, and no change reads "Same". When a run of either side has no known price, the hover gives each side's priced runs, as in `Known price: 16 of 18 candidate runs, 5 of 5 live runs. Cost change needs a known price for every run.`, and "Change" reads `–` for "Cost" and "Tool models". |
 | Held out | Only when a candidate has a held-out replay: its held-out score, "Replaying" while that replay is queued or running, or `–`. |
 | Runs | The runs the figures cover. |
 

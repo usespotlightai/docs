@@ -591,7 +591,7 @@ config. A chat's run records none.
 | Repositories | Each repository of the line, with its `setup` command. |
 | Skills | Each team and catalog skill enabled, with a SHA-256 of its files. Built-in skills are left out. |
 | Tools | The tools the station enables, with the tools of its skills. |
-| Decisions, memories | Whether the station generates decisions and drafts memories. |
+| Decisions, memories | Whether the station asks its agent to record decisions and to propose memories. |
 | Judge | The SHA-256 of the judge's claims and pass threshold, its `sample` and its `minAgreement`, when the station has a [judge](/docs/reference/terraform/line#judge-fields). The station's alerts are not part of the config. |
 
 The run's [config fingerprint](/docs/reference/glossary#config-fingerprint) is
@@ -644,7 +644,10 @@ under `spend`:
 
 | Field | Contains |
 | --- | --- |
-| `cost`, `currency` | What the run cost. |
+| `known` | `true` when Spotlight read what the run used. |
+| `totalCost` | What the run cost: what its harness cost, and what its metered tool calls cost. |
+| `meteredCost` | What the run's metered tool calls cost, such as the model calls of a hook. |
+| `currency` | Of `totalCost`, or of `meteredCost` when `totalCost` is `null`. |
 | `inputTokens` | Fresh input tokens. |
 | `outputTokens` | Output tokens. |
 | `cacheReadTokens` | Input tokens read from the prompt cache. |
@@ -653,8 +656,33 @@ under `spend`:
 Each count is added up over every turn of the attempts the run kept. A count
 or cost the harness did not report is unknown, not zero, and is `null`.
 
+When Spotlight cannot read what the run used, the usage of the whole run is
+unknown. `spend` is then `known: false` and a `reason`, with no counts and no
+costs:
+
+| `reason` | Cause |
+| --- | --- |
+| `journal-unreadable` | The run's journal could not be read. |
+| `usage-entry-unreadable` | An entry that counts toward usage could not be read: a turn's tokens, a cost the harness reported, or a metered tool call. |
+| `recording-failed` | Recording the usage failed 5 times. |
+
+Spotlight does not leave out an entry it cannot read, and it does not count the
+rest of the run as all it used.
+
+A metered tool call is a call to an action with
+[`usage`](/docs/reference/terraform/integration#usage). `meteredCost` is
+`null` when no tool call is metered, when any metered tool call is unpriced,
+or when the calls cost in more than one currency. It is set even when
+`totalCost` is `null`. With metered tool calls, `totalCost` is what the harness
+cost plus `meteredCost`, only when both are known and in the same currency.
+Without them, `totalCost` is what the harness cost. `totalCost` is `null` when
+the harness did not price its turns.
+
 The task trace shows a run's cost as "Cost" in the run's details, as `$1.87`,
-or to four decimals under `$0.01`.
+or to four decimals under `$0.01`. It covers every attempt of the run. It shows
+what the metered tool calls cost as "Tool models", when it is more than zero,
+also when the run has no "Cost". When the run's usage is unknown, the run's row
+reads `cost unknown` and its details show "Cost" as `Unknown`.
 The Insights "Cost" tab adds the runs' costs up and gives each station's
 "Cache read", "Cache write" and "Input" tokens under "Read from cache", where
 a count the harness did not report reads `not reported`; see
@@ -1717,8 +1745,8 @@ for retirement when:
 - every path it names is gone from that repository;
 - it was approved at least 90 days ago and no run used it in the last 90 days.
 
-Where the team has an inference endpoint, Spotlight also reads up to 200
-memories, grouped by where they apply, and proposes to retire one that a newer or more exact
+Where the team has a completed task or chat run, a session in the team's
+harness, based on the newest such run, also reads up to 200 memories, grouped by where they apply, and proposes to retire one that a newer or more exact
 memory contradicts, or to merge memories of the same kind that apply in the
 same place and say the same thing into one. A memory with a change waiting for a decision is left out of the
 next check, and so is one with a change approved but not yet made. A memory that replaces another, edited on the Memory page or approved from a

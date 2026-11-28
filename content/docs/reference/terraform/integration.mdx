@@ -489,8 +489,64 @@ its `when` is true.
 | `forEach` | string | none | An expression that returns a list. The event is read once for each item, which expressions see as `item`. |
 | `when` | string | required | An expression that returns bool. The event raises only when it is true. An expression that fails to evaluate counts as false. |
 | `lookup.request` | object | none | A further request made before raising. See [requests](#requests). With `auth.oauth2`, it carries the team's connection. When it does not succeed, the event raises without the captures. |
-| `lookup.capture` | map of name to string | none | Values read from the lookup's response. Raise expressions see each by its name. Each value is an expression. Required with `lookup`. |
+| `lookup.capture` | map of name to string | none | Values read from the lookup's response. Raise expressions see each by its name. Each value is an expression. Required with `lookup.request`. |
+| `lookup.call` | string | none | A read-only tool to call, as `<integration>.<tool>`, as in `workersai.decide`. See [Lookup calls](#lookup-calls). |
+| `lookup.with` | object | `{}` | The tool's inputs. Only with `lookup.call`. Strings may contain expressions. |
 | `raise` | object | required | See [raise](#raise). |
+
+A lookup names exactly one of `request` and `call`. `capture` goes only with
+`request`, and `with` only with `call`.
+
+### Lookup calls
+
+An event whose lookup has `call` calls the tool once for each item with
+`forEach`. The tool's output is bound whole as `lookup`, which `when` and the
+raise expressions read, as in `lookup.label == 'flaky'`. A `when` that reads
+`lookup` is checked after the call. A `when` that does not read `lookup` is
+checked before the call, and the tool is called only when it is true. Webhook
+events and poll events both make the call, and both also send `lookup.request`.
+
+One poll or delivery makes at most 20 lookups, tool calls and `lookup.request`
+requests together, at most 4 at once. When a
+read reaches the limit, Spotlight logs a warning and does not read the events
+that need another call:
+
+| Read | Result |
+| --- | --- |
+| A poll | Its cursor stays where it was. The next poll reads from the same cursor and reads the rest. It skips an event it read before by the happening the event raises, the event's place among the events that raise that happening, and the item's content. An event without `forEach` is skipped by the content of the response it reads, so it is read again when the response changed. So a change to events that raise other happenings does not read the event again. An item whose content changed since is read again. |
+| A webhook delivery | The events read before the limit raise their happenings. Then the delivery fails, and is not tried again, with `The delivery reached the limit of 20 lookup calls in one read, so it did not read <n> of its events`. |
+
+See [Outbound calls](/docs/reference/limits-and-timeouts#outbound-calls).
+
+| Case | Result |
+| --- | --- |
+| The tool answers | `lookup` is the tool's output. |
+| An expression in `with` fails, the inputs do not match the tool, the tool fails, or it does not answer within 30 seconds | `lookup` is unset. An expression that reads it fails, so `when` counts as false. |
+
+The tool may belong to any integration of the team. It must have `readOnly`
+and no `approval`, and its integration may not act as the person who started a
+task. For a tool of the same integration, a write that breaks a rule is
+rejected at `lookup.call`:
+
+| Rule broken | Message |
+| --- | --- |
+| No integration of the team offers the tool | `names <tool>, which no integration of the team offers` |
+| The tool is not read-only | `calls <tool>, which is not read-only. A lookup calls its tool on every event it reads` |
+| The tool has `approval` | `calls <tool>, which needs a person's approval before each call. A lookup cannot approve the call` |
+| Its integration acts as the requester | `names <tool>, which acts as the person who started a task. A lookup acts as nobody` |
+
+For a tool of another integration, the same rules are checked at the call, and
+a broken rule leaves `lookup` unset. An expression in a tool's action or
+`output` is checked as called by a lookup only when a lookup of the same
+integration calls that tool. There, it has `inputs` and `connection`. See
+[Integration positions](/docs/reference/api/expressions#integration-positions).
+A lookup call is in no run, so its [usage](#usage) is in no
+run's cost and not in Insights. Spotlight logs each such call as
+`A lookup call used a model`, and counts it in the metrics
+`spotlight.lookup_calls`, `spotlight.lookup_call.tokens` and
+`spotlight.lookup_call.cost`. A call that timed out counts in
+`spotlight.lookup_call.timed_out`, and its usage still counts if it answers
+later. See [Metrics](/docs/reference/observability#metrics).
 
 ### Raise
 
@@ -593,6 +649,54 @@ Action names are lowercase words joined by dashes, at most 64 characters.
 | `from` | string | `spotlight` | `spotlight` or `network`. `spotlight`: Spotlight sends the request from its own servers. `network`: one of the workspace's hosts sends it. See [Sent from the network](#sent-from-the-network). |
 | `timeoutSeconds` | integer | `30` | 1 to 60. How long Spotlight waits for a host to send the request and return the response. Only when `from` is `network`. |
 | `uploads` | object | none | Files that Spotlight sends before `request`. See [Uploads](#uploads). |
+| `usage` | object | none | What a call used of a model, read from the response. See [Usage](#usage). |
+
+### Usage
+
+`usage` reads what the service used for one call, for a service that runs a
+model. Spotlight reads it from each call whose response it read, answered or
+failed. A failed call with `usage` is metered too.
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `inputTokens` | string | none | An expression that returns a whole number of 0 or more. |
+| `outputTokens` | string | none | An expression that returns a whole number of 0 or more. |
+| `cost` | string | none | An expression that returns a number of 0 or more. |
+| `currency` | string | none | An ISO 4217 code, as in `USD`, or an expression. Required with `cost`, and only with it. |
+| `model` | string | none | The model's name, at most 200 characters. May contain expressions. |
+
+`usage` reads at least one of `inputTokens`, `outputTokens` and `cost`. Its
+expressions read what the action's request does, and `response`, `status` and
+`capture`. A field whose expression fails, returns a wrong type or returns a
+value out of range is not recorded, and Spotlight logs a warning that names
+those fields. A call with no cost recorded counts as an unpriced call.
+
+```hcl
+usage = {
+  inputTokens  = "$${{ response.result.usage.input_tokens }}"
+  outputTokens = "$${{ response.result.usage.output_tokens }}"
+  cost         = "$${{ double(response.result.usage.input_tokens) * 0.24 / 1000000.0 }}"
+  currency     = "USD"
+  model        = "$${{ response.result.model }}"
+}
+```
+
+When a tool or a hook step calls the action in a run, the run's journal gets a
+`tool.metered` entry, which reads `<tool> used <model>`, or `<tool> used a model`
+without `model`. It holds the tool, the integration, the hook when a hook step
+made the call, the model, the tokens and the cost. The run's tool-model cost
+is what its metered calls cost, and shows with its currency even when the run
+has no total cost. The run's total cost is what its harness cost plus its
+tool-model cost, only when both are known and in the same currency. The
+tool-model cost is not known when any metered call is unpriced, or when the
+calls cost in more than one currency. See [Run spend](/docs/reference/app/tasks-runs-and-the-inbox#spend).
+
+| Message | Cause |
+| --- | --- |
+| `reads at least one of inputTokens, outputTokens and cost` | `usage` reads no count and no cost. |
+| `names the currency of cost, as in USD` | On `usage.currency`. `cost` without `currency`. |
+| `goes only with cost` | On `usage.currency`. `currency` without `cost`. |
+| `is an ISO 4217 code, as in USD` | On `usage.currency`. It is not three capital letters or an expression. |
 
 ### Uploads
 
@@ -705,7 +809,7 @@ and `attachments.fetch`.
 | `url` | string | required | The address. May contain expressions. |
 | `query` | map of name to string | `{}` | Query parameters. A parameter that evaluates to nothing is left out. Values may contain expressions. |
 | `headers` | map of name to string | `{}` | Request headers. A header that evaluates to nothing is left out. Values may contain expressions. |
-| `body` | string, array or object | none | A string is sent as it is. A list or object is sent as JSON, with `content-type: application/json` unless a header sets it. Strings inside may contain expressions. |
+| `body` | string, array or object | none | A string is sent as it is. A body that is one expression is sent as text when the expression returns a string, and as JSON for any other value, such as a number, timestamp, bytes or duration. A map whose keys JSON writes the same, such as `1` and `"1"`, cannot be sent. A list or object is sent as JSON, with `content-type: application/json` unless a header sets it. Strings inside may contain expressions. |
 | `auth` | object | none | Exactly one of `oauth2` or `secrets`. See below. |
 | `expect.success` | string | none | An expression that returns bool. When set, decides whether the request succeeded. |
 | `expect.status` | array of integers | none | Statuses that count as success, when `expect.success` is not set. |

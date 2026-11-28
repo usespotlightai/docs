@@ -67,6 +67,26 @@ A hook on `tool.using` fires after any approval the tool needs has been given.
 A person's approval and a hook's check are separate gates, and a tool call
 passes both.
 
+## Adding to a run's briefing
+
+A hook on `run.starting` can also give the agent something to start from. Its
+`brief` is a text that reads the hook's steps, and Spotlight adds it to the
+run's briefing under the hook's key. A step can call any tool of the team, and
+a tool can call a fast model through an integration, as it calls any other
+service. So a hook can have a model pull the failing test out of a check log,
+and the agent starts with the test named.
+
+Spotlight does not call a model itself. The model is a tool of an integration,
+the call is a step of the hook, and the action's `usage` tells Spotlight what
+the call cost, which it adds to the run's cost. A call made after the run's
+usage was recorded, such as a `run.ended` hook's, is not in the run's cost.
+A call on an event outside a run is in no run's cost. Spotlight logs both kinds
+and counts them in `spotlight.unmetered_calls`. See
+[Metrics](/docs/reference/observability#metrics).
+[Use a fast model before the agent
+starts](/docs/integrations/use-a-fast-model-before-the-agent-starts) builds
+one.
+
 ## Reaching systems in a private network
 
 By default, Spotlight sends a hook's request itself, from its own servers, to a

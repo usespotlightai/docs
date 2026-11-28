@@ -140,6 +140,7 @@ one that went unscored for `unscored`. It reads `<reason>.`, or
 | `change-not-generated` | `Spotlight could not make the change` | [The skip](#check-skips) |
 | `no-change` | `The run changed no files for the checks` | |
 | `no-change-stack` | `The change did not get to Spotlight` | |
+| `change-unknown` | `Spotlight could not read what the run changed` | |
 | `judged` | `Judge passed it` | The judge's reason |
 | `judge-failed` | `Judge failed it` | The judge's reason |
 | `unjudged` | `Judge could not judge it` | [Why](#judging-failures) |
@@ -516,10 +517,19 @@ the run's task is deleted, the replay set no longer keeps it. See
 A replay's spend is the cost of its runs, every repeat included, and of
 generating their change stacks, counted in the ceiling's currency. A generation
 attempt that failed counts what it was billed. Judging costs nothing against
-the ceiling: the judge's model calls are not counted. A cost in another
-currency is summed apart and does not count against the ceiling. A run or a
-change stack generation call whose cost was never reported counts at a fixed
-amount each against the ceiling. Each replay has its own ceiling: a search divides its ceiling among its replays (see
+the ceiling: the judge's model calls are not counted. A run's spend is what its
+harness cost and what its metered tool calls cost, each in its currency. A
+known cost always counts, also when another part of the run has no price. Each
+call whose cost was never reported counts at a fixed amount against the
+ceiling. A run or a change stack generation call with no cost reported counts
+the same way. A replay run ends when its usage arrives. Every run that ends
+records its usage once. If Spotlight cannot read what a run used, the run's
+usage is [unknown](/docs/reference/app/tasks-runs-and-the-inbox#spend). The run then counts as one run with no cost reported. It is not
+paired for judging. On a station scored by checks, a run with no change stack
+gets the reason `change-unknown`. A cost in another
+currency is summed apart. Against the ceiling, it counts at the same fixed
+amount, once for each run or generation call and currency. Each replay has its own ceiling: a search
+divides its ceiling among its replays (see
 [Spend and ceiling](/docs/reference/app/searches#spend-and-ceiling)), and a
 replay check takes the line's `replay_check.ceiling`.
 
@@ -543,9 +553,9 @@ run:
 | Agent commands | `spotlight trace`, `spotlight remember` and replies to a pull request's review comments are not allowed. |
 | Git | Fetch only. A push fails with `this run may only fetch`. |
 | Tools, MCP servers, secrets | None. |
-| Hooks | None run for it. |
+| Hooks | Only `run.starting` hooks that match the run. A replay of a [replay check](/docs/reference/api/replay-checks) candidate runs the hooks as the plan would apply them. A hook with a step that sends a request, or that calls a tool which is not read-only, needs a person's approval, acts as the person who started a task, or which no integration of the team offers, does not run, and the replay records why, as in `Step open calls linear.create-issue, which is not read-only.` See [Hooks a replay skips](/docs/reference/errors-and-messages#hooks-a-replay-skips) for each reason. A broken hook does not run either, even one whose `failure` is `block`, and the replay records `The hook is broken. Reason: <reason>`. No hook on another event runs. |
 | Asking a person | Ends the run, counted as asked. Handing the task to a person, or to nowhere, does the same. |
 | Change stack | Generated when the candidate sets `diffs: true`, checked, and never sent to GitHub. |
 | Archive | None is archived for a later run. |
-| Outcomes | Not recorded among the station's outcomes or in the Insights figures of the team's runs. No memories are drafted. |
+| Outcomes | Not recorded among the station's outcomes or in the Insights figures of the team's runs. |
 | Priority | Below every task run and chat run. At most 2 of a team's replay runs, other than a search's, are queued or running at once. A search's replay runs keep to its own limit; see [Spend and ceiling](/docs/reference/app/searches#spend-and-ceiling). |

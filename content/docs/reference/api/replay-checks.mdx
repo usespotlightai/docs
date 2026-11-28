@@ -53,7 +53,7 @@ JSON, and answer errors as `application/problem+json`, as on the
 | `changed.skills` | string[] | none | The keys of the team's skills the plan changes. |
 | `changed.harnessProfiles` | string[] | none | The keys of the team's harness profiles the plan changes. |
 | `changed.integrations` | object[] | none | The team's integrations the plan changes, each as `{ "key", "definition" }`: its key and its definition as planned, or `null` when the plan deletes it. |
-| `changed.hooks` | object[] | none | The team's hooks the plan changes, each as `{ "key", "lines", "stations" }`: its key and the lines and stations it matches as planned. An empty list matches every line or station. |
+| `changed.hooks` | object[] | none | The team's hooks the plan changes, each as `{ "key", "lines", "stations", "definition", "removed" }`: its key, the lines and stations it matches as planned (an empty list matches every line or station), its definition as the plan would apply it, in the shape the [hook resource](/docs/reference/terraform/hook) stores, and `removed: true` when the plan deletes it. Leave `definition` out when the plan removes the hook or Terraform knows it only after apply. A hook may not have both. |
 | `reference.commit` | string | none | The commit that plans the change, a hex sha of 7 to 64 characters. |
 | `reference.pullRequest` | number | none | The pull request that plans the change. |
 | `repeats` | number | `1` | How many times the check replays each run of the set, 1 to 5. The line's ceiling covers every repeat. |
@@ -88,6 +88,14 @@ integration such a hook calls, on an integration whose planned definition
 enables tools on marks or cannot be read, and on a secret that any of these use. Both the
 live station and the planned one count.
 
+A changed hook is the one exception when it is on `run.starting` and its steps
+all call read-only tools, both as live and as planned. A hook the plan adds
+has no live side, and a hook it removes has no planned side. The check then
+replays the change: the candidate's replay runs the hook as planned, and the
+baseline runs the live hooks. A planned hook definition that does not compile
+fails with `422`, each problem at its path under `hooks/<key>`. A changed hook sent
+without its definition and not marked `removed` cannot be replayed.
+
 A change already checked is answered with that check, `200` and `reused:
 true`, while the earlier check is running, passed or failed, and only if it
 replayed the same runs of the set against the same live config, the same
@@ -98,6 +106,11 @@ is never reused. When search replays of the
 change are there, the earlier check must also reuse search replays. Otherwise a new check starts, with the next
 `attempt`. A repeated request with the same `Idempotency-Key` answers `201`
 with the check it started and the header `Idempotent-Replayed: true`.
+
+How a config runs includes the live `run.starting` hooks that reach the
+station, and for the planned change, those hooks as the plan changes them. So
+when a live `run.starting` hook at the station changes, an earlier check or an
+earlier search replay is not reused.
 
 ## Search replays
 
@@ -169,10 +182,34 @@ after the commit's first 7 characters, or the date.
 | `judge` | object or null | `{ state, agreement, pairs, minPairs, minAgreement }`: how the verdicts of the live judge agree with people's. `state` is `qualified`, `unmeasured` or `failing`, as in [Judge agreeing with people](/docs/reference/app/replays#judge-agreeing-with-people). `agreement` is Cohen's kappa, `pairs` counts the runs with both verdicts, `minPairs` the runs needed, and `minAgreement` is the judge's `min_agreement`. `agreement` and `minAgreement` can be null. Null when the live config has no judge. |
 | `taskCount` | number | How many tasks the set replays. |
 | `compared` | number | How many were scored on both sides. |
-| `candidate`, `baseline` | object | Each `{ state, entries, scored, succeeded, successRate, interval, tasksScored, spent }`. `state` is the replay's state, `queued`, `running`, `finished`, `stopped` or `ceiling-reached`, or null once it is gone. `entries`, `scored` and `succeeded` count repeats; `successRate` is the share of scored repeats that succeeded, `interval` its 95% interval `{ low, high }`, and `tasksScored` counts tasks with a scored repeat. |
+| `candidate`, `baseline` | object | Each `{ state, entries, scored, succeeded, successRate, interval, tasksScored, spent, usage, skippedHooks }`. `state` is the replay's state, `queued`, `running`, `finished`, `stopped` or `ceiling-reached`, or null once it is gone. `entries`, `scored` and `succeeded` count repeats; `successRate` is the share of scored repeats that succeeded, `interval` its 95% interval `{ low, high }`, and `tasksScored` counts tasks with a scored repeat. `usage` and `skippedHooks` are in [Run usage](#run-usage). |
+| `usageChange` | object or null | `{ totalCost, meteredCost, tokens, ms }`: the candidate's mean run less the baseline's, negative where the candidate uses less. `totalCost` and `meteredCost` are `{ amount, currency }`, each null unless both sides have it in the same currency and every run of each side's `usage` has a known price, with `pricedRuns` equal to `runs`. Otherwise the two means would cover different runs. Null without a baseline. It does not decide `result`. |
 | `tasks` | array | Each task of the set, the regressed tasks first: `{ taskId, originalRunId, title, regressed, live, candidate }`. See [Task rows](#task-rows). |
 | `reused` | boolean | `true` when starting a check answered one this change already had. Always `false` on a read. |
 | `createdAt` | string | An RFC 3339 time. |
+
+## Run usage
+
+`usage` is `{ runs, pricedRuns, totalCost, meteredCost, tokens, ms }`, or null
+once the replay is gone:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `runs` | number | The side's ended runs whose usage is recorded, runs whose usage is unknown included. |
+| `pricedRuns` | number | The side's runs priced in that side's replay currency. `totalCost` and `meteredCost` are the mean of these runs. |
+| `totalCost` | object or null | The mean cost of a priced run, `{ amount, currency }`, in that side's replay currency: what the harness cost plus what metered tool calls cost, when both are known and in one currency. |
+| `meteredCost` | object or null | The mean cost of a run's metered tool calls, such as the model calls of a hook. |
+| `tokens` | number or null | The mean harness tokens of a run that reported them: input, output and cache tokens. Tool calls' tokens are not counted. |
+| `ms` | number or null | The mean wall time of a run that reported it, in milliseconds. |
+
+`skippedHooks` lists each `run.starting` hook that the side's replay runs did
+not run, as `{ hook, because }`, such as
+`{ "hook": "ticket", "because": "Step open calls linear.create-issue, which is not read-only." }`.
+A replay runs only hooks whose steps all call read-only tools that need no
+approval and do not act as the person who started a task. It skips a
+broken hook, even one whose `failure` is `block`, with
+`The hook is broken. Reason: <reason>`. See
+[Replay runs](/docs/reference/app/replays#replay-runs).
 
 ## Task rows
 

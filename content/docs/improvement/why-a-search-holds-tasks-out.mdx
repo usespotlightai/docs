@@ -194,11 +194,16 @@ search stops early rather than overspend, and the held-out check it ends with
 has its share set aside from the start.
 
 Some spend comes back without a price, as for a harness that reports no cost,
-or in another currency than the ceiling's. A search cannot leave that out
-without letting unpriced runs spend for free, so it counts each such replay
-run as its full share, and an unpriced agent run as its full share of the
-agent's tenth. An agent run is not cut off at its share, so a search can end a
-little over its ceiling.
+or in another currency than the ceiling's. A run's spend includes what its
+metered tool calls cost. An unpriced tool call counts as unpriced. The known
+costs of the run still count. A search cannot leave unpriced spend out without
+letting unpriced runs spend for free, so it counts each unpriced call
+of a replay run, and each cost of a replay run in another currency, as a full
+share of one run, and an unpriced agent run as its full share of the agent's
+tenth. Every run records its usage once, and the search waits for it. When
+Spotlight cannot read what an agent run used, the search counts the run as
+unpriced. An agent run is not cut off at its share, so a search can end a little over its
+ceiling.
 
 ## A pull request is still a review
 

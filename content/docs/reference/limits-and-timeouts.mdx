@@ -23,6 +23,8 @@ See [Runs](/docs/reference/app/tasks-runs-and-the-inbox#runs).
 | Wait for background work after a turn without a handover | `SPOTLIGHT_BACKGROUND_WAIT` in the sandbox, default 30 minutes, for each turn; `0` sends the reminder at once. See [Turns without a handover](/docs/reference/app/tasks-runs-and-the-inbox#turns-without-a-handover) |
 | Stop grace for a sandbox the host stops | 30 seconds |
 | Messages a person sends, checked for | every 2 seconds |
+| Ended runs checked for missing usage | once a minute, for ended runs with no recorded usage that are not already waiting for it. The first check on a database looks at every ended run, however long ago it ended. Each later check looks only at the ended runs that Spotlight last wrote after a time 1 hour before the previous check, so a run stored as ended with an end time from much earlier, such as when it paused, is still found |
+| Attempts to record the usage of an ended run | When a run ends, Spotlight tries to record its usage at once, 8 attempts in all, 2 seconds to 1 hour apart. From 15 minutes after the run ended, it also tries every 15 minutes, 5 times in all. When the fifth of those fails, it records the usage as unknown, with the reason `recording-failed`. When Spotlight cannot read the stored run even for that, it still records the usage as unknown with the reason `recording-failed`, but does not announce it, and stops. A replay with that run waits until the usage is announced. Once the stored run is repaired, announce it with `POST /api/admin/run-usage/announce`, with `since` a little before the error Spotlight logged for the run |
 
 ## Hosts
 
@@ -152,6 +154,7 @@ See [Replays](/docs/reference/app/replays).
 | A judge's [guidance](/docs/reference/app/replays#guidance) | one sentence of at most 280 characters, with no line break, no 5 words in a row from a claim, and no whole sentence of 3 or more words from one |
 | Repeats of each run in a replay with the answer | those of the live replay that started it |
 | Attempts to queue a replay run | 10 |
+| A replay run's usage not recorded when it ended | recorded from 15 minutes after it ended; counted as one run with no cost reported if Spotlight cannot read what it used. If Spotlight cannot read the stored run, the replay waits until the usage is announced |
 | Replays read for Candidates on the Insights Stations tab | the newest 500 started in the period; see [Replayed candidates API](/docs/reference/api/replayed-candidates) |
 
 ## Searches
@@ -183,7 +186,7 @@ See [Searches](/docs/reference/app/searches).
 | A resolved notice shown in the inbox | 30 days after it was resolved |
 | Candidate name | a slug of lowercase letters, digits and hyphens, at most 63 characters |
 | An agent run no runner claims | cancelled after 60 minutes |
-| An agent run's spend not known | counted as unpriced 15 minutes after it ended |
+| An agent run's usage not recorded when it ended | recorded from 15 minutes after it ended; counted as unpriced if Spotlight cannot read what it used. If Spotlight cannot read the stored run, the search waits until the usage is announced |
 | Tries to open a config pull request | 5: the first, then again after 30 seconds, 2, 8 and 32 minutes |
 | Tries to close a stale config pull request | 5, on the same schedule |
 | Open config pull requests of a station | 1 |
@@ -275,6 +278,13 @@ workspace. See
 | Requests each workspace sends to other services | 50 each second, and 50 at once, set by [`SPOTLIGHT_OUTBOUND_RATE_LIMIT`](/docs/reference/self-hosted-settings#calls-out-of-spotlight) |
 | Wait for a free request when over the limit | 5 seconds |
 
+Lookup calls of webhook and poll events have their own limit. See
+[Lookup calls](/docs/reference/terraform/integration#lookup-calls).
+
+| Item | Value |
+| --- | --- |
+| Lookups in one poll or delivery, tool calls and `lookup.request` requests together | 20, at most 4 at once. A poll reads the other events on the next poll; a delivery fails without reading them |
+
 ### Actions sent from the network
 
 See [Sent from the network](/docs/reference/terraform/integration#sent-from-the-network).
@@ -341,6 +351,9 @@ See [`spotlight_hook`](/docs/reference/terraform/hook).
 | Delivery attempts | 8 in all, 2 seconds to 1 hour apart |
 | Causal chain depth | 8 |
 | Firings for the same change | 3 within 10 minutes |
+| Text a hook adds to a briefing | 4,000 characters, the rest cut with a note |
+| Text of all hook sections in a briefing | 16,000 characters as the agent gets it, headings and note included; later sections are left out with a note |
+| Reason a replay gives for a skipped hook | 1,000 characters |
 
 ## Tokens and trusts
 

@@ -248,7 +248,6 @@ environment, are prefixed `egress: `.
 | `could not open the proxy relay, so the agent gets the egress address with its password` | A warning. The runner's proxy relay did not open. The agent gets the proxy address of the sandbox. | [The runner's proxy relay](/docs/reference/hosts/egress#the-runners-proxy-relay) |
 | `could not trust the authority of the local proxy, so TLS through it can fail` | A warning. The authority of the local proxy could not be added to the image's bundles. | [The runner's local proxy](/docs/reference/hosts/egress#the-runners-local-proxy) |
 | `SPOTLIGHT_RUN_TIMEOUT: "<x>" is not a duration such as 6h, or 0 for no limit` | The run timeout the runner got is not a duration, or is negative. | [spotlight runner](/docs/reference/cli/spotlight-command#messages) |
-| `Change stacks are not set up on this deployment.` | A station with `diffs: true` in a workspace without an [inference endpoint](/docs/administration/set-the-workspace-inference-endpoint). The runner logs the error, and the checkout gets no change stack. | [Change stacks and decisions](/docs/reference/app/change-stacks-and-decisions) |
 
 ### Egress log
 
@@ -628,12 +627,6 @@ slugs.
 | `was used before. Each egress token is single-use. Please use a new token` | An egress token rotated away, or used by an egress since deleted or replaced. | [Egress token](/docs/reference/terraform/egress#egress-token) |
 | `is not https. Runners send their proxy credential to it. A production deployment does not provision runners that use it` | A warning on an egress's `url`. | [Warnings](/docs/reference/terraform/egress#warnings) |
 | `Egress <key> is in use. Runner pools that name it: <pool keys>. Please remove provision.egress from these pools first.` | `409` `in-use`. A delete of an egress a runner pool names. | [Delete](/docs/reference/terraform/egress#delete) |
-| `The test request to the endpoint failed. Spotlight saved the change. <cause>` | A warning on a create or update of the inference endpoint. The change is saved. | [Test request](/docs/reference/terraform/inference-endpoint#test-request), [Set the workspace inference endpoint](/docs/administration/set-the-workspace-inference-endpoint) |
-| `is required, with a changed apiKeyWoVersion, when baseUrl changes` | On `api_key_wo`. An update of the inference endpoint changes `base_url` without a new key and key version, while a key is stored. | [The key](/docs/reference/terraform/inference-endpoint#the-key) |
-| `is required with apiKeyWo` | On `api_key_wo_version`. A write of the inference endpoint sends a key without a key version. | [The key](/docs/reference/terraform/inference-endpoint#the-key) |
-| `is required when apiKeyWoVersion is set`, `is required when apiKeyWoVersion changes` | On `api_key_wo`. A create with a key version and no key, or an update that changes the key version without a key. | [The key](/docs/reference/terraform/inference-endpoint#the-key) |
-| `Attribute "api_key_wo_version" must be specified when "api_key_wo" is specified`, and the reverse | At plan. A `spotlight_inference_endpoint` with one of the two. | [The key](/docs/reference/terraform/inference-endpoint#the-key) |
-| `is not allowed for this workspace. <reason>` | The inference endpoint's `base_url` is a host the workspace's egress rules do not allow. | [Requests](/docs/reference/terraform/inference-endpoint#requests), [Limit where sandboxes connect](/docs/security/limit-where-sandboxes-connect) |
 | `names <key>. Runner pool <key> doesn't exist in this workspace` | A warning on `spotlight_workspace_runners` `pools`. | [`spotlight_workspace_runners`](/docs/reference/terraform/workspace-runners#warnings) |
 | `names <key>. Runner trust <key> doesn't exist in this workspace` | A warning on `spotlight_workspace_runners` `trusts`. | [`spotlight_workspace_runners`](/docs/reference/terraform/workspace-runners#warnings) |
 | `must do something: a webhook, a poll, a schedule, an action to run, or an API spec or MCP server to provide tools from` | An integration definition with nothing to do. | [Top level](/docs/reference/terraform/integration#top-level) |
@@ -675,6 +668,16 @@ slugs.
 | `is empty. Write a host such as api.example.com`, `permits every host. Leave the list empty to permit every public host`, `is not a pattern such as *.example.com`, `is not a host such as api.example.com or a pattern such as *.example.com`, `has a character a host name cannot have. Write an internationalised host in its xn-- form` | An entry of a workspace's `outboundHosts` that is not a host or a pattern. | [Outbound hosts](/docs/reference/terraform/workspace#outbound-hosts) |
 | `lists the hosts the workspace may call, as in ["api.example.com", "*.example.com"]` | A workspace's `outboundHosts` that is not a list. | [Outbound hosts](/docs/reference/terraform/workspace#outbound-hosts) |
 | `needs HOOK_SIGNING_KEY set to sign OIDC tokens` | A hook with `oidc` where the deployment has no key to sign hook tokens with. | [OIDC](/docs/reference/terraform/hook#oidc) |
+| `adds to the briefing of a run that is starting. It goes only with on: run.starting` | On `brief`. A hook with `brief` on another event. | [Briefing the run](/docs/reference/terraform/hook#briefing-the-run) |
+| `is the text to add to the briefing of the run` | On `brief`. An empty `brief`. | [Briefing the run](/docs/reference/terraform/hook#briefing-the-run) |
+| `names exactly one of request and call. A lookup either makes a request or calls a tool` | An event's `lookup` with both or neither. | [Events](/docs/reference/terraform/integration#events) |
+| `names what the lookup keeps from the response` | On `lookup.capture`. A lookup with `request` and no `capture`. | [Events](/docs/reference/terraform/integration#events) |
+| `goes only with request. An expression reads the output of the tool as lookup` | On `lookup.capture`. A lookup with `call` and `capture`. | [Lookup calls](/docs/reference/terraform/integration#lookup-calls) |
+| `sets inputs for a tool. It goes only with call` | On `lookup.with`. A lookup with `with` and no `call`. | [Lookup calls](/docs/reference/terraform/integration#lookup-calls) |
+| `names a tool as the integration and the tool, as in clef.decide` | On `lookup.call`. A value that is not `<integration>.<tool>`. | [Lookup calls](/docs/reference/terraform/integration#lookup-calls) |
+| `calls <tool>, which is not read-only. A lookup calls its tool on every event it reads` | On `lookup.call`. A tool of the same integration without `readOnly`. | [Lookup calls](/docs/reference/terraform/integration#lookup-calls) |
+| `reads at least one of inputTokens, outputTokens and cost` | An action's `usage` with no count and no cost. | [Usage](/docs/reference/terraform/integration#usage) |
+| `names the currency of cost, as in USD` | On `usage.currency`. A `usage` with `cost` and no `currency`. | [Usage](/docs/reference/terraform/integration#usage) |
 | `must include read, plan or configure. Secrets, runners and trusts need one of them` | A workspace token with none of `read`, `plan` or `configure`. | [Scopes](/docs/reference/api/workspace-token#scopes), [Issue a workspace token](/docs/administration/issue-a-workspace-token) |
 | `must name each scope once` | A workspace token names a scope twice. | [Scopes](/docs/reference/api/workspace-token#scopes) |
 | `must name an owner before any *, as in repo:acme/* or repo:acme/platform:*` | An OIDC trust's subject pattern has no owner before `*`. | [Patterns](/docs/reference/terraform/oidc-trust#patterns) |
@@ -767,6 +770,22 @@ The other reasons are listed under
 [`spotlight replay check`](/docs/reference/cli/replay-command#exit-codes) list
 their own messages.
 
+### Hooks a replay skips
+
+A replay run does not run a `run.starting` hook that it cannot run with no
+person. It records the reason as `because` in
+[`skippedHooks`](/docs/reference/api/replay-checks#run-usage). A hook's first
+step that cannot run gives the reason.
+
+| Message | Cause | See |
+| --- | --- | --- |
+| `Step <step> sends a request, and a replay sends none.` | The step has `request`. | [Replay runs](/docs/reference/app/replays#replay-runs) |
+| `Step <step> calls <tool>, which is not read-only.` | The called tool has no `readOnly`. | [Replay runs](/docs/reference/app/replays#replay-runs) |
+| `Step <step> calls <tool>, which needs a person's approval before each call. A replay cannot approve the call.` | The called tool has `approval`. | [Replay runs](/docs/reference/app/replays#replay-runs) |
+| `Step <step> names <tool>, which acts as the person who started a task. A replay acts as nobody.` | The called tool's integration has `connection.actsAs` set to `requester`. | [Replay runs](/docs/reference/app/replays#replay-runs) |
+| `Step <step> names <tool>, which no integration of the team offers.` | No integration of the team offers the called tool. | [Replay runs](/docs/reference/app/replays#replay-runs) |
+| `The hook is broken. Reason: <reason>` | The hook no longer reads as it was written. `<reason>` is `it has no definition` when Spotlight has no reason. | [Replay runs](/docs/reference/app/replays#replay-runs) |
+
 ### Inbox notices
 
 | Message | Cause | See |
@@ -808,16 +827,7 @@ request and no such causes, and a skip for any other reason, send no notice.
 | --- | --- | --- |
 | `Spotlight couldn't generate the change stack.` | Every generation attempt failed. | [States](/docs/reference/app/change-stacks-and-decisions#states) |
 | `Generation was interrupted before it finished.` | Generation stopped without a reason. | [States](/docs/reference/app/change-stacks-and-decisions#states) |
-| `The inference endpoint has no credits left. Please add credits at your provider.` | The inference endpoint answered that the account has no credits left. | [Set the workspace inference endpoint](/docs/administration/set-the-workspace-inference-endpoint) |
-
-### Inference endpoint
-
-| Message | Cause | See |
-| --- | --- | --- |
-| `This workspace has no inference endpoint.` | The workspace has no inference endpoint. It follows `Change stacks are off`, `Answer grading is off.` or `The judge is off.`, with a "Set up inference" link to the Inference page of Settings. Every member sees it. | [Set the workspace inference endpoint](/docs/administration/set-the-workspace-inference-endpoint) |
-| `Sorry, the inference endpoint has no credits left. Please add credits at your provider.` | Grading an answer failed because the endpoint has no credits left. A "Check endpoint" link opens the Inference page of Settings. | [Set the workspace inference endpoint](/docs/administration/set-the-workspace-inference-endpoint) |
-| `No inference endpoint` | The Inference page of Settings, in a workspace without an endpoint, with a "Set up in Terraform" link. | [`spotlight_inference_endpoint`](/docs/reference/terraform/inference-endpoint) |
-| `The endpoint check failed` | The label of the red warning icon on the Inference page of Settings. A test request to the endpoint failed; its tooltip gives the cause. Owners and admins only. | [See the endpoint in the web app](/docs/administration/set-the-workspace-inference-endpoint#see-the-endpoint-in-the-web-app) |
+| `The model provider had no credits left. Please add credits at your provider.` | The model provider of the harness that generates the change stack answered that the account has no credits left. | [States](/docs/reference/app/change-stacks-and-decisions#states) |
 
 ### Connecting an integration
 

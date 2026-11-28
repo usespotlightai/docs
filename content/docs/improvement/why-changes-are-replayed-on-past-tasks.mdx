@@ -52,7 +52,13 @@ works on the task, and it leaves nothing behind but its own result:
   as no person, so a tool that needs a person's connection fails. It has no MCP
   servers or catalog tools enabled, and so egress injects no secrets for it. See
   [Tools in a replay](/docs/reference/terraform/integration#tools-in-a-replay).
-- No hook runs for it.
+- Before it starts, it runs the `run.starting` hooks that match it, but only
+  those whose steps all call read-only tools that need no person. Such a hook
+  changes nothing and can add to the run's briefing, so leaving it out would
+  make the replay start from a different briefing than a real run. A hook with
+  a step that sends a request, or that calls a tool which is not read-only,
+  needs approval or acts as the person who started the task, does not run,
+  and the replay says so. No hook on another event runs.
 - It cannot reply to a pull request's review comments, propose a memory or
   read a task's trace.
 - Its change stack is generated and checked, and never sent to GitHub.
@@ -65,7 +71,7 @@ works on the task, and it leaves nothing behind but its own result:
   never counts against it a push, pull request, review comment or tool call
   that the replay blocked.
 - It is not counted among the station's outcomes or in the Insights figures
-  of the team's runs, and no memories are drafted from it. Insights shows
+  of the team's runs. Insights shows
   replays apart, under Candidates on its Stations tab.
 
 The sandbox's network is not narrowed further. Egress lets a replay reach the
@@ -160,6 +166,13 @@ questions.
 The comparisons do not count against the replay's ceiling, its spend or its
 cost per run. They measure the change, not what running the candidate costs;
 that reason is the docs' own.
+
+A replay check also compares what a run of the candidate uses with what a run
+of its baseline uses: the mean cost, which adds the harness's cost and what
+metered tool calls cost, the tool calls' cost on its own, the harness tokens and the
+wall time. A change can keep the success rate and still pay off, such as a
+hook that has a fast model read a log so the agent does not have to. These
+figures do not decide the check.
 
 ## Every result comes with a range
 

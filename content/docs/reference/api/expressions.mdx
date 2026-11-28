@@ -33,6 +33,13 @@ When the text is one expression and nothing else, it keeps the expression's
 type, so a body field written `${{ {"channel": target.channel} }}` sends a JSON
 object. Otherwise each expression is written into the text.
 
+In JSON, an integer is a number. An integer of 2^53 or more, or of -2^53 or
+less, is its digits as text. Bytes are base64 text. A timestamp is RFC 3339
+text in UTC. A duration is text in seconds, as in `90s`. A type is its name. A
+double that is not a number or is infinite is text: `NaN`, `Infinity` or
+`-Infinity`. A map is an object with text keys. A map with two keys that JSON
+writes the same, such as `1` and `"1"`, fails the expression.
+
 ## Evaluation
 
 | The expression is | When it fails to evaluate |
@@ -79,12 +86,13 @@ a check names a real index, as in `integration.webhook.events[0].when`.
 | `webhook.ignoreWhen` | bool | `body`, `headers`, `raw` |
 | `webhook.route.by`, `webhook.delivery` | | `body`, `headers`, `raw` |
 | `webhook.events.*.forEach` | list | `body`, `headers`, `raw` |
-| `webhook.events.*.when` | bool | `body`, `headers`, `raw`, `item` |
+| `webhook.events.*.when` | bool | `body`, `headers`, `raw`, `item`, `lookup` |
 | `webhook.events.*.lookup.request.url`, `.query.*`, `.headers.*`, `.body` | | `body`, `headers`, `raw`, `item` |
+| `webhook.events.*.lookup.with` | | `body`, `headers`, `raw`, `item` |
 | `webhook.events.*.lookup.request.expect.success` | bool | the above, `response`, `status` |
 | `webhook.events.*.lookup.request.capture.*`, `webhook.events.*.lookup.capture.*` | | the above, `response`, `status` |
-| `webhook.events.*.raise.message`, `.author.email`, `.opens.title`, `.opens.description`, `.opens.assignBy.email`, `.opens.chat.by.email`, `.branch`, `.marks.*.value` | | `body`, `headers`, `raw`, `item`, captures |
-| `webhook.events.*.raise.attachments.each` | list | `body`, `headers`, `raw`, `item`, captures |
+| `webhook.events.*.raise.message`, `.author.email`, `.opens.title`, `.opens.description`, `.opens.assignBy.email`, `.opens.chat.by.email`, `.branch`, `.marks.*.value` | | `body`, `headers`, `raw`, `item`, `lookup`, captures |
+| `webhook.events.*.raise.attachments.each` | list | `body`, `headers`, `raw`, `item`, `lookup`, captures |
 | `webhook.events.*.raise.attachments.name`, `.type`, `.size`, and `.fetch` request fields | | the above, `file` |
 | `poll.request.url`, `.query.*`, `.headers.*`, `.body` | | `cursor`, `connection` |
 | `poll.request.expect.success` | bool | `cursor`, `connection`, `response`, `status`, `headers` |
@@ -94,6 +102,7 @@ a check names a real index, as in `integration.webhook.events[0].when`.
 | `actions.*.request.url`, `.query.*`, `.headers.*`, `.body` | | `task`, `ask`, `chat`, `reply`, `request`, `notice`, `target`, `connection`, `uploaded`, `inputs` |
 | `actions.*.request.expect.success` | bool | the above, `response`, `status`, `headers` |
 | `actions.*.request.capture.*` | | the above, `response`, `status`, `headers` |
+| `actions.*.usage.inputTokens`, `.outputTokens`, `.cost`, `.currency`, `.model` | | `task`, `ask`, `chat`, `reply`, `request`, `notice`, `target`, `connection`, `uploaded`, `inputs`, `response`, `status`, `capture` |
 | `actions.*.uploads.each` | list | `task`, `ask`, `target` |
 | `actions.*.uploads.prepare.url`, `.query.*`, `.headers.*`, `.body` | | the above, `connection`, `file` |
 | `actions.*.uploads.prepare.expect.success`, `.capture.*` | | the above, `response`, `status`, `headers` |
@@ -109,7 +118,8 @@ a check names a real index, as in `integration.webhook.events[0].when`.
 | `on.*.*.to.*` | | `task`, `ask`, `chat`, `reply`, `request`, `notice` |
 | `on.*.*.mark.*.value` | | `task`, `ask`, `request`, `target`, `connection`, `uploaded`, `response`, `capture` |
 
-`item` is seen only when the event has `forEach`. Captures are the names in
+`item` is seen only when the event has `forEach`. `lookup` is seen only when
+the event's lookup has `call`. Captures are the names in
 the event's `lookup.capture`, each seen by its own name. `inputs` is seen by an
 action only when a tool calls it. A capture named like a built-in name shadows
 it, and is warned about.
@@ -119,6 +129,7 @@ What an action has at run time depends on what calls it:
 | Called by | Has |
 | --- | --- |
 | a tool | `task`, `inputs`, `connection` |
+| an event's `lookup.call`, for a read-only tool | `inputs`, `connection` |
 | an `on` binding for a task event | `task`, `ask`, `target`, `uploaded`, `connection` |
 | an `on` binding for a chat event | `chat`, `reply`, `target`, `uploaded`, `connection` |
 | an `on` binding for an inbox request event | `task`, `request`, `target`, `uploaded`, `connection` |
@@ -131,9 +142,9 @@ what calls it, as the table above lists:
 | Expression | Checked against |
 | --- | --- |
 | `on.*.*.to.*`, `on.*.*.mark.*.value` | what the binding's event has |
-| `actions.*.request` fields | what each binding, tool and `schedule` that names the action has. It must check for each of them |
+| `actions.*.request` fields | what each binding, tool, lookup and `schedule` that names the action has. It must check for each of them. A lookup counts only for a tool that a lookup of the same integration calls |
 | `actions.*.uploads` fields | what a binding of a task event has. Only those bindings send files |
-| `tools.*.output` | what a tool has |
+| `tools.*.output` | what a tool has, and what a lookup has when a lookup of the same integration calls the tool |
 
 An action that nothing names is checked against what any caller has. An
 expression that reads a variable its caller does not have gets a warning, as in `does not check: Unknown variable: task. A notice event has no such variable`
@@ -156,6 +167,7 @@ for a binding of `notice.raised` that reads `task.title`.
 | `prepared` | map | The `capture` values of `uploads.prepare` for the current file, by name. |
 | `uploaded` | list | The files that `uploads` sent. Each has `id`, `name`, `type`, `size` and `prepared`. Empty for an action without `uploads`. |
 | `inputs` | map | The tool's inputs, by name. |
+| `lookup` | dyn | The output of the tool an event's `lookup.call` names. Unset when the call fails. |
 | `target` | map of string | The values of the binding's `to`, and `channel` from `routes`. |
 
 `task`:
@@ -219,6 +231,7 @@ for a binding of `notice.raised` that reads `task.title`.
 | `hook.steps.*.request.url` | | the above, `step` |
 | `hook.steps.*.request.headers.*` | | the above, `step` |
 | `hook.steps.*.request.body` | | the above, `step` |
+| `hook.brief` | | the above, `step` |
 
 A hook's `match` is compiled into conditions of the same kind as `when`.
 
@@ -313,4 +326,4 @@ credential.
 | `returns` | string or null | `bool`, `list`, or null. |
 | `variables` | array | The variables the expression can read, each with `name`, `type` and nested `fields`. |
 | `addedVariables` | array | Variables that only some definitions add: `item`, `captures`, `inputs`. |
-| `calls` | array | What can call an expression at the position, each with `by` (`task`, `chat`, `inbox-request` or `notice` for a binding of that kind of event, `tool` or `schedule`) and the `variables` that this caller has. Empty where the variables do not depend on what calls the expression. |
+| `calls` | array | What can call an expression at the position, each with `by` (`task`, `chat`, `inbox-request` or `notice` for a binding of that kind of event, `tool`, `lookup` or `schedule`) and the `variables` that this caller has. Empty where the variables do not depend on what calls the expression. |

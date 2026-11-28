@@ -266,16 +266,9 @@ URL is not `https`.
 
 ## Models
 
-Each workspace sets its own inference endpoint and model with
-[`spotlight_inference_endpoint`](/docs/reference/terraform/inference-endpoint).
-The setting replaces the `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`,
-`CHANGE_STACK_MODEL`, `DECISIONS_MODEL`, `MEMORIES_MODEL` and `JUDGE_MODEL`
-variables. Spotlight ignores them, and there
-is no fallback: after an upgrade, set the endpoint of each workspace. See
-[Set the workspace inference endpoint](/docs/administration/set-the-workspace-inference-endpoint).
-
-The API does not report a price, so Spotlight records the tokens of these calls
-but no cost.
+Spotlight calls no model itself, so a deployment sets no model or model key.
+Change stacks, the grading of answers to layer questions, judges and memory
+upkeep run as sessions in the team's own harness.
 
 ## Error reporting
 

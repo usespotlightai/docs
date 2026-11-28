@@ -2,23 +2,21 @@
 type: reference
 icon: BookText
 title: Change stacks and decisions
-description: How a run's diff becomes a change stack of cohorts and layers, how its layers are checked, and the decisions Spotlight draws from a run, with their kinds, status and disputes.
+description: How a run's diff becomes a change stack of cohorts and layers, how its layers are checked, and the decisions an agent records in a run, with their kinds, status and disputes.
 ---
 
 A change stack is a run's diff arranged for review. A decision is a choice an
-agent made during a run, drawn from what it said. A station turns each on in
-its [station fields](/docs/reference/terraform/line#station-fields):
+agent made during a run, which the agent records itself. A station turns each
+on in its [station fields](/docs/reference/terraform/line#station-fields):
 
 | Station field | Effect |
 | --- | --- |
 | `diffs: true` | After each run, a change stack is generated for each checkout that changed. After a person pushes to the task's pull request, a new stack is generated for that repository. |
 | `check` | Each change stack generated at the station is checked with this command, so it has effect only with `diffs: true`. With both set, every repository of the line must have `setup`. |
-| `decisions: true` | After each completed run, and each time a run waits for a person, decisions are generated from it. A run that ends Stopped gets none when it ends; those drawn while it waited stay. |
+| `decisions: true` | The briefing asks the agent to record each decision that shaped the change with `spotlight decide`. |
 
-Spotlight, not the agent, generates both. Both need the workspace to have an
-[inference endpoint](/docs/administration/set-the-workspace-inference-endpoint);
-where it has none, a change stack fails with `Change stacks are not set up on this
-deployment.`, and no decisions are generated. [Reviewing an agent's
+Spotlight, not the agent, generates a change stack, in a session in the team's
+harness. The agent records its decisions itself. [Reviewing an agent's
 changes](/docs/runs/reviewing-an-agents-changes) gives the reasons.
 
 ## Change stacks
@@ -180,26 +178,26 @@ work of kind `check`. See [Provision call](/docs/reference/events/provision-call
 | `why` | string | The reasons, at most 2,000 characters. |
 | `alternatives` | array of strings | What was weighed and set aside. At most 5, each at most 300 characters. |
 | `paths` | array of strings | The files the decision covers. 1 to 20. |
-| `journalSteps` | array of integers | The journal steps of the run the decision is drawn from. 1 to 20. A step's number is (attempt − 1) × 1,000,000 + its position in that attempt's journal, so a run that waited for a person and resumed keeps the numbers of its earlier attempts. |
+| `journalSteps` | array of integers | The journal steps of the run that reason the decision. Empty for a decision the agent recorded with `spotlight decide`. A step's number is (attempt − 1) × 1,000,000 + its position in that attempt's journal, so a run that waited for a person and resumed keeps the numbers of its earlier attempts. |
 | `disputes` | array of objects | Each has the file, the person and the reason. |
 
-A generated decision that breaks these limits is dropped.
+`spotlight decide` refuses a decision that breaks these limits.
 
-### Generation
+### Recording
 
-- Decisions are generated after a run completes at a station with
-  `decisions: true`, and each time such a run waits for a person, unless the
-  task reviews a pull request or a person drove the run.
-- A task has one set of decisions. Each later generation replaces it.
-- Generation is attempted as for a change stack. When every attempt fails, the
-  task keeps the decisions it had.
+- The agent of a run of a task, at a station with `decisions: true`, records
+  each decision with `spotlight decide`. A task that reviews a pull request
+  keeps no decisions.
+- A task has one set of decisions. Each run adds its decisions to the set, and
+  a decision the task holds already is kept once.
+- A task keeps at most 50 decisions.
 
 ### Status
 
 | Status | Meaning |
 | --- | --- |
-| `proposed` | Generated, and open to disputes. Later runs may replace it. |
-| `merged` | A pull request of the task merged. Nothing is generated for the task again. |
+| `proposed` | Recorded, and open to disputes. |
+| `merged` | A pull request of the task merged. The task takes no more decisions. |
 
 A merge is recorded for each repository. A decision counts as merged in a
 repository once the task's pull request there merged and the decision covers
@@ -226,5 +224,5 @@ its files in the change stack page. A reason is 1 to 1,000 characters.
   request. Spotlight deletes the comment from a pull request with no decisions.
 - The briefing of each later run on the task, under `## Decisions on record`,
   with each dispute. A run at a station with `decisions: true` is also briefed
-  under `## Say what you decide`. See
+  under `## Record what you decide`. See
   [Briefing](/docs/reference/hosts/sandbox#briefing).

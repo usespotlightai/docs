@@ -103,7 +103,6 @@ Every resource representation has these fields besides its own.
 | `egress` | key | `shared` |
 | `runner-trust` | key | `production-cluster` |
 | `workspace-runners` | the workspace's slug | `acme` |
-| `inference-endpoint` | the workspace's slug | `acme` |
 
 ## Errors
 
@@ -180,7 +179,6 @@ All paths are under `/api/v1/resources`.
 | `egress` | workspace | `POST /workspaces/{workspaceId}/egresses` | `/egresses/{id}` | `/workspaces/{workspaceId}/egresses` |
 | `runner-trust` | workspace | `POST /workspaces/{workspaceId}/runner-trusts` | `/runner-trusts/{id}` | `/workspaces/{workspaceId}/runner-trusts` |
 | `workspace-runners` | workspace | `POST /workspaces/{workspaceId}/workspace-runners` | `/workspace-runners/{id}` | `/workspaces/{workspaceId}/workspace-runners` |
-| `inference-endpoint` | workspace | `POST /workspaces/{workspaceId}/inference-endpoints` | `/inference-endpoints/{id}` | `/workspaces/{workspaceId}/inference-endpoints` |
 
 Import is the list path followed by `/import`, except for workspaces.
 
@@ -191,8 +189,8 @@ Rules particular to a kind:
 - `workspace-token`: only a person with the `administer` permission creates,
   updates or deletes one. An update changes only its `description`. A delete
   revokes it.
-- `workspace-runners` and `inference-endpoint`: a workspace has at most one, so
-  its list returns zero or one item.
+- `workspace-runners`: a workspace has at most one, so its list returns zero
+  or one item.
 
 Each kind's fields are on its own page:
 
@@ -212,7 +210,6 @@ Each kind's fields are on its own page:
 | `egress` | [`spotlight_egress`](/docs/reference/terraform/egress) |
 | `runner-trust` | [`spotlight_runner_trust`](/docs/reference/terraform/runner-trust) |
 | `workspace-runners` | [`spotlight_workspace_runners`](/docs/reference/terraform/workspace-runners) |
-| `inference-endpoint` | [`spotlight_inference_endpoint`](/docs/reference/terraform/inference-endpoint) |
 
 ## Export
 
@@ -229,10 +226,10 @@ The export's files are ordered by path and are the same on every export:
 | --- | --- |
 | `terraform.tf` | The `required_providers` block. |
 | `imports.tf` | An `import` block for every resource, in the order the resources depend on one another. |
-| `workspace.tf`, `secrets.tf`, `inference.tf`, `runners.tf` | The workspace and its OIDC trusts; the secrets; the inference endpoint; runner trusts, egresses, runner pools and the workspace's runners. |
+| `workspace.tf`, `secrets.tf`, `runners.tf` | The workspace and its OIDC trusts; the secrets; runner trusts, egresses, runner pools and the workspace's runners. |
 | `team-<team>.tf`, `line-<team>-<line>.tf`, `integration-<team>-<integration>.tf` | One file for each team, line and integration. |
 | `skills-<team>.tf`, `hooks-<team>.tf`, `profiles-<team>.tf` | A team's skills, hooks and harness profiles. |
-| `variables.tf` | A sensitive variable for each value Spotlight never returns, such as the values of secrets that Terraform sets, runner pool tokens, egress tokens and the inference endpoint's API key (`inference_api_key`). A secret whose value is set outside Terraform is exported without `value_wo` and `value_wo_version`. |
+| `variables.tf` | A sensitive variable for each value Spotlight never returns, such as the values of secrets that Terraform sets, runner pool tokens and egress tokens. A secret whose value is set outside Terraform is exported without `value_wo` and `value_wo_version`. |
 | `prompts/<team>/<line>/<station>.md` | Each station prompt, read with `file()`. |
 | `skills/<team>/<key>/<path>` | Each skill file, read with `file()`. |
 | `.gitignore` | `.terraform/`, state files and `*.tfvars`. |
@@ -243,8 +240,7 @@ The `hcl` string contains, in order, any variable the resource reads, an `import
 block that imports it, and the resource. `files` contains the prompt and skill
 files it reads. `collection` is one of `workspaces`, `teams`, `lines`, `skills`,
 `harness-profiles`, `integrations`, `hooks`, `secrets`, `oidc-trusts`,
-`runner-trusts`, `runner-pools`, `egresses`, `workspace-runners` or
-`inference-endpoints`.
+`runner-trusts`, `runner-pools`, `egresses` or `workspace-runners`.
 
 ## Configuration changes
 

@@ -188,7 +188,10 @@ the change's gain over the live config with `better`, `worse` or
 `within noise`, and what the check spent. Under it, each station has a table
 of its tasks, as **Task**, **Live config**, **Candidate** and **Regressed**,
 with each side's result and a one-line reason, such as `Failed: Checks
-failed.` The log prints the same.
+failed.` Above that table, a station gets a line that compares the mean run of
+the change with the live config's, by cost, tool cost, harness tokens and wall time,
+and a line for each hook its replays did not run, as in
+`hook ci-context did not run in replays: <reason>`. The log prints the same.
 
 Some changes are not checked, and the output notes why: a new line, a line
 that is removed, a station that is added or removed, or a station where
@@ -197,18 +200,23 @@ replaced, when the plan removes a work station and adds another (which may be
 a renamed station), when Terraform knows part of it only after apply, or when
 the plan also changes something the station depends on. A replay uses only
 what is live, so it cannot replay a changed skill, harness profile,
-integration, hook or secret before apply. The check sends Spotlight the keys
+integration, hook or secret before apply. A `run.starting` hook is the one
+exception. When the plan changes, adds or removes a hook that is on
+`run.starting` and whose steps all call read-only tools, as live and as
+planned, the check replays the change. The change's replays run the hook as planned, and the live config's
+replays run it as live. The check sends Spotlight the keys
 of the skills, harness profiles, integrations and hooks the plan changes for
 the station's team, the lines and stations each changed hook matches as
-planned, each changed integration's planned definition, and the names of the
-secrets the plan changes. Spotlight finds which
+planned, each changed hook's and integration's planned definition, and the
+names of the secrets the plan changes. Spotlight finds which
 of them the station depends on:
 
 - the harness profile the station names
 - a skill the station names
 - an integration whose tools the station's runs get, through the station, a
   skill it names or a mark
-- a hook that may fire at the station, as it is live or as planned
+- a hook that may fire at the station, as it is live or as planned, other
+  than a `run.starting` hook the check can replay
 - an integration that such a hook calls
 - an integration that, as planned, enables tools on marks, since those reach
   every station of the team
@@ -218,10 +226,14 @@ When Terraform knows the key, name or team of a changed resource, the match of
 a changed hook or the definition of a changed integration only after apply, the check cannot send it, so every work
 station it may reach is undecided. The check also does not send a changed
 integration's planned definition when it holds sensitive values or is larger
-than 16 KiB as JSON, so every work station of the team is undecided.
+than 16 KiB as JSON, so every work station of the team is undecided. The
+check does not send a changed hook when Terraform knows part of its planned
+definition only after apply, when the definition holds sensitive values, when
+it is larger than 16 KiB as JSON, or when it sets attributes that the CLI does
+not read, steps included. Then every work station of the team is undecided.
 
-Running the check again on the same change, against the same live config,
-the same runs of the set, the same threshold and the same scoring, answers
+Running the check again on the same change, against the same live config and
+the same live `run.starting` hooks at the station, the same runs of the set, the same threshold and the same scoring, answers
 with the earlier check while it is running, passed or failed. Where the
 scoring uses the judge, the judge's calibration must be in the same state as
 for the earlier check, and a check that failed on the judge is never reused. [Results](/docs/reference/cli/replay-command#results) lists every

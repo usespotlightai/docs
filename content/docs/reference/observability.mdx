@@ -197,6 +197,13 @@ Spotlight's own metrics:
 | `spotlight.runs` | gauge | `spotlight.run.state` | Runs that are `queued`, `claimed` or `suspended`. |
 | `spotlight.runs.oldest_queued_age_seconds` | gauge | | Age of the oldest run that a runner can claim now. |
 | `spotlight.runner_hosts.online` | gauge | | Hosts with a heartbeat in the last 90 seconds. |
+| `spotlight.lookup_calls` | counter | `spotlight.integration`, `spotlight.tool`, `spotlight.lookup_call.priced`, `spotlight.lookup_call.late` | Lookup calls that reported model usage. `priced` is `yes` or `no`. `late` is `yes` for a call that timed out and answered later, else `no`. |
+| `spotlight.lookup_call.tokens` | histogram | `spotlight.integration`, `spotlight.tool`, `spotlight.lookup_call.priced`, `spotlight.lookup_call.late`, `spotlight.lookup_call.direction` | The tokens of a lookup call, `input` or `output`. |
+| `spotlight.lookup_call.cost` | histogram | `spotlight.integration`, `spotlight.tool`, `spotlight.lookup_call.priced`, `spotlight.lookup_call.late`, `spotlight.lookup_call.currency` | The cost of a priced lookup call. |
+| `spotlight.lookup_call.timed_out` | counter | `spotlight.integration`, `spotlight.tool` | Lookup calls that did not answer within 30 seconds. A call that answers later with model usage is then counted in the three metrics above with `late` set to `yes`. |
+| `spotlight.unmetered_calls` | counter | `spotlight.integration`, `spotlight.tool`, `spotlight.unmetered_call.caller`, `spotlight.unmetered_call.reason`, `spotlight.unmetered_call.priced` | Tool calls that reported model usage that no run counts. `caller` is `hook` or `agent`. `reason` is `no-run` for an event outside a run, or `after-usage` for a call after the run's usage was recorded. `priced` is `yes` or `no`. |
+| `spotlight.unmetered_call.tokens` | histogram | `spotlight.integration`, `spotlight.tool`, `spotlight.unmetered_call.caller`, `spotlight.unmetered_call.reason`, `spotlight.unmetered_call.priced`, `spotlight.unmetered_call.direction` | The tokens of such a call, `input` or `output`. |
+| `spotlight.unmetered_call.cost` | histogram | `spotlight.integration`, `spotlight.tool`, `spotlight.unmetered_call.caller`, `spotlight.unmetered_call.reason`, `spotlight.unmetered_call.priced`, `spotlight.unmetered_call.currency` | The cost of such a call when it is priced. |
 
 Spotlight reads the gauges from the database each time it exports metrics.
 
